@@ -614,6 +614,9 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
   <data name="Bug_IncludiDati" xml:space="preserve">
     <value>Include technical data</value>
   </data>
+  <data name="Bug_IncludiRegistro" xml:space="preserve">
+    <value>Include the connection log (last 50 events)</value>
+  </data>
   <data name="Bug_Copia" xml:space="preserve">
     <value>Copy the report</value>
   </data>

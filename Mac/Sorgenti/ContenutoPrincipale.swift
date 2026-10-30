@@ -1369,7 +1369,7 @@ struct VistaRegistro: View {
     }
 
     private func copia() {
-        let testo = voci.map { "\(Self.ora($0.ora))  \(Self.testo($0))" }.joined(separator: "\n")
+        let testo = voci.map(\.riga).joined(separator: "\n")
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(testo, forType: .string)
         copiato = true

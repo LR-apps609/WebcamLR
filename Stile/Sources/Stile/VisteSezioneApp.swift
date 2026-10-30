@@ -42,19 +42,44 @@ public struct VistaGuida: View {
 }
 
 /// «Segnala un bug»: descrizione e dati tecnici già pronti, poi mail (se c'è l'indirizzo) o condivisione.
+/// La descrizione resta nelle preferenze finché non si invia (passo 9): chiudere la finestra o il foglio non la perde.
 public struct ModuloSegnalazione: View {
+    /// Le chiavi in UserDefaults (le stesse su Mac e iPhone).
+    public enum Chiavi {
+        /// Il testo scritto e non ancora inviato.
+        public static let bozza = "bozzaSegnalazione"
+        /// Vero dopo «Invia»: alla prossima apertura la bozza riparte vuota. Il testo resta visibile finché il
+        /// modulo è aperto, se l'invio è stato annullato.
+        public static let bozzaInviata = "bozzaSegnalazioneInviata"
+        /// L'interruttore «Includi il registro del collegamento», acceso di serie.
+        public static let includiRegistro = "segnalazioneConRegistro"
+    }
+
     let datiTecnici: [(String, String)]
-    @State private var descrizione = ""
+    let registro: String?
+    @AppStorage(Chiavi.bozza) private var descrizione = ""
+    @AppStorage(Chiavi.bozzaInviata) private var bozzaInviata = false
+    @AppStorage(Chiavi.includiRegistro) private var includiRegistro = true
     @State private var includiDati = true
     @FocusState private var scrivendo: Bool
+    @Environment(\.openURL) private var apriIndirizzo
 
     /// `datiTecnici`: coppie nome-valore che l'app conosce (versione, sistema, latenza…), mai dati personali.
-    public init(datiTecnici: [(String, String)]) {
+    /// `registro`: il registro del collegamento come testo, una riga per evento con l'ora (passo 9); nil se l'app
+    /// non ne ha uno da allegare.
+    public init(datiTecnici: [(String, String)], registro: String? = nil) {
         self.datiTecnici = datiTecnici
+        self.registro = registro
     }
 
     private var testo: String {
-        SegnalazioneBug.testo(descrizione: descrizione, datiTecnici: includiDati ? datiTecnici : nil)
+        SegnalazioneBug.testo(descrizione: descrizione, datiTecnici: includiDati ? datiTecnici : nil,
+                              registro: includiDati && includiRegistro ? registro : nil)
+    }
+
+    /// Dopo «Invia» la bozza ha fatto il suo lavoro: si svuota alla prossima apertura del modulo.
+    private func segnaInviata() {
+        bozzaInviata = true
     }
 
     private var descrizioneVuota: Bool {
@@ -93,6 +118,13 @@ public struct ModuloSegnalazione: View {
 
                 Toggle(isOn: $includiDati) { Text(String(localized: "Includi i dati tecnici", bundle: .stile)) }
                     .tint(Tema.ciano)
+                if registro != nil {
+                    Toggle(isOn: $includiRegistro) {
+                        Text(String(localized: "Includi il registro del collegamento (ultimi 50 eventi)", bundle: .stile))
+                    }
+                    .tint(Tema.ciano)
+                    .disabled(!includiDati)
+                }
                 if includiDati {
                     VStack(alignment: .leading, spacing: 4) {
                         ForEach(datiTecnici, id: \.0) { nome, valore in
@@ -110,7 +142,10 @@ public struct ModuloSegnalazione: View {
 
                 Group {
                     if let indirizzoMail {
-                        Link(destination: indirizzoMail) {
+                        Button {
+                            segnaInviata()
+                            apriIndirizzo(indirizzoMail)
+                        } label: {
                             Label {
                                 Text(String(localized: "Invia per email", bundle: .stile))
                             } icon: {
@@ -129,6 +164,8 @@ public struct ModuloSegnalazione: View {
                                 .foregroundStyle(colorePulsante)
                                 .frame(maxWidth: .infinity)
                         }
+                        // ShareLink non dice com'è andata: il tocco basta per segnare la bozza come inviata.
+                        .simultaneousGesture(TapGesture().onEnded { segnaInviata() })
                     }
                 }
                 .buttonStyle(.borderedProminent)
@@ -145,6 +182,14 @@ public struct ModuloSegnalazione: View {
         // La tastiera si apre subito e copre «Invia»: scorrendo la pagina si chiude.
         .scrollDismissesKeyboard(.interactively)
         .background(Tema.fondo)
-        .onAppear { scrivendo = true }
+        .onAppear {
+            if bozzaInviata {
+                descrizione = ""
+                bozzaInviata = false
+            }
+            scrivendo = true
+        }
+        // Si riscrive dopo l'invio (annullato o no): è di nuovo una bozza da tenere.
+        .onChange(of: descrizione) { if bozzaInviata { bozzaInviata = false } }
     }
 }

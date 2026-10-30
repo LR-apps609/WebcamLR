@@ -2,6 +2,7 @@ import Foundation
 import Observation
 import Stile
 import SwiftUI
+import UIKit
 
 /// «Registro del collegamento» (1.5): gli ultimi 50 eventi con l'ora, solo in memoria.
 /// Non si salva e non esce dall'iPhone, se non quando l'utente lo condivide da sé.
@@ -52,6 +53,8 @@ struct VistaRegistro: View {
     private var registro: RegistroCollegamento { RegistroCollegamento.condiviso }
     /// G3.7: «Svuota» chiede prima: il registro è solo in memoria e non torna.
     @State private var domandaSvuota = false
+    /// Per due secondi dopo «Copia» il pulsante dice «Copiato» (passo 9), come sul Mac.
+    @State private var copiato = false
 
     var body: some View {
         List {
@@ -89,6 +92,7 @@ struct VistaRegistro: View {
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 if !registro.voci.isEmpty {
+                    Button(copiato ? "Copiato" : "Copia") { copia() }
                     ShareLink(item: registro.testo) {
                         Image(systemName: "square.and.arrow.up")
                     }
@@ -102,6 +106,15 @@ struct VistaRegistro: View {
             Button("Annulla", role: .cancel) {}
         } message: {
             Text("Gli eventi del collegamento si cancellano e non si possono recuperare.")
+        }
+    }
+
+    private func copia() {
+        UIPasteboard.general.string = registro.testo
+        copiato = true
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2))
+            copiato = false
         }
     }
 }

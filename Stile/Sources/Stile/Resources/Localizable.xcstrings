@@ -766,6 +766,23 @@
         }
       }
     },
+    "Includi il registro del collegamento (ultimi 50 eventi)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Include the connection log (last 50 events)"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Includi il registro del collegamento (ultimi 50 eventi)"
+          }
+        }
+      }
+    },
     "Inquadrarsi bene" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1884,6 +1901,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "— Dati tecnici —"
+          }
+        }
+      }
+    },
+    "— Registro del collegamento —" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "— Connection log —"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "— Registro del collegamento —"
           }
         }
       }

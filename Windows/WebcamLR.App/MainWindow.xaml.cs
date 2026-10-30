@@ -132,6 +132,7 @@ public sealed partial class MainWindow : Window
             });
         };
         registro.Cambiato += () => coda.TryEnqueue(MostraRegistro);
+        FinestraApp.Registro = registro;
         BarraCavo.CloseButtonClick += (_, _) => suggerimentoCavoChiuso = true;
         // Il permesso del firewall o il profilo della rete cambiano senza avvisare: senza telefono si ricontrolla.
         controlloDiagnosi = coda.CreateTimer();

@@ -109,6 +109,11 @@
     <string name="riduci_se_caldo">Riduci la qualità se si scalda</string>
     <string name="risparmio_batteria" formatted="false">Risparmio batteria: 24 fps sotto il 20%</string>
     <string name="registro_vuoto">Ancora niente: le righe compaiono dal primo collegamento.</string>
+    <string name="copia">Copia</string>
+    <string name="copiato">Copiato</string>
+    <string name="condividi_registro">Condividi il registro</string>
+    <string name="includi_registro">Includi il registro del collegamento (ultimi 50 eventi)</string>
+    <string name="registro_intestazione">— Registro del collegamento —</string>
 
     <!-- 30_pro -->
     <string name="pro_invito">Qualità piena, effetti da studio e tutti i comandi del computer. Si paga una volta sola, senza abbonamento. Il resto di WebcamLR resta gratis.</string>
@@ -435,6 +440,7 @@
     <string name="registro_fermo">Fermo: %1$s</string>
     <string name="registro_codificatore_fermo">Codificatore fermo: lo riavvio</string>
     <string name="registro_computer_chiede">Il computer chiede %1$d×%2$d, %3$d fps, %4$s</string>
+    <string name="registro_video">Video %1$d×%2$d, %3$d fps, %4$s</string>
     <string name="registro_pro_ignorato">Senza WebcamLR Pro: comando Pro ignorato</string>
     <string name="registro_immagine_senza_pro">Senza WebcamLR Pro: immagine dal computer ignorata</string>
     <string name="registro_immagine_ricevuta">Immagine per lo sfondo ricevuta dal computer</string>

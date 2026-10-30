@@ -138,6 +138,24 @@ public static class Preferenze
         set => Scrivi("gobbo.txt", value);
     }
 
+    /// <summary>La bozza di «Segnala un bug» (passo 9): resta finché la segnalazione non parte (mail o appunti).</summary>
+    public static string BozzaSegnalazione
+    {
+        get => Leggi("segnalazione-bozza.txt") ?? "";
+        set
+        {
+            if (value.Trim().Length == 0) Cancella("segnalazione-bozza.txt");
+            else Scrivi("segnalazione-bozza.txt", value);
+        }
+    }
+
+    /// <summary>«Includi il registro del collegamento» in «Segnala un bug» (passo 9), acceso di serie.</summary>
+    public static bool SegnalazioneConRegistro
+    {
+        get => Leggi("segnalazione-registro") != "0";
+        set => Scrivi("segnalazione-registro", value ? "1" : "0");
+    }
+
     /// <summary>Velocità del gobbo (passo 9), in righe al secondo; null se non è mai stata scelta.</summary>
     public static double? VelocitaGobbo
     {
@@ -232,6 +250,13 @@ public static class Preferenze
         try { return File.ReadAllText(Path.Combine(Cartella, nome)).Trim(); }
         catch (IOException) { return null; }
         catch (UnauthorizedAccessException) { return null; }
+    }
+
+    private static void Cancella(string nome)
+    {
+        try { File.Delete(Path.Combine(Cartella, nome)); }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
     }
 
     private static void Scrivi(string nome, string valore)

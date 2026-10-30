@@ -8,6 +8,12 @@ import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
 import it.lrapps.webcamlr.protocollo.Temperatura
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import java.text.DateFormat
+import java.util.Date
+import java.util.Locale
 
 /** Batteria, carica e temperatura del telefono, per il messaggio `stato` e gli avvisi in «In onda». */
 object StatoDispositivo {
@@ -59,17 +65,29 @@ object StatoDispositivo {
     }
 }
 
-/** Il registro del collegamento per la modalità avanzata (1.5): le ultime righe, in memoria. */
+/**
+ * Il registro del collegamento (1.5): le ultime righe, in memoria. La pagina del registro le osserva ([righe]) e si
+ * aggiorna mentre è aperta (passo 9); «Segnala un bug» allega le ultime 50 ([testo]).
+ */
 object RegistroCollegamento {
-    private val righe = ArrayDeque<String>()
-    private val formato = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.ITALY)
+    private const val MASSIMO = 200
+    /** Quante righe allega «Segnala un bug», come su iPhone, Mac e Windows. */
+    const val PER_SEGNALAZIONE = 50
+
+    private val stato = MutableStateFlow<List<String>>(emptyList())
+    /** Le righe, la più vecchia per prima. */
+    val righe: StateFlow<List<String>> = stato.asStateFlow()
 
     @Synchronized
     fun aggiungi(testo: String) {
-        righe.addLast("${formato.format(java.util.Date())}  $testo")
-        while (righe.size > 200) righe.removeFirst()
+        // L'ora nella lingua dell'app (passo 9): «14:02:31» in italiano, «2:02:31 PM» in inglese.
+        val lingua = try { Testi.locale } catch (e: IllegalStateException) { Locale.getDefault() }
+        val ora = DateFormat.getTimeInstance(DateFormat.MEDIUM, lingua).format(Date())
+        stato.value = (stato.value + "$ora  $testo").takeLast(MASSIMO)
     }
 
-    @Synchronized
-    fun tutte(): List<String> = righe.toList()
+    fun tutte(): List<String> = stato.value
+
+    /** Le ultime [quante] righe in ordine di tempo, una per riga: per «Copia», «Condividi» e «Segnala un bug». */
+    fun testo(quante: Int = MASSIMO): String = stato.value.takeLast(quante).joinToString("\n")
 }

@@ -421,6 +421,9 @@
   <data name="Bug_DatiTecnici" xml:space="preserve">
     <value>— Technical data —</value>
   </data>
+  <data name="Bug_Registro" xml:space="preserve">
+    <value>— Connection log —</value>
+  </data>
   <data name="Domanda_NonTrova" xml:space="preserve">
     <value>The phone can’t find the computer</value>
   </data>

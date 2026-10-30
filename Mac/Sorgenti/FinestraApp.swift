@@ -69,7 +69,7 @@ struct FinestraApp: View {
         case .domande:
             VistaDomandeFrequenti()
         case .segnala:
-            ModuloSegnalazione(datiTecnici: ricevitore.datiTecnici)
+            ModuloSegnalazione(datiTecnici: ricevitore.datiTecnici, registro: ricevitore.registroComeTesto)
         case .informazioni:
             Informazioni()
         }

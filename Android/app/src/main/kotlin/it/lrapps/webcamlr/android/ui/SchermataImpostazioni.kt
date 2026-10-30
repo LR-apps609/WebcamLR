@@ -1,6 +1,16 @@
 package it.lrapps.webcamlr.android.ui
 
 import android.content.ActivityNotFoundException
+import android.content.ClipData
+import android.content.ClipboardManager
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -550,18 +560,49 @@ fun testoMotiviRiduzione(motivi: List<MotivoRiduzione>): String = motivi.map {
     )
 }.joinToString(", ")
 
-/** Il registro del collegamento, per chi vuole capire cosa è successo. */
+/**
+ * Il registro del collegamento, per chi vuole capire cosa è successo. Si aggiorna mentre è aperto; in cima «Copia» e
+ * «Condividi», e le righe si possono selezionare (passo 9, P7).
+ */
 @Composable
 fun ColumnScope.ContenutoRegistro() {
-    val righe = remember { RegistroCollegamento.tutte() }
+    val context = LocalContext.current
+    val righe by RegistroCollegamento.righe.collectAsState()
+    var copiato by remember { mutableStateOf(false) }
+    LaunchedEffect(copiato) {
+        if (copiato) {
+            delay(2_000)
+            copiato = false
+        }
+    }
+    val titolo = stringResource(R.string.registro)
+    val condividi = stringResource(R.string.condividi_registro)
     Spacer(Modifier.size(8.dp))
     if (righe.isEmpty()) {
         NotaSotto(stringResource(R.string.registro_vuoto))
     } else {
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp)) {
+            PulsanteSecondario(stringResource(if (copiato) R.string.copiato else R.string.copia), Modifier.weight(1f), icona = Icons.Filled.ContentCopy) {
+                val appunti = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                appunti?.setPrimaryClip(ClipData.newPlainText(titolo, RegistroCollegamento.testo()))
+                copiato = true
+            }
+            PulsanteSecondario(condividi, Modifier.weight(1f), icona = Icons.Filled.Share) {
+                val invio = Intent(Intent.ACTION_SEND).setType("text/plain")
+                    .putExtra(Intent.EXTRA_SUBJECT, titolo).putExtra(Intent.EXTRA_TEXT, RegistroCollegamento.testo())
+                try {
+                    context.startActivity(Intent.createChooser(invio, condividi))
+                } catch (e: ActivityNotFoundException) {
+                    // Nessuna app per condividere: resta «Copia».
+                }
+            }
+        }
         Gruppo {
-            Column(Modifier.padding(vertical = 8.dp)) {
-                for (riga in righe.asReversed()) {
-                    Text(riga, style = Caratteri.numeri(12), color = Colori.testoChiaro, modifier = Modifier.padding(horizontal = 14.dp, vertical = 3.dp))
+            SelectionContainer {
+                Column(Modifier.padding(vertical = 8.dp)) {
+                    for (riga in righe.asReversed()) {
+                        Text(riga, style = Caratteri.numeri(12), color = Colori.testoChiaro, modifier = Modifier.padding(horizontal = 14.dp, vertical = 3.dp))
+                    }
                 }
             }
         }

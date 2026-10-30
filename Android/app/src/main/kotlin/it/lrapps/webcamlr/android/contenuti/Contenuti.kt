@@ -319,12 +319,24 @@ object InfoApp {
     val altreAppLR = listOf("OrbitLR", "GateLR")
 
     /** `intestazione`: «— Dati tecnici —» nella lingua dell'app (R.string.dati_tecnici_intestazione). */
-    fun testoSegnalazione(descrizione: String, datiTecnici: List<Pair<String, String>>?, intestazione: String): String {
+    /** [registro]: le righe del registro del collegamento, con [intestazioneRegistro] sopra (passo 9); null se non va allegato. */
+    fun testoSegnalazione(
+        descrizione: String,
+        datiTecnici: List<Pair<String, String>>?,
+        intestazione: String,
+        registro: String? = null,
+        intestazioneRegistro: String = "",
+    ): String {
         val righe = mutableListOf(descrizione.trim())
         if (!datiTecnici.isNullOrEmpty()) {
             righe += ""
             righe += intestazione
             righe += datiTecnici.map { "${it.first}: ${it.second}" }
+        }
+        if (!registro.isNullOrBlank()) {
+            righe += ""
+            righe += intestazioneRegistro
+            righe += registro.trim()
         }
         return righe.joinToString("\n")
     }

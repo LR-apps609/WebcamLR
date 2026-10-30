@@ -1797,8 +1797,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
             renderizzatore.impostaCodifica(superficie, effettivo.larghezza, effettivo.altezza)
             codificaAttiva = true
             registro.aggiungi(
-                "Video ${effettivo.larghezza}×${effettivo.altezza}, ${effettivo.fps} fps, ${nomeCodec(effettivo)}, " +
-                    String.format(Testi.locale, "%.1f Mbit/s", codificatore.bitrateBase / 1e6),
+                Testi.testo(R.string.registro_video, effettivo.larghezza, effettivo.altezza, effettivo.fps, nomeCodec(effettivo)),
             )
         } catch (e: Exception) {
             // Per esempio il codificatore hardware tolto dal sistema mentre l'app era in sottofondo: si riprova al

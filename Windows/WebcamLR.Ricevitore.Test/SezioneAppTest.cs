@@ -14,6 +14,14 @@ public class SezioneAppTest
     }
 
     [Fact]
+    public void RegistroAllegatoDopoIDatiTecnici()
+    {
+        var testo = SegnalazioneBug.Testo("Si blocca", [("Versione", "1.0")], "10:00:01  Collegato\n10:00:05  Caduto\n");
+        Assert.Equal("Si blocca\n\n— Dati tecnici —\nVersione: 1.0\n\n— Registro del collegamento —\n10:00:01  Collegato\n10:00:05  Caduto", testo);
+        Assert.Equal("Si blocca", SegnalazioneBug.Testo("Si blocca", null, "  "));
+    }
+
+    [Fact]
     public void MailSoloConUnIndirizzo()
     {
         Assert.Null(SegnalazioneBug.Mail("", "testo"));

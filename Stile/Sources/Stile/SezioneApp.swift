@@ -74,12 +74,18 @@ public enum Guida {
 
 /// Il testo di «Segnala un bug»: la descrizione dell'utente e i dati tecnici, se li vuole includere.
 public enum SegnalazioneBug {
-    public static func testo(descrizione: String, datiTecnici: [(String, String)]?) -> String {
+    /// `registro`: le righe del registro del collegamento, già con l'ora (passo 9); nil o vuoto se non va allegato.
+    public static func testo(descrizione: String, datiTecnici: [(String, String)]?, registro: String? = nil) -> String {
         var righe = [descrizione.trimmingCharacters(in: .whitespacesAndNewlines)]
         if let datiTecnici, !datiTecnici.isEmpty {
             righe.append("")
             righe.append(String(localized: "— Dati tecnici —", bundle: .stile))
             righe.append(contentsOf: datiTecnici.map { "\($0.0): \($0.1)" })
+        }
+        if let registro, !registro.isEmpty {
+            righe.append("")
+            righe.append(String(localized: "— Registro del collegamento —", bundle: .stile))
+            righe.append(registro)
         }
         return righe.joined(separator: "\n")
     }

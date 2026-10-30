@@ -614,6 +614,9 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
   <data name="Bug_IncludiDati" xml:space="preserve">
     <value>Includi i dati tecnici</value>
   </data>
+  <data name="Bug_IncludiRegistro" xml:space="preserve">
+    <value>Includi il registro del collegamento (ultimi 50 eventi)</value>
+  </data>
   <data name="Bug_Copia" xml:space="preserve">
     <value>Copia la segnalazione</value>
   </data>

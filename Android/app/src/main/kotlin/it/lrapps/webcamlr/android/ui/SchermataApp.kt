@@ -72,6 +72,7 @@ import it.lrapps.webcamlr.android.contenuti.InfoApp
 import it.lrapps.webcamlr.android.dati.ComputerConosciuti
 import it.lrapps.webcamlr.android.dati.IdentitaTelefono
 import it.lrapps.webcamlr.android.dati.Impostazioni
+import it.lrapps.webcamlr.android.sistema.RegistroCollegamento
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -281,8 +282,10 @@ fun SchermataGuida(indietro: () -> Unit) {
 @Composable
 fun SchermataSegnala(ultimaLatenzaMs: Int?, indietro: () -> Unit) {
     val context = LocalContext.current
-    var descrizione by rememberSaveable { mutableStateOf("") }
+    // Passo 9: la bozza resta in Impostazioni finché non si invia (Indietro non la perde).
+    var descrizione by rememberSaveable { mutableStateOf(Impostazioni.bozzaDaRiprendere()) }
     var conDati by rememberSaveable { mutableStateOf(true) }
+    var conRegistro by rememberSaveable { mutableStateOf(Impostazioni.segnalazioneConRegistro) }
     // Solo dati tecnici utili: niente nome del telefono né del computer, niente indirizzi.
     val datiTecnici = buildList {
         add(stringResource(R.string.dato_app) to "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
@@ -292,6 +295,7 @@ fun SchermataSegnala(ultimaLatenzaMs: Int?, indietro: () -> Unit) {
         if (Impostazioni.ultimoComputer != null) add(stringResource(R.string.dato_collegato_in_passato) to stringResource(R.string.si))
     }
     val intestazione = stringResource(R.string.dati_tecnici_intestazione)
+    val intestazioneRegistro = stringResource(R.string.registro_intestazione)
     val titoloScelta = stringResource(R.string.segnala_bug)
     val oggetto = stringResource(R.string.oggetto_segnalazione)
     val nessunaApp = stringResource(R.string.nessuna_app_invio)
@@ -300,7 +304,12 @@ fun SchermataSegnala(ultimaLatenzaMs: Int?, indietro: () -> Unit) {
     SchermataSecondaria(stringResource(R.string.segnala_bug), indietro) {
         Text(stringResource(R.string.segnala_domanda), style = Caratteri.corpoForte(16), color = Colori.testo, modifier = Modifier.padding(top = 8.dp, bottom = 8.dp))
         OutlinedTextField(
-            value = descrizione, onValueChange = { descrizione = it },
+            value = descrizione,
+            onValueChange = {
+                descrizione = it
+                Impostazioni.bozzaSegnalazione = it
+                Impostazioni.bozzaSegnalazioneInviata = false
+            },
             minLines = 5,
             textStyle = Caratteri.corpo(16),
             colors = OutlinedTextFieldDefaults.colors(
@@ -310,7 +319,15 @@ fun SchermataSegnala(ultimaLatenzaMs: Int?, indietro: () -> Unit) {
             modifier = Modifier.fillMaxWidth().heightIn(min = 140.dp).semantics { contentDescription = etichettaCampo },
         )
         Spacer(Modifier.height(12.dp))
-        Gruppo { RigaInterruttore(stringResource(R.string.includi_dati), conDati) { conDati = it } }
+        Gruppo {
+            RigaInterruttore(stringResource(R.string.includi_dati), conDati) { conDati = it }
+            if (conDati) {
+                RigaInterruttore(stringResource(R.string.includi_registro), conRegistro) {
+                    conRegistro = it
+                    Impostazioni.segnalazioneConRegistro = it
+                }
+            }
+        }
         if (conDati) {
             Column(Modifier.fillMaxWidth().padding(top = 8.dp).clip(RoundedCornerShape(10.dp)).background(Colori.pannelloScuro).padding(12.dp)) {
                 for ((nome, valore) in datiTecnici) {
@@ -323,7 +340,8 @@ fun SchermataSegnala(ultimaLatenzaMs: Int?, indietro: () -> Unit) {
         }
         Spacer(Modifier.height(16.dp))
         PulsantePieno(stringResource(R.string.invia_segnalazione), icona = Icons.AutoMirrored.Filled.Send, abilitato = !vuota) {
-            val testo = InfoApp.testoSegnalazione(descrizione, if (conDati) datiTecnici else null, intestazione)
+            val registro = if (conDati && conRegistro) RegistroCollegamento.testo(RegistroCollegamento.PER_SEGNALAZIONE) else null
+            val testo = InfoApp.testoSegnalazione(descrizione, if (conDati) datiTecnici else null, intestazione, registro, intestazioneRegistro)
             val intento = if (InfoApp.EMAIL_ASSISTENZA.isNotEmpty()) {
                 Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:${InfoApp.EMAIL_ASSISTENZA}"))
                     .putExtra(Intent.EXTRA_SUBJECT, oggetto).putExtra(Intent.EXTRA_TEXT, testo)
@@ -336,6 +354,8 @@ fun SchermataSegnala(ultimaLatenzaMs: Int?, indietro: () -> Unit) {
             }
             try {
                 context.startActivity(intento)
+                // Partita (o quasi: la scelta dell'app non dice com'è finita). Il testo resta finché la pagina è aperta.
+                Impostazioni.bozzaSegnalazioneInviata = true
             } catch (e: ActivityNotFoundException) {
                 Toast.makeText(context, nessunaApp, Toast.LENGTH_LONG).show()
             }

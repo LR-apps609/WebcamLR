@@ -46,7 +46,8 @@ struct SchermataApp: View {
                     }
                     .listRowBackground(Tema.pannello)
                     NavigationLink {
-                        ModuloSegnalazione(datiTecnici: Self.datiTecnici(ultimaLatenzaMs: ultimaLatenzaMs))
+                        ModuloSegnalazione(datiTecnici: Self.datiTecnici(ultimaLatenzaMs: ultimaLatenzaMs),
+                                           registro: RegistroCollegamento.condiviso.testo)
                             .navigationTitle("Segnala un bug")
                             .navigationBarTitleDisplayMode(.inline)
                             .intestazioneOpaca()

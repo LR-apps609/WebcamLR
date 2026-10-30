@@ -82,7 +82,8 @@ public static class SegnalazioneBug
 {
     public static string Oggetto => TestiRicevitore.T("Bug_Oggetto");
 
-    public static string Testo(string descrizione, IReadOnlyList<(string Nome, string Valore)>? datiTecnici)
+    /// <param name="registro">Il registro del collegamento come testo, una riga per evento (passo 9); null o vuoto se non va allegato.</param>
+    public static string Testo(string descrizione, IReadOnlyList<(string Nome, string Valore)>? datiTecnici, string? registro = null)
     {
         var righe = new List<string> { descrizione.Trim() };
         if (datiTecnici is { Count: > 0 })
@@ -90,6 +91,12 @@ public static class SegnalazioneBug
             righe.Add("");
             righe.Add(TestiRicevitore.T("Bug_DatiTecnici"));
             righe.AddRange(datiTecnici.Select(dato => $"{dato.Nome}: {dato.Valore}"));
+        }
+        if (!string.IsNullOrWhiteSpace(registro))
+        {
+            righe.Add("");
+            righe.Add(TestiRicevitore.T("Bug_Registro"));
+            righe.Add(registro.Trim());
         }
         return string.Join("\n", righe);
     }

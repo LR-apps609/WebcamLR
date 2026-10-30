@@ -77,6 +77,30 @@ object Impostazioni {
         get() = preferenze.getString("ultimoIndirizzo", null) ?: ""
         set(valore) = preferenze.edit().putString("ultimoIndirizzo", valore).apply()
 
+    /** Passo 9: la descrizione di «Segnala un bug» non ancora inviata (Indietro non la perde). */
+    var bozzaSegnalazione: String
+        get() = preferenze.getString("bozzaSegnalazione", null) ?: ""
+        set(valore) = preferenze.edit().putString("bozzaSegnalazione", valore).apply()
+
+    /** Vero dopo «Invia la segnalazione»: alla prossima apertura la bozza riparte vuota. */
+    var bozzaSegnalazioneInviata: Boolean
+        get() = preferenze.getBoolean("bozzaSegnalazioneInviata", false)
+        set(valore) = salva("bozzaSegnalazioneInviata", valore)
+
+    /** Passo 9: «Includi il registro del collegamento» in «Segnala un bug», acceso di serie. */
+    var segnalazioneConRegistro: Boolean
+        get() = preferenze.getBoolean("segnalazioneConRegistro", true)
+        set(valore) = salva("segnalazioneConRegistro", valore)
+
+    /** La bozza da mostrare aprendo «Segnala un bug»: vuota se l'ultima è già stata inviata. */
+    fun bozzaDaRiprendere(): String {
+        if (bozzaSegnalazioneInviata) {
+            bozzaSegnalazione = ""
+            bozzaSegnalazioneInviata = false
+        }
+        return bozzaSegnalazione
+    }
+
     private fun salva(chiave: String, valore: Boolean) = preferenze.edit().putBoolean(chiave, valore).apply()
 
     /** Il file delle impostazioni, per chi le osserva (la sessione segue le scelte fatte dall'interfaccia). */

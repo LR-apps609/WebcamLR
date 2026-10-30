@@ -19,6 +19,12 @@ public enum PaginaApp { Guida, Informazioni }
 /// </summary>
 public static class FinestraApp
 {
+    /// <summary>
+    /// Il registro del collegamento della finestra principale (passo 9): «Segnala un bug» lo allega se l'interruttore
+    /// è acceso. Lo imposta la finestra principale all'avvio.
+    /// </summary>
+    public static RegistroCollegamento? Registro { get; set; }
+
     /// <param name="domanda">Se c'è, si apre su «Domande frequenti» con quella risposta aperta (da un errore o dalla diagnosi).</param>
     /// <param name="pagina">Da «Aiuto» e F1 la guida; dal menu Account «Informazioni e privacy».</param>
     public static async Task MostraAsync(XamlRoot radice, IReadOnlyList<(string Nome, string Valore)> datiTecnici,
@@ -239,39 +245,61 @@ public static class FinestraApp
     private static UIElement ContenutoSegnalazione(IReadOnlyList<(string Nome, string Valore)> datiTecnici)
     {
         var pannello = new StackPanel { Spacing = 10 };
+        // La bozza (passo 9): il testo resta se la finestra si chiude o se arriva la domanda di un telefono.
         var descrizione = new TextBox
         {
             Header = Testi.T("Bug_CosaESuccesso"),
             AcceptsReturn = true,
             TextWrapping = TextWrapping.Wrap,
             MinHeight = 120,
+            Text = Preferenze.BozzaSegnalazione,
         };
         var includi = new CheckBox { Content = Testi.T("Bug_IncludiDati"), IsChecked = true };
         var dati = Testo(string.Join("\n", datiTecnici.Select(d => $"{d.Nome}: {d.Valore}")), "TestoSecondario", 12);
-        includi.Checked += (_, _) => dati.Visibility = Visibility.Visible;
-        includi.Unchecked += (_, _) => dati.Visibility = Visibility.Collapsed;
+        var includiRegistro = new CheckBox { Content = Testi.T("Bug_IncludiRegistro"), IsChecked = Preferenze.SegnalazioneConRegistro };
+        includiRegistro.Checked += (_, _) => Preferenze.SegnalazioneConRegistro = true;
+        includiRegistro.Unchecked += (_, _) => Preferenze.SegnalazioneConRegistro = false;
+        includi.Checked += (_, _) =>
+        {
+            dati.Visibility = Visibility.Visible;
+            includiRegistro.IsEnabled = true;
+        };
+        includi.Unchecked += (_, _) =>
+        {
+            dati.Visibility = Visibility.Collapsed;
+            includiRegistro.IsEnabled = false;
+        };
         var esito = Testo("", "TestoSecondario", 12);
         var invia = new Button
         {
             Content = string.IsNullOrEmpty(InfoApp.EmailAssistenza) ? Testi.T("Bug_Copia") : Testi.T("Bug_InviaEmail"),
-            IsEnabled = false,
+            IsEnabled = descrizione.Text.Trim().Length > 0,
             Style = (Style)Application.Current.Resources["AccentButtonStyle"],
         };
-        descrizione.TextChanged += (_, _) => invia.IsEnabled = descrizione.Text.Trim().Length > 0;
+        descrizione.TextChanged += (_, _) =>
+        {
+            invia.IsEnabled = descrizione.Text.Trim().Length > 0;
+            Preferenze.BozzaSegnalazione = descrizione.Text;
+        };
         invia.Click += async (_, _) =>
         {
-            var testo = SegnalazioneBug.Testo(descrizione.Text, includi.IsChecked == true ? datiTecnici : null);
+            var conDati = includi.IsChecked == true;
+            var registro = conDati && includiRegistro.IsChecked == true ? Registro?.Testo() : null;
+            var testo = SegnalazioneBug.Testo(descrizione.Text, conDati ? datiTecnici : null, registro);
             // async void: gli appunti occupati da un'altra app o la mail che non si apre non chiudono WebcamLR.
             try
             {
                 if (SegnalazioneBug.Mail(InfoApp.EmailAssistenza, testo) is { } mail
                     && await Windows.System.Launcher.LaunchUriAsync(mail))
                 {
+                    // Partita: la bozza non serve più (il testo resta nella casella finché la finestra è aperta).
+                    Preferenze.BozzaSegnalazione = "";
                     return;
                 }
                 var contenuto = new DataPackage();
                 contenuto.SetText(testo);
                 Clipboard.SetContent(contenuto);
+                Preferenze.BozzaSegnalazione = "";
                 esito.Text = Testi.T("Bug_Copiata");
             }
             catch (Exception)
@@ -283,6 +311,7 @@ public static class FinestraApp
         pannello.Children.Add(descrizione);
         pannello.Children.Add(includi);
         pannello.Children.Add(dati);
+        pannello.Children.Add(includiRegistro);
         pannello.Children.Add(invia);
         pannello.Children.Add(esito);
         pannello.Children.Add(Testo(Testi.T("Bug_NienteVideo"), "TestoSecondario", 12));

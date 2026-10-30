@@ -244,6 +244,18 @@ final class Ricevitore {
         let testo: String
         /// Il telefono dell'evento, solo quando ne sono collegati più di uno (P21).
         var telefono: String?
+
+        /// «14:02:31  iPhone di Ledion · Collegato via Wi-Fi»: per «Copia» e «Segnala un bug».
+        var riga: String {
+            let ora = ora.formatted(date: .omitted, time: .standard)
+            guard let telefono else { return "\(ora)  \(testo)" }
+            return "\(ora)  \(telefono) · \(testo)"
+        }
+    }
+
+    /// Il registro come testo, dal più vecchio al più recente: si allega a «Segnala un bug» (passo 9, punto 23).
+    var registroComeTesto: String {
+        registro.map(\.riga).joined(separator: "\n")
     }
 
     /// Quante righe tiene il registro: solo in memoria, si svuota alla chiusura dell'app.

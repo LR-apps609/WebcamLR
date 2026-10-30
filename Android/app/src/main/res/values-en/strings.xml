@@ -107,6 +107,11 @@
     <string name="riduci_se_caldo">Lower quality when it gets warm</string>
     <string name="risparmio_batteria" formatted="false">Battery saver: 24 fps below 20%</string>
     <string name="registro_vuoto">Nothing yet: lines appear from the first connection.</string>
+    <string name="copia">Copy</string>
+    <string name="copiato">Copied</string>
+    <string name="condividi_registro">Share log</string>
+    <string name="includi_registro">Include the connection log (last 50 events)</string>
+    <string name="registro_intestazione">— Connection log —</string>
 
     <!-- 30_pro -->
     <string name="pro_invito">Full quality, studio effects and all the computer’s controls. You pay once, no subscription. The rest of WebcamLR stays free.</string>
@@ -433,6 +438,7 @@
     <string name="registro_fermo">Stopped: %1$s</string>
     <string name="registro_codificatore_fermo">Video stopped: restarting it</string>
     <string name="registro_computer_chiede">The computer asks for %1$d×%2$d, %3$d fps, %4$s</string>
+    <string name="registro_video">Video %1$d×%2$d, %3$d fps, %4$s</string>
     <string name="registro_pro_ignorato">Without WebcamLR Pro: Pro command ignored</string>
     <string name="registro_immagine_senza_pro">Without WebcamLR Pro: image from the computer ignored</string>
     <string name="registro_immagine_ricevuta">Background image received from the computer</string>

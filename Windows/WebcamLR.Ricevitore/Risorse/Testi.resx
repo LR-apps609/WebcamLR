@@ -427,6 +427,9 @@
   <data name="Bug_DatiTecnici" xml:space="preserve">
     <value>— Dati tecnici —</value>
   </data>
+  <data name="Bug_Registro" xml:space="preserve">
+    <value>— Registro del collegamento —</value>
+  </data>
   <data name="Domanda_NonTrova" xml:space="preserve">
     <value>Il telefono non trova il computer</value>
   </data>

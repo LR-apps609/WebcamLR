@@ -417,7 +417,10 @@ struct ContenutoPrincipale: View {
         }
     }
 
+    /// In onda davvero: un'app tiene la webcam e il telefono non è in pausa. In pausa niente corallo (il corallo vale
+    /// solo per «in onda» e registrazione): la pillola dice «In pausa» in ambra, come su Windows.
     private var inOnda: Bool {
+        if telefonoInPausa { return false }
         if case .inOnda = ricevitore.collegamento { return true }
         return false
     }

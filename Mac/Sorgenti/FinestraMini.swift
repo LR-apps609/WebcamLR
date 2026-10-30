@@ -110,6 +110,9 @@ extension FinestraMini {
         switch ricevitore.collegamento {
         case .riconnessione where ricevitore.inSottofondo:
             EmptyView()
+        case .inOnda where ricevitore.statoTelefono?.pausa != nil:
+            // Telefono in pausa con un'app sulla webcam: «In pausa» in ambra, niente corallo (come la finestra principale).
+            PillolaStato(.riconnessione, testo: String(localized: "In pausa"))
         case .inOnda:
             PillolaStato(.inOnda(app: conApp ? ricevitore.nomeAppInOnda : nil))
         case .riconnessione:

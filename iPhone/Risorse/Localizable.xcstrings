@@ -239,6 +239,23 @@
         }
       }
     },
+    "0,5×" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "0.5×"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "0,5×"
+          }
+        }
+      }
+    },
     "1080p, 4K, 60 fps, effetti e tutto il Mac" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4829,6 +4846,23 @@
         }
       }
     },
+    "Nessuna risposta da «%@»: tocca «Riprova» e conferma sul computer." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No answer from “%@”: tap “Try again” and confirm on the computer."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessuna risposta da «%@»: tocca «Riprova» e conferma sul computer."
+          }
+        }
+      }
+    },
     "Nessuna risposta per «%@». Prova con un'altra parola, oppure usa «Segnala un bug»." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5084,19 +5118,19 @@
         }
       }
     },
-    "Pagina %lld di 4" : {
+    "Pagina %lld di %lld" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Page %lld of 4"
+            "value" : "Page %lld of %lld"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pagina %lld di 4"
+            "value" : "Pagina %lld di %lld"
           }
         }
       }

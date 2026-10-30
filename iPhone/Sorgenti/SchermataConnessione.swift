@@ -27,6 +27,8 @@ struct SchermataConnessione: View {
     @State private var daMostrare = false
     @State private var mostraIndirizzo = false
     @State private var indirizzoScritto = ""
+    /// A7 (passo 9): l'ultimo indirizzo valido scritto a mano, riproposto la volta dopo (come su Android).
+    @AppStorage("ultimoIndirizzo") private var ultimoIndirizzo = ""
     @State private var indirizzoNonValido = false
     /// Dopo 15 secondi senza computer compare «Non trovo nessun computer» con le cose da controllare (funzione 34).
     @State private var mostraAiuto = false
@@ -162,6 +164,7 @@ struct SchermataConnessione: View {
                 .autocorrectionDisabled()
             Button("Collega") {
                 if let associazione = Associazione(indirizzoScritto: indirizzoScritto) {
+                    ultimoIndirizzo = indirizzoScritto.trimmingCharacters(in: .whitespacesAndNewlines)
                     collega(associazione)
                 } else {
                     // Un secondo avviso va aperto quando il primo è chiuso del tutto.
@@ -700,6 +703,7 @@ struct SchermataConnessione: View {
 
     private func apriIndirizzo() {
         annullaRicollegamento()
+        if indirizzoScritto.isEmpty { indirizzoScritto = ultimoIndirizzo }
         mostraIndirizzo = true
     }
 

@@ -36,7 +36,8 @@ struct BarreAvanzamento: View {
             }
         }
         .accessibilityElement()
-        .accessibilityLabel(Text("Pagina \(numero) di 4"))
+        // A11 (passo 9): il totale viene dalle pagine vere, non più scritto a mano.
+        .accessibilityLabel(Text("Pagina \(numero) di \(totale)"))
     }
 
     private var numero: Int { min(pagina + 1, totale) }

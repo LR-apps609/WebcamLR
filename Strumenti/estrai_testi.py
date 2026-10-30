@@ -61,7 +61,7 @@ TIPI = {
     (None, "minuti"): "%lld",
     (None, "SessioneTelefono.tentativiMassimi"): "%lld", (None, "sessione.tempo"): "%lld",
     (None, "sessione.bianco"): "%lld", (None, "lettura.temperatura"): "%lld", (None, "cerca.computer.count"): "%lld",
-    ("Qualita.swift", "$0"): "%lld",
+    ("Qualita.swift", "$0"): "%lld", ("PresentazioneStile.swift", "totale"): "%lld",
     ("SessioneTelefono.swift", "larghezza"): "%lld", ("SessioneTelefono.swift", "altezza"): "%lld",
     ("SessioneTelefono.swift", "fps"): "%lld", ("SessioneTelefono.swift", "atteso.fps"): "%lld",
 }

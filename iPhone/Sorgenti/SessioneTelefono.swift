@@ -133,6 +133,9 @@ final class SessioneTelefono {
     @ObservationIgnored private var perditeUltimiSecondi: [Int] = []
     /// Il computer chiede all'utente di consentire questo iPhone: il codice di conferma, uguale sui due schermi (0.10).
     private(set) var codiceConferma: String?
+    /// A4 (passo 9): quando è arrivata la domanda del codice. Il computer chiude con l'`arrivederci` sia dopo «Non
+    /// consentire» sia dopo 60 secondi senza risposta: il tempo passato dice quale dei due.
+    @ObservationIgnored private var inizioConferma: Date?
     /// Titolo del pannello d'errore: dice se non ci si è mai collegati, se il computer va aggiornato…
     private(set) var titoloErrore = String(localized: "Collegamento interrotto")
     /// Riprovare non serve (l'identità del computer è cambiata): si torna ai computer e si usa il QR code.
@@ -974,6 +977,7 @@ final class SessioneTelefono {
         case .messaggio(.approvazione(let approvazione)):
             // Prima volta con questo computer: l'utente conferma sul computer, con lo stesso codice.
             codiceConferma = approvazione.codice
+            inizioConferma = Date()
             registro.aggiungi(String(localized: "Il computer chiede di confermare il codice"))
             Vibrazione.richiestaConferma()
 
@@ -1151,9 +1155,15 @@ final class SessioneTelefono {
         let nome = computer.nome
         // Chiuso mentre si aspettava la conferma: il computer ha detto no, o nessuno ha risposto.
         // Riprovare da soli farebbe solo ricomparire la domanda.
+        let secondiInAttesa = inizioConferma.map { Date().timeIntervalSince($0) } ?? 0
+        inizioConferma = nil
         if inAttesaDiConferma && (motivo == .rete || motivo == .dalComputer) {
+            // Il computer aspetta 60 secondi: chiuso dopo quasi un minuto vuol dire che nessuno ha risposto.
+            let senzaRisposta = secondiInAttesa >= 55
             fermaConErrore(titolo: String(localized: "Collegamento non confermato"),
-                           descrizione: String(localized: "Il collegamento non è stato consentito su \(nome). Tocca «Riprova» e conferma sul computer."),
+                           descrizione: senzaRisposta
+                               ? String(localized: "Nessuna risposta da «\(nome)»: tocca «Riprova» e conferma sul computer.")
+                               : String(localized: "Il collegamento non è stato consentito su \(nome). Tocca «Riprova» e conferma sul computer."),
                            domanda: "codice")
             return
         }

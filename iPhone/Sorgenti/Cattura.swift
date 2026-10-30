@@ -9,7 +9,8 @@ enum Obiettivo: String, CaseIterable, Identifiable, Sendable {
 
     var etichetta: String {
         switch self {
-        case .grandangolo: "0,5×"
+        // A5 (passo 9): «0.5×» in inglese, con il punto.
+        case .grandangolo: String(localized: "0,5×")
         case .principale: "1×"
         case .tele: String(localized: "Tele")
         case .frontale: String(localized: "Frontale")

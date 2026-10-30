@@ -141,5 +141,25 @@ GitHub Desktop / Android Studio scegli il ramo `beta4`. Per tornare indietro: `g
   Da «In onda» apri «App e assistenza» e torna con Indietro: il video deve continuare.
 - [ ] Contorni dei controlli visibili ovunque (anche al sole); niente testo grigio difficile da leggere sui pannelli chiari.
 
+## 1.0 RC · «Sito e store» (rami `sito-rc` e `store-rc`, non ancora online)
+- [ ] **Sito** (ramo `sito-rc`): guardalo in locale (`cd Sito && python3 -m http.server`, poi http://localhost:8000) o
+  dimmi «pubblica il sito» e lo unisco a `main` (che lo mette online). Cambia: colori e parole delle app, caratteri
+  più leggeri, menu sul telefono, 404, promesse vere, privacy corretta (ancora «bozza»).
+- [ ] **Testi per gli store**: `Documenti/Store.md` sul ramo `store-rc`. Leggi in cima le incoerenze e le decisioni.
+- [ ] Nella beta 4 sono già corretti: permesso della fotocamera (dice anche «QR code»), niente Android nell'app iPhone
+  (regola Apple), telemetria di ONNX Runtime spenta su Windows (controlla che gli effetti partano al primo avvio).
+- [ ] iPhone: la pagina dei permessi della presentazione ha un testo più lungo: guardala su uno schermo piccolo.
+
+### Decisioni che aspettano te
+1. Account sviluppatore Apple a pagamento (99 USD/anno): senza, niente App Store né Mac distribuibile né webcam virtuale.
+2. Mac App Store sì o no (consiglio: no per la 1.0, dmg firmato e notarizzato dal sito).
+3. Prezzo di Pro: 14,99 € e 9,99 € al lancio? Per quanto? In famiglia sì o no?
+4. Google Play: account personale (25 USD, poi 12 tester per 14 giorni) o di organizzazione.
+5. Android e MediaPipe: Google manda statistiche d'uso anonime e **non c'è un modo ufficiale per spegnerle**. Scelte:
+   dichiararle nella privacy e su Play (veloce) oppure compilare MediaPipe dal sorgente senza statistiche (più lavoro).
+6. Firma per Windows: Azure Trusted Signing (~10 USD/mese) o certificato OV (100–400 €/anno).
+7. Dati del titolare (nome, email, indirizzo) per la privacy, ed **email di assistenza** (oggi vuota in tutte le app).
+8. Nome negli store: «WebcamLR» o «WebcamLR: webcam per Mac e PC».
+
 ## Versione da provare
 Vedi l'ultima riga di «git log --oneline -1»: va bene qualsiasi versione uguale o successiva a quella scritta nell'ultimo aggiornamento che ti ho mandato.

@@ -278,12 +278,22 @@ private struct CorpoPulsantePrimario: View {
         #endif
     }
 
+    private var limiteRighe: Int {
+        #if os(macOS)
+        return misura == .grande ? 2 : 1
+        #else
+        return 2
+        #endif
+    }
+
     var body: some View {
         configuration.label
             .font(.stile(.comando))
             .foregroundStyle(Tema.fondo)
-            // Il grande va a capo con il testo molto grande (Dynamic Type) invece di troncare.
-            .lineLimit(misura == .grande ? 2 : 1)
+            // Sul telefono va a capo con il testo molto grande (Dynamic Type) invece di troncare, come il secondario:
+            // «Riprova ora» nel banner della riconnessione non ha un `ViewThatFits` attorno. Sul Mac il normale
+            // resta su una riga.
+            .lineLimit(limiteRighe)
             .multilineTextAlignment(.center)
             .minimumScaleFactor(0.8)
             .padding(.horizontal, misura == .grande ? Spazi.medio : Spazi.piccolo)

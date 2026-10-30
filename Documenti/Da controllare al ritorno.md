@@ -44,5 +44,25 @@ la tua build è la prima vera.
 - [ ] Windows, registra e scegli Esci › Esci → «Chiudo la registrazione…», la finestra non si blocca, l'MP4 si apre, Esplora file non si apre.
 - [ ] Windows, **primo aggiornamento**: la versione installata oggi non conosce ancora la chiusura gentile, quindi **prima di lanciare l'installatore chiudi tu WebcamLR** (icona accanto all'orologio › Esci). Dagli aggiornamenti successivi l'installatore la chiude da solo, aspettando fino a 15 s. Su un PC senza .NET 8 l'installatore mostra una finestra con «Scarico .NET 8… N MB di 30».
 
+### Passo 3 · Registrazioni che non si perdono (Mac, Windows)
+- [ ] Registra 30 s, poi **chiudi WebcamLR a forza** (Mac: Monitoraggio Attività › Uscita forzata; Windows: Gestione attività) → il file in Filmati/Video › WebcamLR **si apre** e dura fino agli ultimi secondi (al massimo ~10 s in meno: il telefono manda un fotogramma chiave ogni 10 s).
+- [ ] Registra su una **chiavetta quasi piena** → prima «Spazio quasi finito: restano circa N minuti», poi «Disco pieno: … salvati i primi mm:ss…» e il file si apre.
+- [ ] Mentre registri cambia **obiettivo** (anche tasti 1–4), **qualità**, **profilo**, «Nella webcam» o «Usa prospettiva» (anche dal telefono) → domanda «… ferma la registrazione e la salva. Continuare?»; **Annulla** lascia tutto com'era.
+- [ ] **⌘T / Ctrl+T** durante una chiamata → **nessuna finestra** del Finder o di Esplora file; compare l'avviso «Foto salvata…» con «Mostra nel Finder» / «Mostra nella cartella».
+- [ ] Passa il mouse su **Registra** → l'aiuto dice «senza audio».
+- [ ] Windows, registra con gli **effetti sul PC** e guarda il registro → «MP4 frammentato» o «MP4 normale» (dimmi quale).
+
+### Passo 4 · Niente gesti distruttivi a sorpresa (tutte le app)
+- [ ] Computer, con Zoom che usa WebcamLR premi **Scollega** (pulsante, scheda o icona) → «Scollegare «…»? Zoom …»; Invio = Annulla. Senza app e senza registrazione si scollega subito.
+- [ ] Windows con **due telefoni**: clic destro sull'icona → «Scollega ▸» con un telefono per riga.
+- [ ] **Profili salvati** › Elimina → chiede prima; salva con un nome già usato → «… Sostituirlo?». Cambia un effetto dopo «Riunione» → clic su «Personalizzato» → «Torna a «Riunione»».
+- [ ] **Telefoni fidati** › Rimuovi → chiede prima (Windows: Esc chiude solo la domanda). Rimuovi la webcam virtuale con Zoom aperto → la domanda dice che Zoom la sta usando.
+- [ ] Regole fini › muovi Luminosità › **Azzera** → «Regolazioni azzerate · Annulla» per 8 s; Annulla o ⌘Z/Ctrl+Z rimettono i valori.
+- [ ] Telefono in onda con Zoom, tocca la **X** → «Zoom sta usando il video: si fermerà anche lì.».
+- [ ] iPhone in onda, **scorri dal bordo sinistro** → la diretta non si chiude. Android in onda, **Indietro** → compare la domanda; a schermo oscurato Indietro riaccende lo schermo e basta.
+- [ ] In onda, **doppio tocco** sull'anteprima → la fotocamera non cambia e compare «In onda: per cambiare fotocamera…».
+- [ ] Android, «Scollega» nella **notifica** → si apre WebcamLR sulla domanda.
+- [ ] iPhone in diretta, Impostazioni › **Lingua** → chiede prima; Informazioni › **Privacy** → si apre dentro l'app e il video continua.
+
 ## Versione da provare
 Vedi l'ultima riga di «git log --oneline -1»: va bene qualsiasi versione uguale o successiva a quella scritta nell'ultimo aggiornamento che ti ho mandato.

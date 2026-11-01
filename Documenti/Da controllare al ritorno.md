@@ -148,7 +148,7 @@ GitHub Desktop / Android Studio scegli il ramo `beta4`. Per tornare indietro: `g
 - [ ] Contorni dei controlli visibili ovunque (anche al sole); niente testo grigio difficile da leggere sui pannelli chiari.
 
 ## 1.0 RC · «Sito e store» (rami `sito-rc` e `store-rc`, non ancora online)
-- [ ] **Sito** (ramo `sito-rc`): guardalo in locale (`cd Sito && python3 -m http.server`, poi http://localhost:8000) o
+- [x] **Sito: online dal 1 novembre** (https://lr-apps609.github.io/WebcamLR/, main 6ee6702). Era il ramo `sito-rc`: guardalo in locale (`cd Sito && python3 -m http.server`, poi http://localhost:8000) o
   dimmi «pubblica il sito» e lo unisco a `main` (che lo mette online). Cambia: colori e parole delle app, caratteri
   più leggeri, menu sul telefono, 404, promesse vere, privacy corretta (ancora «bozza»).
 - [ ] **Testi per gli store**: `Documenti/Store.md` (ora anche sul ramo `beta4`). Leggi in cima le incoerenze e le decisioni.
@@ -161,8 +161,8 @@ GitHub Desktop / Android Studio scegli il ramo `beta4`. Per tornare indietro: `g
 2. Mac App Store sì o no (consiglio: no per la 1.0, dmg firmato e notarizzato dal sito).
 3. Prezzo di Pro: 14,99 € e 9,99 € al lancio? Per quanto? In famiglia sì o no?
 4. Google Play: account personale (25 USD, poi 12 tester per 14 giorni) o di organizzazione.
-5. Android e MediaPipe: Google manda statistiche d'uso anonime e **non c'è un modo ufficiale per spegnerle**. Scelte:
-   dichiararle nella privacy e su Play (veloce) oppure compilare MediaPipe dal sorgente senza statistiche (più lavoro).
+5. ~~Android e MediaPipe~~ **Deciso il 1 novembre: si dichiarano** (privacy del sito e Sicurezza dei dati di Play,
+   scenario 2 di Store.md).
 6. Firma per Windows: Azure Trusted Signing (~10 USD/mese) o certificato OV (100–400 €/anno).
 7. Dati del titolare (nome, email, indirizzo) per la privacy, ed **email di assistenza** (oggi vuota in tutte le app).
 8. Nome negli store: «WebcamLR» o «WebcamLR: webcam per Mac e PC».

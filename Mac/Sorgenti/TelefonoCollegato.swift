@@ -29,6 +29,9 @@ final class TelefonoCollegato: Identifiable {
     var collegamento: FaseCollegamento = .collegato
     var statoTelefono: StatoTelefono?
     var statistiche = Statistiche()
+    /// R08: vero quando le statistiche dicono una risoluzione (`larghezza > 0`). Cambia di rado, a differenza
+    /// di `statistiche` (ogni secondo): la finestra principale legge questo e non si ridisegna a ogni secondo.
+    var videoConMisura = false
     /// L'ultimo formato chiesto da qui con `formato` in questa sessione (menu della qualità o 60 fps per un'app):
     /// se il telefono manda meno, l'etichetta della qualità dice perché (`MenuQualita`). Nil = nessuna richiesta.
     var formatoChiesto: FormatoVideo?

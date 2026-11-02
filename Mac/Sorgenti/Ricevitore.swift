@@ -41,8 +41,11 @@ final class Ricevitore {
     private(set) var microfonoAcceso = UserDefaults.standard.bool(forKey: Preferenze.microfonoTelefono)
     /// Nell'ultimo secondo è arrivato audio dal telefono scelto.
     private(set) var audioInArrivo = false
-    /// Da 0 a 1, per l'indicatore di livello.
+    /// Da 0 a 1, per l'indicatore di livello. R08: già arrotondato alle tacche dell'indicatore e scritto solo
+    /// quando cambia, così l'indicatore non si ridisegna dieci volte al secondo per niente.
     private(set) var livelloMicrofono = 0.0
+    /// Le tacche dell'indicatore del livello (`IndicatoreLivello`): il livello si arrotonda a queste.
+    nonisolated static let taccheLivelloMicrofono = 12
     @ObservationIgnored private var compitoMicrofono: Task<Void, Never>?
     private(set) var rete: StatoRete = .fermo
 
@@ -101,6 +104,8 @@ final class Ricevitore {
     /// Il telefono scelto è in pausa «sottofondo»: niente «Riconnessione» per 10 minuti, anche se tace o cade.
     var inSottofondo: Bool { attivo?.inSottofondo ?? false }
     var statistiche: Statistiche { attivo?.statistiche ?? Statistiche() }
+    /// R08: il telefono scelto manda video con una risoluzione nota; cambia di rado, a differenza di `statistiche`.
+    var videoConMisura: Bool { attivo?.videoConMisura ?? false }
     /// «Avvio: 0,9 s» (1.11); nil finché il video non è a schermo.
     var tempoAvvio: String? { attivo?.tempoAvvio }
     /// La latenza di ogni secondo, al massimo gli ultimi 60, per il grafico (funzione 31).
@@ -222,6 +227,8 @@ final class Ricevitore {
     /// Il prossimo tentativo di riaprire un ascolto caduto, e quanto aspettare (cresce fino a 30 secondi).
     @ObservationIgnored private var compitoRiapertura: Task<Void, Never>?
     @ObservationIgnored private var attesaRiapertura: Duration = .seconds(1)
+    /// R01: la riga «Visibile in rete» del primo ascolto dopo l'avvio dell'app porta già i millisecondi dall'avvio.
+    @ObservationIgnored private var avvioMisurato = false
     /// Il cavo USB (1.8): il client usbmux apre i canali verso l'iPhone, qui diventano sessioni come le altre.
     private let cavo = ClienteUSB()
     /// Per la diagnosi: un iPhone sul cavo senza l'app aperta, il cavo in pausa…
@@ -517,7 +524,9 @@ final class Ricevitore {
         microfono.suLivello = { [weak self] livello in
             // Spento da qui: un livello rimasto in coda non riaccende l'indicatore.
             guard let self, self.microfonoAcceso || livello == 0 else { return }
-            self.livelloMicrofono = livello
+            let tacche = Double(Ricevitore.taccheLivelloMicrofono)
+            let arrotondato = (max(0, min(1, livello)) * tacche).rounded() / tacche
+            if arrotondato != self.livelloMicrofono { self.livelloMicrofono = arrotondato }
         }
         compitoMicrofono?.cancel()
         compitoMicrofono = Task { [weak self] in
@@ -761,6 +770,9 @@ final class Ricevitore {
         compitoRiapertura = nil
         listener?.cancel()
         listener = nil
+        // R05: gli indirizzi dell'annuncio li riscrive il nuovo ascolto quando è pronto (`.ready`). Fino ad allora
+        // `rinnovaAnnuncioSeServe` non confronta quelli vecchi e non riapre una seconda volta (risveglio dallo stop).
+        indirizziAnnunciati = nil
         avvia()
     }
 
@@ -770,7 +782,13 @@ final class Ricevitore {
             rete = .visibile(porta: listener?.port?.rawValue ?? 0)
             controllaAttesaTelefono()
             let diretto = UserDefaults.standard.bool(forKey: Preferenze.wifiDiretto) ? String(localized: ", Wi-Fi diretto acceso") : ""
-            registra(String(localized: "Visibile in rete sulla porta \(Int(listener?.port?.rawValue ?? 0))\(diretto)"))
+            // R01: solo la prima volta (non dopo un risveglio o una rete nuova), quanto ci mette l'app a farsi trovare.
+            var dallAvvio = ""
+            if !avvioMisurato {
+                avvioMisurato = true
+                if let ms = Self.millisecondiDallAvvioApp() { dallAvvio = String(localized: ", \(ms) ms dall'avvio dell'app") }
+            }
+            registra(String(localized: "Visibile in rete sulla porta \(Int(listener?.port?.rawValue ?? 0))\(diretto + dallAvvio)"))
             aggiornaIndirizzi()
             indirizziAnnunciati = indirizzi
             attesaRiapertura = .seconds(1)
@@ -789,6 +807,19 @@ final class Ricevitore {
         default:
             break
         }
+    }
+
+    /// R01: i millisecondi da quando macOS ha avviato il processo (lo dice il kernel, quindi comprende anche il
+    /// caricamento prima del nostro codice). Nil se la lettura non riesce o il numero non ha senso.
+    nonisolated private static func millisecondiDallAvvioApp() -> Int? {
+        var info = kinfo_proc()
+        var dimensione = MemoryLayout<kinfo_proc>.stride
+        var richiesta: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_PID, getpid()]
+        guard sysctl(&richiesta, UInt32(richiesta.count), &info, &dimensione, nil, 0) == 0 else { return nil }
+        let partenza = info.kp_proc.p_un.__p_starttime
+        let secondi = Date().timeIntervalSince1970 - (Double(partenza.tv_sec) + Double(partenza.tv_usec) / 1_000_000)
+        guard secondi >= 0, secondi < 3600 else { return nil }
+        return Int((secondi * 1000).rounded())
     }
 
     /// Ascolto caduto (porta morta, rete sparita): si riprova da soli dopo 1, 2, 4… fino a 30 secondi (1.12),
@@ -2225,6 +2256,9 @@ final class Ricevitore {
             nuove.effettiMs = misure.effettiMs
             registraMotore(misure, note: motore.prendiNote(), di: telefono)
             telefono.statistiche = nuove
+            // R08: si scrive solo quando cambia, così chi la legge non si ridisegna ogni secondo.
+            let conMisura = nuove.larghezza > 0
+            if telefono.videoConMisura != conMisura { telefono.videoConMisura = conMisura }
             telefono.contaFotogrammi(arrivati: nuove.fps)
             registraNumeri(nuove, di: telefono)
             registraRitardo(nuove, di: telefono, scelto: scelto)

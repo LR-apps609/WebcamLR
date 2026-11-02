@@ -71,10 +71,20 @@ struct FinestraApp: View {
         case .domande:
             VistaDomandeFrequenti()
         case .segnala:
-            ModuloSegnalazione(datiTecnici: ricevitore.datiTecnici, registro: ricevitore.registroComeTesto)
+            SchedaSegnala(ricevitore: ricevitore)
         case .informazioni:
             Informazioni()
         }
+    }
+}
+
+/// «Segnala un bug». R08: una vista a sé perché dati tecnici e registro cambiano spesso (il registro a ogni riga):
+/// letti nel body di `FinestraApp`, ridisegnerebbero anche l'elenco delle schede.
+private struct SchedaSegnala: View {
+    let ricevitore: Ricevitore
+
+    var body: some View {
+        ModuloSegnalazione(datiTecnici: ricevitore.datiTecnici, registro: ricevitore.registroComeTesto)
     }
 }
 

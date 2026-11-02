@@ -208,18 +208,19 @@ final class Riprese {
             dimensioneRegistrazione = 0
             minutiRimasti = nil
             spazioNotificato = false
-            controllaSpazio()
             compitoRegistrazione?.cancel()
             compitoRegistrazione = Task { [weak self] in
+                // Lo spazio libero subito, poi ogni 5 secondi (R12: letto fuori dalla coda principale).
+                await self?.controllaSpazio()
                 var secondi = 0
                 while !Task.isCancelled {
                     try? await Task.sleep(for: .seconds(1))
                     guard let self, !Task.isCancelled else { return }
                     secondi += 1
                     self.secondiRegistrati = secondi
-                    self.leggiDimensione()
+                    await self.leggiDimensione()
                     // Lo spazio libero cambia piano: basta guardarlo ogni 5 secondi.
-                    if secondi % 5 == 0 { self.controllaSpazio() }
+                    if secondi % 5 == 0 { await self.controllaSpazio() }
                 }
             }
         } catch {
@@ -354,21 +355,35 @@ final class Riprese {
     }
 
     /// Dimensione del file in scrittura (funzione 37). Si legge dal disco ogni volta, senza cache.
-    private func leggiDimensione() {
-        guard let file = fileRegistrazione,
-              let attributi = try? FileManager.default.attributesOfItem(atPath: file.path(percentEncoded: false)),
-              let byte = attributi[.size] as? NSNumber else { return }
-        dimensioneRegistrazione = byte.int64Value
+    /// R12: la lettura dal disco fuori dalla coda principale; il risultato vale solo se si registra ancora quel file.
+    private func leggiDimensione() async {
+        guard let file = fileRegistrazione else { return }
+        let letta = await Task.detached(priority: .utility) { () -> Int64? in
+            guard let attributi = try? FileManager.default.attributesOfItem(atPath: file.path(percentEncoded: false)),
+                  let byte = attributi[.size] as? NSNumber else { return nil }
+            return byte.int64Value
+        }.value
+        // Intanto la registrazione può essere finita o ripartita su un altro file.
+        guard let letta, fileRegistrazione == file else { return }
+        dimensioneRegistrazione = letta
     }
 
     /// Spazio libero «per le cose importanti», lo stesso numero che usa il Finder (funzione 37), in minuti al ritmo
     /// attuale del file. Sotto `minutiMinimi` l'avviso nella finestra e, a finestra non davanti, una notifica (M4).
-    private func controllaSpazio() {
-        guard let file = fileRegistrazione, let inizio = inizioRegistrazione else { return }
-        var cartella = file.deletingLastPathComponent()
-        cartella.removeAllCachedResourceValues()
-        guard let valori = try? cartella.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey]),
-              let liberi = valori.volumeAvailableCapacityForImportantUsage else { return }
+    /// R12: la domanda al disco fuori dalla coda principale; il conto e l'avviso qui, se si registra ancora quel file.
+    private func controllaSpazio() async {
+        guard let file = fileRegistrazione, inizioRegistrazione != nil else { return }
+        let cartellaFile = file.deletingLastPathComponent()
+        let letti = await Task.detached(priority: .utility) { () -> Int64? in
+            var cartella = cartellaFile
+            cartella.removeAllCachedResourceValues()
+            guard let valori = try? cartella.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey]) else {
+                return nil
+            }
+            return valori.volumeAvailableCapacityForImportantUsage
+        }.value
+        // Intanto la registrazione può essere finita o ripartita su un altro file.
+        guard let liberi = letti, fileRegistrazione == file, let inizio = inizioRegistrazione else { return }
         // Il ritmo si misura dopo 10 secondi: prima il file ha solo l'intestazione e qualche frammento.
         let secondi = Int64(Date.now.timeIntervalSince(inizio))
         let byteAlSecondo = secondi >= 10 && dimensioneRegistrazione > 0

@@ -72,9 +72,11 @@ final class NegozioPro {
                 await self.gestisci(risultato)
             }
         }
+        // R02: diritti e prodotto in parallelo (entrambi sull'attore principale, si alternano alle attese).
         Task {
-            await aggiornaDiritti()
-            await caricaProdotto()
+            async let diritti: Void = self.aggiornaDiritti()
+            async let lettura: Void = self.caricaProdotto()
+            _ = await (diritti, lettura)
         }
     }
 
@@ -104,13 +106,36 @@ final class NegozioPro {
         caricamentoProdotto = true
         prodottoNonTrovato = false
         do {
-            let prodotti = try await Product.products(for: [Self.idProdotto])
+            let prodotti = try await Self.prodotti(per: [Self.idProdotto], secondiMassimi: 10)
             prodotto = prodotti.first
         } catch {
             prodotto = nil
         }
         prodottoNonTrovato = prodotto == nil
         caricamentoProdotto = false
+    }
+
+    /// R03: `Product.products(for:)` senza rete può restare appeso a lungo; dopo `secondiMassimi` si lancia un errore
+    /// e `caricaProdotto` finisce nel ramo già usato per gli errori di rete («Riprova»). Niente gruppo di task: un
+    /// gruppo aspetta comunque la fine di tutti i figli, anche se StoreKit ignorasse l'annullamento.
+    private static func prodotti(per id: Set<String>, secondiMassimi: Int) async throws -> [Product] {
+        let gara = PrimoArrivato()
+        return try await withCheckedThrowingContinuation { (continuazione: CheckedContinuation<[Product], Error>) in
+            let richiesta = Task { @MainActor in
+                do {
+                    let prodotti = try await Product.products(for: id)
+                    if gara.arriva() { continuazione.resume(returning: prodotti) }
+                } catch {
+                    if gara.arriva() { continuazione.resume(throwing: error) }
+                }
+            }
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(secondiMassimi))
+                guard gara.arriva() else { return }
+                richiesta.cancel()
+                continuazione.resume(throwing: CancellationError())
+            }
+        }
     }
 
     /// «Sblocca Pro»: il foglio di acquisto di Apple.
@@ -233,5 +258,18 @@ enum LimitiGratis {
         if let tempo = comando.tempo, tempo != 0 { comando.tempo = nil }
         if let bianco = comando.bianco, bianco != 0 { comando.bianco = nil }
         return comando
+    }
+}
+
+/// R03: tra risposta di StoreKit e tempo scaduto vince il primo; la continuazione riprende una volta sola.
+@MainActor
+private final class PrimoArrivato {
+    private var finita = false
+
+    /// Vero solo alla prima chiamata.
+    func arriva() -> Bool {
+        guard !finita else { return false }
+        finita = true
+        return true
     }
 }

@@ -1000,16 +1000,8 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
 
     val haLogo: Boolean get() = grafica.haLogo
 
-    fun impostaMostraLogo(mostra: Boolean) {
-        if (mostra && !pro) return
-        cambiaEffetti(effettiInterni.value.copy(mostraLogo = mostra))
-    }
-
     /** Il pulsante «Pausa» di «In onda»: il video si ferma, il collegamento resta aperto. */
     fun impostaPausaUtente(attiva: Boolean) = pausaDecisa.impostaPausaUtente(attiva)
-
-    /** Mentre si guarda il video sul telefono senza nessuno al computer (per esempio «Prova la webcam»): niente pausa. */
-    fun trattieniPausa(attiva: Boolean) = pausaDecisa.trattieni(attiva)
 
     fun nascondiAvvisoPostura() {
         avvisoPosturaInterno.value = null

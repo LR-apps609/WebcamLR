@@ -125,13 +125,6 @@ object Geometria {
         return floatArrayOf(minOf(x1, x2), minOf(y1, y2), maxOf(x1, x2), maxOf(y1, y2))
     }
 
-    /** Un rettangolo (sinistra, alto, destra, basso, normalizzati) dalla fotocamera al video. */
-    fun rettangoloAlVideo(sinistra: Float, alto: Float, destra: Float, basso: Float, p: ParametriGeometria): FloatArray {
-        val (x1, y1) = fotocameraAlVideo(sinistra, alto, p)
-        val (x2, y2) = fotocameraAlVideo(destra, basso, p)
-        return floatArrayOf(minOf(x1, x2), minOf(y1, y2), maxOf(x1, x2), maxOf(y1, y2))
-    }
-
     /**
      * Da un rettangolo delle regioni di Camera2 (volti, AE) al fotogramma della fotocamera, normalizzato.
      * `campo` è il campo visivo nelle stesse coordinate (con CONTROL_ZOOM_RATIO tutta l'area attiva, altrimenti il

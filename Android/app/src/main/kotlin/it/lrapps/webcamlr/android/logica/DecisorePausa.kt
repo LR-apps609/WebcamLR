@@ -82,7 +82,6 @@ class DecisorePausa(
     private var anteprimaRicevuta = false
     private var anteprimaVisibile = false
     private var appInOnda = false
-    private var trattenuta = false
     private var attesaNessunaApp: Annullabile? = null
 
     fun avvia() {
@@ -141,12 +140,6 @@ class DecisorePausa(
         nessunaApp = false
     }
 
-    /** Mentre qualcuno guarda il video sul telefono (per esempio «Prova la webcam») niente pausa per «nessuna app». */
-    fun trattieni(attiva: Boolean) {
-        trattenuta = attiva
-        valutaNessunaApp()
-    }
-
     private fun valutaNessunaApp() {
         // Decisione del 27 ottobre: niente più pausa «nessuna app» (vedi sopra). Se una pausa del genere fosse
         // rimasta da prima, la si toglie.
@@ -159,7 +152,7 @@ class DecisorePausa(
             }
             return
         }
-        val nessunoGuarda = inFunzione && anteprimaRicevuta && !anteprimaVisibile && !appInOnda && !trattenuta
+        val nessunoGuarda = inFunzione && anteprimaRicevuta && !anteprimaVisibile && !appInOnda
         if (!nessunoGuarda) {
             attesaNessunaApp?.annulla()
             attesaNessunaApp = null

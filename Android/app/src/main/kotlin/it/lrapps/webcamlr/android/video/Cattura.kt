@@ -53,9 +53,6 @@ data class ObiettivoAndroid(
         }
 }
 
-/** Fotocamera non disponibile: il messaggio dice cosa fare. */
-class ErroreCattura(messaggio: String) : Exception(messaggio)
-
 /**
  * La fotocamera con Camera2 (funziona su tutti i telefoni da Android 5, senza librerie): apre l'obiettivo scelto e
  * manda i fotogrammi alla Surface del [Renderizzatore] (e, per il QR code, a una seconda Surface). Comandi:

@@ -567,9 +567,14 @@ public sealed partial class MainWindow
     /// Lo spazio libero sul disco della registrazione, in minuti al ritmo attuale (windows.md 1.4): sotto i 10 l'avviso
     /// in ambra «Spazio quasi finito: restano circa N minuti».
     /// </summary>
+    private bool spazioInControllo;
+
     private async Task ControllaSpazioAsync()
     {
-        if (registrazione is not { } attiva) return;
+        // Un disco di rete che dorme può tenere DriveInfo fermo più dei 5 s del tick: un controllo alla volta, così le
+        // risposte non si accavallano (una vecchia non sovrascrive una nuova) e i Task.Run non si accumulano.
+        if (registrazione is not { } attiva || spazioInControllo) return;
+        spazioInControllo = true;
         (int Minuti, long Liberi)? esito;
         try
         {
@@ -582,6 +587,10 @@ public sealed partial class MainWindow
         catch (Exception)
         {
             esito = null;
+        }
+        finally
+        {
+            spazioInControllo = false;
         }
         // Intanto la registrazione può essere finita o ricominciata: la risposta vale solo per la stessa.
         if (registrazione != attiva || esito == spazioScarso) return;

@@ -527,12 +527,7 @@ struct SchermataInOnda: View {
                         .position(Self.dentro(visibile.isNull ? video : visibile, punto: punto, margine: 42))
                 }
                 if zoomVisibile {
-                    Text(verbatim: Double(sessione.zoom).formatted(.number.precision(.fractionLength(1))) + "×")
-                        .font(.stile(.corpo, .numeriEvidenti))
-                        .foregroundStyle(Tema.testo)
-                        .padding(.horizontal, Spazi.piccolo)
-                        .frame(minHeight: 34)
-                        .background(Veli.coloreMedio, in: Capsule())
+                    EtichettaZoom(sessione: sessione)
                         .position(x: video.midX, y: video.midY)
                         .transition(.opacity)
                 }
@@ -2000,6 +1995,21 @@ private struct GrigliaTerzi: View {
             }
             .stroke(Tema.testo.opacity(0.18), lineWidth: 1)
         }
+    }
+}
+
+/// Lo zoom al centro mentre si pizzica («1,0×»). R08: solo questa vista legge `sessione.zoom`, che cambia a ogni
+/// evento del pizzico: la schermata intera non si ricalcola.
+private struct EtichettaZoom: View {
+    let sessione: SessioneTelefono
+
+    var body: some View {
+        Text(verbatim: Double(sessione.zoom).formatted(.number.precision(.fractionLength(1))) + "×")
+            .font(.stile(.corpo, .numeriEvidenti))
+            .foregroundStyle(Tema.testo)
+            .padding(.horizontal, Spazi.piccolo)
+            .frame(minHeight: 34)
+            .background(Veli.coloreMedio, in: Capsule())
     }
 }
 

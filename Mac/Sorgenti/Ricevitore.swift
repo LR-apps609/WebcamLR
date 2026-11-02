@@ -816,7 +816,7 @@ final class Ricevitore {
         var dimensione = MemoryLayout<kinfo_proc>.stride
         var richiesta: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_PID, getpid()]
         guard sysctl(&richiesta, UInt32(richiesta.count), &info, &dimensione, nil, 0) == 0 else { return nil }
-        let partenza = info.kp_proc.p_starttime
+        let partenza = info.kp_proc.p_un.__p_starttime
         let secondi = Date().timeIntervalSince1970 - (Double(partenza.tv_sec) + Double(partenza.tv_usec) / 1_000_000)
         guard secondi >= 0, secondi < 3600 else { return nil }
         return Int((secondi * 1000).rounded())

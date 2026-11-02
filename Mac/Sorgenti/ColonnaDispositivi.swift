@@ -706,6 +706,7 @@ private struct Batteria: View {
         .foregroundStyle(bassa ? AnyShapeStyle(Tema.ambra) : AnyShapeStyle(.testoNota))
         .fixedSize()
         .help(inCarica ? "Batteria del telefono: \(percentuale)%, in carica" : "Batteria del telefono: \(percentuale)%")
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel(inCarica ? "Batteria del telefono: \(percentuale)%, in carica" : "Batteria del telefono: \(percentuale)%")
     }
 }

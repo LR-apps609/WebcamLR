@@ -55,6 +55,10 @@ class AnalisiImmagine(context: Context) {
     private var maschereMulticlasse = 0
     private var rilevatore: FaceDetector? = null
     private var mascheraPrecedente: FloatArray? = null
+    /** R18: l'array della maschera di due giri fa, ormai libero: si riusa invece di allocarne uno a ogni maschera.
+     *  Vive solo sul thread dell'analisi (al thread GL va una copia di [mascheraUscita]) ed è sempre diverso da
+     *  [mascheraPrecedente]. */
+    private var mascheraLibera: FloatArray? = null
     private var mascheraUscita = ByteArray(0)
     private var ultimiVolti = 0L
 
@@ -138,7 +142,7 @@ class AnalisiImmagine(context: Context) {
                     val valori = ByteBufferExtractor.extract(maschera).order(ByteOrder.nativeOrder()).asFloatBuffer()
                     val n = lm * am
                     if (valori.remaining() >= n) {
-                        val attuale = FloatArray(n).also { valori.get(it) }
+                        val attuale = (mascheraLibera?.takeIf { it.size == n } ?: FloatArray(n)).also { valori.get(it) }
                         if (complemento) for (i in 0 until n) attuale[i] = 1f - attuale[i]
                         // Filtro adattivo, senza ritardo: dove la maschera cambia poco (tremolio del bordo) un filo di
                         // quella di prima, dove cambia (la persona si muove) subito la nuova. Niente scie.
@@ -155,6 +159,7 @@ class AnalisiImmagine(context: Context) {
                             attuale[i] = v
                             mascheraUscita[i] = (v.coerceIn(0f, 1f) * 255f + 0.5f).toInt().toByte()
                         }
+                        mascheraLibera = mascheraPrecedente
                         mascheraPrecedente = attuale
                         suMaschera?.invoke(mascheraUscita.copyOf(), lm, am, specchiata, rotazione)
                     }

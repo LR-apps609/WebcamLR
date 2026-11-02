@@ -305,11 +305,14 @@ fun SchermataInOnda(
             // Il nero delle bande attorno al video, come nella Fotocamera: non è un colore dell'interfaccia.
             .background(Color.Black)
             // Qualsiasi tocco, anche sui pulsanti, fa ripartire i 30 secondi; il tocco non si consuma.
+            // R08: durante un pizzico o un trascinamento gli eventi arrivano a ogni fotogramma; si scrive al massimo ogni
+            // 250 ms, così i due timer legati a ultimoTocco non ripartono di continuo (scarto massimo: 0,25 s).
             .pointerInput(Unit) {
                 awaitPointerEventScope {
                     while (true) {
                         awaitPointerEvent(PointerEventPass.Initial)
-                        ultimoTocco = SystemClock.elapsedRealtime()
+                        val ora = SystemClock.elapsedRealtime()
+                        if (ora - ultimoTocco >= 250) ultimoTocco = ora
                     }
                 }
             },

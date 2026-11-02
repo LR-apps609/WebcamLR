@@ -157,6 +157,8 @@ public sealed partial class MainWindow
         MostraComandiManuali();
         aggiornoComandi = prima;
         AggiornaDisponibilita();
+        // «Tra un attimo» via appena arrivano le capacità (prima lo toglieva il giro di AggiornaTelefono di ogni secondo).
+        MostraDettagliFotocamera();
         MostraQualita();
     }
 

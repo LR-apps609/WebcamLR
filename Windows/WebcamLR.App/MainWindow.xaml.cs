@@ -529,12 +529,7 @@ public sealed partial class MainWindow : Window
         // Con un telefono la strada è sulla sua scheda e nell'etichetta sul video (con la scelta): qui servono senza.
         SezioneConnessione.Visibility = Visibile(telefono is null);
 
-        // Perché i comandi sono grigi. Durante la riconnessione il telefono c'è ancora: non si chiede di collegarne uno.
-        DettagliFotocamera.Text = telefono is null ? Testi.T("Comandi_SiAttivano")
-            : statoCollegamento == FaseCollegamento.Riconnessione ? Testi.T("Comandi_MiRicollego")
-            : capacitaAttuali is null ? Testi.T("Comandi_TraUnAttimo")
-            : "";
-        DettagliFotocamera.Visibility = Visibile(DettagliFotocamera.Text.Length > 0);
+        MostraDettagliFotocamera();
         // P21: con due telefoni si dice per quale valgono i comandi a destra.
         TelefonoDeiComandi.Visibility = Visibile(telefoni.Conteggio > 1 && telefono is not null);
         NomeTelefonoDeiComandi.Text = telefono?.Nome ?? "";
@@ -548,6 +543,28 @@ public sealed partial class MainWindow : Window
         MostraCaldo(CaldoTelefono, scelto.Stato);
         AutomationProperties.SetName(SchedaTelefono, scelto.InRiconnessione
             ? Testi.T("Accessibilita_TelefonoInRiconnessione", scelto.Nome) : Testi.T("Accessibilita_TelefonoCollegato", scelto.Nome));
+    }
+
+    /// <summary>
+    /// R08: ogni secondo, con le statistiche del telefono nella webcam, solo ciò che mostra i numeri (latenza, fps,
+    /// qualità): il chip sul video con i numeri e la qualità aperti, l'icona accanto all'orologio e il suo suggerimento,
+    /// i dettagli della scheda. Niente AggiornaDisponibilita: le statistiche non cambiano quali comandi si usano.
+    /// </summary>
+    private void AggiornaNumeriTelefono()
+    {
+        AggiornaChip();
+        AggiornaIcona();
+        if (telefono is not null && Scelto is { } scelto) DettagliTelefono.Text = DettagliScheda(scelto);
+    }
+
+    /// <summary>Perché i comandi sono grigi. Durante la riconnessione il telefono c'è ancora: non si chiede di collegarne uno.</summary>
+    private void MostraDettagliFotocamera()
+    {
+        DettagliFotocamera.Text = telefono is null ? Testi.T("Comandi_SiAttivano")
+            : statoCollegamento == FaseCollegamento.Riconnessione ? Testi.T("Comandi_MiRicollego")
+            : capacitaAttuali is null ? Testi.T("Comandi_TraUnAttimo")
+            : "";
+        DettagliFotocamera.Visibility = Visibile(DettagliFotocamera.Text.Length > 0);
     }
 
     /// <summary>«Wi-Fi · 38 ms · Avvio: 0,9 s», oppure cosa sta succedendo (riconnessione, pausa), come la scheda del Mac.</summary>

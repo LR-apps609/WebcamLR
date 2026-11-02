@@ -796,7 +796,7 @@ struct SchermataInOnda: View {
                 .textCase(.uppercase)
                 .foregroundStyle(Tema.testoSecondario)
             }
-            if sessione.latenzaMs != nil {
+            if let qualita = sessione.qualitaCollegamento {
                 TaccheQualita(qualita)
             }
         }
@@ -847,7 +847,7 @@ struct SchermataInOnda: View {
                 .fixedSize()
             stradaETacche(conStrada: conStrada)
         }
-        .padding(.trailing, conStrada || sessione.latenzaMs != nil ? Spazi.piccolo : 0)
+        .padding(.trailing, conStrada || sessione.qualitaCollegamento != nil ? Spazi.piccolo : 0)
     }
 
     /// Con più telefoni, su quello che non è nella webcam (interfaccia finale, «Due telefoni»): grande, in basso,
@@ -872,7 +872,7 @@ struct SchermataInOnda: View {
     private var etichettaStato: String {
         guard sessione.stato == .collegato else { return testoStato }
         let conStrada = tipoVisibile.map { "\(testoStato), \($0.testo)" } ?? testoStato
-        guard sessione.latenzaMs != nil else { return conStrada }
+        guard let qualita = sessione.qualitaCollegamento else { return conStrada }
         return String(localized: "\(conStrada), collegamento \(qualita.testo.lowercased())")
     }
 
@@ -922,11 +922,6 @@ struct SchermataInOnda: View {
         case .collegato: String(localized: "Collegato")
         default: testoStato
         }
-    }
-
-    /// Stesse soglie di Mac e Windows (Stile `QualitaCollegamento`), con i fotogrammi scartati dal telefono.
-    private var qualita: QualitaCollegamento {
-        QualitaCollegamento(latenzaMs: sessione.latenzaMs ?? 0, perdite: sessione.perditeRecenti)
     }
 
     // MARK: - Avvisi
@@ -1000,7 +995,7 @@ struct SchermataInOnda: View {
             if let consiglio { return String(localized: "Rete lenta: qualità abbassata da sola. \(consiglio).") }
             return String(localized: "Rete lenta: qualità abbassata da sola")
         }
-        if sessione.latenzaMs != nil, qualita == .debole, let consiglio { return consiglio }
+        if sessione.qualitaCollegamento == .debole, let consiglio { return consiglio }
         return nil
     }
 
@@ -1283,11 +1278,11 @@ struct SchermataInOnda: View {
     /// collegati; non si tocca (lo stato a sinistra apre i Dettagli) e VoiceOver lo sente già nella pillola.
     @ViewBuilder
     private var chipOrecchia: some View {
-        if sessione.stato == .collegato, tipoVisibile != nil || sessione.latenzaMs != nil {
+        if sessione.stato == .collegato, tipoVisibile != nil || sessione.qualitaCollegamento != nil {
             ViewThatFits(in: .horizontal) {
                 contenutoChip(conParola: true)
                 contenutoChip(conParola: false)
-                if sessione.latenzaMs != nil {
+                if let qualita = sessione.qualitaCollegamento {
                     TaccheQualita(qualita)
                         .chipInformativo(.video)
                 }
@@ -1311,7 +1306,7 @@ struct SchermataInOnda: View {
                         .fixedSize()
                 }
             }
-            if sessione.latenzaMs != nil {
+            if let qualita = sessione.qualitaCollegamento {
                 TaccheQualita(qualita)
             }
         }

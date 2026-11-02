@@ -3,6 +3,7 @@ import CoreMedia
 import Foundation
 import Network
 import Observation
+import Stile
 import UIKit
 import WebcamLRProtocollo
 
@@ -40,7 +41,12 @@ final class SessioneTelefono {
     let cattura = Cattura()
 
     private(set) var stato: Stato = .collegamento
+    /// Arriva ogni secondo: la leggono solo viste piccole (Dettagli, schermo oscurato). R08: la schermata «In onda»
+    /// legge `qualitaCollegamento`, che cambia di rado.
     private(set) var latenzaMs: Int?
+    /// R08: la qualità in parole (Stile `QualitaCollegamento`, stesse soglie di Mac e Windows, con i fotogrammi
+    /// scartati dal telefono); `nil` senza latenza. Si assegna solo quando cambia (`aggiornaQualita`).
+    private(set) var qualitaCollegamento: QualitaCollegamento?
     /// Un'app sul computer sta usando la webcam: il rosso «IN ONDA».
     private(set) var inOnda: InOnda?
     /// Con più telefoni (`in-onda.selezionato`): vero = questo telefono è quello nella webcam. `nil` = il computer
@@ -943,6 +949,7 @@ final class SessioneTelefono {
         codificatore.azzeraRete()
         perditeUltimiSecondi = []
         perditeRecenti = 0
+        aggiornaQualita()
         reteDebole = false
         collegamento = nuovo
         nuovo.avvia()
@@ -987,7 +994,7 @@ final class SessioneTelefono {
                     collegamento.chiudi()
                     codiceConferma = nil
                     // Il `chiuso` di questo collegamento non arriva più qui: si pulisce come lì.
-                    latenzaMs = nil
+                    impostaLatenza(nil)
                     inOnda = nil
                     selezionato = nil
                     tipoCollegamento = nil
@@ -1046,8 +1053,7 @@ final class SessioneTelefono {
             Task { await preparaVideo() }
 
         case .messaggio(.latenza(let latenza)):
-            latenzaMs = latenza.ms
-            ultimaLatenzaMs = latenza.ms
+            impostaLatenza(latenza.ms)
             if let tipo = tipoCollegamento ?? (viaCavo ? TipoCollegamento.cavoUSB : nil) {
                 latenzaPerStrada[tipo.nomeProtocollo] = latenza.ms
             }
@@ -1106,7 +1112,7 @@ final class SessioneTelefono {
                 registro.aggiungi(String(localized: "Wi-Fi chiuso durante il passaggio al cavo USB (\(motivo.perRegistro))"))
                 return
             }
-            latenzaMs = nil
+            impostaLatenza(nil)
             inOnda = nil
             selezionato = nil
             tipoCollegamento = nil
@@ -1435,7 +1441,7 @@ final class SessioneTelefono {
         connessioneCavo?.cancel()
         connessioneCavo = nil
         vecchio.chiudi()
-        latenzaMs = nil
+        impostaLatenza(nil)
         tipoCollegamento = nil
         codiceConferma = nil
         computerWiFi = wifi
@@ -1564,7 +1570,7 @@ final class SessioneTelefono {
         }
         guard let rinviata = chiusuraRinviata else { return }
         chiusuraRinviata = nil
-        latenzaMs = nil
+        impostaLatenza(nil)
         inOnda = nil
         selezionato = nil
         tipoCollegamento = nil
@@ -1620,6 +1626,7 @@ final class SessioneTelefono {
         codificatore.azzeraRete()
         perditeUltimiSecondi = []
         perditeRecenti = 0
+        aggiornaQualita()
         reteDebole = false
         stato = .collegato
         registro.aggiungi(String(localized: "Collegato a \(nome)"))
@@ -1645,6 +1652,20 @@ final class SessioneTelefono {
         // Si assegna solo se cambia, così l'interfaccia non si ridisegna ogni secondo.
         if somma != perditeRecenti { perditeRecenti = somma }
         if debole != reteDebole { reteDebole = debole }
+        aggiornaQualita()
+    }
+
+    /// R08: latenza (o `nil` quando il collegamento se ne va), assegnata solo se cambia; `ultimaLatenzaMs` resta
+    /// l'ultima nota anche dopo.
+    private func impostaLatenza(_ ms: Int?) {
+        if ms != latenzaMs { latenzaMs = ms }
+        if let ms, ms != ultimaLatenzaMs { ultimaLatenzaMs = ms }
+        aggiornaQualita()
+    }
+
+    private func aggiornaQualita() {
+        let nuova = latenzaMs.map { QualitaCollegamento(latenzaMs: $0, perdite: perditeRecenti) }
+        if nuova != qualitaCollegamento { qualitaCollegamento = nuova }
     }
 
     /// Al `benvenuto`: se la fotocamera è già accesa basta un nuovo `formato` con un fotogramma chiave

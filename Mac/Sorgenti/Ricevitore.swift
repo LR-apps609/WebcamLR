@@ -768,6 +768,9 @@ final class Ricevitore {
         compitoRiapertura = nil
         listener?.cancel()
         listener = nil
+        // R05: gli indirizzi dell'annuncio li riscrive il nuovo ascolto quando è pronto (`.ready`). Fino ad allora
+        // `rinnovaAnnuncioSeServe` non confronta quelli vecchi e non riapre una seconda volta (risveglio dallo stop).
+        indirizziAnnunciati = nil
         avvia()
     }
 

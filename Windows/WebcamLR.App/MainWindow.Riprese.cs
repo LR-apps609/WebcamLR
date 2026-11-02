@@ -451,7 +451,9 @@ public sealed partial class MainWindow
             {
                 // Lo spazio libero cambia piano: basta guardarlo ogni 5 secondi.
                 if (++secondiRegistrazione % 5 == 0) ControllaSpazio();
-                MostraRegistrazione();
+                // R08: ogni secondo solo durata e spazio; a registrazione finita il giro completo ferma anche l'orologio.
+                if (registrazione is null) MostraRegistrazione();
+                else MostraDurataRegistrazione();
             };
         }
         orologioRegistrazione.Start();
@@ -513,8 +515,7 @@ public sealed partial class MainWindow
     /// </summary>
     private void MostraRegistrazione()
     {
-        var attiva = registrazione;
-        if (attiva is null)
+        if (registrazione is null)
         {
             orologioRegistrazione?.Stop();
             spazioScarso = null;
@@ -524,7 +525,18 @@ public sealed partial class MainWindow
             AutomationPropertiesNome(PulsanteRegistra, Testi.T("Riprese_Registra"));
             Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(PulsanteRegistra, Testi.T("Riprese_RegistraSpiegazione"));
         }
-        else
+        MostraDurataRegistrazione();
+        AggiornaDisponibilita();
+    }
+
+    /// <summary>
+    /// R08: ogni secondo mentre si registra, solo ciò che cambia col tempo: durata e megabyte (sotto il nome, nel
+    /// suggerimento e per l'Assistente vocale), l'avviso dello spazio e l'icona accanto all'orologio. I comandi
+    /// disponibili cambiano solo all'inizio e alla fine (MostraRegistrazione).
+    /// </summary>
+    private void MostraDurataRegistrazione()
+    {
+        if (registrazione is { } attiva)
         {
             var durata = DateTime.UtcNow - inizioRegistrazione;
             IconaRegistra.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["Tally"];
@@ -548,7 +560,6 @@ public sealed partial class MainWindow
             AvvisoSpazio.Visibility = Visibility.Collapsed;
         }
         RegistraSpazio(spazioScarso is not null);
-        AggiornaDisponibilita();
         AggiornaIcona();
     }
 

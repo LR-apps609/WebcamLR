@@ -854,21 +854,8 @@ struct ContenutoPrincipale: View {
     /// nell'aiuto e per VoiceOver.
     @ViewBuilder private func pulsanteRegistra(larghezza: CGFloat, soloIcona: Bool) -> some View {
         if let inizio = riprese.inizioRegistrazione {
-            // Letta qui, sulla coda principale: la chiusura del TimelineView resta senza stato di Riprese.
-            let dimensione = Riprese.testoByte(riprese.dimensioneRegistrazione)
-            TimelineView(.periodic(from: inizio, by: 1)) { contesto in
-                let secondi = max(0, Int(contesto.date.timeIntervalSince(inizio)))
-                Button {
-                    riprese.fermaRegistrazione()
-                } label: {
-                    Label("Registra", systemImage: "stop.circle.fill")
-                }
-                .buttonStyle(ComandoRegia(larghezza: larghezza, soloIcona: soloIcona,
-                                          registrazione: String(format: "%02d:%02d", secondi / 60, secondi % 60)))
-            }
-            .help("Ferma la registrazione e la salva in Filmati › WebcamLR (⌘R). Finora: \(dimensione)")
-            .accessibilityLabel("Ferma la registrazione")
-            .accessibilityValue(dimensione)
+            // R08: la dimensione cambia ogni secondo; la legge solo `PulsanteRegistraInCorso`, non tutta la finestra.
+            PulsanteRegistraInCorso(riprese: riprese, inizio: inizio, larghezza: larghezza, soloIcona: soloIcona)
         } else {
             Button {
                 riprese.avviaRegistrazione()
@@ -966,6 +953,33 @@ struct ContenutoPrincipale: View {
 }
 
 // MARK: - Componenti
+
+/// «Registra» mentre registra (beta 4): icona «ferma», «● 12:31» e la dimensione del file nell'aiuto e per VoiceOver.
+/// R08: una vista a sé perché `dimensioneRegistrazione` si aggiorna ogni secondo e così si ridisegna solo questa.
+private struct PulsanteRegistraInCorso: View {
+    let riprese: Riprese
+    let inizio: Date
+    let larghezza: CGFloat
+    let soloIcona: Bool
+
+    var body: some View {
+        // Letta qui, sulla coda principale: la chiusura del TimelineView resta senza stato di Riprese.
+        let dimensione = Riprese.testoByte(riprese.dimensioneRegistrazione)
+        TimelineView(.periodic(from: inizio, by: 1)) { contesto in
+            let secondi = max(0, Int(contesto.date.timeIntervalSince(inizio)))
+            Button {
+                riprese.fermaRegistrazione()
+            } label: {
+                Label("Registra", systemImage: "stop.circle.fill")
+            }
+            .buttonStyle(ComandoRegia(larghezza: larghezza, soloIcona: soloIcona,
+                                      registrazione: String(format: "%02d:%02d", secondi / 60, secondi % 60)))
+        }
+        .help("Ferma la registrazione e la salva in Filmati › WebcamLR (⌘R). Finora: \(dimensione)")
+        .accessibilityLabel("Ferma la registrazione")
+        .accessibilityValue(dimensione)
+    }
+}
 
 /// I numeri di sempre, a un clic dal chip della qualità: risoluzione, fotogrammi, formato, velocità, latenza
 /// e il grafico dell'ultimo minuto (funzioni 28 e 31).

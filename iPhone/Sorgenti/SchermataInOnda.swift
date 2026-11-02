@@ -230,7 +230,11 @@ struct SchermataInOnda: View {
         }
         .onChange(of: livellaAccesa) { _, accesa in
             // Si può accendere dalle Impostazioni aperte da qui.
-            if accesa { livella.avvia() } else { livella.ferma() }
+            if accesa && !sessione.oscurato { livella.avvia() } else { livella.ferma() }
+        }
+        // R17: a schermo oscurato la livella non si vede: niente sensori di movimento finché non si riaccende.
+        .onChange(of: sessione.oscurato) { _, oscurato in
+            if oscurato { livella.ferma() } else if livellaAccesa { livella.avvia() }
         }
         .onChange(of: avvisiAttivi.map(\.id)) { _, _ in
             withAnimation { avvisi.aggiorna(avvisiAttivi) }

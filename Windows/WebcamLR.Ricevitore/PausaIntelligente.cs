@@ -56,6 +56,14 @@ public static class PausaIntelligente
         registra || (finestraMostrata && (mini || !ridottaAIcona));
 
     /// <summary>
+    /// R18: la finestra mostra davvero l'anteprima (aperta o mini, non ridotta a icona né nascosta accanto all'orologio).
+    /// Diversa da <see cref="AnteprimaVisibile"/>: la registrazione serve il video, non il disegno dell'anteprima, che a
+    /// finestra nascosta è lavoro sprecato sul thread dell'interfaccia.
+    /// </summary>
+    public static bool FinestraMostrata(bool finestraMostrata, bool ridottaAIcona, bool mini) =>
+        finestraMostrata && (mini || !ridottaAIcona);
+
+    /// <summary>
     /// P21: il telefono che non è nella webcam si vede solo nel riquadro piccolo, quindi solo nella finestra intera
     /// (non mini, non ridotta a icona né nascosta) e con il riquadro aperto. La registrazione non conta: registra
     /// solo il telefono nella webcam.

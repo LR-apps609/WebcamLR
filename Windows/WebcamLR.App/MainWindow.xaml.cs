@@ -136,9 +136,13 @@ public sealed partial class MainWindow : Window
         FinestraApp.Registro = registro;
         BarraCavo.CloseButtonClick += (_, _) => suggerimentoCavoChiuso = true;
         // Il permesso del firewall o il profilo della rete cambiano senza avvisare: senza telefono si ricontrolla.
+        // R13: solo a finestra visibile (la diagnosi si vede solo lì); alla riapertura la rifà MostraFinestra.
         controlloDiagnosi = coda.CreateTimer();
         controlloDiagnosi.Interval = TimeSpan.FromSeconds(10);
-        controlloDiagnosi.Tick += (_, _) => { if (statoCollegamento == FaseCollegamento.NessunTelefono) _ = AggiornaDiagnosiAsync(); };
+        controlloDiagnosi.Tick += (_, _) =>
+        {
+            if (statoCollegamento == FaseCollegamento.NessunTelefono && AppWindow.IsVisible) _ = AggiornaDiagnosiAsync();
+        };
         controlloDiagnosi.Start();
         reteAssestata = coda.CreateTimer();
         reteAssestata.Interval = TimeSpan.FromSeconds(1.5);
@@ -344,9 +348,12 @@ public sealed partial class MainWindow : Window
         {
             if (popup.Child is not ContentDialog aperta) continue;
             var chiusa = new TaskCompletionSource();
-            aperta.Closed += (_, _) => chiusa.TrySetResult();
+            void SuChiusa(ContentDialog origine, ContentDialogClosedEventArgs evento) => chiusa.TrySetResult();
+            aperta.Closed += SuChiusa;
             aperta.Hide();
             await Task.WhenAny(chiusa.Task, Task.Delay(1000));
+            // R05: il gestore via, così la finestra chiusa non tiene in vita questo TaskCompletionSource.
+            aperta.Closed -= SuChiusa;
         }
     }
 
@@ -370,6 +377,7 @@ public sealed partial class MainWindow : Window
 
     public void MostraFinestra()
     {
+        var eraNascosta = !AppWindow.IsVisible;
         AppWindow.Show();
         if (massimizzaAllaPrimaApertura && AppWindow.Presenter is OverlappedPresenter presentatore)
         {
@@ -377,6 +385,8 @@ public sealed partial class MainWindow : Window
             presentatore.Maximize();
         }
         Activate();
+        // R13: nel vassoio la diagnosi non gira (controlloDiagnosi): si rifà appena la finestra ricompare.
+        if (eraNascosta && statoCollegamento == FaseCollegamento.NessunTelefono) _ = AggiornaDiagnosiAsync();
     }
 
     private void Notifica(string titolo, string testo)
@@ -529,12 +539,7 @@ public sealed partial class MainWindow : Window
         // Con un telefono la strada è sulla sua scheda e nell'etichetta sul video (con la scelta): qui servono senza.
         SezioneConnessione.Visibility = Visibile(telefono is null);
 
-        // Perché i comandi sono grigi. Durante la riconnessione il telefono c'è ancora: non si chiede di collegarne uno.
-        DettagliFotocamera.Text = telefono is null ? Testi.T("Comandi_SiAttivano")
-            : statoCollegamento == FaseCollegamento.Riconnessione ? Testi.T("Comandi_MiRicollego")
-            : capacitaAttuali is null ? Testi.T("Comandi_TraUnAttimo")
-            : "";
-        DettagliFotocamera.Visibility = Visibile(DettagliFotocamera.Text.Length > 0);
+        MostraDettagliFotocamera();
         // P21: con due telefoni si dice per quale valgono i comandi a destra.
         TelefonoDeiComandi.Visibility = Visibile(telefoni.Conteggio > 1 && telefono is not null);
         NomeTelefonoDeiComandi.Text = telefono?.Nome ?? "";
@@ -548,6 +553,28 @@ public sealed partial class MainWindow : Window
         MostraCaldo(CaldoTelefono, scelto.Stato);
         AutomationProperties.SetName(SchedaTelefono, scelto.InRiconnessione
             ? Testi.T("Accessibilita_TelefonoInRiconnessione", scelto.Nome) : Testi.T("Accessibilita_TelefonoCollegato", scelto.Nome));
+    }
+
+    /// <summary>
+    /// R08: ogni secondo, con le statistiche del telefono nella webcam, solo ciò che mostra i numeri (latenza, fps,
+    /// qualità): il chip sul video con i numeri e la qualità aperti, l'icona accanto all'orologio e il suo suggerimento,
+    /// i dettagli della scheda. Niente AggiornaDisponibilita: le statistiche non cambiano quali comandi si usano.
+    /// </summary>
+    private void AggiornaNumeriTelefono()
+    {
+        AggiornaChip();
+        AggiornaIcona();
+        if (telefono is not null && Scelto is { } scelto) DettagliTelefono.Text = DettagliScheda(scelto);
+    }
+
+    /// <summary>Perché i comandi sono grigi. Durante la riconnessione il telefono c'è ancora: non si chiede di collegarne uno.</summary>
+    private void MostraDettagliFotocamera()
+    {
+        DettagliFotocamera.Text = telefono is null ? Testi.T("Comandi_SiAttivano")
+            : statoCollegamento == FaseCollegamento.Riconnessione ? Testi.T("Comandi_MiRicollego")
+            : capacitaAttuali is null ? Testi.T("Comandi_TraUnAttimo")
+            : "";
+        DettagliFotocamera.Visibility = Visibile(DettagliFotocamera.Text.Length > 0);
     }
 
     /// <summary>«Wi-Fi · 38 ms · Avvio: 0,9 s», oppure cosa sta succedendo (riconnessione, pausa), come la scheda del Mac.</summary>

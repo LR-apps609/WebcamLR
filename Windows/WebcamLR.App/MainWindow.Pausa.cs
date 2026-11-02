@@ -22,6 +22,11 @@ public sealed partial class MainWindow
 {
     /// <summary>Lo legge anche il thread di rete, per la sessione nuova prima del benvenuto.</summary>
     private bool anteprimaVisibile = true;
+    /// <summary>
+    /// R18: la finestra mostra l'anteprima (aperta o mini, non ridotta né nascosta). Lo legge il thread del motore: a
+    /// finestra nascosta l'immagine elaborata (~8 MB) non si copia sul thread dell'interfaccia.
+    /// </summary>
+    private bool finestraMostrata = true;
     private DispatcherQueueTimer? controlloAnteprima;
     private readonly Richiesta60Fps richiesta60Fps = new();
 
@@ -44,14 +49,21 @@ public sealed partial class MainWindow
 
     private void AggiornaAnteprimaVisibile()
     {
-        bool visibile;
+        bool visibile, mostrata;
         try
         {
             var ridotta = AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized };
             visibile = PausaIntelligente.AnteprimaVisibile(AppWindow.IsVisible, ridotta, InMini, registrazione is not null);
             anteprimaAltro = PausaIntelligente.AnteprimaAltroTelefono(AppWindow.IsVisible, ridotta, InMini, riquadroAperto);
+            mostrata = PausaIntelligente.FinestraMostrata(AppWindow.IsVisible, ridotta, InMini);
         }
         catch (Exception) { return; }
+        if (mostrata != Volatile.Read(ref finestraMostrata))
+        {
+            Volatile.Write(ref finestraMostrata, mostrata);
+            // Riaperta: l'ultima immagine elaborata subito, senza aspettare il fotogramma dopo.
+            if (mostrata && Interlocked.Exchange(ref anteprimaInCoda, 1) == 0) coda.TryEnqueue(MostraElaborata);
+        }
         if (visibile != Volatile.Read(ref anteprimaVisibile))
         {
             Volatile.Write(ref anteprimaVisibile, visibile);

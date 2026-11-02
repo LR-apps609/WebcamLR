@@ -450,12 +450,14 @@ public sealed partial class MainWindow
             orologioRegistrazione.Tick += (_, _) =>
             {
                 // Lo spazio libero cambia piano: basta guardarlo ogni 5 secondi.
-                if (++secondiRegistrazione % 5 == 0) ControllaSpazio();
-                MostraRegistrazione();
+                if (++secondiRegistrazione % 5 == 0) _ = ControllaSpazioAsync();
+                // R08: ogni secondo solo durata e spazio; a registrazione finita il giro completo ferma anche l'orologio.
+                if (registrazione is null) MostraRegistrazione();
+                else MostraDurataRegistrazione();
             };
         }
         orologioRegistrazione.Start();
-        ControllaSpazio();
+        _ = ControllaSpazioAsync();
         MostraRegistrazione();
     }
 
@@ -513,8 +515,7 @@ public sealed partial class MainWindow
     /// </summary>
     private void MostraRegistrazione()
     {
-        var attiva = registrazione;
-        if (attiva is null)
+        if (registrazione is null)
         {
             orologioRegistrazione?.Stop();
             spazioScarso = null;
@@ -524,7 +525,18 @@ public sealed partial class MainWindow
             AutomationPropertiesNome(PulsanteRegistra, Testi.T("Riprese_Registra"));
             Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(PulsanteRegistra, Testi.T("Riprese_RegistraSpiegazione"));
         }
-        else
+        MostraDurataRegistrazione();
+        AggiornaDisponibilita();
+    }
+
+    /// <summary>
+    /// R08: ogni secondo mentre si registra, solo ciò che cambia col tempo: durata e megabyte (sotto il nome, nel
+    /// suggerimento e per l'Assistente vocale), l'avviso dello spazio e l'icona accanto all'orologio. I comandi
+    /// disponibili cambiano solo all'inizio e alla fine (MostraRegistrazione).
+    /// </summary>
+    private void MostraDurataRegistrazione()
+    {
+        if (registrazione is { } attiva)
         {
             var durata = DateTime.UtcNow - inizioRegistrazione;
             IconaRegistra.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["Tally"];
@@ -548,7 +560,6 @@ public sealed partial class MainWindow
             AvvisoSpazio.Visibility = Visibility.Collapsed;
         }
         RegistraSpazio(spazioScarso is not null);
-        AggiornaDisponibilita();
         AggiornaIcona();
     }
 
@@ -556,20 +567,26 @@ public sealed partial class MainWindow
     /// Lo spazio libero sul disco della registrazione, in minuti al ritmo attuale (windows.md 1.4): sotto i 10 l'avviso
     /// in ambra «Spazio quasi finito: restano circa N minuti».
     /// </summary>
-    private void ControllaSpazio()
+    private async Task ControllaSpazioAsync()
     {
         if (registrazione is not { } attiva) return;
+        (int Minuti, long Liberi)? esito;
         try
         {
             var radice = Path.GetPathRoot(attiva.File);
-            var liberi = radice is null ? (long?)null : new DriveInfo(radice).AvailableFreeSpace;
-            spazioScarso = liberi is long l && Riprese.SpazioScarso(l, attiva.Byte, DateTime.UtcNow - inizioRegistrazione) is int minuti
+            // R12: lo spazio libero si chiede al disco (di rete, che dorme) fuori dal thread dell'interfaccia.
+            var liberi = radice is null ? null : await Task.Run(() => (long?)new DriveInfo(radice).AvailableFreeSpace);
+            esito = liberi is long l && Riprese.SpazioScarso(l, attiva.Byte, DateTime.UtcNow - inizioRegistrazione) is int minuti
                 ? (minuti, l) : null;
         }
         catch (Exception)
         {
-            spazioScarso = null;
+            esito = null;
         }
+        // Intanto la registrazione può essere finita o ricominciata: la risposta vale solo per la stessa.
+        if (registrazione != attiva || esito == spazioScarso) return;
+        spazioScarso = esito;
+        MostraDurataRegistrazione();
     }
 
     // MARK: collegamento con il resto della finestra

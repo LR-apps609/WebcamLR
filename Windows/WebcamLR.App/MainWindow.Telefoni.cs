@@ -212,6 +212,8 @@ public sealed partial class MainWindow
         });
         nuova.StatisticheAggiornate += nuove => SuInterfaccia(collegato =>
         {
+            // La prima misura con il video: il giro completo, una volta (il chip compare, il menu della qualità si segna).
+            var primoVideo = collegato.Statistiche is not { Larghezza: > 0 } && nuove.Larghezza > 0;
             collegato.Statistiche = nuove;
             collegato.StoriaLatenza.Aggiungi(nuove.LatenzaMs);
             // Ogni 10 secondi con gli effetti accesi, accanto alle «Prestazioni» del telefono: fps reali e Mbit/s in arrivo.
@@ -231,7 +233,9 @@ public sealed partial class MainWindow
             {
                 // Il motore effetti: i suoi avvisi e, ogni 30 secondi, i suoi tempi nel registro.
                 RegistraMotore(collegato);
-                AggiornaTelefono();
+                // R08: ogni secondo solo i numeri; il resto lo aggiornano i suoi eventi (stato, capacità, collegamento).
+                if (primoVideo) AggiornaTelefono();
+                else AggiornaNumeriTelefono();
                 MostraMicrofono();
             }
             MostraTelefoni();

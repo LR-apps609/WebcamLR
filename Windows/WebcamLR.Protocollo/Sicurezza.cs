@@ -182,9 +182,12 @@ public sealed class CanaleCifrato : IDisposable
     {
         var flag = (byte)(chiaro.Flag | FlagCifrato);
         var contenuto = new byte[chiaro.Contenuto.Length + LunghezzaEtichetta];
+        // R18: il nonce sullo stack, niente allocazione per ogni pacchetto (video e audio).
+        Span<byte> nonce = stackalloc byte[LunghezzaNonce];
         lock (bloccoInvio)
         {
-            invio.Encrypt(Nonce(contatoreInvio), chiaro.Contenuto,
+            Nonce(contatoreInvio, nonce);
+            invio.Encrypt(nonce, chiaro.Contenuto,
                 contenuto.AsSpan(0, chiaro.Contenuto.Length), contenuto.AsSpan(chiaro.Contenuto.Length),
                 [(byte)chiaro.Tipo, flag]);
             contatoreInvio++;
@@ -199,9 +202,11 @@ public sealed class CanaleCifrato : IDisposable
         if (cifrato.Contenuto.Length < LunghezzaEtichetta) throw new ErroreProtocollo("Pacchetto cifrato troppo corto");
         var lunghezza = cifrato.Contenuto.Length - LunghezzaEtichetta;
         var chiaro = new byte[lunghezza];
+        Span<byte> nonce = stackalloc byte[LunghezzaNonce];
+        Nonce(contatoreRicezione, nonce);
         try
         {
-            ricezione.Decrypt(Nonce(contatoreRicezione), cifrato.Contenuto.AsSpan(0, lunghezza),
+            ricezione.Decrypt(nonce, cifrato.Contenuto.AsSpan(0, lunghezza),
                 cifrato.Contenuto.AsSpan(lunghezza), chiaro, [(byte)cifrato.Tipo, cifrato.Flag]);
         }
         catch (CryptographicException)
@@ -215,9 +220,18 @@ public sealed class CanaleCifrato : IDisposable
     /// <summary>4 byte a zero ‖ contatore a 64 bit big-endian.</summary>
     public static byte[] Nonce(ulong contatore)
     {
-        var nonce = new byte[12];
-        BinaryPrimitives.WriteUInt64BigEndian(nonce.AsSpan(4), contatore);
+        var nonce = new byte[LunghezzaNonce];
+        Nonce(contatore, nonce);
         return nonce;
+    }
+
+    private const int LunghezzaNonce = 12;
+
+    /// <summary>Come <see cref="Nonce(ulong)"/>, scritto in <paramref name="nonce"/> (12 byte).</summary>
+    private static void Nonce(ulong contatore, Span<byte> nonce)
+    {
+        nonce[..4].Clear();
+        BinaryPrimitives.WriteUInt64BigEndian(nonce[4..], contatore);
     }
 
     public void Dispose()

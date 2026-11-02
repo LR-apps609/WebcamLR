@@ -69,7 +69,6 @@ final class GestorePausa {
     @ObservationIgnored private var anteprimaRicevuta = false
     @ObservationIgnored private var anteprimaVisibile = false
     @ObservationIgnored private var appInOnda = false
-    @ObservationIgnored private var trattenuta = false
     @ObservationIgnored private var compitoNessunaApp: Task<Void, Never>?
 
     /// P10 spenta (decisione del 27 ottobre, vedi il commento della classe): `anteprima` e `in-onda` si ricevono e
@@ -159,14 +158,8 @@ final class GestorePausa {
         if nessunaApp { nessunaApp = false }
     }
 
-    /// «Prova la webcam» guarda il video sull'iPhone: intanto niente pausa per «nessuna app».
-    func trattieni(_ attiva: Bool) {
-        trattenuta = attiva
-        valutaNessunaApp()
-    }
-
     private func valutaNessunaApp() {
-        let nessunoGuarda = Self.pausaNessunaAppAttiva && inFunzione && anteprimaRicevuta && !anteprimaVisibile && !appInOnda && !trattenuta
+        let nessunoGuarda = Self.pausaNessunaAppAttiva && inFunzione && anteprimaRicevuta && !anteprimaVisibile && !appInOnda
         guard nessunoGuarda else {
             compitoNessunaApp?.cancel()
             compitoNessunaApp = nil

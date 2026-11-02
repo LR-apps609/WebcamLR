@@ -284,13 +284,6 @@ final class PipelineEffetti: @unchecked Sendable {
         }
     }
 
-    func rimuovi(_ effetto: any Effetto) {
-        blocco.withLock {
-            elenco.removeAll { $0 === effetto }
-            fasi[ObjectIdentifier(effetto)] = nil
-        }
-    }
-
     // MARK: Fotogrammi (solo sulla coda di cattura)
 
     /// 1.14: la geometria dei fotogrammi è cambiata (`Cattura.suCambioGeometria`, sulla coda di cattura): l'analisi

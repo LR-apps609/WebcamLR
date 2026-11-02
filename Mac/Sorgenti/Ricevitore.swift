@@ -41,8 +41,11 @@ final class Ricevitore {
     private(set) var microfonoAcceso = UserDefaults.standard.bool(forKey: Preferenze.microfonoTelefono)
     /// Nell'ultimo secondo è arrivato audio dal telefono scelto.
     private(set) var audioInArrivo = false
-    /// Da 0 a 1, per l'indicatore di livello.
+    /// Da 0 a 1, per l'indicatore di livello. R08: già arrotondato alle tacche dell'indicatore e scritto solo
+    /// quando cambia, così l'indicatore non si ridisegna dieci volte al secondo per niente.
     private(set) var livelloMicrofono = 0.0
+    /// Le tacche dell'indicatore del livello (`IndicatoreLivello`): il livello si arrotonda a queste.
+    nonisolated static let taccheLivelloMicrofono = 12
     @ObservationIgnored private var compitoMicrofono: Task<Void, Never>?
     private(set) var rete: StatoRete = .fermo
 
@@ -519,7 +522,9 @@ final class Ricevitore {
         microfono.suLivello = { [weak self] livello in
             // Spento da qui: un livello rimasto in coda non riaccende l'indicatore.
             guard let self, self.microfonoAcceso || livello == 0 else { return }
-            self.livelloMicrofono = livello
+            let tacche = Double(Ricevitore.taccheLivelloMicrofono)
+            let arrotondato = (max(0, min(1, livello)) * tacche).rounded() / tacche
+            if arrotondato != self.livelloMicrofono { self.livelloMicrofono = arrotondato }
         }
         compitoMicrofono?.cancel()
         compitoMicrofono = Task { [weak self] in

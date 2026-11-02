@@ -706,7 +706,6 @@ private struct Batteria: View {
         .foregroundStyle(bassa ? AnyShapeStyle(Tema.ambra) : AnyShapeStyle(.testoNota))
         .fixedSize()
         .help(inCarica ? "Batteria del telefono: \(percentuale)%, in carica" : "Batteria del telefono: \(percentuale)%")
-        .accessibilityElement(children: .ignore)
         .accessibilityLabel(inCarica ? "Batteria del telefono: \(percentuale)%, in carica" : "Batteria del telefono: \(percentuale)%")
     }
 }
@@ -866,11 +865,10 @@ struct RigaMicrofono: View {
             .frame(minHeight: 28)
 
             // Il livello si vede sempre (vuoto quando non arriva niente): si capisce subito dov'è.
-            IndicatoreLivello(livello: ricevitore.microfonoAcceso && ricevitore.audioInArrivo && utilizzabile
-                                ? ricevitore.livelloMicrofono : 0)
+            // R08: il livello lo legge solo l'indicatore, così il resto della riga non si ridisegna a ogni cambio.
+            IndicatoreLivello(ricevitore: ricevitore,
+                              acceso: ricevitore.microfonoAcceso && ricevitore.audioInArrivo && utilizzabile)
                 .padding(.leading, Spazi.largo)
-                .accessibilityLabel("Livello del microfono")
-                .accessibilityValue("\(Int(ricevitore.livelloMicrofono * 100)) per cento")
 
             if let nota {
                 Text(nota)
@@ -915,11 +913,15 @@ struct RigaMicrofono: View {
 
 /// Il livello del microfono: dodici tacche che si accendono nell'accento, ambra vicino alla saturazione.
 private struct IndicatoreLivello: View {
-    let livello: Double
-    private static let tacche = 12
+    let ricevitore: Ricevitore
+    /// Microfono acceso, audio in arrivo e telefono che lo manda: altrimenti tutte spente.
+    let acceso: Bool
+    @Environment(\.accessibilityReduceMotion) private var riduciMovimento
+    private static let tacche = Ricevitore.taccheLivelloMicrofono
 
     var body: some View {
-        let accese = Int((max(0, min(1, livello)) * Double(Self.tacche)).rounded())
+        let livello = ricevitore.livelloMicrofono
+        let accese = acceso ? Int((max(0, min(1, livello)) * Double(Self.tacche)).rounded()) : 0
         HStack(spacing: Spazi.minimo) {
             ForEach(0..<Self.tacche, id: \.self) { indice in
                 // Tacche disegnate (alte 6 punti): il raggio è del disegno, non un token.
@@ -928,7 +930,9 @@ private struct IndicatoreLivello: View {
                     .frame(height: 6)
             }
         }
-        .animation(.linear(duration: 0.1), value: accese)
+        .animation(riduciMovimento ? nil : .linear(duration: 0.1), value: accese)
+        .accessibilityLabel("Livello del microfono")
+        .accessibilityValue("\(Int(livello * 100)) per cento")
     }
 
     /// Le ultime due tacche in ambra: oltre il 90% il suono rischia di saturare.

@@ -348,9 +348,12 @@ public sealed partial class MainWindow : Window
         {
             if (popup.Child is not ContentDialog aperta) continue;
             var chiusa = new TaskCompletionSource();
-            aperta.Closed += (_, _) => chiusa.TrySetResult();
+            void SuChiusa(ContentDialog origine, ContentDialogClosedEventArgs evento) => chiusa.TrySetResult();
+            aperta.Closed += SuChiusa;
             aperta.Hide();
             await Task.WhenAny(chiusa.Task, Task.Delay(1000));
+            // R05: il gestore via, così la finestra chiusa non tiene in vita questo TaskCompletionSource.
+            aperta.Closed -= SuChiusa;
         }
     }
 

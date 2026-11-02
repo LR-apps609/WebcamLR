@@ -78,6 +78,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -304,11 +305,14 @@ fun SchermataInOnda(
             // Il nero delle bande attorno al video, come nella Fotocamera: non è un colore dell'interfaccia.
             .background(Color.Black)
             // Qualsiasi tocco, anche sui pulsanti, fa ripartire i 30 secondi; il tocco non si consuma.
+            // R08: durante un pizzico o un trascinamento gli eventi arrivano a ogni fotogramma; si scrive al massimo ogni
+            // 250 ms, così i due timer legati a ultimoTocco non ripartono di continuo (scarto massimo: 0,25 s).
             .pointerInput(Unit) {
                 awaitPointerEventScope {
                     while (true) {
                         awaitPointerEvent(PointerEventPass.Initial)
-                        ultimoTocco = SystemClock.elapsedRealtime()
+                        val ora = SystemClock.elapsedRealtime()
+                        if (ora - ultimoTocco >= 250) ultimoTocco = ora
                     }
                 }
             },
@@ -1107,6 +1111,14 @@ private fun avvisiAttivi(sessione: SessioneTelefono, verticale: Boolean, doppioT
     val microfonoNonConsentito = sessione.microfonoNonConsentito.ora()
     val chiamata = sessione.chiamataInCorso.ora()
     val annuncio = sessione.annuncio.ora()
+    // R08: questa funzione restituisce un valore, quindi non ha un suo ambito di ricomposizione: leggere qui la latenza
+    // (nuova ogni secondo) ricomporrebbe tutta la schermata. Si legge solo se la rete è debole, che cambia di rado.
+    val debole by remember(sessione) {
+        derivedStateOf {
+            val latenza = sessione.latenzaMs
+            latenza != null && QualitaCollegamento.da(latenza, sessione.perditeRecenti) == QualitaCollegamento.DEBOLE
+        }
+    }
     if (sessione.stato != Stato.Collegato) return emptyList()
     val elenco = mutableListOf<CodaAvvisi.Avviso>()
     // Risposta a un gesto (doppio tocco in onda): si vede subito, al posto di quello a schermo.
@@ -1159,8 +1171,6 @@ private fun avvisiAttivi(sessione: SessioneTelefono, verticale: Boolean, doppioT
     }
     // Rete lenta e consiglio del cavo in una frase sola: mai due avvisi sulla stessa cosa.
     val consiglio = sessione.tipoCollegamento?.let { consiglioSeDebole(it) }
-    val latenza = sessione.latenzaMs
-    val debole = latenza != null && QualitaCollegamento.da(latenza, sessione.perditeRecenti) == QualitaCollegamento.DEBOLE
     val rete = when {
         sessione.reteDebole && consiglio != null -> stringResource(R.string.avviso_rete_lenta_consiglio, consiglio)
         sessione.reteDebole -> stringResource(R.string.avviso_rete_lenta)

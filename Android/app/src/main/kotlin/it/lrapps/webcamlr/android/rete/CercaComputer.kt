@@ -74,6 +74,29 @@ class CercaComputer(context: Context) {
     private var ascoltatore: NsdManager.DiscoveryListener? = null
     private val daRisolvere = ArrayDeque<NsdServiceInfo>()
     private var risolvendo = false
+    /** R03: numero della risoluzione in corso; una risposta con un numero vecchio (arrivata dopo la scadenza) si ignora. */
+    private var risoluzioneAttuale = 0
+    private var ascoltoRisoluzione: NsdManager.ResolveListener? = null
+
+    /** R03: se resolveService non risponde entro 5 secondi si passa al prossimo, invece di fermare la coda per sempre. */
+    private val scadenzaRisoluzione = Runnable {
+        if (!risolvendo) return@Runnable
+        Log.w(TAG, "Risoluzione senza risposta: passo alla prossima")
+        risoluzioneAttuale++
+        risolvendo = false
+        // Da Android 14 la si può anche fermare, così NsdManager non la considera ancora in corso.
+        val ascolto = ascoltoRisoluzione
+        ascoltoRisoluzione = null
+        if (ascolto != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            runCatching { nsd.stopServiceResolution(ascolto) }
+        }
+        risolviProssimo()
+    }
+
+    /** In coda una volta sola per nome: lo stesso servizio annunciato più volte non allunga la coda. */
+    private fun mettiInCoda(info: NsdServiceInfo) {
+        if (daRisolvere.none { it.serviceName == info.serviceName }) daRisolvere.addLast(info)
+    }
 
     /** Sulla rete del Tethering USB cerchiamo anche da soli (vedi [RicercaCavo]). */
     private val ricercaCavo = RicercaCavo { trovato -> principale.post { if (ascoltatore != null || cavoSolo) aggiungi(trovato) } }
@@ -125,7 +148,7 @@ class CercaComputer(context: Context) {
 
             override fun onServiceFound(info: NsdServiceInfo) {
                 principale.post {
-                    daRisolvere.addLast(info)
+                    mettiInCoda(info)
                     risolviProssimo()
                 }
             }
@@ -164,31 +187,45 @@ class CercaComputer(context: Context) {
         if (risolvendo || ascoltatore == null) return
         val info = daRisolvere.removeFirstOrNull() ?: return
         risolvendo = true
-        try {
-            nsd.resolveService(info, object : NsdManager.ResolveListener {
-                override fun onResolveFailed(info: NsdServiceInfo, errore: Int) {
-                    principale.post {
-                        risolvendo = false
-                        // Già in corso: si riprova tra poco.
-                        if (errore == NsdManager.FAILURE_ALREADY_ACTIVE) {
-                            daRisolvere.addLast(info)
-                            principale.postDelayed({ risolviProssimo() }, 300)
-                        } else {
-                            risolviProssimo()
-                        }
-                    }
-                }
-
-                override fun onServiceResolved(info: NsdServiceInfo) {
-                    val trovato = daRisolto(info)
-                    principale.post {
-                        risolvendo = false
-                        if (trovato != null && ascoltatore != null) aggiungi(trovato)
+        val numero = ++risoluzioneAttuale
+        // I callback arrivano su un thread di NsdManager: tutto il resto si fa sul thread principale.
+        val ascolto = object : NsdManager.ResolveListener {
+            override fun onResolveFailed(info: NsdServiceInfo, errore: Int) {
+                principale.post {
+                    if (numero != risoluzioneAttuale || !risolvendo) return@post
+                    principale.removeCallbacks(scadenzaRisoluzione)
+                    ascoltoRisoluzione = null
+                    risolvendo = false
+                    // Già in corso: si riprova tra poco.
+                    if (errore == NsdManager.FAILURE_ALREADY_ACTIVE) {
+                        mettiInCoda(info)
+                        principale.postDelayed({ risolviProssimo() }, 300)
+                    } else {
                         risolviProssimo()
                     }
                 }
-            })
+            }
+
+            override fun onServiceResolved(info: NsdServiceInfo) {
+                val trovato = daRisolto(info)
+                principale.post {
+                    if (numero != risoluzioneAttuale || !risolvendo) return@post
+                    principale.removeCallbacks(scadenzaRisoluzione)
+                    ascoltoRisoluzione = null
+                    risolvendo = false
+                    if (trovato != null && ascoltatore != null) aggiungi(trovato)
+                    risolviProssimo()
+                }
+            }
+        }
+        ascoltoRisoluzione = ascolto
+        principale.removeCallbacks(scadenzaRisoluzione)
+        principale.postDelayed(scadenzaRisoluzione, SCADENZA_RISOLUZIONE_MS)
+        try {
+            nsd.resolveService(info, ascolto)
         } catch (e: Exception) {
+            principale.removeCallbacks(scadenzaRisoluzione)
+            ascoltoRisoluzione = null
             risolvendo = false
             Log.w(TAG, "Risoluzione non riuscita", e)
         }
@@ -220,6 +257,7 @@ class CercaComputer(context: Context) {
 
     companion object {
         private const val TAG = "WebcamLR"
+        private const val SCADENZA_RISOLUZIONE_MS = 5_000L
 
         /** Alcune versioni di Android lasciano i caratteri protetti di DNS-SD: «MacBook\032Pro» → «MacBook Pro». */
         fun nomeLeggibile(nome: String): String {

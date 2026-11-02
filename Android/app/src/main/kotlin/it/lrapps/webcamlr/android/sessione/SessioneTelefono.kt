@@ -1000,16 +1000,8 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
 
     val haLogo: Boolean get() = grafica.haLogo
 
-    fun impostaMostraLogo(mostra: Boolean) {
-        if (mostra && !pro) return
-        cambiaEffetti(effettiInterni.value.copy(mostraLogo = mostra))
-    }
-
     /** Il pulsante «Pausa» di «In onda»: il video si ferma, il collegamento resta aperto. */
     fun impostaPausaUtente(attiva: Boolean) = pausaDecisa.impostaPausaUtente(attiva)
-
-    /** Mentre si guarda il video sul telefono senza nessuno al computer (per esempio «Prova la webcam»): niente pausa. */
-    fun trattieniPausa(attiva: Boolean) = pausaDecisa.trattieni(attiva)
 
     fun nascondiAvvisoPostura() {
         avvisoPosturaInterno.value = null
@@ -1085,6 +1077,9 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
 
     private fun collega() {
         if (chiusaDallUtente) return
+        // R05: rete tornata o computer ritrovato chiamano collega() subito: il tentativo già in attesa non deve aprire
+        // una seconda catena di riconnessione.
+        principale.removeCallbacks(riprovaCollegamento)
         stato = if (tentativi == 0) Stato.Collegamento else Stato.Riconnessione(tentativi)
         registro.aggiungi(
             if (tentativi == 0) Testi.testo(R.string.registro_collegamento_a, computer.nome)
@@ -1295,15 +1290,19 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
             tentativi++
             stato = Stato.Riconnessione(tentativi)
             // Il primo tentativo quasi subito (spesso è solo un attimo di Wi-Fi), poi ogni 2 secondi.
-            principale.postDelayed({
-                if (!chiusaDallUtente && collegamento == null && stato is Stato.Riconnessione) collega()
-            }, if (tentativi == 1) 500L else 2_000L)
+            principale.removeCallbacks(riprovaCollegamento)
+            principale.postDelayed(riprovaCollegamento, if (tentativi == 1) 500L else 2_000L)
         } else if (!giaCollegato && computer.annunciato) {
             fermaConErrore(Testi.testo(R.string.errore_rete_separata_titolo), Testi.testo(R.string.errore_rete_separata), domanda = "rete-ospiti")
         } else {
             fermaConErrore(titoloInterrotto(nome), errore ?: Testi.testo(R.string.errore_non_risponde),
                 domanda = if (giaCollegato) null else "non-trova")
         }
+    }
+
+    /** R05: il prossimo tentativo in attesa; un campo (non una lambda) per poterlo togliere quando si ricollega prima. */
+    private val riprovaCollegamento = Runnable {
+        if (!chiusaDallUtente && collegamento == null && stato is Stato.Riconnessione) collega()
     }
 
     /** Senza rete del telefono si guarda ogni 3 secondi se è comparso il cavo (il Tethering USB non è una «rete» per Android). */

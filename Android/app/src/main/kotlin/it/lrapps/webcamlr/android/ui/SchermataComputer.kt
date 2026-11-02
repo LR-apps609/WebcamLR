@@ -58,6 +58,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -299,16 +300,22 @@ private fun ColumnScope.PaginaCerco(qr: () -> Unit, cavo: () -> Unit, mandaLink:
 @Composable
 private fun Radar(modifier: Modifier = Modifier) {
     val ridotte = ricordaAnimazioniRidotte()
-    val giro = rememberInfiniteTransition(label = "radar")
-    val fase by giro.animateFloat(0f, 1f, infiniteRepeatable(tween(2_400, easing = LinearEasing), RepeatMode.Restart), label = "fase")
+    // R17: con «Rimuovi animazioni» nessuna transizione infinita (come PuntoInOnda). La fase si legge solo nel disegno
+    // del Canvas: a ogni fotogramma si ridisegna, non si ricompone.
+    val fase: State<Float>? = if (ridotte) {
+        null
+    } else {
+        val giro = rememberInfiniteTransition(label = "radar")
+        giro.animateFloat(0f, 1f, infiniteRepeatable(tween(2_400, easing = LinearEasing), RepeatMode.Restart), label = "fase")
+    }
     Box(modifier.size(200.dp), contentAlignment = Alignment.Center) {
         Canvas(Modifier.size(200.dp)) {
             val centro = Offset(size.width / 2, size.height / 2)
             val massimo = size.minDimension / 2
             for (indice in 0 until 3) {
-                val passo = if (ridotte) (indice + 1) / 3f else ((indice / 3f) + fase) % 1f
+                val passo = if (fase == null) (indice + 1) / 3f else ((indice / 3f) + fase.value) % 1f
                 val raggio = massimo * (0.38f + 0.62f * passo)
-                val alfa = if (ridotte) 0.5f - indice * 0.13f else (1f - passo) * 0.55f
+                val alfa = if (fase == null) 0.5f - indice * 0.13f else (1f - passo) * 0.55f
                 drawCircle(Colori.accento.copy(alpha = alfa), radius = raggio, center = centro, style = Stroke(width = 1.dp.toPx()))
             }
         }

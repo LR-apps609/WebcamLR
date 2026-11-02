@@ -54,9 +54,6 @@ private fun coperchioPortatile(origine: Offset, larghezza: Float) =
 /** Il vetro dello schermo del portatile: per mettere sopra un comando o una scritta nello stesso punto. */
 fun vetroPortatile(origine: Offset, larghezza: Float): Rect = coperchioPortatile(origine, larghezza).deflate(larghezza * 0.028f)
 
-/** Il vetro dello schermo del monitor. */
-fun vetroMonitor(origine: Offset, larghezza: Float): Rect = Rect(origine, Size(larghezza, larghezza * 0.6f)).deflate(larghezza * 0.03f)
-
 /**
  * Un portatile generico (nessun marchio) con l'angolo in alto a sinistra in `origine`.
  * `schermo` disegna nel rettangolo dello schermo, già ritagliato.

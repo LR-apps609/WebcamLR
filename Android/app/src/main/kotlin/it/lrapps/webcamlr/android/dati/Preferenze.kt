@@ -23,7 +23,6 @@ object Impostazioni {
     fun prepara(context: Context) {
         preferenze = context.getSharedPreferences("impostazioni", Context.MODE_PRIVATE)
         benvenutoVisto = preferenze.getBoolean("benvenutoVisto", false)
-        modalitaAvanzata = preferenze.getBoolean("modalitaAvanzata", false)
         // Dal 27 ottobre la qualità si sceglie solo sul computer: le scelte salvate di prima non valgono più.
         preferenze.edit().remove("risoluzione").remove("fps").remove("codec").apply()
         riduciSeCaldo = preferenze.getBoolean("riduciSeCaldo", true)
@@ -34,8 +33,6 @@ object Impostazioni {
     }
 
     var benvenutoVisto by mutableStateOf(false)
-        private set
-    var modalitaAvanzata by mutableStateOf(false)
         private set
     var riduciSeCaldo by mutableStateOf(true)
         private set
@@ -50,7 +47,6 @@ object Impostazioni {
         private set
 
     fun impostaBenvenutoVisto(valore: Boolean) { benvenutoVisto = valore; salva("benvenutoVisto", valore) }
-    fun impostaModalitaAvanzata(valore: Boolean) { modalitaAvanzata = valore; salva("modalitaAvanzata", valore) }
     fun impostaRiduciSeCaldo(valore: Boolean) { riduciSeCaldo = valore; salva("riduciSeCaldo", valore) }
     fun impostaOscuraDaSolo(valore: Boolean) { oscuraDaSolo = valore; salva("oscuraDaSolo", valore) }
     fun impostaRisparmioBatteria(valore: Boolean) { risparmioBatteria = valore; salva("risparmioBatteria", valore) }

@@ -101,6 +101,8 @@ final class Ricevitore {
     /// Il telefono scelto è in pausa «sottofondo»: niente «Riconnessione» per 10 minuti, anche se tace o cade.
     var inSottofondo: Bool { attivo?.inSottofondo ?? false }
     var statistiche: Statistiche { attivo?.statistiche ?? Statistiche() }
+    /// R08: il telefono scelto manda video con una risoluzione nota; cambia di rado, a differenza di `statistiche`.
+    var videoConMisura: Bool { attivo?.videoConMisura ?? false }
     /// «Avvio: 0,9 s» (1.11); nil finché il video non è a schermo.
     var tempoAvvio: String? { attivo?.tempoAvvio }
     /// La latenza di ogni secondo, al massimo gli ultimi 60, per il grafico (funzione 31).
@@ -2225,6 +2227,9 @@ final class Ricevitore {
             nuove.effettiMs = misure.effettiMs
             registraMotore(misure, note: motore.prendiNote(), di: telefono)
             telefono.statistiche = nuove
+            // R08: si scrive solo quando cambia, così chi la legge non si ridisegna ogni secondo.
+            let conMisura = nuove.larghezza > 0
+            if telefono.videoConMisura != conMisura { telefono.videoConMisura = conMisura }
             telefono.contaFotogrammi(arrivati: nuove.fps)
             registraNumeri(nuove, di: telefono)
             registraRitardo(nuove, di: telefono, scelto: scelto)

@@ -449,8 +449,9 @@ struct ContenutoPrincipale: View {
     }
 
     /// Le etichette sopra il video (qualità, collegamento, CAM 1) ci sono solo con il video che arriva.
+    /// R08: `videoConMisura` e non `statistiche.larghezza`, che si rinnova ogni secondo e ridisegnerebbe la finestra.
     private var mostraChip: Bool {
-        !soloVideo && ricevitore.telefono != nil && ricevitore.statistiche.larghezza > 0
+        !soloVideo && ricevitore.telefono != nil && ricevitore.videoConMisura
     }
 
     /// La schermata di attesa scelta (WebcamLR Pro: nero o immagine) non scrive il motivo della pausa. Non è osservata:

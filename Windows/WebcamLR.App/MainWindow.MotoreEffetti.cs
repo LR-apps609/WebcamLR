@@ -184,6 +184,8 @@ public sealed partial class MainWindow
         (Volatile.Read(ref registrazione) as RegistrazioneElaborata)?.Accoda(immagine);
         if (!elaborata) return;
         Volatile.Write(ref ultimaElaborata, immagine);
+        // R18: a finestra nascosta o ridotta niente copia nell'anteprima; alla riapertura la mette AggiornaAnteprimaVisibile.
+        if (!Volatile.Read(ref finestraMostrata)) return;
         if (Interlocked.Exchange(ref anteprimaInCoda, 1) == 0) coda.TryEnqueue(MostraElaborata);
     }
 

@@ -94,6 +94,15 @@ public class PausaEGobboTest
     public void QuandoLAnteprimaEVisibile(bool mostrata, bool ridotta, bool mini, bool registra, bool attesa) =>
         Assert.Equal(attesa, PausaIntelligente.AnteprimaVisibile(mostrata, ridotta, mini, registra));
 
+    [Theory]
+    [InlineData(true, false, false, true)]   // finestra aperta
+    [InlineData(true, true, false, false)]   // ridotta a icona
+    [InlineData(false, false, false, false)] // nascosta accanto all'orologio
+    [InlineData(true, false, true, true)]    // finestra mini
+    [InlineData(false, false, true, false)]  // mini ma nascosta
+    public void QuandoLaFinestraMostraLAnteprima(bool mostrata, bool ridotta, bool mini, bool attesa) =>
+        Assert.Equal(attesa, PausaIntelligente.FinestraMostrata(mostrata, ridotta, mini));
+
     [Fact]
     public void Chiede60FpsUnaVoltaPerPeriodoDUso()
     {

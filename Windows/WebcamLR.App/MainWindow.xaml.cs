@@ -136,9 +136,13 @@ public sealed partial class MainWindow : Window
         FinestraApp.Registro = registro;
         BarraCavo.CloseButtonClick += (_, _) => suggerimentoCavoChiuso = true;
         // Il permesso del firewall o il profilo della rete cambiano senza avvisare: senza telefono si ricontrolla.
+        // R13: solo a finestra visibile (la diagnosi si vede solo lì); alla riapertura la rifà MostraFinestra.
         controlloDiagnosi = coda.CreateTimer();
         controlloDiagnosi.Interval = TimeSpan.FromSeconds(10);
-        controlloDiagnosi.Tick += (_, _) => { if (statoCollegamento == FaseCollegamento.NessunTelefono) _ = AggiornaDiagnosiAsync(); };
+        controlloDiagnosi.Tick += (_, _) =>
+        {
+            if (statoCollegamento == FaseCollegamento.NessunTelefono && AppWindow.IsVisible) _ = AggiornaDiagnosiAsync();
+        };
         controlloDiagnosi.Start();
         reteAssestata = coda.CreateTimer();
         reteAssestata.Interval = TimeSpan.FromSeconds(1.5);
@@ -370,6 +374,7 @@ public sealed partial class MainWindow : Window
 
     public void MostraFinestra()
     {
+        var eraNascosta = !AppWindow.IsVisible;
         AppWindow.Show();
         if (massimizzaAllaPrimaApertura && AppWindow.Presenter is OverlappedPresenter presentatore)
         {
@@ -377,6 +382,8 @@ public sealed partial class MainWindow : Window
             presentatore.Maximize();
         }
         Activate();
+        // R13: nel vassoio la diagnosi non gira (controlloDiagnosi): si rifà appena la finestra ricompare.
+        if (eraNascosta && statoCollegamento == FaseCollegamento.NessunTelefono) _ = AggiornaDiagnosiAsync();
     }
 
     private void Notifica(string titolo, string testo)

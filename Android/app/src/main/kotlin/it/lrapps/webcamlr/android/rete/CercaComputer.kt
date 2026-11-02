@@ -77,6 +77,9 @@ class CercaComputer(context: Context) {
     /** R03: numero della risoluzione in corso; una risposta con un numero vecchio (arrivata dopo la scadenza) si ignora. */
     private var risoluzioneAttuale = 0
     private var ascoltoRisoluzione: NsdManager.ResolveListener? = null
+    /** Attesa prima di riprovare dopo FAILURE_ALREADY_ACTIVE: 0,3 → 1 → 3 s, così una risoluzione rimasta appesa
+     *  (prima di Android 14 non si può fermare) non fa girare la coda ogni 300 ms. */
+    private var attesaGiaAttiva = 300L
 
     /** R03: se resolveService non risponde entro 5 secondi si passa al prossimo, invece di fermare la coda per sempre. */
     private val scadenzaRisoluzione = Runnable {
@@ -199,7 +202,8 @@ class CercaComputer(context: Context) {
                     // Già in corso: si riprova tra poco.
                     if (errore == NsdManager.FAILURE_ALREADY_ACTIVE) {
                         mettiInCoda(info)
-                        principale.postDelayed({ risolviProssimo() }, 300)
+                        principale.postDelayed({ risolviProssimo() }, attesaGiaAttiva)
+                        attesaGiaAttiva = minOf(attesaGiaAttiva * 3, 3_000L)
                     } else {
                         risolviProssimo()
                     }
@@ -209,10 +213,16 @@ class CercaComputer(context: Context) {
             override fun onServiceResolved(info: NsdServiceInfo) {
                 val trovato = daRisolto(info)
                 principale.post {
-                    if (numero != risoluzioneAttuale || !risolvendo) return@post
+                    // Arrivata dopo la scadenza: il computer vale lo stesso (onServiceFound di solito non si ripete),
+                    // ma la coda è già andata avanti e non si tocca.
+                    if (numero != risoluzioneAttuale || !risolvendo) {
+                        if (trovato != null && ascoltatore != null) aggiungi(trovato)
+                        return@post
+                    }
                     principale.removeCallbacks(scadenzaRisoluzione)
                     ascoltoRisoluzione = null
                     risolvendo = false
+                    attesaGiaAttiva = 300L
                     if (trovato != null && ascoltatore != null) aggiungi(trovato)
                     risolviProssimo()
                 }

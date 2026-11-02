@@ -38,6 +38,18 @@
     });
   }
 
+  // 0b. Fuori dallo schermo le onde e il punto «in onda» si fermano: il browser non ridisegna ciò che non si vede.
+  var animate = document.querySelectorAll(".onda, .punto-in-onda");
+  if (animate.length && "IntersectionObserver" in window) {
+    var contenitore = animate[0].ownerSVGElement;
+    while (contenitore && contenitore.ownerSVGElement) contenitore = contenitore.ownerSVGElement;
+    if (contenitore) {
+      new IntersectionObserver(function (voci) {
+        document.documentElement.classList.toggle("apertura-fuori-vista", !voci[0].isIntersecting);
+      }).observe(contenitore);
+    }
+  }
+
   // 1. Confronto: la linea si sposta con il mouse, con il dito (trascinando in orizzontale; in verticale la pagina
   //    scorre) e con la tastiera (frecce, Pagina su/giù, Inizio/Fine: è un <input type="range">).
   var riquadro = document.getElementById("riquadro-confronto");

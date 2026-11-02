@@ -7,7 +7,11 @@
 @font-face { font-family: "Barlow"; src: url("caratteri/Barlow-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
 @font-face { font-family: "Barlow"; src: url("caratteri/Barlow-Medium.woff2") format("woff2"); font-weight: 500; font-display: swap; }
 @font-face { font-family: "Barlow"; src: url("caratteri/Barlow-SemiBold.woff2") format("woff2"); font-weight: 600 700; font-display: swap; }
-@font-face { font-family: "IBM Plex Mono"; src: url("caratteri/IBMPlexMono-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+/* Caratteri ridotti a quelli usati: Barlow ritagliato su latino e punteggiatura; di IBM Plex Mono i sottoinsiemi
+   ufficiali di IBM (il nome «Plex» è riservato, quindi non lo ritagliamo noi): «Latin1» per il testo e «Pi» per
+   frecce e ✓, scaricato solo dalle pagine che li usano. */
+@font-face { font-family: "IBM Plex Mono"; src: url("caratteri/IBMPlexMono-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; unicode-range: U+0020-007E, U+00A0-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2013-2014, U+2018-201A, U+201C-201E, U+2020-2022, U+2026, U+2030, U+2039-203A, U+2044, U+20AC, U+2122, U+2212, U+FB01-FB02; }
+@font-face { font-family: "IBM Plex Mono"; src: url("caratteri/IBMPlexMono-Regular-Frecce.woff2") format("woff2"); font-weight: 400; font-display: swap; unicode-range: U+2190-2199, U+2713; }
 
 /* Colori, caratteri, misure, spazi e raggi vengono da token.css (generato da Strumenti/genera_token.py da
    Documenti/token.json, valori «beta4», gli stessi delle quattro app): qui non si riscrivono. Va caricato prima di
@@ -157,6 +161,8 @@ p { margin: 0; }
 .ferma-animazioni[aria-pressed="true"] { background: var(--accento-tenue); border-color: var(--accento); color: var(--accento-chiaro); }
 .animazioni-ferme .onda, .animazioni-ferme .punto-in-onda { animation: none; }
 .animazioni-ferme .onda { opacity: .8; }
+/* Apertura fuori dallo schermo (pagina.js): animazioni in pausa, riprendono da dove erano. */
+.apertura-fuori-vista .onda, .apertura-fuori-vista .punto-in-onda { animation-play-state: paused; }
 
 /* «Compatibile con» */
 .compatibili { border-top: 1px solid var(--linea-tenue); border-bottom: 1px solid var(--linea-tenue); background: var(--velo-sito); }

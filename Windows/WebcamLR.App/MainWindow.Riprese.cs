@@ -450,14 +450,14 @@ public sealed partial class MainWindow
             orologioRegistrazione.Tick += (_, _) =>
             {
                 // Lo spazio libero cambia piano: basta guardarlo ogni 5 secondi.
-                if (++secondiRegistrazione % 5 == 0) ControllaSpazio();
+                if (++secondiRegistrazione % 5 == 0) _ = ControllaSpazioAsync();
                 // R08: ogni secondo solo durata e spazio; a registrazione finita il giro completo ferma anche l'orologio.
                 if (registrazione is null) MostraRegistrazione();
                 else MostraDurataRegistrazione();
             };
         }
         orologioRegistrazione.Start();
-        ControllaSpazio();
+        _ = ControllaSpazioAsync();
         MostraRegistrazione();
     }
 
@@ -567,20 +567,26 @@ public sealed partial class MainWindow
     /// Lo spazio libero sul disco della registrazione, in minuti al ritmo attuale (windows.md 1.4): sotto i 10 l'avviso
     /// in ambra «Spazio quasi finito: restano circa N minuti».
     /// </summary>
-    private void ControllaSpazio()
+    private async Task ControllaSpazioAsync()
     {
         if (registrazione is not { } attiva) return;
+        (int Minuti, long Liberi)? esito;
         try
         {
             var radice = Path.GetPathRoot(attiva.File);
-            var liberi = radice is null ? (long?)null : new DriveInfo(radice).AvailableFreeSpace;
-            spazioScarso = liberi is long l && Riprese.SpazioScarso(l, attiva.Byte, DateTime.UtcNow - inizioRegistrazione) is int minuti
+            // R12: lo spazio libero si chiede al disco (di rete, che dorme) fuori dal thread dell'interfaccia.
+            var liberi = radice is null ? null : await Task.Run(() => (long?)new DriveInfo(radice).AvailableFreeSpace);
+            esito = liberi is long l && Riprese.SpazioScarso(l, attiva.Byte, DateTime.UtcNow - inizioRegistrazione) is int minuti
                 ? (minuti, l) : null;
         }
         catch (Exception)
         {
-            spazioScarso = null;
+            esito = null;
         }
+        // Intanto la registrazione può essere finita o ricominciata: la risposta vale solo per la stessa.
+        if (registrazione != attiva || esito == spazioScarso) return;
+        spazioScarso = esito;
+        MostraDurataRegistrazione();
     }
 
     // MARK: collegamento con il resto della finestra

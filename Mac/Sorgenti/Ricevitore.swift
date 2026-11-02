@@ -227,6 +227,8 @@ final class Ricevitore {
     /// Il prossimo tentativo di riaprire un ascolto caduto, e quanto aspettare (cresce fino a 30 secondi).
     @ObservationIgnored private var compitoRiapertura: Task<Void, Never>?
     @ObservationIgnored private var attesaRiapertura: Duration = .seconds(1)
+    /// R01: la riga «Visibile in rete» del primo ascolto dopo l'avvio dell'app porta già i millisecondi dall'avvio.
+    @ObservationIgnored private var avvioMisurato = false
     /// Il cavo USB (1.8): il client usbmux apre i canali verso l'iPhone, qui diventano sessioni come le altre.
     private let cavo = ClienteUSB()
     /// Per la diagnosi: un iPhone sul cavo senza l'app aperta, il cavo in pausa…
@@ -780,7 +782,13 @@ final class Ricevitore {
             rete = .visibile(porta: listener?.port?.rawValue ?? 0)
             controllaAttesaTelefono()
             let diretto = UserDefaults.standard.bool(forKey: Preferenze.wifiDiretto) ? String(localized: ", Wi-Fi diretto acceso") : ""
-            registra(String(localized: "Visibile in rete sulla porta \(Int(listener?.port?.rawValue ?? 0))\(diretto)"))
+            // R01: solo la prima volta (non dopo un risveglio o una rete nuova), quanto ci mette l'app a farsi trovare.
+            var dallAvvio = ""
+            if !avvioMisurato {
+                avvioMisurato = true
+                if let ms = Self.millisecondiDallAvvioApp() { dallAvvio = String(localized: ", \(ms) ms dall'avvio dell'app") }
+            }
+            registra(String(localized: "Visibile in rete sulla porta \(Int(listener?.port?.rawValue ?? 0))\(diretto + dallAvvio)"))
             aggiornaIndirizzi()
             indirizziAnnunciati = indirizzi
             attesaRiapertura = .seconds(1)
@@ -799,6 +807,19 @@ final class Ricevitore {
         default:
             break
         }
+    }
+
+    /// R01: i millisecondi da quando macOS ha avviato il processo (lo dice il kernel, quindi comprende anche il
+    /// caricamento prima del nostro codice). Nil se la lettura non riesce o il numero non ha senso.
+    nonisolated private static func millisecondiDallAvvioApp() -> Int? {
+        var info = kinfo_proc()
+        var dimensione = MemoryLayout<kinfo_proc>.stride
+        var richiesta: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_PID, getpid()]
+        guard sysctl(&richiesta, UInt32(richiesta.count), &info, &dimensione, nil, 0) == 0 else { return nil }
+        let partenza = info.kp_proc.p_starttime
+        let secondi = Date().timeIntervalSince1970 - (Double(partenza.tv_sec) + Double(partenza.tv_usec) / 1_000_000)
+        guard secondi >= 0, secondi < 3600 else { return nil }
+        return Int((secondi * 1000).rounded())
     }
 
     /// Ascolto caduto (porta morta, rete sparita): si riprova da soli dopo 1, 2, 4… fino a 30 secondi (1.12),

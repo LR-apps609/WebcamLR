@@ -142,6 +142,16 @@
         }
       }
     },
+    ", %lld ms dall'avvio dell'app" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ", %lld ms after app launch"
+          }
+        }
+      }
+    },
     ", Wi-Fi diretto acceso" : {
       "localizations" : {
         "en" : {

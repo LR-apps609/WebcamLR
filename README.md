@@ -2,7 +2,7 @@
 
 Trasforma l'iPhone (e poi Android) in una webcam professionale per Mac e Windows: video fino a 4K, audio e controlli da videocamera.
 
-- Stato, decisioni, link e cronologia: [WebcamLR · Documento della verità](https://claude.ai/artifact/JxJoa2V5VznhafRkKNCC7t). Se questo file dice altro, vale il documento.
+- Stato, decisioni, link e cronologia: [WebcamLR · Documento della verità](https://claude.ai/artifact/Bhzkpo3Sn2RtTWvANUHknK). Se questo file dice altro, vale il documento.
 - Protocollo comune: [Documenti/Protocollo.md](Documenti/Protocollo.md)
 
 ## Cartelle

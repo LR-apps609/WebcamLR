@@ -2,13 +2,18 @@
 
 ## Documento della verità: regole
 
-Documento: [WebcamLR · Documento della verità](https://claude.ai/artifact/JxJoa2V5VznhafRkKNCC7t) (Claude Docs, schede Inizia qui · Link · Stato · Diario · Decisioni e regole · Come si fa · Archivio).
+Documento: [WebcamLR · Documento della verità](https://claude.ai/artifact/Bhzkpo3Sn2RtTWvANUHknK), pagina privata su claude.ai con le schede Inizia qui · Test da fare · Link · Stato · Diario · Decisioni e regole · Come si fa · Archivio. Non condividerla senza l'ok di Ledion.
+
+- Pagina e dati sono separati: i dati stanno nel database della pagina (raccolte `meta`, `test`, `bug`, `funzioni`, `diario`, `link`, `regole`, `decisioni`, `scartate`, `comefare`, `archivio`, `cambiamenti`). Un aggiornamento è una scrittura di righe con lo strumento ArtifactData; la pagina si ripubblica solo se cambia l'aspetto.
+- Prima di ogni aggiornamento rileggi le righe dal database, non dalla memoria. Se una scrittura non riesce, dillo a Ledion.
+- Date come 04/11/2026 · 13:45, ora italiana, prese da `TZ=Europe/Rome date` o dai commit. Ogni riga ha `creata` e `modificata`; a ogni scrittura aggiorna `meta/pagina.schede.<scheda>` e `meta/pagina.aggiornato` e aggiungi una riga in `cambiamenti`.
+- Ogni cambiamento da verificare crea il suo test (raccolta `test`) insieme alla voce del Diario. Un test fallito diventa un bug in `bug`, collegato al test.
 
 - Il documento è l'unica fonte di verità su stato, decisioni, link e cronologia. Se un altro file o pagina dice altro, vale il documento. Se il codice dice altro, verifica e correggi uno dei due.
 - All'inizio di ogni lavoro: leggi «Inizia qui» e «Diario», confronta il Diario con gli ultimi commit e aggiungi quello che manca.
 - Aggiorna il documento quando inizi un lavoro (voce 🔄), a ogni versione, rilascio o unione di rami, quando ti blocchi o aspetti Ledion, quando Ledion decide qualcosa e quando finisci (con tempi e difficoltà). Mai dire «fatto» senza averlo aggiornato.
 - Niente nuovi documenti di appunti, piani o resoconti: va tutto nel documento. Restano fuori solo i file che servono all'app, alla compilazione, agli store o al sito. NOVITA resta per gli utenti, il Diario è per noi: si aggiornano insieme.
-- Oltre 30 voci nel Diario, le più vecchie vanno in Archivio con un riassunto.
+- Oltre 30 voci nel Diario, le più vecchie vanno in Archivio con un riassunto. I test passati restano visibili 7 giorni, poi finiscono in Archivio da soli.
 - Niente password, chiavi o codici segreti nel documento.
 
 ## Note tecniche

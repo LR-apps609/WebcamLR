@@ -1,7 +1,20 @@
 # WebcamLR · note per Claude
 
+## Documento della verità: regole
+
+Documento: [WebcamLR · Documento della verità](https://claude.ai/artifact/JxJoa2V5VznhafRkKNCC7t) (Claude Docs, schede Inizia qui · Link · Stato · Diario · Decisioni e regole · Come si fa · Archivio).
+
+- Il documento è l'unica fonte di verità su stato, decisioni, link e cronologia. Se un altro file o pagina dice altro, vale il documento. Se il codice dice altro, verifica e correggi uno dei due.
+- All'inizio di ogni lavoro: leggi «Inizia qui» e «Diario», confronta il Diario con gli ultimi commit e aggiungi quello che manca.
+- Aggiorna il documento quando inizi un lavoro (voce 🔄), a ogni versione, rilascio o unione di rami, quando ti blocchi o aspetti Ledion, quando Ledion decide qualcosa e quando finisci (con tempi e difficoltà). Mai dire «fatto» senza averlo aggiornato.
+- Niente nuovi documenti di appunti, piani o resoconti: va tutto nel documento. Restano fuori solo i file che servono all'app, alla compilazione, agli store o al sito. NOVITA resta per gli utenti, il Diario è per noi: si aggiornano insieme.
+- Oltre 30 voci nel Diario, le più vecchie vanno in Archivio con un riassunto.
+- Niente password, chiavi o codici segreti nel documento.
+
+## Note tecniche
+
 - Lingua: tutto in italiano (interfaccia, nomi di tipi e variabili, commenti, commit). I nomi delle API di sistema restano come sono.
-- Metodo come OrbitLR: lavoro a round (piano nel documento di progetto, link nel README). Ogni round chiude alcune funzioni numerate 1–40 e arriva con una checklist di test breve. Ledion compila e prova su dispositivi veri e manda esito, screenshot o log.
+- Metodo come OrbitLR: lavoro a round (piano e stato nel Documento della verità). Ogni round chiude alcune funzioni numerate 1–40 e arriva con una checklist di test breve. Ledion compila e prova su dispositivi veri e manda esito, screenshot o log.
 - Il protocollo è definito in `Documenti/Protocollo.md`. Ogni modifica va fatta lì e in tutte le implementazioni (Swift in `Protocollo/`, C# in `Windows/WebcamLR.Protocollo/`, Kotlin in `Android/protocollo/`), con i test aggiornati: i tre test «CiaoComeNelDocumento» devono produrre lo stesso JSON. Il Kotlin si prova con `gradle -PsoloProtocollo :protocollo:test` dentro `Android/` (il flag esclude `:app`, così non servono l'Android SDK né il plugin Android; senza il flag `:app` è sempre inclusa, come serve ad Android Studio. L'app Android qui non si compila).
 - Progetti Xcode generati da XcodeGen (`project.yml`): non aggiungere `.xcodeproj` alla repository.
 - Mac: `Mac/base.yml` è la parte comune; `project-senza-account.yml` (Apple ID gratuito, senza webcam virtuale) e `project.yml` (account a pagamento, con la Camera Extension) la includono. Per ora Ledion usa l'Apple ID gratuito: tutto ciò che non è la webcam virtuale deve funzionare senza account.

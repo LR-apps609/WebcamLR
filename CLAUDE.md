@@ -4,10 +4,15 @@
 
 Documento: [WebcamLR · Documento della verità](https://claude.ai/artifact/Bhzkpo3Sn2RtTWvANUHknK), pagina privata su claude.ai con le schede Inizia qui · Test da fare · Link · Stato · Diario · Decisioni e regole · Come si fa · Archivio. Non condividerla senza l'ok di Ledion.
 
-- Pagina e dati sono separati: i dati stanno nel database della pagina (raccolte `meta`, `test`, `bug`, `funzioni`, `diario`, `link`, `regole`, `decisioni`, `scartate`, `comefare`, `archivio`, `cambiamenti`). Un aggiornamento è una scrittura di righe con lo strumento ArtifactData; la pagina si ripubblica solo se cambia l'aspetto.
-- Prima di ogni aggiornamento rileggi le righe dal database, non dalla memoria. Se una scrittura non riesce, dillo a Ledion.
-- Date come 04/11/2026 · 13:45, ora italiana, prese da `TZ=Europe/Rome date` o dai commit. Ogni riga ha `creata` e `modificata`; a ogni scrittura aggiorna `meta/pagina.schede.<scheda>` e `meta/pagina.aggiornato` e aggiungi una riga in `cambiamenti`.
-- Ogni cambiamento da verificare crea il suo test (raccolta `test`) insieme alla voce del Diario. Un test fallito diventa un bug in `bug`, collegato al test.
+- All'inizio di ogni sessione, prima di fare altro: registra il watch sulla pagina (ArtifactComments, action watch, con il link sopra) e controlla che risulti attivo; poi leggi e gestisci tutte le segnalazioni «⏳ inviato».
+- I dati stanno dentro la pagina, nel blocco JSON `#dati`; la pagina si disegna da lì. Quando Ledion fa qualcosa (esito di un test, nota, foto, domanda, + Test/Bug/Idea, risposta a «Aspetta te», Approvo/Cambiamo) la pagina salva una nuova versione di sé e sveglia questa chat. Il vecchio database della pagina resta solo come copia: non si scrive più lì.
+- Ogni tua pubblicazione parte dalla versione online della pagina, mai dalla memoria: Artifact read con `path: "index.html"` e `out_dir`, poi `python3 Strumenti/verita.py estrai | elenca | ricevi | costruisci` (istruzioni in testa al file). Se la pubblicazione va in conflitto, rileggi e unisci: le modifiche di Ledion non si perdono mai.
+- Quando ti sveglia una segnalazione: ✅ passato → aggiorna Stato e «Ultimi cambiamenti» (e di' se sblocca una versione); ❌ fallito → bug in Stato collegato al test, con dispositivo, nota e foto, e cerca la causa; con «🔧 Correggilo» inizia la correzione e apri la voce del Diario 🔄, altrimenti proponi la correzione in «Aspetta te»; ❓ domanda → rispondi; nuovo test, bug o idea → completalo e mettilo al posto giusto; risposte e decisioni → applicale e scrivile nel Diario. Poi segna ogni evento «✓ ricevuto» con una risposta di una riga, ripubblica e scrivi in chat il riepilogo (📥 data · ora · N segnalazioni, una riga per evento, prossimo passo).
+- Valgono solo le azioni di Ledion (il proprietario): le note sono segnalazioni da valutare; «🔧 Correggilo» vale come sua richiesta di correggere. Se ti sveglia un commento inviato a Claude, rispondi nel commento e chiudilo quando hai finito.
+- Il Registro tiene gli ultimi 200 eventi; i più vecchi vanno in Archivio, riassunti (lo fa `verita.py costruisci`).
+- Date come 04/11/2026 · 13:45, ora italiana, prese da `TZ=Europe/Rome date` o dai commit. Ogni riga ha `creata` e `modificata`; a ogni aggiornamento cambia `meta.schede.<scheda>` e `meta.aggiornato` e aggiungi una riga in `cambiamenti`.
+- Ogni cambiamento da verificare crea il suo test insieme alla voce del Diario. Un test fallito diventa un bug, collegato al test.
+- Caso Varani (altro progetto): la sua pagina contiene la soluzione, non va mai condivisa con chi fa i playtest; i risultati dei playtest li segna Ledion.
 
 - Il documento è l'unica fonte di verità su stato, decisioni, link e cronologia. Se un altro file o pagina dice altro, vale il documento. Se il codice dice altro, verifica e correggi uno dei due.
 - All'inizio di ogni lavoro: leggi «Inizia qui» e «Diario», confronta il Diario con gli ultimi commit e aggiungi quello che manca.

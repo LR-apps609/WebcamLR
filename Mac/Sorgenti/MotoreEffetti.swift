@@ -245,16 +245,6 @@ final class MotoreEffetti: @unchecked Sendable {
     /// Il guided filter del bordo si usa solo se i suoi conti, provati una volta con `contesto`, tornano.
     private static let guidedFilterVerificato = RicetteEffetti.verificaAritmetica(contesto)
 
-    /// Per le maschere: valori come sono, senza gestione del colore.
-    private static let contestoMaschere: CIContext = {
-        let opzioni: [CIContextOption: Any] = [.cacheIntermediates: false, .workingColorSpace: NSNull(),
-                                               .outputColorSpace: NSNull()]
-        if let dispositivo = MTLCreateSystemDefaultDevice(), let codaComandi = dispositivo.makeCommandQueue() {
-            return CIContext(mtlCommandQueue: codaComandi, options: opzioni)
-        }
-        return CIContext(options: opzioni)
-    }()
-
     // MARK: Stato
 
     private let codaAnalisi = DispatchQueue(label: "it.lrapps.webcamlr.effetti.analisi", qos: .userInteractive)
@@ -315,6 +305,10 @@ final class MotoreEffetti: @unchecked Sendable {
     private var formatoPool: (formato: OSType, larghezza: Int, altezza: Int)?
     private var mascheraFiltrata: CVPixelBuffer?
     private var mascheraRiserva: CVPixelBuffer?
+    /// Stato del filtro nel tempo, un valore per punto della maschera di Vision (solo sulla coda di resa): la media e
+    /// se il punto è persona (isteresi). Si rifà da capo quando `mascheraFiltrata` torna nil o cambia la misura.
+    private var mediaMaschera: [Float] = []
+    private var personaMaschera: [Bool] = []
     /// Quando è arrivata l'ultima maschera nuova di Vision (0 = mai): una maschera vecchia vale al massimo
     /// `maschereVecchieValide`, poi si sfoca tutto il fotogramma.
     private var arrivoMascheraNuova: UInt64 = 0
@@ -369,15 +363,18 @@ final class MotoreEffetti: @unchecked Sendable {
     /// corso. Nella simulazione (video a gruppi, Vision 17-30 ms) i fotogrammi senza la propria maschera scendono da
     /// circa 1 su 5 a 1 su 30, con 1-5 ms in più di ritardo (che la riserva di riproduzione assorbe).
     private static let attesaInCoda: UInt64 = 20_000
-    /// Peso della maschera nuova nel filtro nel tempo: 0,5 + 5 × (vecchia − nuova) dove scende verso lo sfondo, al
-    /// massimo 1; 0,5 dove sale verso la persona. Asimmetrico per la privacy: lo sfondo torna sfondo subito, un punto
-    /// diventa persona solo se Vision lo conferma in due fotogrammi di fila. Prima (0,6 + 4 × |differenza|) un falso
-    /// positivo a fotogrammi alterni passava quasi intero, nitido e sfocato a fotogrammi alterni. Nella simulazione,
-    /// con un falso positivo nel 50% dei fotogrammi, i salti nitido/sfocato scendono da 1 su 2 a 1 su 4; con un bordo
-    /// che oscilla tra 0,3 e 0,7, da ogni fotogramma a nessuno. Il prezzo: un braccio che entra si vede un fotogramma
-    /// dopo.
-    private static let pesoSalita: CGFloat = 0.5
-    private static let guadagnoDiscesa: CGFloat = 5
+    /// Filtro nel tempo della maschera (`filtraNelTempo`), punto per punto: media morbida (`pesoNuova` della maschera
+    /// nuova a ogni fotogramma) con isteresi. Un punto diventa persona quando la media supera `sogliaSu`, torna sfondo
+    /// quando scende sotto `sogliaGiu`; in mezzo resta com'era, spinto di `spinta` dalla parte del suo stato, lontano
+    /// dalla soglia del bordo (0,55). Prima (asimmetrico: sfondo subito, persona in due fotogrammi) sulla felpa scura
+    /// davanti al divano di Ledion (4 novembre) Vision cambiava idea ogni 2-3 fotogrammi e la regola «sfondo subito»
+    /// faceva saltare spalla e felpa tra nitido e sfocato di continuo. Nella simulazione (20 prove da 300 fotogrammi):
+    /// zona incerta al 50% da 73 salti a 25, persona con buchi al 25% da 76 a 6, falsi positivi al 30% da 41 a 3,
+    /// bordo che oscilla tra 0,4 e 0,7 da 119 a 0. Il prezzo: chi entra si vede 3 fotogrammi dopo, chi esce 2 (< 0,1 s).
+    private static let pesoNuova: Float = 0.3
+    private static let sogliaSu: Float = 0.7
+    private static let sogliaGiu: Float = 0.3
+    private static let spinta: Float = 0.15
     /// Per quanto si riusa l'ultima maschera se Vision non ne dà una nuova (µs): poi la persona di prima non tiene
     /// più nitido quello che c'è ora.
     private static let maschereVecchieValide: UInt64 = 300_000
@@ -923,46 +920,70 @@ final class MotoreEffetti: @unchecked Sendable {
 
     // MARK: Pezzi della resa
 
-    /// La maschera filtrata nel tempo, alla risoluzione di Vision. Dove scende verso lo sfondo vale subito la nuova; dove
-    /// sale verso la persona, o cambia poco, si mescola a metà con la precedente (`pesoSalita`): il bordo fermo non
-    /// sfarfalla e un falso positivo di un fotogramma non diventa nitido.
+    /// La maschera filtrata nel tempo, alla risoluzione di Vision: media morbida con isteresi (vedi `pesoNuova`). Sul
+    /// processore: la maschera è piccola (al massimo circa 512×384), il giro costa meno di un millisecondo, e lo stato
+    /// di ogni punto (media e persona sì/no) resta in memoria tra un fotogramma e l'altro.
     private func filtraNelTempo(_ nuova: CVPixelBuffer) -> CVPixelBuffer? {
         let larghezza = CVPixelBufferGetWidth(nuova)
         let altezza = CVPixelBufferGetHeight(nuova)
-        guard larghezza > 0, altezza > 0 else { return mascheraFiltrata }
+        guard larghezza > 0, altezza > 0,
+              CVPixelBufferGetPixelFormatType(nuova) == kCVPixelFormatType_OneComponent8 else { return mascheraFiltrata }
         var riserva = mascheraRiserva
         if let attuale = riserva, CVPixelBufferGetWidth(attuale) != larghezza || CVPixelBufferGetHeight(attuale) != altezza {
             riserva = nil
         }
         if riserva == nil { riserva = Self.creaBufferBGRA(larghezza: larghezza, altezza: altezza) }
         guard let destinazione = riserva else { return mascheraFiltrata }
-        let ingresso = RicetteEffetti.grigio(CIImage(cvPixelBuffer: nuova, options: [.colorSpace: NSNull()]))
-        var risultato = ingresso
-        if let precedente = mascheraFiltrata,
-           CVPixelBufferGetWidth(precedente) == larghezza, CVPixelBufferGetHeight(precedente) == altezza {
-            let vecchia = CIImage(cvPixelBuffer: precedente, options: [.colorSpace: NSNull()])
-            // Quanto scende: max(vecchia, nuova) − nuova, con due operazioni simmetriche (massimo e differenza
-            // assoluta), così l'ordine degli operandi dei metodi di fusione non conta e nulla va sotto zero.
-            let massimo = CIFilter.maximumCompositing()
-            massimo.inputImage = ingresso
-            massimo.backgroundImage = vecchia
-            let discesa = CIFilter.differenceBlendMode()
-            discesa.inputImage = massimo.outputImage ?? ingresso
-            discesa.backgroundImage = ingresso
-            let peso = RicetteEffetti.lineare(discesa.outputImage ?? ingresso, pendenza: Self.guadagnoDiscesa,
-                                              scostamento: Self.pesoSalita)
-            risultato = RicetteFiltriMac.mescola(sopra: ingresso, sotto: vecchia, maschera: peso)
+        let punti = larghezza * altezza
+        // Da capo se il motore ha azzerato la maschera (sfondo spento, video cambiato, maschera troppo vecchia) o se la
+        // misura è cambiata: la prima maschera vale com'è.
+        let daCapo = mascheraFiltrata == nil || mediaMaschera.count != punti
+        if daCapo {
+            mediaMaschera = [Float](repeating: 0, count: punti)
+            personaMaschera = [Bool](repeating: false, count: punti)
         }
-        // Valori come sono (nessuno spazio di colore) e resa finita prima di tornare: la legge subito dopo l'altro
-        // contesto, su un'altra coda di comandi Metal, che non aspetterebbe un lavoro solo programmato.
-        let scrittura = CIRenderDestination(pixelBuffer: destinazione)
-        scrittura.colorSpace = nil
-        let area = CGRect(x: 0, y: 0, width: larghezza, height: altezza)
-        do {
-            let compito = try Self.contestoMaschere.startTask(toRender: risultato.cropped(to: area), to: scrittura)
-            _ = try compito.waitUntilCompleted()
-        } catch {
-            return mascheraFiltrata
+
+        CVPixelBufferLockBaseAddress(nuova, .readOnly)
+        defer { CVPixelBufferUnlockBaseAddress(nuova, .readOnly) }
+        CVPixelBufferLockBaseAddress(destinazione, [])
+        defer { CVPixelBufferUnlockBaseAddress(destinazione, []) }
+        guard let baseIngresso = CVPixelBufferGetBaseAddress(nuova),
+              let baseUscita = CVPixelBufferGetBaseAddress(destinazione) else { return mascheraFiltrata }
+        let rigaIngresso = CVPixelBufferGetBytesPerRow(nuova)
+        let rigaUscita = CVPixelBufferGetBytesPerRow(destinazione)
+        let peso = Self.pesoNuova
+        let su = Self.sogliaSu
+        let giu = Self.sogliaGiu
+        let spinta = Self.spinta
+        mediaMaschera.withUnsafeMutableBufferPointer { media in
+            personaMaschera.withUnsafeMutableBufferPointer { persona in
+                for y in 0..<altezza {
+                    let ingresso = baseIngresso.advanced(by: y * rigaIngresso).assumingMemoryBound(to: UInt8.self)
+                    let uscita = baseUscita.advanced(by: y * rigaUscita).assumingMemoryBound(to: UInt8.self)
+                    for x in 0..<larghezza {
+                        let indice = y * larghezza + x
+                        let valore = Float(ingresso[x]) / 255
+                        var m = media[indice]
+                        var p = persona[indice]
+                        if daCapo {
+                            m = valore
+                            p = valore >= 0.55
+                        } else {
+                            m += (valore - m) * peso
+                            if p, m < giu { p = false } else if !p, m > su { p = true }
+                        }
+                        media[indice] = m
+                        persona[indice] = p
+                        let spinto = min(max(m + (p ? spinta : -spinta), 0), 1)
+                        let byte = UInt8((spinto * 255).rounded())
+                        // BGRA grigia, opaca.
+                        uscita[x * 4] = byte
+                        uscita[x * 4 + 1] = byte
+                        uscita[x * 4 + 2] = byte
+                        uscita[x * 4 + 3] = 255
+                    }
+                }
+            }
         }
         // Due buffer a turno: quello appena scritto diventa il «precedente» della prossima volta. La resa è sincrona
         // e su una coda sola: quando si riscrive la riserva, nessuno la sta leggendo.

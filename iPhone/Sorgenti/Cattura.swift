@@ -248,7 +248,8 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
     /// Il motivo di iOS nei casi che il telefono sa spiegare.
     private static func causa(di motivo: AVCaptureSession.InterruptionReason?) -> CausaInterruzione {
         guard let motivo else { return .altro }
-        switch motivo {
+        // Con la `guard` prima, lo `switch` non è più l'unica espressione: serve `return` esplicito.
+        return switch motivo {
         case .audioDeviceInUseByAnotherClient: .chiamata
         case .videoDeviceInUseByAnotherClient, .videoDeviceNotAvailableWithMultipleForegroundApps: .altraApp
         case .videoDeviceNotAvailableDueToSystemPressure: .calore

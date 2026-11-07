@@ -1246,6 +1246,7 @@ final class Ricevitore {
             registra(String(localized: "Pausa nel video: \(Int(pause.telefono / 1000)) ms tra due catture sul telefono · \(Int(pause.arrivo / 1000)) ms tra due arrivi · \(Int(pause.mostrate / 1000)) ms tra due immagini mostrate"),
                      di: telefono)
         }
+        registraAvvisiSchermo(telefono.schermo.prendiAvvisi(), di: telefono)
         let stato = telefono.statoTelefono
         let effettiAccesi = (telefono === attivo ? effetti.sfondo : telefono.effetti.sfondo) != ModiSfondo.nessuno
             || stato?.sfocaturaSistema == true || stato?.luceSistema == true
@@ -1258,6 +1259,32 @@ final class Ricevitore {
         telefono.secondiNumeri = 0
         let velocita = Lingua.decimali(String(format: "%.1f", numeri.megabitAlSecondo))
         registra(String(localized: "Ricevuti: \(numeri.fps) fps · \(velocita) Mbit/s"), di: telefono)
+    }
+
+    /// b02: una volta al secondo, gli avvisi dello `Schermo` (schermata «interrotta», decodifica che aspetta un
+    /// fotogramma chiave) nel registro.
+    private func registraAvvisiSchermo(_ avvisi: [Schermo.Avviso], di telefono: TelefonoCollegato) {
+        for avviso in avvisi {
+            switch avviso {
+            case .interrotta(let ultimaImmagineMs, let ultimoArrivoMs, let aspettaChiave):
+                let immagine = ultimaImmagineMs.map { Lingua.decimali(String(format: "%.1f s", Double($0) / 1000)) } ?? "—"
+                let arrivo = ultimoArrivoMs.map { Lingua.decimali(String(format: "%.2f s", Double($0) / 1000)) } ?? "—"
+                let chiave = aspettaChiave ? String(localized: "sì") : String(localized: "no")
+                registra(String(localized: "Schermata di attesa: «interrotta» · ultima immagine \(immagine) fa · ultimo arrivo \(arrivo) fa · in attesa del fotogramma chiave \(chiave)"),
+                         di: telefono)
+            case .interrottaTolta(let dopoMs):
+                let dopo = Lingua.decimali(String(format: "%.1f s", Double(dopoMs) / 1000))
+                registra(String(localized: "Schermata di attesa tolta: il video esce di nuovo dopo \(dopo)"), di: telefono)
+            case .decodificaRifatta:
+                registra(String(localized: "Decodifica rifatta: sessione non valida, aspetto un fotogramma chiave"), di: telefono)
+            case .codecCambiato(let codec):
+                let nome = codec == .hevc ? "HEVC" : "H.264"
+                registra(String(localized: "Codec cambiato in \(nome): aspetto un fotogramma chiave"), di: telefono)
+            case .chiaveArrivata(let dopoMs):
+                let dopo = Lingua.decimali(String(format: "%.1f s", Double(dopoMs) / 1000))
+                registra(String(localized: "Fotogramma chiave arrivato dopo \(dopo)"), di: telefono)
+            }
+        }
     }
 
     /// Ogni 30 secondi, mentre il video arriva: le tappe del ritardo da vetro a uscita (Protocollo.md, «Latenza») e il
@@ -1696,6 +1723,10 @@ final class Ricevitore {
             case .bordoSemplice:
                 registra(String(localized: "Effetti: Core Image su questo Mac non regge i conti del guided filter: bordo della persona semplice"),
                          di: telefono)
+            case .primaMaschera(let ms):
+                registra(String(localized: "Sfondo: prima maschera di Vision dopo \(ms) ms (fino ad allora tutto sfocato)"), di: telefono)
+            case .resaLenta(let ms):
+                registra(String(localized: "Effetti: una resa ha preso \(ms) ms (Core Image prepara il filtro?)"), di: telefono)
             }
         }
         guard let effettiMs = misure.effettiMs else {

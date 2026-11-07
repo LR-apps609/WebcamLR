@@ -1018,6 +1018,16 @@
         }
       }
     },
+    "Codec cambiato in %@: aspetto un fotogramma chiave" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codec changed to %@: waiting for a keyframe"
+          }
+        }
+      }
+    },
     "Codice di conferma %@" : {
       "localizations" : {
         "en" : {
@@ -1451,6 +1461,16 @@
         }
       }
     },
+    "Decodifica rifatta: sessione non valida, aspetto un fotogramma chiave" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Decoding restarted: session no longer valid, waiting for a keyframe"
+          }
+        }
+      }
+    },
     "Diagnosi: il video mostra la maschera della persona (⌥ clic su «Sfondo» per tornare)" : {
       "localizations" : {
         "en" : {
@@ -1651,6 +1671,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Effects: Vision mask %lld×%lld, frame %lld×%lld (%@)"
+          }
+        }
+      }
+    },
+    "Effetti: una resa ha preso %lld ms (Core Image prepara il filtro?)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effects: one render took %lld ms (Core Image preparing the filter?)"
           }
         }
       }
@@ -2035,6 +2065,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Camera, effects, connection, phones, outputs, startup, notifications and security (⌘,)"
+          }
+        }
+      }
+    },
+    "Fotogramma chiave arrivato dopo %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keyframe arrived after %@"
           }
         }
       }
@@ -5316,6 +5356,26 @@
         }
       }
     },
+    "Schermata di attesa tolta: il video esce di nuovo dopo %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting screen removed: video is out again after %@"
+          }
+        }
+      }
+    },
+    "Schermata di attesa: «interrotta» · ultima immagine %@ fa · ultimo arrivo %@ fa · in attesa del fotogramma chiave %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting screen: “interrupted” · last image %@ ago · last arrival %@ ago · waiting for a keyframe %@"
+          }
+        }
+      }
+    },
     "Schermo" : {
       "localizations" : {
         "en" : {
@@ -5643,6 +5703,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Blurred background, softened skin"
+          }
+        }
+      }
+    },
+    "Sfondo: prima maschera di Vision dopo %lld ms (fino ad allora tutto sfocato)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Background: first Vision mask after %lld ms (everything blurred until then)"
           }
         }
       }
@@ -7151,6 +7221,16 @@
         }
       }
     },
+    "no" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "no"
+          }
+        }
+      }
+    },
     "non attaccato" : {
       "localizations" : {
         "en" : {
@@ -7369,6 +7449,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "handshake %@"
+          }
+        }
+      }
+    },
+    "sì" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "yes"
           }
         }
       }

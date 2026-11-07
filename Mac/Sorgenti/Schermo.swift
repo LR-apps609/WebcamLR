@@ -58,6 +58,28 @@ final class Schermo: @unchecked Sendable {
         var arrivo: UInt64 = 0
         var mostrate: UInt64 = 0
     }
+
+    /// b02: per il registro del collegamento, letti dal `Ricevitore` una volta al secondo con `prendiAvvisi`.
+    enum Avviso: Sendable {
+        /// La finestra mostra «Collegamento interrotto»: da quanto non esce un'immagine e da quanto non arriva un
+        /// fotogramma dalla rete (ms; nil se mai), e se la decodifica aspetta un fotogramma chiave.
+        case interrotta(ultimaImmagineMs: Int?, ultimoArrivoMs: Int?, aspettaChiave: Bool)
+        /// Dopo «interrotta» il video esce di nuovo, dopo questi ms.
+        case interrottaTolta(dopoMs: Int)
+        /// La sessione di decodifica non valeva più (stop del Mac): si aspetta un fotogramma chiave.
+        case decodificaRifatta
+        /// Il telefono ha cambiato codec: si aspetta un fotogramma chiave.
+        case codecCambiato(Codec)
+        /// Il fotogramma chiave atteso dopo `decodificaRifatta` o `codecCambiato` è arrivato, dopo questi ms.
+        case chiaveArrivata(dopoMs: Int)
+    }
+    /// Sotto `bloccoPause`.
+    private var avvisi: [Avviso] = []
+    /// Da quando (`Orologio`, µs) si aspetta un fotogramma chiave per un codec cambiato o una decodifica rifatta;
+    /// 0 se no. Solo sulla coda.
+    private var chiaveAttesaDa: UInt64 = 0
+    /// Da quando (`DispatchTime`, ns) la finestra mostra «interrotta»; 0 se no. Solo sulla coda.
+    private var interrottaDa: UInt64 = 0
     /// La riserva di riproduzione (`RiservaRiproduzione`) e le immagini che vi aspettano, in ordine, con l'istante in
     /// cui escono (`Orologio`, µs). Solo sulla coda.
     private var riserva = RiservaRiproduzione()
@@ -143,6 +165,8 @@ final class Schermo: @unchecked Sendable {
             self.codec = nuovo
             self.formato = nil
             self.attendiChiave = true
+            self.chiaveAttesaDa = Orologio.adesso()
+            self.avvisa(.codecCambiato(nuovo))
         }
     }
 
@@ -176,6 +200,8 @@ final class Schermo: @unchecked Sendable {
             self.livello.sampleBufferRenderer.flush(removingDisplayedImage: true, completionHandler: nil)
             self.formato = nil
             self.attendiChiave = true
+            self.chiaveAttesaDa = 0
+            self.interrottaDa = 0
             self.chiudiDecodifica()
             self.formatoImmagini = nil
             self.ultimaImmagine = nil
@@ -189,6 +215,23 @@ final class Schermo: @unchecked Sendable {
             guard let immagine = self.ultimaImmagine else { return completamento(nil) }
             let ci = CIImage(cvPixelBuffer: immagine)
             completamento(self.contestoFoto.createCGImage(ci, from: ci.extent))
+        }
+    }
+
+    /// b02: gli avvisi per il registro dall'ultima volta, poi da capo. Da qualsiasi coda.
+    func prendiAvvisi() -> [Avviso] {
+        bloccoPause.withLock {
+            let presi = avvisi
+            avvisi = []
+            return presi
+        }
+    }
+
+    /// Sulla coda (o da qualsiasi coda: è sotto `bloccoPause`). Al massimo 20 in attesa di essere letti.
+    private func avvisa(_ avviso: Avviso) {
+        bloccoPause.withLock {
+            guard avvisi.count < 20 else { return }
+            avvisi.append(avviso)
         }
     }
 
@@ -221,6 +264,8 @@ final class Schermo: @unchecked Sendable {
         }
         ultimoArrivo = arrivo
         ultimaCattura = fotogramma.timestamp
+        // b02: la schermata d'attesa sa che il video arriva, anche se non esce ancora (vedi `ProgrammaAttesa`).
+        programma.arrivato(adesso: DispatchTime.now().uptimeNanoseconds)
         let unita = AnnexB.unita(in: fotogramma.dati)
         let hevc = codec == .hevc
         let tipo: (Data) -> UInt8 = hevc ? AnnexB.tipoHEVC : AnnexB.tipoH264
@@ -241,6 +286,10 @@ final class Schermo: @unchecked Sendable {
         if attendiChiave {
             guard fotogramma.chiave else { return }
             attendiChiave = false
+            if chiaveAttesaDa != 0 {
+                avvisa(.chiaveArrivata(dopoMs: Int((arrivo > chiaveAttesaDa ? arrivo - chiaveAttesaDa : 0) / 1000)))
+                chiaveAttesaDa = 0
+            }
         }
 
         // Solo le unità con l'immagine: parametri e delimitatori stanno nel formato.
@@ -309,6 +358,21 @@ final class Schermo: @unchecked Sendable {
         let prima = mostrata
         mostrata = voluta
         versioneMostrata = istantanea.versione
+        // b02: «interrotta» e il suo ritorno nel registro, con i tempi che dicono perché.
+        if voluta != prima {
+            let adesso = DispatchTime.now().uptimeNanoseconds
+            if voluta == .interrotta {
+                interrottaDa = adesso
+                let vivo = programma.ultimoVivo
+                let arrivo = programma.ultimoArrivo
+                avvisa(.interrotta(ultimaImmagineMs: vivo == 0 ? nil : Int((adesso &- vivo) / 1_000_000),
+                                   ultimoArrivoMs: arrivo == 0 ? nil : Int((adesso &- arrivo) / 1_000_000),
+                                   aspettaChiave: attendiChiave))
+            } else if prima == .interrotta {
+                if voluta == nil, interrottaDa != 0 { avvisa(.interrottaTolta(dopoMs: Int((adesso &- interrottaDa) / 1_000_000))) }
+                interrottaDa = 0
+            }
+        }
         let strato = self.strato
         guard let voluta else {
             // Il video è tornato: l'attesa svanisce sopra la prima immagine nuova.
@@ -386,6 +450,8 @@ final class Schermo: @unchecked Sendable {
         if Int(esito) == Int(kVTInvalidSessionErr) {
             chiudiDecodifica()
             attendiChiave = true
+            chiaveAttesaDa = Orologio.adesso()
+            avvisa(.decodificaRifatta)
         }
     }
 

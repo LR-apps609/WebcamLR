@@ -1667,10 +1667,24 @@ final class Ricevitore {
     /// sfocature); la luce non si accende sopra Luce da studio. Un altro `sfondo` si ignora; specchio e sfondo si
     /// ignorano anche con la fotocamera posteriore, come i pulsanti grigi del Mac. La risposta è sempre un
     /// `effetti`, anche se non cambia nulla.
+    /// b01: un `chiedi-effetto` lo manda solo un telefono con `capacita.effettiSulComputer`, quindi vale come quella
+    /// dichiarazione (Protocollo.md, «Effetti sul computer»): se questa sessione non l'ha ancora deciso (la `capacita`
+    /// non è arrivata, o è arrivata senza il campo) si decide adesso, invece di perdere il tocco in silenzio.
     private func applica(_ richiesta: RichiestaEffetto, da telefono: TelefonoCollegato) {
-        guard Self.effettiSulComputer, telefono.effettiSulComputer == true else { return }
+        guard Self.effettiSulComputer, let sessione = telefono.sessione else { return }
+        registra(String(localized: "Dal telefono: \(Self.descrizione(richiesta))"), di: telefono)
+        if telefono.effettiSulComputer != true {
+            registra(String(localized: "Richiesta del telefono prima della «capacita»: telecomando acceso da adesso"), di: telefono)
+            telefono.effettiSulComputer = true
+            telefono.effettiInviati = nil
+            // Prima il `comando`, poi la risposta `effetti` (i messaggi partono nell'ordine in cui si mandano).
+            sessione.comanda(Comando(effettiSulComputer: true))
+        }
         let stato = telefono.statoTelefono
         let frontale = Self.conFrontale(telefono)
+        if !frontale, richiesta.specchia != nil || richiesta.sfondo != nil {
+            registra(String(localized: "Specchio e sfondo ignorati: il telefono usa la fotocamera posteriore"), di: telefono)
+        }
         var nuovi = effettiComputer
         if let specchia = richiesta.specchia, frontale { nuovi.specchia = specchia }
         if let luce = richiesta.luceVolto, !luce || stato?.luceSistema != true { nuovi.luceVolto = luce }
@@ -1681,14 +1695,48 @@ final class Ricevitore {
             nuovi.intensitaSfondo = livelloSfocatura.intensita
         }
         guard nuovi != effettiComputer else {
+            let attuale = statoEffetti(di: telefono)
+            registra(String(localized: "Nessun cambiamento: al telefono lo stato attuale (\(Self.descrizione(attuale)))"),
+                     di: telefono)
             mandaStatoEffetti(a: telefono, sempre: true)
             return
         }
-        registra(String(localized: "Effetti cambiati dal telefono"), di: telefono)
+        registra(String(localized: "Effetti cambiati dal telefono: \(Self.descrizione(richiesta))"), di: telefono)
         // Il `didSet` aggiorna il motore e manda `effetti` ai telefoni telecomando a cui è cambiato; a questo sempre,
         // una volta sola (l'ultimo mandato si dimentica prima).
         telefono.effettiInviati = nil
         effettiComputer = nuovi
+        // Se il giro dei cambi non gli ha mandato nulla (telefono non in `telefoni`, per esempio), la risposta parte qui.
+        if telefono.effettiInviati == nil { mandaStatoEffetti(a: telefono, sempre: true) }
+    }
+
+    /// b01, per il registro: «sfondo sfocato, luce accesa».
+    private static func descrizione(_ richiesta: RichiestaEffetto) -> String {
+        var parti: [String] = []
+        if let specchia = richiesta.specchia {
+            parti.append(specchia ? String(localized: "specchio acceso") : String(localized: "specchio spento"))
+        }
+        if let sfondo = richiesta.sfondo { parti.append(descrizione(sfondo: sfondo)) }
+        if let luce = richiesta.luceVolto {
+            parti.append(luce ? String(localized: "luce accesa") : String(localized: "luce spenta"))
+        }
+        return parti.isEmpty ? String(localized: "niente") : parti.joined(separator: ", ")
+    }
+
+    /// b01, per il registro: lo stato mandato al telefono, «specchio spento, sfondo sfocato, luce accesa».
+    private static func descrizione(_ stato: StatoEffettiComputer) -> String {
+        [stato.specchia ? String(localized: "specchio acceso") : String(localized: "specchio spento"),
+         descrizione(sfondo: stato.sfondo),
+         stato.luceVolto ? String(localized: "luce accesa") : String(localized: "luce spenta")].joined(separator: ", ")
+    }
+
+    private static func descrizione(sfondo: String) -> String {
+        switch sfondo {
+        case ModiSfondo.nessuno: String(localized: "sfondo spento")
+        case ModiSfondo.sfocato: String(localized: "sfondo sfocato")
+        case ModiSfondo.sostituito: String(localized: "sfondo sostituito")
+        default: String(localized: "sfondo \(sfondo)")
+        }
     }
 
     /// Per un telefono di prima, con gli effetti sul computer: un solo `comando` che spegne i suoi effetti di immagine

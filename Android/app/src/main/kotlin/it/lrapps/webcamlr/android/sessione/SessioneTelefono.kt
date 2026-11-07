@@ -276,6 +276,13 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     /** Con gli effetti sul computer: il loro stato (`effetti`) per i pulsanti tondi; null finché il computer non lo manda. */
     val effettiComputer: StateFlow<EffettiComputer?> = effettiComputerInterni.asStateFlow()
 
+    private val effettoInAttesaInterno = MutableStateFlow<ChiediEffetto?>(null)
+    /**
+     * b01: i tocchi chiesti al computer finché non arriva `effetti` (al massimo [ATTESA_RISPOSTA_EFFETTO_MS]): i pulsanti
+     * tondi li mostrano subito e restano così; poi seguono di nuovo il computer.
+     */
+    val effettoInAttesa: StateFlow<ChiediEffetto?> = effettoInAttesaInterno.asStateFlow()
+
     private val effettiInterni = MutableStateFlow(Impostazioni.effetti())
     /** Gli effetti attuali (salvati sul telefono). */
     val effetti: StateFlow<StatoEffetti> = effettiInterni.asStateFlow()
@@ -906,14 +913,47 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
      */
     fun chiediEffetto(richiesta: ChiediEffetto) {
         if (!sulComputerInterno.value) return
-        destinazione?.invia(richiesta)
+        val verso = destinazione
+        if (verso == null) {
+            registro.aggiungi(Testi.testo(R.string.registro_tocco_non_mandato))
+            return
+        }
+        verso.invia(richiesta)
+        registro.aggiungi(Testi.testo(R.string.registro_chiesto_effetto, descrizione(richiesta)))
+        // b01: il tocco si vede subito; due tocchi di fila (Sfoca, poi Luce) restano mostrati tutti e due.
+        val prima = effettoInAttesaInterno.value ?: ChiediEffetto()
+        effettoInAttesaInterno.value = ChiediEffetto(
+            specchia = richiesta.specchia ?: prima.specchia,
+            sfondo = richiesta.sfondo ?: prima.sfondo,
+            luceVolto = richiesta.luceVolto ?: prima.luceVolto,
+        )
+        principale.removeCallbacks(fineAttesaEffetto)
+        principale.postDelayed(fineAttesaEffetto, ATTESA_RISPOSTA_EFFETTO_MS)
     }
+
+    /** b01: il computer non ha risposto al tocco: i pulsanti tornano al suo ultimo stato. */
+    private val fineAttesaEffetto = Runnable {
+        if (effettoInAttesaInterno.value == null) return@Runnable
+        effettoInAttesaInterno.value = null
+        registro.aggiungi(Testi.testo(R.string.registro_tocco_senza_risposta))
+    }
+
+    /** Per il registro, con i nomi del protocollo: «sfondo=sfocato, luceVolto=true». */
+    private fun descrizione(richiesta: ChiediEffetto): String = listOfNotNull(
+        richiesta.specchia?.let { "specchia=$it" },
+        richiesta.sfondo?.let { "sfondo=$it" },
+        richiesta.luceVolto?.let { "luceVolto=$it" },
+    ).joinToString(", ")
 
     /** `comando.effettiSulComputer`: il computer prende (o restituisce) tutti gli effetti di immagine. */
     private fun impostaEffettiSulComputer(attivo: Boolean) {
         if (attivo == sulComputerInterno.value) return
         sulComputerInterno.value = attivo
-        if (!attivo) effettiComputerInterni.value = null
+        if (!attivo) {
+            effettiComputerInterni.value = null
+            principale.removeCallbacks(fineAttesaEffetto)
+            effettoInAttesaInterno.value = null
+        }
         aggiornaSpecchi()
         applicaEffettiAlRenderizzatore()
         aggiornaSovrapposizioni()
@@ -935,6 +975,12 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     /** `effetti`: lo stato degli effetti fatti dal computer, per i pulsanti e lo specchio dell'anteprima. */
     private fun effettiDalComputer(ricevuti: EffettiComputer) {
         if (!sulComputerInterno.value) return
+        if (ricevuti != effettiComputerInterni.value || effettoInAttesaInterno.value != null) {
+            registro.aggiungi(Testi.testo(R.string.registro_effetti_del_computer,
+                "specchia=${ricevuti.specchia}, sfondo=${ricevuti.sfondo}, luceVolto=${ricevuti.luceVolto}"))
+        }
+        principale.removeCallbacks(fineAttesaEffetto)
+        effettoInAttesaInterno.value = null
         effettiComputerInterni.value = ricevuti
         aggiornaSpecchi()
     }
@@ -2462,6 +2508,8 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         private const val MASSIMO_RIPRESE_AUTOMATICHE = 5
         private const val ATTESA_PRIMA_DI_RIPROVARE_MS = 1_000L
         private const val DURATA_ANNUNCIO_MS = 10_000L
+        /** b01: quanto un tocco del telecomando resta mostrato senza risposta del computer. */
+        const val ATTESA_RISPOSTA_EFFETTO_MS = 2_000L
 
         fun nomeCodec(formato: FormatoVideo) = if (formato.codec.valore == "hevc") "HEVC" else "H.264"
 

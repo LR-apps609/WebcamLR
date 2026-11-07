@@ -1451,6 +1451,16 @@
         }
       }
     },
+    "Dal telefono: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From the phone: %@"
+          }
+        }
+      }
+    },
     "Dall'inizio" : {
       "localizations" : {
         "en" : {
@@ -1585,12 +1595,12 @@
         }
       }
     },
-    "Effetti cambiati dal telefono" : {
+    "Effetti cambiati dal telefono: %@" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Effects changed from the phone"
+            "value" : "Effects changed from the phone: %@"
           }
         }
       }
@@ -3836,6 +3846,16 @@
         }
       }
     },
+    "Nessun cambiamento: al telefono lo stato attuale (%@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No change: current state sent to the phone (%@)"
+          }
+        }
+      }
+    },
     "Nessun dato da 3 secondi" : {
       "localizations" : {
         "en" : {
@@ -4972,6 +4992,16 @@
         }
       }
     },
+    "Richiesta del telefono prima della «capacita»: telecomando acceso da adesso" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Request from the phone before its “capacita”: remote on from now"
+          }
+        }
+      }
+    },
     "Riconnessione in corso…" : {
       "comment" : "Sotto «Collegamento interrotto» nella schermata di attesa.",
       "localizations" : {
@@ -5918,6 +5948,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mirrored: call apps, the phone and this window see the flipped video. Click to flip it back"
+          }
+        }
+      }
+    },
+    "Specchio e sfondo ignorati: il telefono usa la fotocamera posteriore" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mirror and background ignored: the phone is using the rear camera"
           }
         }
       }
@@ -7111,6 +7151,26 @@
         }
       }
     },
+    "luce accesa" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "light on"
+          }
+        }
+      }
+    },
+    "luce spenta" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "light off"
+          }
+        }
+      }
+    },
     "luce sul volto" : {
       "localizations" : {
         "en" : {
@@ -7217,6 +7277,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "no person"
+          }
+        }
+      }
+    },
+    "niente" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "nothing"
           }
         }
       }
@@ -7413,12 +7483,62 @@
         }
       }
     },
+    "sfondo %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "background %@"
+          }
+        }
+      }
+    },
     "sfondo sfocato" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "blurred background"
+          }
+        }
+      }
+    },
+    "sfondo sostituito" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "background replaced"
+          }
+        }
+      }
+    },
+    "sfondo spento" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "background off"
+          }
+        }
+      }
+    },
+    "specchio acceso" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "mirror on"
+          }
+        }
+      }
+    },
+    "specchio spento" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "mirror off"
           }
         }
       }

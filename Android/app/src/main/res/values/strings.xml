@@ -364,6 +364,10 @@
     <string name="registro_non_specchiata">Immagine inviata non specchiata</string>
     <string name="registro_effetti_sul_computer">Effetti sul computer: il telefono manda la fotocamera così com\'è</string>
     <string name="registro_effetti_sul_telefono">Effetti di nuovo sul telefono</string>
+    <string name="registro_chiesto_effetto">Chiesto al computer: %1$s</string>
+    <string name="registro_tocco_non_mandato">Tocco non mandato: il computer non è collegato</string>
+    <string name="registro_tocco_senza_risposta">Il computer non ha risposto al tocco entro 2 secondi</string>
+    <string name="registro_effetti_del_computer">Effetti del computer: %1$s</string>
     <string name="registro_microfono_acceso">Microfono al computer acceso</string>
     <string name="registro_microfono_spento">Microfono al computer spento</string>
     <string name="registro_collegamento_a">Collegamento a %1$s…</string>

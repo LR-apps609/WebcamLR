@@ -1424,12 +1424,18 @@ private fun ColonnaComandi(sessione: SessioneTelefono, grande: Boolean, modifier
     // (`effetti`); finché non arriva restano spenti. Microfono e Pausa restano del telefono.
     val sulComputer = sessione.effettiSulComputer.ora()
     val delComputer = sessione.effettiComputer.ora()
+    // b01: il tocco si vede subito e resta finché il computer risponde (al massimo 2 secondi).
+    val inAttesa = sessione.effettoInAttesa.ora()
     // Specchio e sfondo valgono solo con la frontale: con la posteriore i due pulsanti restano grigi e spenti (la
     // scelta torna tornando alla frontale). Vale anche con gli effetti sul computer, come sul Mac e sull'iPhone.
     val frontale = sessione.conFrontale
-    val specchioVisto = if (sulComputer) delComputer?.specchia == true else specchiato && frontale
-    val sfocato = if (sulComputer) delComputer != null && delComputer.sfondo != ModiSfondo.NESSUNO else sfondo != ModiSfondo.NESSUNO && frontale
-    val luceAccesa = if (sulComputer) delComputer?.luceVolto == true else effetti.luceVolto
+    val specchioVisto = if (sulComputer) inAttesa?.specchia ?: (delComputer?.specchia == true) else specchiato && frontale
+    val sfocato = if (sulComputer) {
+        inAttesa?.sfondo?.let { it != ModiSfondo.NESSUNO } ?: (delComputer != null && delComputer.sfondo != ModiSfondo.NESSUNO)
+    } else {
+        sfondo != ModiSfondo.NESSUNO && frontale
+    }
+    val luceAccesa = if (sulComputer) inAttesa?.luceVolto ?: (delComputer?.luceVolto == true) else effetti.luceVolto
     val acceso = stringResource(R.string.acceso)
     val spento = stringResource(R.string.spento)
     val soloConFrontale = stringResource(R.string.avviso_solo_frontale)

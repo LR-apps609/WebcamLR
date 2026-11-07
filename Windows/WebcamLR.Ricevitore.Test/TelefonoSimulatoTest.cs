@@ -493,6 +493,71 @@ public class TelefonoSimulatoTest
         Assert.False(ricevitore.Chiusa.Task.IsCompleted);
     }
 
+    /// <summary>
+    /// b01: un <c>chiedi-effetto</c> arrivato prima della <c>capacita</c> vale come <c>capacita.effettiSulComputer</c>
+    /// (Protocollo.md, «Effetti sul computer»): il PC manda subito <c>comando.effettiSulComputer</c>, poi la risposta
+    /// <c>effetti</c>, in quest'ordine. La <c>capacita</c> che arriva dopo non manda un secondo comando.
+    /// </summary>
+    [Fact]
+    public async Task UnaRichiestaPrimaDellaCapacitaAccendeIlTelecomando()
+    {
+        using var idComputer = IdentitaDispositivo.Nuova();
+        var abbinamento = new Abbinamento(idComputer);
+        var telecomando = new TelecomandoEffetti();
+        var blocco = new object();
+        var scelti = RegoleEffettiComputer.Iniziali;
+        EffettiComputer Stato() => RegoleTelecomando.Stato(scelti, pro: false, null, null);
+        using var ricevitore = new Ricevitore(abbinamento, sessione =>
+        {
+            sessione.CapacitaRicevute += capacita =>
+            {
+                lock (blocco)
+                {
+                    foreach (var messaggio in telecomando.Decidi(capacita, Stato()))
+                    {
+                        if (messaggio is Comando comando) sessione.ComandaAsync(comando).Wait();
+                        else if (messaggio is EffettiComputer effetti) sessione.MandaEffettiAsync(effetti).Wait();
+                    }
+                }
+            };
+            sessione.EffettoChiesto += richiesta =>
+            {
+                lock (blocco)
+                {
+                    foreach (var messaggio in telecomando.Chiesto())
+                        if (messaggio is Comando comando) sessione.ComandaAsync(comando).Wait();
+                    if (RegoleTelecomando.Comando(richiesta, null, LivelloSfocatura.Medio) is { } comandoEffetti)
+                        scelti = scelti.Applica(comandoEffetti);
+                    if (telecomando.DaMandare(Stato(), sempre: true) is { } effetti) sessione.MandaEffettiAsync(effetti).Wait();
+                }
+            };
+        });
+        await using var telefono = new TelefonoFinto();
+        await telefono.CollegaAsync(ricevitore.Ascoltatore.Porta, gettone: abbinamento.Gettone);
+        await telefono.AttendiAsync<Benvenuto>().WaitAsync(Limite);
+
+        // Il prossimo messaggio degli effetti (comando o effetti), saltando gli altri (ping…).
+        async Task<Messaggio> ProssimoDegliEffetti()
+        {
+            while (true)
+            {
+                var messaggio = await telefono.Ricevuti.Reader.ReadAsync().AsTask().WaitAsync(Limite);
+                if (messaggio is Comando or EffettiComputer) return messaggio;
+            }
+        }
+
+        await telefono.InviaAsync(new ChiediEffetto(LuceVolto: true));
+        Assert.Equal(new Comando(EffettiSulComputer: true), await ProssimoDegliEffetti());
+        Assert.Equal(new EffettiComputer(false, ModiSfondo.Nessuno, true), await ProssimoDegliEffetti());
+
+        // La capacita dopo: niente secondo comando; la prossima risposta è subito un «effetti».
+        await telefono.InviaAsync(new Capacita(["frontale"], 5, false, EffettiSulComputer: true));
+        await telefono.InviaAsync(new ChiediEffetto(Sfondo: ModiSfondo.Sfocato));
+        Assert.Equal(new EffettiComputer(false, ModiSfondo.Sfocato, true), await ProssimoDegliEffetti());
+        lock (blocco) Assert.True(telecomando.Attivo);
+        Assert.False(ricevitore.Chiusa.Task.IsCompleted);
+    }
+
     /// <summary>Un telefono di prima (senza <c>capacita.effettiSulComputer</c>) riceve il comando che spegne i suoi effetti.</summary>
     [Fact]
     public async Task UnTelefonoDiPrimaSpegneISuoiEffetti()

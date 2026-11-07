@@ -362,6 +362,10 @@
     <string name="registro_non_specchiata">Sent image not mirrored</string>
     <string name="registro_effetti_sul_computer">Effects on the computer: the phone sends the camera as it is</string>
     <string name="registro_effetti_sul_telefono">Effects back on the phone</string>
+    <string name="registro_chiesto_effetto">Asked the computer: %1$s</string>
+    <string name="registro_tocco_non_mandato">Tap not sent: the computer isn’t connected</string>
+    <string name="registro_tocco_senza_risposta">The computer didn’t answer the tap within 2 seconds</string>
+    <string name="registro_effetti_del_computer">Computer effects: %1$s</string>
     <string name="registro_microfono_acceso">Microphone to computer on</string>
     <string name="registro_microfono_spento">Microphone to computer off</string>
     <string name="registro_collegamento_a">Connecting to %1$s…</string>

@@ -1395,6 +1395,23 @@
         }
       }
     },
+    "Chiesto al computer: %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asked the computer: %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chiesto al computer: %@"
+          }
+        }
+      }
+    },
     "Chiudi il gobbo" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2381,6 +2398,23 @@
         }
       }
     },
+    "Effetti del computer: %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Computer effects: %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effetti del computer: %@"
+          }
+        }
+      }
+    },
     "Effetti fatti dal computer: video dalla fotocamera così com'è" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3023,6 +3057,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Il computer ha mandato dati non validi: tocca «Riprova», e se succede ancora riapri WebcamLR sul computer."
+          }
+        }
+      }
+    },
+    "Il computer non ha confermato gli effetti sul computer entro 3 secondi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The computer didn’t confirm effects on the computer within 3 seconds"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il computer non ha confermato gli effetti sul computer entro 3 secondi"
+          }
+        }
+      }
+    },
+    "Il computer non ha risposto al tocco entro 2 secondi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The computer didn’t answer the tap within 2 seconds"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il computer non ha risposto al tocco entro 2 secondi"
           }
         }
       }
@@ -6920,6 +6988,40 @@
         }
       }
     },
+    "Tocco non mandato: gli effetti non sono sul computer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap not sent: effects are not on the computer"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tocco non mandato: gli effetti non sono sul computer"
+          }
+        }
+      }
+    },
+    "Tocco non mandato: il computer non è collegato" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap not sent: the computer isn’t connected"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tocco non mandato: il computer non è collegato"
+          }
+        }
+      }
+    },
     "Torcia" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8348,6 +8450,40 @@
         }
       }
     },
+    "luce accesa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "light on"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "luce accesa"
+          }
+        }
+      }
+    },
+    "luce spenta" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "light off"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "luce spenta"
+          }
+        }
+      }
+    },
     "misura delle immagini cambiata" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8395,6 +8531,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "nessuna"
+          }
+        }
+      }
+    },
+    "niente" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "nothing"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "niente"
           }
         }
       }
@@ -8654,6 +8807,74 @@
         }
       }
     },
+    "sfondo %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "background %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sfondo %@"
+          }
+        }
+      }
+    },
+    "sfondo sfocato" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "blurred background"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sfondo sfocato"
+          }
+        }
+      }
+    },
+    "sfondo sostituito" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "background replaced"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sfondo sostituito"
+          }
+        }
+      }
+    },
+    "sfondo spento" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "background off"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sfondo spento"
+          }
+        }
+      }
+    },
     "si vede nella ricerca" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8667,6 +8888,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "si vede nella ricerca"
+          }
+        }
+      }
+    },
+    "specchio acceso" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "mirror on"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "specchio acceso"
+          }
+        }
+      }
+    },
+    "specchio spento" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "mirror off"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "specchio spento"
           }
         }
       }

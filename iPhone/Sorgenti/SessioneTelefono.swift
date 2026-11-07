@@ -82,10 +82,19 @@ final class SessioneTelefono {
     private(set) var effettiSulComputer = false
     /// Lo stato degli effetti del computer (`effetti`), per i pulsanti tondi; `nil` finché non arriva.
     private(set) var effettiComputer: StatoEffettiComputer?
+    /// b01: i tocchi chiesti al computer, finché non arriva `effetti` (al massimo `attesaRispostaEffetto`): i pulsanti
+    /// tondi li mostrano subito e restano così; poi seguono di nuovo il computer.
+    private(set) var effettoInAttesa: RichiestaEffetto?
+    @ObservationIgnored private var compitoEffettoInAttesa: Task<Void, Never>?
+    /// Quanto un tocco resta mostrato senza risposta del computer.
+    static let attesaRispostaEffetto: Duration = .seconds(2)
     /// `comando.effettiSulComputer` arrivato su questo collegamento (azzerato a ogni stretta di mano).
     @ObservationIgnored private var effettiSulComputerConfermati = false
-    /// Al `benvenuto`, se il computer non conferma gli effetti sul computer entro poco, tornano quelli del telefono.
+    /// Se il computer non conferma gli effetti sul computer entro 3 secondi dalla `capacita`, tornano quelli del telefono.
     @ObservationIgnored private var compitoEffettiSulComputer: Task<Void, Never>?
+    /// b01: al `benvenuto` sul Wi-Fi, con gli effetti ancora sul computer dalla sessione di prima: i 3 secondi si contano
+    /// dalla prossima `capacita` (il computer risponde a quella, che parte a fotocamera pronta), non dal `benvenuto`.
+    @ObservationIgnored private var confermaEffettiDaCapacita = false
     /// Specchio e sfondo si possono cambiare solo con la frontale (punti E ed F).
     var conFrontale: Bool { obiettivo == .frontale }
     /// Qualità ed efficienza: gli effetti video di Apple usati (solo l'Inquadratura centrata) per l'obiettivo e il
@@ -551,6 +560,9 @@ final class SessioneTelefono {
         compitoRiprova?.cancel()
         compitoFotocamera?.cancel()
         compitoEffettiSulComputer?.cancel()
+        confermaEffettiDaCapacita = false
+        compitoEffettoInAttesa?.cancel()
+        effettoInAttesa = nil
         compitoAttesaCavo?.cancel()
         compitoAttesaCavo = nil
         attendeCavo = false
@@ -733,9 +745,14 @@ final class SessioneTelefono {
     private func impostaEffettiSulComputer(_ attivi: Bool) {
         compitoEffettiSulComputer?.cancel()
         compitoEffettiSulComputer = nil
+        confermaEffettiDaCapacita = false
         guard attivi != effettiSulComputer else { return }
         effettiSulComputer = attivi
-        if !attivi { effettiComputer = nil }
+        if !attivi {
+            effettiComputer = nil
+            compitoEffettoInAttesa?.cancel()
+            effettoInAttesa = nil
+        }
         effetti.impostaSoloDelTelefono(attivi)
         // «Volto e scrivania» rimasta accesa da una sessione vecchia mescolava due obiettivi nel video: con il
         // computer parte spenta, e si riaccende solo se il computer la chiede in questa sessione.
@@ -752,6 +769,12 @@ final class SessioneTelefono {
     /// Il computer ha detto lo stato dei suoi effetti (`effetti`): pulsanti tondi, specchio dell'anteprima ed
     /// esposizione sul volto.
     private func effettiComputerCambiati(_ stato: StatoEffettiComputer) {
+        if stato != effettiComputer || effettoInAttesa != nil {
+            registro.aggiungi(String(localized: "Effetti del computer: \(Self.descrizione(stato))"))
+        }
+        compitoEffettoInAttesa?.cancel()
+        compitoEffettoInAttesa = nil
+        effettoInAttesa = nil
         effettiComputer = stato
         guard effettiSulComputer else { return }
         cattura.impostaSpecchioSoloAnteprima(stato.specchia)
@@ -759,10 +782,33 @@ final class SessioneTelefono {
     }
 
     /// Un tocco su Specchia, Sfoca o Luce con gli effetti sul computer: lo decide il computer (con le sue regole
-    /// Pro) e risponde con `effetti`. Fino ad allora i pulsanti restano come sono.
+    /// Pro) e risponde con `effetti`. b01: fino ad allora, al massimo `attesaRispostaEffetto`, i pulsanti mostrano il
+    /// tocco (`effettoInAttesa`); senza risposta tornano all'ultimo stato del computer.
     func chiediEffetto(_ richiesta: RichiestaEffetto) {
-        guard effettiSulComputer else { return }
-        collegamento?.invia(.chiediEffetto(richiesta))
+        guard effettiSulComputer else {
+            registro.aggiungi(String(localized: "Tocco non mandato: gli effetti non sono sul computer"))
+            return
+        }
+        guard let collegamento, stato == .collegato else {
+            registro.aggiungi(String(localized: "Tocco non mandato: il computer non è collegato"))
+            return
+        }
+        collegamento.invia(.chiediEffetto(richiesta))
+        registro.aggiungi(String(localized: "Chiesto al computer: \(Self.descrizione(richiesta))"))
+        // Due tocchi di fila (Sfoca, poi Luce): restano mostrati tutti e due.
+        var inAttesa = effettoInAttesa ?? RichiestaEffetto()
+        if let specchia = richiesta.specchia { inAttesa.specchia = specchia }
+        if let sfondo = richiesta.sfondo { inAttesa.sfondo = sfondo }
+        if let luce = richiesta.luceVolto { inAttesa.luceVolto = luce }
+        effettoInAttesa = inAttesa
+        compitoEffettoInAttesa?.cancel()
+        let attesa = Self.attesaRispostaEffetto
+        compitoEffettoInAttesa = Task { [weak self] in
+            try? await Task.sleep(for: attesa)
+            guard !Task.isCancelled, let self, self.effettoInAttesa != nil else { return }
+            self.effettoInAttesa = nil
+            self.registro.aggiungi(String(localized: "Il computer non ha risposto al tocco entro 2 secondi"))
+        }
     }
 
     private func aspettaConfermaEffettiSulComputer() {
@@ -770,7 +816,37 @@ final class SessioneTelefono {
         compitoEffettiSulComputer = Task { [weak self] in
             try? await Task.sleep(for: .seconds(3))
             guard !Task.isCancelled, let self, !self.effettiSulComputerConfermati else { return }
+            self.registro.aggiungi(String(localized: "Il computer non ha confermato gli effetti sul computer entro 3 secondi"))
             self.impostaEffettiSulComputer(false)
+        }
+    }
+
+    /// b01, per il registro: «sfondo sfocato, luce accesa».
+    private static func descrizione(_ richiesta: RichiestaEffetto) -> String {
+        var parti: [String] = []
+        if let specchia = richiesta.specchia {
+            parti.append(specchia ? String(localized: "specchio acceso") : String(localized: "specchio spento"))
+        }
+        if let sfondo = richiesta.sfondo { parti.append(descrizione(sfondo: sfondo)) }
+        if let luce = richiesta.luceVolto {
+            parti.append(luce ? String(localized: "luce accesa") : String(localized: "luce spenta"))
+        }
+        return parti.isEmpty ? String(localized: "niente") : parti.joined(separator: ", ")
+    }
+
+    /// b01, per il registro: lo stato degli effetti del computer, «specchio spento, sfondo sfocato, luce accesa».
+    private static func descrizione(_ stato: StatoEffettiComputer) -> String {
+        [stato.specchia ? String(localized: "specchio acceso") : String(localized: "specchio spento"),
+         descrizione(sfondo: stato.sfondo),
+         stato.luceVolto ? String(localized: "luce accesa") : String(localized: "luce spenta")].joined(separator: ", ")
+    }
+
+    private static func descrizione(sfondo: String) -> String {
+        switch sfondo {
+        case ModiSfondo.nessuno: String(localized: "sfondo spento")
+        case ModiSfondo.sfocato: String(localized: "sfondo sfocato")
+        case ModiSfondo.sostituito: String(localized: "sfondo sostituito")
+        default: String(localized: "sfondo \(sfondo)")
         }
     }
 
@@ -1042,9 +1118,10 @@ final class SessioneTelefono {
             // P10: connessione nuova, la pausa «nessuna app» riparte da capo (il computer rimanda `anteprima`).
             pausa.nuovoCollegamento()
             videoInPausa.valore = pausa.motivo != nil
-            // Telecomando: il computer manda `comando.effettiSulComputer` subito dopo il `benvenuto`. Se non arriva
-            // (computer vecchio, o interruttore spento senza dirlo) gli effetti tornano al telefono.
-            if effettiSulComputer && !effettiSulComputerConfermati { aspettaConfermaEffettiSulComputer() }
+            // Telecomando: il computer manda `comando.effettiSulComputer` appena riceve la `capacita`. Se non arriva
+            // (computer vecchio, o interruttore spento senza dirlo) gli effetti tornano al telefono. b01: i 3 secondi
+            // si contano da quando parte la `capacita` (a fotocamera pronta, `inviaCapacita`), non da qui.
+            if effettiSulComputer && !effettiSulComputerConfermati { confermaEffettiDaCapacita = true }
             // 1.11: la sessione di codifica si tiene: prima di aprire la destinazione si chiedono `formato` e
             // fotogramma chiave, così il primo fotogramma per questo collegamento non arriva prima del `formato`.
             codificatore.ricomincia()
@@ -2144,6 +2221,10 @@ final class SessioneTelefono {
         // Telecomando: con `comando.effettiSulComputer` il telefono manda il video così com'è.
         capacita.effettiSulComputer = true
         collegamento?.invia(.capacita(capacita))
+        if confermaEffettiDaCapacita, collegamento != nil {
+            confermaEffettiDaCapacita = false
+            if effettiSulComputer && !effettiSulComputerConfermati { aspettaConfermaEffettiSulComputer() }
+        }
     }
 
     // MARK: - WebcamLR Pro

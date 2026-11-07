@@ -58,6 +58,23 @@ public sealed class TelecomandoEffetti
     /// (con il giro dei cambi, o con il <see cref="DaMandare"/> che segue).
     /// </summary>
     public void Dimentica() => Inviati = null;
+
+    /// <summary>
+    /// Un <c>chiedi-effetto</c> (b01): lo manda solo un telefono che sa fare da telecomando, quindi vale come
+    /// <c>capacita.effettiSulComputer</c> (Protocollo.md, «Effetti sul computer»). Se questa sessione non lo aveva ancora
+    /// deciso (la <c>capacita</c> non è arrivata, o è arrivata senza il campo), il telefono diventa telecomando adesso: il
+    /// risultato è il <c>comando.effettiSulComputer</c> da mandare prima della risposta. Dimentica sempre l'ultimo
+    /// mandato (<see cref="Dimentica"/>): poi la risposta <c>effetti</c> parte sempre, con <see cref="DaMandare"/>.
+    /// </summary>
+    /// <param name="sulComputer">L'interruttore degli effetti sul computer: spento, niente (il tocco non vale).</param>
+    public IReadOnlyList<Messaggio> Chiesto(bool sulComputer = RegoleEffettiComputer.EffettiSulComputer)
+    {
+        if (!sulComputer) return [];
+        Inviati = null;
+        if (Attivo == true) return [];
+        Attivo = true;
+        return [new Comando(EffettiSulComputer: true)];
+    }
 }
 
 /// <summary>Le regole del telecomando: cosa dice <c>effetti</c> e cosa fa un <c>chiedi-effetto</c>, come i pulsanti del PC.</summary>

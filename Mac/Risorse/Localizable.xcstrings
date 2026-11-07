@@ -1018,6 +1018,16 @@
         }
       }
     },
+    "Codec cambiato in %@: aspetto un fotogramma chiave" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codec changed to %@: waiting for a keyframe"
+          }
+        }
+      }
+    },
     "Codice di conferma %@" : {
       "localizations" : {
         "en" : {
@@ -1441,12 +1451,32 @@
         }
       }
     },
+    "Dal telefono: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From the phone: %@"
+          }
+        }
+      }
+    },
     "Dall'inizio" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "From the top"
+          }
+        }
+      }
+    },
+    "Decodifica rifatta: sessione non valida, aspetto un fotogramma chiave" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Decoding restarted: session no longer valid, waiting for a keyframe"
           }
         }
       }
@@ -1565,12 +1595,12 @@
         }
       }
     },
-    "Effetti cambiati dal telefono" : {
+    "Effetti cambiati dal telefono: %@" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Effects changed from the phone"
+            "value" : "Effects changed from the phone: %@"
           }
         }
       }
@@ -1651,6 +1681,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Effects: Vision mask %lld×%lld, frame %lld×%lld (%@)"
+          }
+        }
+      }
+    },
+    "Effetti: una resa ha preso %lld ms (Core Image prepara il filtro?)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effects: one render took %lld ms (Core Image preparing the filter?)"
           }
         }
       }
@@ -2035,6 +2075,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Camera, effects, connection, phones, outputs, startup, notifications and security (⌘,)"
+          }
+        }
+      }
+    },
+    "Fotogramma chiave arrivato dopo %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keyframe arrived after %@"
           }
         }
       }
@@ -3796,6 +3846,16 @@
         }
       }
     },
+    "Nessun cambiamento: al telefono lo stato attuale (%@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No change: current state sent to the phone (%@)"
+          }
+        }
+      }
+    },
     "Nessun dato da 3 secondi" : {
       "localizations" : {
         "en" : {
@@ -4932,6 +4992,16 @@
         }
       }
     },
+    "Richiesta del telefono prima della «capacita»: telecomando acceso da adesso" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Request from the phone before its “capacita”: remote on from now"
+          }
+        }
+      }
+    },
     "Riconnessione in corso…" : {
       "comment" : "Sotto «Collegamento interrotto» nella schermata di attesa.",
       "localizations" : {
@@ -5316,6 +5386,26 @@
         }
       }
     },
+    "Schermata di attesa tolta: il video esce di nuovo dopo %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting screen removed: video is out again after %@"
+          }
+        }
+      }
+    },
+    "Schermata di attesa: «interrotta» · ultima immagine %@ fa · ultimo arrivo %@ fa · in attesa del fotogramma chiave %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting screen: “interrupted” · last image %@ ago · last arrival %@ ago · waiting for a keyframe %@"
+          }
+        }
+      }
+    },
     "Schermo" : {
       "localizations" : {
         "en" : {
@@ -5497,12 +5587,22 @@
         }
       }
     },
-    "Servizio del cavo USB non raggiungibile: il cavo non si può usare" : {
+    "Servizio del cavo USB non raggiungibile (%@: %@, errno %lld): il cavo non si può usare" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "USB cable service not reachable: the cable can’t be used"
+            "value" : "USB cable service not reachable (%@: %@, errno %lld): the cable can’t be used"
+          }
+        }
+      }
+    },
+    "Servizio del cavo USB non raggiungibile (%@: %@, errno %lld, app nel sandbox): il cavo non si può usare" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "USB cable service not reachable (%@: %@, errno %lld, app in the sandbox): the cable can’t be used"
           }
         }
       }
@@ -5633,6 +5733,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Blurred background, softened skin"
+          }
+        }
+      }
+    },
+    "Sfondo: prima maschera di Vision dopo %lld ms (fino ad allora tutto sfocato)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Background: first Vision mask after %lld ms (everything blurred until then)"
           }
         }
       }
@@ -5838,6 +5948,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mirrored: call apps, the phone and this window see the flipped video. Click to flip it back"
+          }
+        }
+      }
+    },
+    "Specchio e sfondo ignorati: il telefono usa la fotocamera posteriore" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mirror and background ignored: the phone is using the rear camera"
           }
         }
       }
@@ -7031,6 +7151,26 @@
         }
       }
     },
+    "luce accesa" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "light on"
+          }
+        }
+      }
+    },
+    "luce spenta" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "light off"
+          }
+        }
+      }
+    },
     "luce sul volto" : {
       "localizations" : {
         "en" : {
@@ -7137,6 +7277,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "no person"
+          }
+        }
+      }
+    },
+    "niente" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "nothing"
+          }
+        }
+      }
+    },
+    "no" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "no"
           }
         }
       }
@@ -7323,12 +7483,62 @@
         }
       }
     },
+    "sfondo %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "background %@"
+          }
+        }
+      }
+    },
     "sfondo sfocato" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "blurred background"
+          }
+        }
+      }
+    },
+    "sfondo sostituito" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "background replaced"
+          }
+        }
+      }
+    },
+    "sfondo spento" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "background off"
+          }
+        }
+      }
+    },
+    "specchio acceso" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "mirror on"
+          }
+        }
+      }
+    },
+    "specchio spento" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "mirror off"
           }
         }
       }
@@ -7359,6 +7569,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "handshake %@"
+          }
+        }
+      }
+    },
+    "sì" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "yes"
           }
         }
       }

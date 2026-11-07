@@ -213,6 +213,11 @@ final class MotoreEffetti: @unchecked Sendable {
         /// Core Image su questo Mac non fa i conti del guided filter come servono (`RicetteEffetti.verificaAritmetica`):
         /// il bordo della persona è quello semplice (bilineare). Una volta.
         case bordoSemplice
+        /// b02: la prima maschera di Vision dopo che lo sfondo si è acceso (o dopo un azzeramento o una misura nuova del
+        /// video), in ms. Fino ad allora il fotogramma esce tutto sfocato (o tutto sfondo).
+        case primaMaschera(ms: Int)
+        /// b02: una sola resa ha preso più di `resaLentaMs` (Core Image che prepara un filtro nuovo, per esempio).
+        case resaLenta(ms: Int)
     }
 
     private struct Lavoro {
@@ -316,6 +321,13 @@ final class MotoreEffetti: @unchecked Sendable {
     private let zonaPersona = ZonaPersona()
     /// Il bordo semplice al posto del guided filter è già nel registro (solo sulla coda di resa).
     private var bordoSempliceNotato = false
+    /// b02: da quando (`Orologio`, µs) lo sfondo è acceso senza nessuna maschera di Vision; 0 se c'è o se è spento.
+    /// Solo sulla coda di resa.
+    private var senzaMascheraDa: UInt64 = 0
+    /// b02: l'ultima `Nota.resaLenta` (µs), per non riempire il registro. Solo sulla coda di resa.
+    private var ultimaResaLentaNotata: UInt64 = 0
+    /// Oltre questo tempo una resa va nel registro (`Nota.resaLenta`), al massimo una volta ogni 5 secondi.
+    private static let resaLentaMs = 500.0
     /// L'ultimo fotogramma consegnato con lo sfondo già applicato: si ripete se un fotogramma non si può fare con lo
     /// sfondo (maschera mancante, resa fallita, pool esaurito). Mai l'originale con lo sfondo vero.
     private var ultimaConSfondo: CVPixelBuffer?
@@ -408,6 +420,7 @@ final class MotoreEffetti: @unchecked Sendable {
             self.mascheraFiltrata = nil
             self.mascheraRiserva = nil
             self.arrivoMascheraNuova = 0
+            self.senzaMascheraDa = 0
             self.ultimaConSfondo = nil
             self.inquadratura = MollaInquadratura()
             self.voltoLuce = nil
@@ -660,6 +673,7 @@ final class MotoreEffetti: @unchecked Sendable {
             mascheraFiltrata = nil
             mascheraRiserva = nil
             arrivoMascheraNuova = 0
+            senzaMascheraDa = 0
             ultimaConSfondo = nil
             inquadratura = MollaInquadratura()
             voltoLuce = nil
@@ -695,6 +709,16 @@ final class MotoreEffetti: @unchecked Sendable {
             } else {
                 blocco.withLock { maschereRiusate += 1 }
             }
+            // b02: quanto ci mette la prima maschera (Vision che carica il modello), per il registro.
+            if arrivoMascheraNuova == 0 {
+                if senzaMascheraDa == 0 { senzaMascheraDa = lavoro.arrivo }
+            } else if senzaMascheraDa != 0 {
+                let ms = Int(Self.trascorso(da: senzaMascheraDa, a: arrivoMascheraNuova) / 1000)
+                senzaMascheraDa = 0
+                blocco.withLock { note.append(.primaMaschera(ms: ms)) }
+            }
+        } else {
+            senzaMascheraDa = 0
         }
         // Privacy: con lo sfondo acceso, se il fotogramma non si può fare con lo sfondo, si ripete l'ultimo fatto con
         // lo sfondo (o non si consegna nulla): mai l'originale con lo sfondo vero.
@@ -751,12 +775,12 @@ final class MotoreEffetti: @unchecked Sendable {
                 // Campionamento lineare esplicito: la maschera piccola si ingrandisce di 3-10 volte e, se Core Image la
                 // campionasse al pixel più vicino, la soglia dopo ne mostrerebbe gli scalini.
                 bassa = CIImage(cvPixelBuffer: filtrata, options: [.colorSpace: NSNull()]).samplingLinear()
-            } else if arrivoMascheraNuova != 0 {
-                // Maschera troppo vecchia: nessuna persona, tutto sfocato (o tutto sfondo). Mai lo sfondo vero.
-                bassa = CIImage(color: CIColor(red: 0, green: 0, blue: 0)).cropped(to: CGRect(x: 0, y: 0, width: 64, height: 64))
             } else {
-                consegnata = ripiego
-                return
+                // Maschera troppo vecchia, o nessuna ancora (sfondo appena acceso, video cambiato di misura, Vision che
+                // carica il modello): nessuna persona, tutto sfocato (o tutto sfondo). Mai lo sfondo vero, e mai un buco
+                // nel video: prima qui non si consegnava nulla, e dopo 2 secondi la finestra diceva «Collegamento
+                // interrotto» (b02).
+                bassa = CIImage(color: CIColor(red: 0, green: 0, blue: 0)).cropped(to: CGRect(x: 0, y: 0, width: 64, height: 64))
             }
             // Solo le persone con un volto o un corpo umano (analisi propria, 4 volte al secondo, su un'altra coda).
             let bassaPersona = zonaPersona.applica(a: bassa, fotogramma: ingresso, arrivo: lavoro.arrivo)
@@ -844,10 +868,16 @@ final class MotoreEffetti: @unchecked Sendable {
         }
         consegnata = uscita
         if impostazioni.sfondoAcceso { ultimaConSfondo = uscita }
-        let resaMs = Double(Orologio.adesso() &- inizio) / 1000
+        let finita = Orologio.adesso()
+        let resaMs = Double(finita &- inizio) / 1000
+        // b02: una resa sola molto lunga blocca la coda (e la finestra resta senza immagini): nel registro.
+        let lenta = resaMs >= Self.resaLentaMs
+            && (ultimaResaLentaNotata == 0 || Self.trascorso(da: ultimaResaLentaNotata, a: finita) >= 5_000_000)
+        if lenta { ultimaResaLentaNotata = finita }
         blocco.withLock {
             sommaResa += resaMs
             contaResa += 1
+            if lenta { note.append(.resaLenta(ms: Int(resaMs))) }
         }
         if impostazioni.sfondoAcceso { regolaQualita(resaMs: resaMs) }
     }

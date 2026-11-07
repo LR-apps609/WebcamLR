@@ -290,20 +290,28 @@ public sealed partial class MainWindow
     /// <c>chiedi-effetto</c>: un tocco su Specchia, Sfoca o Luce del telefono, come i pulsanti del PC (come <c>applica</c>
     /// del Mac): specchio e sfondo solo con la frontale, «sfocato» con l'ultimo livello scelto qui, mai sopra Ritratto o
     /// Luce da studio. La risposta è sempre un <c>effetti</c>, una volta sola, anche se non cambia nulla.
+    /// Il tocco vale come <c>capacita.effettiSulComputer</c> (b01): se la sessione non l'aveva ancora deciso, il telefono
+    /// diventa telecomando adesso, invece di perdere il tocco in silenzio.
     /// </summary>
     private void ApplicaEffettoChiesto(TelefonoCollegato collegato, ChiediEffetto richiesta)
     {
-        if (!SulComputer || collegato.Telecomando.Attivo != true) return;
-        // L'ultimo mandato si dimentica: la risposta parte con il giro dei cambi (AggiornaMotore) o qui sotto.
-        collegato.Telecomando.Dimentica();
+        if (!SulComputer || collegato.Sessione is not { } attiva) return;
+        // L'ultimo mandato si dimentica: la risposta parte con il giro dei cambi (AggiornaMotore) o qui sotto. Il
+        // comando, se c'è, parte prima: i messaggi escono nell'ordine in cui si mandano.
+        var prima = collegato.Telecomando.Chiesto();
+        if (prima.Count > 0)
+        {
+            _ = MandaInOrdineAsync(attiva, prima);
+            registro.Aggiungi(Testi.T("Registro_TelecomandoDaRichiesta", DiChi(collegato)));
+        }
         if (RegoleTelecomando.Comando(richiesta, collegato.Stato, Preferenze.LivelloSfocatura) is { } comando)
         {
-            var prima = effettiComputer.Valori;
+            var valoriPrima = effettiComputer.Valori;
             ritardoEffetti?.Stop();
             // Come un pulsante del PC: le scelte cambiano (Cambiati salva e aggiorna il motore), al telefono nella webcam
             // va solo ciò che resta suo (niente, per questi tre).
             Comanda(effettiComputer.Subito(comando, AdessoMs));
-            if (effettiComputer.Valori != prima)
+            if (effettiComputer.Valori != valoriPrima)
             {
                 registro.Aggiungi(Testi.T("Registro_EffettiDalTelefono", DiChi(collegato)));
                 MostraValoriEffetti();

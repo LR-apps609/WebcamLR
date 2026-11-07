@@ -1852,6 +1852,9 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
   <data name="Registro_EffettiTelecomando" xml:space="preserve">
     <value>Effetti di immagine sul PC: il telefono manda il video com'è e fa da telecomando{0}</value>
   </data>
+  <data name="Registro_TelecomandoDaRichiesta" xml:space="preserve">
+    <value>Richiesta del telefono prima della «capacita»: telecomando acceso da adesso{0}</value>
+  </data>
   <data name="Registro_EffettiDalTelefono" xml:space="preserve">
     <value>Effetti cambiati dal telefono{0}</value>
   </data>

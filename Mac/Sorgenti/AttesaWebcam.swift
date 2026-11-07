@@ -18,7 +18,8 @@ import WebcamLRProtocollo
 // - `OsservatoreAttesa` (coda principale) segue il `Ricevitore` e dice a ogni `Schermo` e alla webcam perché il video
 //   non c'è: telefono non collegato, collegamento interrotto, pausa (`StatoAttesa`).
 // - `ProgrammaAttesa` decide istante per istante se mostrare il video o l'attesa: tiene l'ultima immagine 2 secondi
-//   dopo una caduta e lascia vincere le immagini che arrivano davvero.
+//   dopo una caduta (fino a 8 se i fotogrammi arrivano ancora dalla rete, b02) e lascia vincere le immagini che
+//   arrivano davvero.
 // - `UscitaWebcam` disegna l'attesa e la manda all'estensione nel flusso di ingresso, con le dissolvenze; lo `Schermo`
 //   la mette sopra il video della finestra. L'estensione (Mac/FotocameraVirtuale/Fotocamera.swift) ha la sua copia
 //   di «La webcam non è collegata» per quando l'app è chiusa: stesso disegno, misure da tenere uguali.
@@ -385,13 +386,20 @@ final class AttesaWebcam: @unchecked Sendable {
 struct ProgrammaAttesa {
     /// Dopo una caduta l'ultima immagine resta ferma per 2 secondi, poi si passa all'attesa.
     static let tenuta: UInt64 = 2_000_000_000
+    /// b02: i fotogrammi arrivano dalla rete ma nessuna immagine esce (motore effetti che parte, Vision che carica il
+    /// modello, decodifica che aspetta un fotogramma chiave). Non è un collegamento perso: l'ultima immagine resta
+    /// fino a qui, poi l'attesa compare lo stesso (un guasto vero non deve lasciare il video fermo per sempre).
+    static let tenutaConArrivi: UInt64 = 8_000_000_000
 
     /// Dall'`OsservatoreAttesa`; all'inizio nessun telefono.
     private(set) var stato: StatoAttesa? = .nonCollegata
     /// Quando `stato` è cambiato l'ultima volta.
     private var statoDa: UInt64 = 0
     /// L'ultima immagine vera arrivata; 0 se non ne è mai arrivata una.
-    private var ultimoVivo: UInt64 = 0
+    private(set) var ultimoVivo: UInt64 = 0
+    /// L'ultimo fotogramma arrivato dalla rete (prima di decodifica ed effetti); 0 se nessuno. Solo chi lo sa
+    /// (lo `Schermo`) lo dà con `arrivato(adesso:)`.
+    private(set) var ultimoArrivo: UInt64 = 0
     /// L'ultima attesa decisa: resta finché arriva il video.
     private var ultimaAttesa: StatoAttesa = .nonCollegata
 
@@ -406,17 +414,26 @@ struct ProgrammaAttesa {
         ultimoVivo = adesso
     }
 
+    /// b02: è arrivato un fotogramma dal telefono (non ancora decodificato né elaborato).
+    mutating func arrivato(adesso: UInt64) {
+        ultimoArrivo = adesso
+    }
+
     /// nil: si mostra il video. Altrimenti l'attesa da mostrare.
     /// - Le immagini arrivate dopo l'ultimo cambio di stato vincono (lo `stato` arriva sempre un po' dopo il video).
     /// - Collegamento interrotto: l'ultima immagine resta per `tenuta`, poi l'attesa.
     /// - Senza stato (il telefono dovrebbe mandare): se il video si ferma per `tenuta` è un'interruzione;
     ///   se non è ancora arrivato, resta l'attesa di prima (per esempio la pausa, finché il video riparte).
+    /// - b02: se i fotogrammi arrivano ancora dalla rete (ultimo arrivo entro `tenuta`) non è un'interruzione: l'ultima
+    ///   immagine resta fino a `tenutaConArrivi`, poi l'attesa compare comunque.
     mutating func attesa(adesso: UInt64) -> StatoAttesa? {
         let recente = ultimoVivo != 0 && adesso &- ultimoVivo < Self.tenuta
+        let arriva = ultimoArrivo != 0 && adesso &- ultimoArrivo < Self.tenuta
+        let tenutoPerArrivi = arriva && ultimoVivo != 0 && adesso &- ultimoVivo < Self.tenutaConArrivi
         let deciso: StatoAttesa?
         if let stato {
             deciso = recente && (ultimoVivo > statoDa || stato == .interrotta) ? nil : stato
-        } else if recente {
+        } else if recente || tenutoPerArrivi {
             deciso = nil
         } else if ultimoVivo != 0 && ultimoVivo > statoDa {
             deciso = .interrotta

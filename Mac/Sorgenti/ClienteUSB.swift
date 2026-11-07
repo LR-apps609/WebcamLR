@@ -43,9 +43,13 @@ enum Usbmux {
     }
 
     /// Un socket collegato a usbmuxd, oppure nil (servizio assente o bloccato dal sandbox).
-    static func apri() -> Int32? {
+    static func apri() -> Int32? { apriConErrore().descrittore }
+
+    /// Come `apri()`, con l'errno del fallimento (b03): EPERM = sandbox, ENOENT = socket assente,
+    /// ECONNREFUSED = usbmuxd fermo. 0 se il socket è aperto.
+    static func apriConErrore() -> (descrittore: Int32?, errore: Int32) {
         let descrittore = socket(AF_UNIX, SOCK_STREAM, 0)
-        guard descrittore >= 0 else { return nil }
+        guard descrittore >= 0 else { return (nil, errno) }
         var indirizzo = sockaddr_un()
         indirizzo.sun_family = sa_family_t(AF_UNIX)
         let byte = Array(percorso.utf8)
@@ -59,19 +63,21 @@ enum Usbmux {
         indirizzo.sun_len = UInt8(lunghezza)
         guard entra else {
             close(descrittore)
-            return nil
+            return (nil, ENAMETOOLONG)
         }
         let esito = withUnsafePointer(to: &indirizzo) { puntatore in
             puntatore.withMemoryRebound(to: sockaddr.self, capacity: 1) { connect(descrittore, $0, lunghezza) }
         }
         guard esito == 0 else {
+            // Prima di `close`, che può cambiare errno.
+            let errore = errno
             close(descrittore)
-            return nil
+            return (nil, errore)
         }
         // Se l'altro lato chiude mentre si scrive: un errore, non il segnale SIGPIPE che chiuderebbe l'app.
         var uno: Int32 = 1
         setsockopt(descrittore, SOL_SOCKET, SO_NOSIGPIPE, &uno, socklen_t(MemoryLayout<Int32>.size))
-        return descrittore
+        return (descrittore, 0)
     }
 
     static func scrivi(_ dati: Data, su descrittore: Int32) -> Bool {
@@ -209,7 +215,8 @@ final class ClienteUSB {
     }
 
     private enum EventoAscolto: Sendable {
-        case servizio(raggiungibile: Bool)
+        /// `errore`: l'errno quando usbmuxd non si raggiunge (0 se raggiunto o se non si sa).
+        case servizio(raggiungibile: Bool, errore: Int32)
         case attaccato(Int)
         case staccato(Int)
         /// La connessione con usbmuxd è caduta: si riparte da zero (usbmuxd rimanda gli iPhone collegati).
@@ -348,10 +355,22 @@ final class ClienteUSB {
 
     private func gestisci(_ evento: EventoAscolto) {
         switch evento {
-        case .servizio(let raggiungibile):
+        case .servizio(let raggiungibile, let errore):
             if raggiungibile != servizioRaggiungibile {
-                suRegistro?(raggiungibile ? String(localized: "Servizio del cavo USB raggiunto")
-                                          : String(localized: "Servizio del cavo USB non raggiungibile: il cavo non si può usare"))
+                if raggiungibile {
+                    suRegistro?(String(localized: "Servizio del cavo USB raggiunto"))
+                } else {
+                    // b03: il motivo vero nel registro. EPERM (1) = bloccato dal sandbox, ENOENT (2) = socket assente,
+                    // ECONNREFUSED (61) = usbmuxd fermo.
+                    let causa = String(cString: strerror(errore))
+                    let numero = Int(errore)
+                    let percorso = Usbmux.percorso
+                    if ProcessInfo.processInfo.environment["APP_SANDBOX_CONTAINER_ID"] != nil {
+                        suRegistro?(String(localized: "Servizio del cavo USB non raggiungibile (\(percorso): \(causa), errno \(numero), app nel sandbox): il cavo non si può usare"))
+                    } else {
+                        suRegistro?(String(localized: "Servizio del cavo USB non raggiungibile (\(percorso): \(causa), errno \(numero)): il cavo non si può usare"))
+                    }
+                }
             }
             servizioRaggiungibile = raggiungibile
         case .attaccato(let id):
@@ -487,19 +506,21 @@ final class ClienteUSB {
     /// `sveglia`: interrompe l'attesa prima del prossimo tentativo (risveglio dallo stop).
     nonisolated private static func ascolta(avvisa: @escaping @Sendable (EventoAscolto) -> Void, sveglia: DispatchSemaphore) {
         while true {
-            guard let descrittore = Usbmux.apri() else {
-                avvisa(.servizio(raggiungibile: false))
+            let aperto = Usbmux.apriConErrore()
+            guard let descrittore = aperto.descrittore else {
+                avvisa(.servizio(raggiungibile: false, errore: aperto.errore))
                 _ = sveglia.wait(timeout: .now() + 5)
                 continue
             }
             guard let richiesta = Usbmux.codifica(Usbmux.richiesta("Listen"), etichetta: 1),
                   Usbmux.scrivi(richiesta, su: descrittore) else {
+                let errore = errno
                 close(descrittore)
-                avvisa(.servizio(raggiungibile: false))
+                avvisa(.servizio(raggiungibile: false, errore: errore))
                 _ = sveglia.wait(timeout: .now() + 5)
                 continue
             }
-            avvisa(.servizio(raggiungibile: true))
+            avvisa(.servizio(raggiungibile: true, errore: 0))
             lettura: while let messaggio = Usbmux.leggiMessaggio(da: descrittore) {
                 switch messaggio["MessageType"] as? String {
                 case "Result":

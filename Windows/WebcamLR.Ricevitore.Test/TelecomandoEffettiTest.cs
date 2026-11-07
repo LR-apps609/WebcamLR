@@ -76,6 +76,44 @@ public class TelecomandoEffettiTest
         Assert.Equal(Sfocato, t.DaMandare(Sfocato));
     }
 
+    // MARK: «chiedi-effetto» come prova del telecomando (b01)
+
+    [Fact]
+    public void UnaRichiestaPrimaDellaCapacitaAccendeIlTelecomando()
+    {
+        var t = new TelecomandoEffetti();
+        Assert.Equal<Messaggio>([new Comando(EffettiSulComputer: true)], t.Chiesto());
+        Assert.True(t.Attivo);
+        // La risposta parte sempre, anche se lo stato non cambia.
+        Assert.Equal(Spenti, t.DaMandare(Spenti, sempre: true));
+        // La capacita che arriva dopo non decide di nuovo (niente secondo comando).
+        Assert.Empty(t.Decidi(Nuovo, Spenti));
+        // Le richieste dopo: niente comando, la risposta sì (anche uguale all'ultima).
+        Assert.Empty(t.Chiesto());
+        Assert.Equal(Spenti, t.DaMandare(Spenti));
+    }
+
+    [Fact]
+    public void UnaRichiestaVinceAncheUnaCapacitaSenzaIlCampo()
+    {
+        var t = new TelecomandoEffetti();
+        t.Decidi(DiPrima, Spenti);
+        Assert.False(t.Attivo);
+        // Solo chi sa fare da telecomando manda «chiedi-effetto»: vale come la dichiarazione.
+        Assert.Equal<Messaggio>([new Comando(EffettiSulComputer: true)], t.Chiesto());
+        Assert.True(t.Attivo);
+        Assert.Equal(Sfocato, t.DaMandare(Sfocato, sempre: true));
+    }
+
+    [Fact]
+    public void ConLInterruttoreSpentoLaRichiestaNonVale()
+    {
+        var t = new TelecomandoEffetti();
+        Assert.Empty(t.Chiesto(sulComputer: false));
+        Assert.Null(t.Attivo);
+        Assert.Null(t.DaMandare(Spenti, sempre: true));
+    }
+
     // MARK: lo stato con le regole del motore
 
     private static readonly ValoriEffetti Accesi = RegoleEffettiComputer.Iniziali with

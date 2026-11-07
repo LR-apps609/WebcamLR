@@ -11,7 +11,7 @@ Sul cavo non c'è una rete: il computer parla con l'iPhone attraverso **usbmux**
 
 | | Come si raggiunge usbmux | Note |
 |---|---|---|
-| Mac | socket Unix `/var/run/usbmuxd` | l'app Mac è nel sandbox: serve un'eccezione (`temporary-exception`) o un piccolo programma di supporto fuori dal sandbox. Va bene fuori dal Mac App Store; dentro, Apple potrebbe rifiutarla |
+| Mac | socket Unix `/var/run/usbmuxd` | l'app Mac è nel sandbox: serve l'eccezione `temporary-exception.sbpl` con `(allow network-outbound (literal "/private/var/run/usbmuxd"))` (quella sui file, `files.absolute-path.read-write`, non basta per `connect()`: b03) o un piccolo programma di supporto fuori dal sandbox. Va bene fuori dal Mac App Store; dentro, Apple potrebbe rifiutarla |
 | Windows | TCP `127.0.0.1:27015` | c'è se è installato «Dispositivi Apple» (o iTunes). Nessun problema di sandbox |
 
 Il protocollo di usbmux è semplice (messaggi plist con lunghezza in testa: `ListDevices`, `Connect` con il numero del dispositivo e la porta), documentato da progetti aperti come libimobiledevice. Va scritto da zero: le librerie esistenti sono LGPL o GPL, e il progetto usa solo codice nostro o di sistema.

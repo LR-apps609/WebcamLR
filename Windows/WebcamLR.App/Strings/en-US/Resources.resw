@@ -1850,6 +1850,9 @@ The details are in {1}: send them with “Report a bug”.</value>
   <data name="Registro_EffettiTelecomando" xml:space="preserve">
     <value>Image effects on this PC: the phone sends plain video and works as a remote{0}</value>
   </data>
+  <data name="Registro_TelecomandoDaRichiesta" xml:space="preserve">
+    <value>Request from the phone before its “capacita”: remote on from now{0}</value>
+  </data>
   <data name="Registro_EffettiDalTelefono" xml:space="preserve">
     <value>Effects changed from the phone{0}</value>
   </data>

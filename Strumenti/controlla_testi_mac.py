@@ -62,6 +62,8 @@ UGUALI = {
     "Detached", "Properties", "ConnectionType", "USB", "Listen", "Connect",
     # Firme di app (AppCompatibili.swift).
     "Cisco-Systems.Spark",
+    # Variabile d'ambiente del sandbox (ClienteUSB.swift, b03).
+    "APP_SANDBOX_CONTAINER_ID",
 }
 
 SPECIFICATORE = r"%(?:\d+\$)?(?:@|lld|llu|ld|lu|d|u|hhd|hhu|hd|hu|lf|f|g|e)"

@@ -1086,17 +1086,21 @@ struct SchermataInOnda: View {
     /// Quarta prova: solo le nostre funzioni, niente pannello Effetti video di Apple.
     /// Telecomando (`effettiSulComputer`): Specchia, Sfoca e Luce mostrano lo stato degli effetti del computer
     /// (`effetti`) e un tocco lo chiede al computer (`chiedi-effetto`); Microfono e Pausa restano del telefono.
+    /// b01: un tocco si vede subito (`effettoInAttesa`) e resta finché il computer risponde (al massimo 2 secondi).
     private var telecomando: Bool { sessione.effettiSulComputer }
     private var sfondoAcceso: Bool {
-        telecomando ? (sessione.effettiComputer.map { $0.sfondo != ModiSfondo.nessuno } ?? false)
-                    : sessione.visivi.sfondoEffettivo != ModiSfondo.nessuno
+        guard telecomando else { return sessione.visivi.sfondoEffettivo != ModiSfondo.nessuno }
+        if let chiesto = sessione.effettoInAttesa?.sfondo { return chiesto != ModiSfondo.nessuno }
+        return sessione.effettiComputer.map { $0.sfondo != ModiSfondo.nessuno } ?? false
     }
     private var inPausa: Bool { sessione.pausa.utente }
     private var luceAccesa: Bool {
-        telecomando ? sessione.effettiComputer?.luceVolto == true : sessione.funzioni.luceVolto
+        guard telecomando else { return sessione.funzioni.luceVolto }
+        return sessione.effettoInAttesa?.luceVolto ?? (sessione.effettiComputer?.luceVolto == true)
     }
     private var specchioAcceso: Bool {
-        telecomando ? sessione.effettiComputer?.specchia == true : sessione.specchioEffettivo
+        guard telecomando else { return sessione.specchioEffettivo }
+        return sessione.effettoInAttesa?.specchia ?? (sessione.effettiComputer?.specchia == true)
     }
     /// Specchio e sfondo solo con la frontale, anche quelli del computer (con la posteriore non li fa).
     private var specchioESfondoDisponibili: Bool { sessione.conFrontale }

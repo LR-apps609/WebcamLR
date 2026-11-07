@@ -85,11 +85,15 @@ targets:
         # Schermata di attesa (Pro): l'immagine personale scelta dall'utente con il pannello «Apri».
         com.apple.security.files.user-selected.read-only: true
         # Cavo USB (1.8): il socket Unix di usbmuxd, il servizio di Apple che porta all'iPhone sul cavo
-        # (/var/run è un collegamento a /private/var/run). Funziona anche con l'Apple ID gratuito.
-        # Il Mac App Store non accetta questa eccezione del sandbox: decisione in sospeso,
-        # per ora distribuzione dal sito (vedi Documenti/Piano aggiornamenti.md, 1.8).
+        # (/var/run è un collegamento a /private/var/run). Per il sandbox `connect()` su un socket Unix è
+        # «network-outbound», non una lettura di file: l'eccezione sui file da sola non basta (b03, 04/11:
+        # «Non disponibile»). Serve la riga sbpl qui sotto; quella sui file resta per il nodo del socket.
+        # Non richiede l'account a pagamento. Il Mac App Store non accetta queste eccezioni: decisione in sospeso,
+        # per ora distribuzione dal sito (vedi Documenti/Piano aggiornamenti.md, 1.8; Store.md I15).
         com.apple.security.temporary-exception.files.absolute-path.read-write:
           - /private/var/run/usbmuxd
+        com.apple.security.temporary-exception.sbpl:
+          - (allow network-outbound (literal "/private/var/run/usbmuxd"))
         # Microfono del telefono (P20): il servizio Mach dell'aiutante (un LaunchDaemon) che dà all'app
         # la memoria condivisa letta dal driver audio. Funziona anche con l'Apple ID gratuito; come l'eccezione
         # qui sopra, il Mac App Store non la accetta (Documenti/Microfono Mac.md).

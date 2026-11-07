@@ -5497,12 +5497,22 @@
         }
       }
     },
-    "Servizio del cavo USB non raggiungibile: il cavo non si può usare" : {
+    "Servizio del cavo USB non raggiungibile (%@: %@, errno %lld): il cavo non si può usare" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "USB cable service not reachable: the cable can’t be used"
+            "value" : "USB cable service not reachable (%@: %@, errno %lld): the cable can’t be used"
+          }
+        }
+      }
+    },
+    "Servizio del cavo USB non raggiungibile (%@: %@, errno %lld, app nel sandbox): il cavo non si può usare" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "USB cable service not reachable (%@: %@, errno %lld, app in the sandbox): the cable can’t be used"
           }
         }
       }

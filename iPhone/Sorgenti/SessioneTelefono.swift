@@ -223,6 +223,11 @@ final class SessioneTelefono {
     private var compitoStato: Task<Void, Never>?
     /// 1.14: dopo un pizzico si manda lo `stato` una volta sola, a dita ferme.
     private var compitoStatoZoom: Task<Void, Never>?
+    /// Collaudo 52: obiettivo, zoom e torcia cambiati sul telefono mentre ci si ricollega. Al ritorno il computer
+    /// rimanda i valori di prima della caduta: quelli cambiati qui restano come li ha lasciati l'utente.
+    @ObservationIgnored private var cambiatiInRiconnessione: Set<String> = []
+    /// Vero mentre `applica` esegue un comando del computer: i cambi che fa non sono dell'utente.
+    @ObservationIgnored private var applicaComandoInCorso = false
     private var tentativi = 0
     private var chiusaDallUtente = false
     /// La fotocamera è configurata e in funzione con le impostazioni attuali.
@@ -661,6 +666,7 @@ final class SessioneTelefono {
 
     func scegli(_ nuovo: Obiettivo) {
         guard nuovo != obiettivo else { return }
+        segnaCambioInRiconnessione("obiettivo")
         // P09: la doppia vista vive sul grandangolo: un altro obiettivo scelto a mano (o dal computer) la spegne.
         if doppiaVista.attiva && nuovo != .grandangolo {
             doppiaVista.imposta(false)
@@ -873,6 +879,7 @@ final class SessioneTelefono {
     }
 
     func impostaZoom(_ fattore: CGFloat, scorrevole: Bool = false) {
+        segnaCambioInRiconnessione("zoom")
         zoom = min(max(fattore, 1), 10)
         cattura.zoom(zoom, scorrevole: scorrevole)
         // 1.14: il computer segue lo zoom del telefono (stato.zoom), dopo l'ultimo movimento.
@@ -885,9 +892,26 @@ final class SessioneTelefono {
     }
 
     func cambiaTorcia() {
+        segnaCambioInRiconnessione("torcia")
         torciaAccesa.toggle()
         cattura.torcia(torciaAccesa)
         if destinazione.valore != nil { aggiornaStato() }
+    }
+
+    /// Collaudo 52: un cambio fatto sul telefono durante la riconnessione, quando il computer non può saperlo.
+    private func segnaCambioInRiconnessione(_ chiave: String) {
+        guard !applicaComandoInCorso, case .riconnessione = stato else { return }
+        cambiatiInRiconnessione.insert(chiave)
+    }
+
+    /// Il riallineamento arriva subito dopo il `benvenuto`: passati 3 secondi (o con un computer nuovo, che non lo
+    /// manda) i cambi segnati non valgono più e un comando del computer si applica tutto.
+    private func dimenticaCambiInRiconnessione() {
+        guard !cambiatiInRiconnessione.isEmpty else { return }
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(3))
+            self?.cambiatiInRiconnessione = []
+        }
     }
 
     var torciaDisponibile: Bool {
@@ -1034,6 +1058,7 @@ final class SessioneTelefono {
             esciDallAttesa()
             UIApplication.shared.isIdleTimerDisabled = true
             stato = .collegato
+            dimenticaCambiInRiconnessione()
             registro.aggiungi(String(localized: "Collegato a \(computer.nome)"))
             inizioRiconnessione = nil
             Vibrazione.collegato()
@@ -1652,6 +1677,7 @@ final class SessioneTelefono {
         aggiornaQualita()
         reteDebole = false
         stato = .collegato
+        dimenticaCambiInRiconnessione()
         registro.aggiungi(String(localized: "Collegato a \(nome)"))
         if !eraCollegato { Vibrazione.collegato() }
         // Da qui il codificatore scrive sul cavo. `preparaVideo` rifà `formato` e fotogramma chiave per la nuova
@@ -1803,7 +1829,22 @@ final class SessioneTelefono {
     /// `stato` che segue riporta il computer ai valori veri.
     func applica(_ ricevuto: Comando) {
         let comando = pro ? ricevuto : LimitiGratis.soloGratis(ricevuto)
+        // Collaudo 52: il primo comando dopo la riconnessione è il riallineamento del computer, con i valori di prima
+        // della caduta. Obiettivo, zoom e torcia cambiati qui intanto non tornano indietro (un altro obiettivo
+        // vuol dire anche zoom e torcia suoi); il computer si allinea con lo `stato` che segue.
+        // Solo un comando che tocca questi valori consuma i cambi segnati (non, per esempio, «fuoco continuo»).
+        let toccaObiettivo = comando.obiettivo != nil || comando.zoom != nil || comando.torcia != nil
+        let cambiatiQui = toccaObiettivo ? cambiatiInRiconnessione : []
+        if toccaObiettivo { cambiatiInRiconnessione = [] }
+        let obiettivoQui = cambiatiQui.contains("obiettivo")
+        let tieniZoom = obiettivoQui || cambiatiQui.contains("zoom")
+        let tieniTorcia = obiettivoQui || cambiatiQui.contains("torcia")
+        let ignorati = (obiettivoQui && comando.obiettivo != nil) || (tieniZoom && comando.zoom != nil)
+            || (tieniTorcia && comando.torcia != nil)
+        applicaComandoInCorso = true
         defer {
+            applicaComandoInCorso = false
+            if ignorati { mandaStatoDopoIlRiallineamento() }
             if comando != ricevuto {
                 registro.aggiungi(String(localized: "Senza WebcamLR Pro: comando Pro ignorato"))
                 aggiornaStato()
@@ -1814,13 +1855,14 @@ final class SessioneTelefono {
             impostaEffettiSulComputer(sulComputer)
         }
         visivi.applica(comando)
-        if let nome = comando.obiettivo, let nuovo = Obiettivo(rawValue: nome), obiettiviDisponibili.contains(nuovo) {
+        if !obiettivoQui, let nome = comando.obiettivo, let nuovo = Obiettivo(rawValue: nome),
+           obiettiviDisponibili.contains(nuovo) {
             scegli(nuovo)
         }
-        if let fattore = comando.zoom {
+        if !tieniZoom, let fattore = comando.zoom {
             impostaZoom(CGFloat(fattore), scorrevole: true)
         }
-        if let accesa = comando.torcia, accesa != torciaAccesa, torciaDisponibile {
+        if !tieniTorcia, let accesa = comando.torcia, accesa != torciaAccesa, torciaDisponibile {
             cambiaTorcia()
         }
         if let stop = comando.esposizione {
@@ -1859,6 +1901,17 @@ final class SessioneTelefono {
         // Valori sconosciuti ignorati (regola «Valori sconosciuti» del protocollo).
         if let nome = comando.collegamento, let preferenza = PreferenzaCollegamento(rawValue: nome) {
             impostaPreferenzaCollegamento(preferenza)
+        }
+    }
+
+    /// Collaudo 52: il computer tiene i valori che ha appena mandato per un attimo (1,5 s) anche contro lo `stato`:
+    /// quello con i valori scelti sul telefono parte dopo, così il computer li mostra senza aspettare il giro dei 5 s.
+    private func mandaStatoDopoIlRiallineamento() {
+        registro.aggiungi(String(localized: "Tengo obiettivo, zoom o torcia scelti sul telefono durante la riconnessione"))
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(2))
+            guard let self, self.destinazione.valore != nil else { return }
+            self.aggiornaStato()
         }
     }
 

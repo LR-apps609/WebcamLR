@@ -6784,6 +6784,23 @@
         }
       }
     },
+    "Tengo obiettivo, zoom o torcia scelti sul telefono durante la riconnessione" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keeping the lens, zoom or torch chosen on the phone during the reconnection"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tengo obiettivo, zoom o torcia scelti sul telefono durante la riconnessione"
+          }
+        }
+      }
+    },
     "Tenue" : {
       "extractionState" : "manual",
       "localizations" : {

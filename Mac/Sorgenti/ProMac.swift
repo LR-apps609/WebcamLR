@@ -23,7 +23,7 @@ extension Ricevitore {
 /// La strada per sbloccare, uguale ovunque sul Mac.
 enum TestiPro {
     static let sblocca = String(localized: "Sblocca WebcamLR Pro sull'iPhone")
-    static let strada = String(localized: "Si sblocca dall'iPhone: apri WebcamLR › App › WebcamLR Pro.")
+    static let strada = String(localized: "Si sblocca dall'iPhone: apri WebcamLR › Impostazioni › WebcamLR Pro.")
 }
 
 /// Una riga sotto una sezione Pro bloccata: «PRO Sblocca WebcamLR Pro sull'iPhone».

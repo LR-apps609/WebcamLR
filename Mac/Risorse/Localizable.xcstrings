@@ -2009,12 +2009,12 @@
         }
       }
     },
-    "Foto e registrazione sono di WebcamLR Pro: si sblocca dall'iPhone, in WebcamLR › App › WebcamLR Pro." : {
+    "Foto e registrazione sono di WebcamLR Pro: si sblocca dall'iPhone, in WebcamLR › Impostazioni › WebcamLR Pro." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Photos and recording are part of WebcamLR Pro: unlock it from the iPhone, in WebcamLR › App › WebcamLR Pro."
+            "value" : "Photos and recording are part of WebcamLR Pro: unlock it from the iPhone, in WebcamLR › Settings › WebcamLR Pro."
           }
         }
       }
@@ -5787,12 +5787,12 @@
         }
       }
     },
-    "Si sblocca dall'iPhone: apri WebcamLR › App › WebcamLR Pro." : {
+    "Si sblocca dall'iPhone: apri WebcamLR › Impostazioni › WebcamLR Pro." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Unlock it from the iPhone: open WebcamLR › App › WebcamLR Pro."
+            "value" : "Unlock it from the iPhone: open WebcamLR › Settings › WebcamLR Pro."
           }
         }
       }

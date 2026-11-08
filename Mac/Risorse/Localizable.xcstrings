@@ -2470,6 +2470,16 @@
         }
       }
     },
+    "Il telefono manda la voce con il microfono spento sul Mac: lo spengo anche lì" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The phone is sending its voice with the microphone off on the Mac: turning it off there too"
+          }
+        }
+      }
+    },
     "Il telefono non manda l'audio." : {
       "localizations" : {
         "en" : {

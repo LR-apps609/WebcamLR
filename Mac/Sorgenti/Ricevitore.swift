@@ -525,6 +525,7 @@ final class Ricevitore {
 
     /// All'avvio dell'app: il livello dal microfono e, ogni 2 secondi, lo stato del driver nel sistema.
     func avviaMicrofono() {
+        microfono.imposta(acceso: microfonoAcceso)
         microfono.suLivello = { [weak self] livello in
             // Spento da qui: un livello rimasto in coda non riaccende l'indicatore.
             guard let self, self.microfonoAcceso || livello == 0 else { return }
@@ -577,6 +578,7 @@ final class Ricevitore {
     private func cambiaMicrofono(_ acceso: Bool) {
         microfonoAcceso = acceso
         UserDefaults.standard.set(acceso, forKey: Preferenze.microfonoTelefono)
+        microfono.imposta(acceso: acceso)
         if !acceso {
             microfono.ferma()
             audioInArrivo = false
@@ -2332,6 +2334,12 @@ final class Ricevitore {
             telefono.audioDalTelefono = stato.audio
             if scelto, let audio = stato.audio, let audioPrima, audio != audioPrima {
                 microfonoDalTelefono(audio, telefono: telefono)
+            } else if scelto, audioPrima == nil, stato.audio == true, !microfonoAcceso, telefonoMandaAudio {
+                // Sessione nuova con il microfono che va (era rimasto chiesto sul telefono) e l'interruttore spento
+                // qui: vale l'interruttore, il telefono smette di mandare la voce.
+                registra(String(localized: "Il telefono manda la voce con il microfono spento sul Mac: lo spengo anche lì"), di: telefono)
+                telefono.sessione?.comanda(Comando(audio: false))
+                telefono.audioComandato = false
             }
             if gobboAppenaComandato(telefono) {
                 // Il comando appena partito può non essere ancora arrivato: si aspetta il prossimo `stato`.

@@ -232,6 +232,11 @@ final class SessioneTelefono {
     private var compitoStato: Task<Void, Never>?
     /// 1.14: dopo un pizzico si manda lo `stato` una volta sola, a dita ferme.
     private var compitoStatoZoom: Task<Void, Never>?
+    /// Collaudo 52: obiettivo, zoom e torcia cambiati sul telefono mentre ci si ricollega. Al ritorno il computer
+    /// rimanda i valori di prima della caduta: quelli cambiati qui restano come li ha lasciati l'utente.
+    @ObservationIgnored private var cambiatiInRiconnessione: Set<String> = []
+    /// Vero mentre `applica` esegue un comando del computer: i cambi che fa non sono dell'utente.
+    @ObservationIgnored private var applicaComandoInCorso = false
     private var tentativi = 0
     private var chiusaDallUtente = false
     /// La fotocamera è configurata e in funzione con le impostazioni attuali.
@@ -278,6 +283,11 @@ final class SessioneTelefono {
     @ObservationIgnored private var computerWiFi: ComputerTrovato?
     /// 1.9: il cavo si è staccato e si prova il Wi-Fi, mentre il cavo può ancora tornare (per il banner).
     private(set) var daCavoAlWiFi = false
+    /// Collaudo 1 (parte del telefono): quando si è passati di strada (dal Wi-Fi al cavo o dal cavo al Wi-Fi) con il
+    /// `benvenuto`. Il computer può mandarlo e poi chiudere quella strada perché ha deciso di restare sull'altra:
+    /// una chiusura «dal computer» subito dopo non è un «Scollega», e si riprova invece di fermarsi.
+    @ObservationIgnored private var cambioStradaRecente: Date?
+    private static let secondiCambioStradaRifiutato: TimeInterval = 5
 
     /// Interfaccia finale: la strada preferita (Impostazioni › Collegamento, o `comando.collegamento` dal computer).
     private(set) var preferenzaCollegamento = PreferenzaCollegamento.salvata
@@ -673,6 +683,7 @@ final class SessioneTelefono {
 
     func scegli(_ nuovo: Obiettivo) {
         guard nuovo != obiettivo else { return }
+        segnaCambioInRiconnessione("obiettivo")
         // P09: la doppia vista vive sul grandangolo: un altro obiettivo scelto a mano (o dal computer) la spegne.
         if doppiaVista.attiva && nuovo != .grandangolo {
             doppiaVista.imposta(false)
@@ -949,6 +960,7 @@ final class SessioneTelefono {
     }
 
     func impostaZoom(_ fattore: CGFloat, scorrevole: Bool = false) {
+        segnaCambioInRiconnessione("zoom")
         zoom = min(max(fattore, 1), 10)
         cattura.zoom(zoom, scorrevole: scorrevole)
         // 1.14: il computer segue lo zoom del telefono (stato.zoom), dopo l'ultimo movimento.
@@ -961,9 +973,26 @@ final class SessioneTelefono {
     }
 
     func cambiaTorcia() {
+        segnaCambioInRiconnessione("torcia")
         torciaAccesa.toggle()
         cattura.torcia(torciaAccesa)
         if destinazione.valore != nil { aggiornaStato() }
+    }
+
+    /// Collaudo 52: un cambio fatto sul telefono durante la riconnessione, quando il computer non può saperlo.
+    private func segnaCambioInRiconnessione(_ chiave: String) {
+        guard !applicaComandoInCorso, case .riconnessione = stato else { return }
+        cambiatiInRiconnessione.insert(chiave)
+    }
+
+    /// Il riallineamento arriva subito dopo il `benvenuto`: passati 3 secondi (o con un computer nuovo, che non lo
+    /// manda) i cambi segnati non valgono più e un comando del computer si applica tutto.
+    private func dimenticaCambiInRiconnessione() {
+        guard !cambiatiInRiconnessione.isEmpty else { return }
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(3))
+            self?.cambiatiInRiconnessione = []
+        }
     }
 
     var torciaDisponibile: Bool {
@@ -1097,6 +1126,7 @@ final class SessioneTelefono {
             }
             codiceConferma = nil
             giaCollegato = true
+            cambioStradaRecente = daCavoAlWiFi ? Date() : nil
             daCavoAlWiFi = false
             if versoIlWiFi {
                 versoIlWiFi = false
@@ -1110,6 +1140,7 @@ final class SessioneTelefono {
             esciDallAttesa()
             UIApplication.shared.isIdleTimerDisabled = true
             stato = .collegato
+            dimenticaCambiInRiconnessione()
             registro.aggiungi(String(localized: "Collegato a \(computer.nome)"))
             inizioRiconnessione = nil
             Vibrazione.collegato()
@@ -1222,6 +1253,16 @@ final class SessioneTelefono {
         // 1.9: cavo appena staccato. Se il computer non se n'è ancora accorto, rifiuta il Wi-Fi perché il telefono
         // «è sul cavo»: non è una chiusura voluta, si riprova.
         if daCavoAlWiFi && motivo == .dalComputer { motivo = .rete }
+        // Collaudo 1: strada appena presa e chiusa subito dal computer, che ha scelto l'altra (precedenza del cavo,
+        // preferenza, pausa dopo un cambio). Sul cavo si torna al Wi-Fi conosciuto; sul Wi-Fi si riprova, con l'ascolto
+        // sul cavo acceso, come dopo un cavo staccato. Prima si finiva in «Collegamento interrotto» o in un'attesa ferma.
+        if motivo == .dalComputer, let cambio = cambioStradaRecente,
+           Date().timeIntervalSince(cambio) < Self.secondiCambioStradaRifiutato, !viaCavo || computerWiFi != nil {
+            registro.aggiungi(String(localized: "Il computer ha chiuso la strada appena presa: riprovo"))
+            motivo = .rete
+            if !viaCavo { daCavoAlWiFi = true }
+        }
+        cambioStradaRecente = nil
         // Il passaggio voluto al Wi-Fi non è riuscito: il cavo (che il computer riapre da solo) torna buono, e non si
         // riprova da soli finché non cambiano rete o preferenza (niente video a singhiozzo ogni 30 secondi).
         if versoIlWiFi && !ritornoFallito {
@@ -1265,6 +1306,9 @@ final class SessioneTelefono {
                 stato = .riconnessione(tentativo: max(tentativi, 1))
                 // 1.12: in attesa la fotocamera resta spenta anche senza rete (si era accesa al collegamento sicuro).
                 if inAttesaDelComputer { spegniFotocameraInAttesa() }
+                // Collaudo 5: cavo staccato e nessuna rete (modalità aereo). Nessun tentativo programma il prossimo:
+                // senza una scadenza si resterebbe in «Riconnessione» per sempre, con la fotocamera accesa.
+                if daCavoAlWiFi { programmaFineCavoSenzaRete() }
                 return
             }
             // 1.12: in attesa ogni tentativo andato a vuoto programma il prossimo, sempre più distante.
@@ -1391,6 +1435,26 @@ final class SessioneTelefono {
                                                           : String(localized: "Collegamento via cavo non riuscito"),
                                 descrizione: String(localized: "Controlla il cavo e che WebcamLR sia aperto sul computer: appena il computer risponde, il collegamento riparte da solo."),
                                 domanda: "cavo", attendiCavo: true)
+        }
+    }
+
+    /// Collaudo 5: dopo il cavo staccato senza rete si aspetta quanto si aspetterebbe il cavo (`attesaCavo`, dal
+    /// distacco), poi «Cavo scollegato» come senza strada Wi-Fi: fotocamera spenta, ascolto sul cavo acceso
+    /// (`accettaCavo`). Se intanto torna la rete, `reteCambiata` riprova il Wi-Fi e la scadenza non vale più.
+    private func programmaFineCavoSenzaRete() {
+        compitoAttesaCavo?.cancel()
+        let trascorsi = Date().timeIntervalSince(inizioRiconnessione ?? Date())
+        let attesa = max(0, Double(Self.attesaCavo.components.seconds) - trascorsi)
+        let secondi = Int(attesa.rounded())
+        registro.aggiungi(String(localized: "Cavo staccato senza rete: aspetto il cavo o la rete per \(secondi) secondi"))
+        compitoAttesaCavo = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(attesa))
+            guard !Task.isCancelled, let self, self.daCavoAlWiFi, !self.reteDisponibile, self.collegamento == nil,
+                  !self.chiusaDallUtente, case .riconnessione = self.stato else { return }
+            self.compitoRiprova?.cancel()
+            self.fermaConErrore(titolo: String(localized: "Cavo scollegato"),
+                                descrizione: String(localized: "Ricollega il cavo: il collegamento riparte da solo. Oppure controlla che iPhone e computer siano sulla stessa rete Wi-Fi e tocca «Riprova»."),
+                                domanda: "cavo")
         }
     }
 
@@ -1680,6 +1744,7 @@ final class SessioneTelefono {
         let eraCollegato = stato == .collegato
         let nome = benvenuto.nome.isEmpty ? computer.nome : benvenuto.nome
         if !computer.cavo { computerWiFi = computer }
+        cambioStradaRecente = Date()
         registro.aggiungi(String(localized: "Passo al cavo USB"))
 
         compitoRiprova?.cancel()
@@ -1706,6 +1771,7 @@ final class SessioneTelefono {
         aggiornaQualita()
         reteDebole = false
         stato = .collegato
+        dimenticaCambiInRiconnessione()
         registro.aggiungi(String(localized: "Collegato a \(nome)"))
         if !eraCollegato { Vibrazione.collegato() }
         // Da qui il codificatore scrive sul cavo. `preparaVideo` rifà `formato` e fotogramma chiave per la nuova
@@ -1857,7 +1923,22 @@ final class SessioneTelefono {
     /// `stato` che segue riporta il computer ai valori veri.
     func applica(_ ricevuto: Comando) {
         let comando = pro ? ricevuto : LimitiGratis.soloGratis(ricevuto)
+        // Collaudo 52: il primo comando dopo la riconnessione è il riallineamento del computer, con i valori di prima
+        // della caduta. Obiettivo, zoom e torcia cambiati qui intanto non tornano indietro (un altro obiettivo
+        // vuol dire anche zoom e torcia suoi); il computer si allinea con lo `stato` che segue.
+        // Solo un comando che tocca questi valori consuma i cambi segnati (non, per esempio, «fuoco continuo»).
+        let toccaObiettivo = comando.obiettivo != nil || comando.zoom != nil || comando.torcia != nil
+        let cambiatiQui = toccaObiettivo ? cambiatiInRiconnessione : []
+        if toccaObiettivo { cambiatiInRiconnessione = [] }
+        let obiettivoQui = cambiatiQui.contains("obiettivo")
+        let tieniZoom = obiettivoQui || cambiatiQui.contains("zoom")
+        let tieniTorcia = obiettivoQui || cambiatiQui.contains("torcia")
+        let ignorati = (obiettivoQui && comando.obiettivo != nil) || (tieniZoom && comando.zoom != nil)
+            || (tieniTorcia && comando.torcia != nil)
+        applicaComandoInCorso = true
         defer {
+            applicaComandoInCorso = false
+            if ignorati { mandaStatoDopoIlRiallineamento() }
             if comando != ricevuto {
                 registro.aggiungi(String(localized: "Senza WebcamLR Pro: comando Pro ignorato"))
                 aggiornaStato()
@@ -1868,13 +1949,14 @@ final class SessioneTelefono {
             impostaEffettiSulComputer(sulComputer)
         }
         visivi.applica(comando)
-        if let nome = comando.obiettivo, let nuovo = Obiettivo(rawValue: nome), obiettiviDisponibili.contains(nuovo) {
+        if !obiettivoQui, let nome = comando.obiettivo, let nuovo = Obiettivo(rawValue: nome),
+           obiettiviDisponibili.contains(nuovo) {
             scegli(nuovo)
         }
-        if let fattore = comando.zoom {
+        if !tieniZoom, let fattore = comando.zoom {
             impostaZoom(CGFloat(fattore), scorrevole: true)
         }
-        if let accesa = comando.torcia, accesa != torciaAccesa, torciaDisponibile {
+        if !tieniTorcia, let accesa = comando.torcia, accesa != torciaAccesa, torciaDisponibile {
             cambiaTorcia()
         }
         if let stop = comando.esposizione {
@@ -1892,10 +1974,19 @@ final class SessioneTelefono {
             puntoFuoco = nil
         }
         if comando.iso != nil || comando.tempo != nil {
+            let eraManuale = iso > 0 || tempo > 0
             iso = max(comando.iso ?? iso, 0)
             // Anche il limite in alto: lo `stato` non rimanda mai al computer valori assurdi.
             tempo = min(max(comando.tempo ?? tempo, 0), 100_000)
-            cattura.esposizioneManuale(iso: Float(iso), tempo: tempo)
+            if iso == 0 && tempo == 0 && !eraManuale && aeafBloccati {
+                // Collaudo 9: al ritorno dopo una riconnessione il computer rimanda iso e tempo a 0 (automatici) anche se
+                // erano già automatici. Con il blocco del tocco lungo l'esposizione automatica continua lo scioglierebbe,
+                // con «AE/AF bloccati» ancora a schermo: il blocco resta finché un tocco non lo toglie. Dal manuale
+                // all'automatico invece si cambia davvero, come prima.
+                registro.aggiungi(String(localized: "Esposizione automatica dal computer: resta il blocco AE/AF del tocco lungo"))
+            } else {
+                cattura.esposizioneManuale(iso: Float(iso), tempo: tempo)
+            }
         }
         funzioni.applica(comando)
         if let attivo = comando.specchia { impostaSpecchio(attivo) }
@@ -1904,6 +1995,17 @@ final class SessioneTelefono {
         // Valori sconosciuti ignorati (regola «Valori sconosciuti» del protocollo).
         if let nome = comando.collegamento, let preferenza = PreferenzaCollegamento(rawValue: nome) {
             impostaPreferenzaCollegamento(preferenza)
+        }
+    }
+
+    /// Collaudo 52: il computer tiene i valori che ha appena mandato per un attimo (1,5 s) anche contro lo `stato`:
+    /// quello con i valori scelti sul telefono parte dopo, così il computer li mostra senza aspettare il giro dei 5 s.
+    private func mandaStatoDopoIlRiallineamento() {
+        registro.aggiungi(String(localized: "Tengo obiettivo, zoom o torcia scelti sul telefono durante la riconnessione"))
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(2))
+            guard let self, self.destinazione.valore != nil else { return }
+            self.aggiornaStato()
         }
     }
 
@@ -2558,6 +2660,12 @@ final class SessioneTelefono {
         guard presente else {
             if prima == true { registro.aggiungi(String(localized: "Non vedo più \(computer.nome)")) }
             return
+        }
+        // Collaudo 8: abbinato col QR code, il telefono conosce solo gli indirizzi IP di allora. La ricerca lo trova
+        // per nome: da qui in poi si prova anche il servizio Bonjour, che segue un cambio di indirizzo.
+        if let conServizio = computer.conServizio() {
+            computer = conServizio
+            registro.aggiungi(String(localized: "Provo \(computer.nome) anche per nome, oltre agli indirizzi del QR code"))
         }
         if prima == true { return }
         // Annunciato fin dall'inizio dopo un `arrivederci`: l'hanno scollegato sul computer, non ci si impone.

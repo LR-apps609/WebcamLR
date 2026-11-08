@@ -358,6 +358,23 @@
         }
       }
     },
+    "Acquisti ripristinati: WebcamLR Pro è attivo." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Purchases restored: WebcamLR Pro is active."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acquisti ripristinati: WebcamLR Pro è attivo."
+          }
+        }
+      }
+    },
     "Acquisto in attesa di approvazione: Pro si sblocca da solo appena è confermato." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1323,6 +1340,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cavo scollegato? Riparto appena il computer risponde…"
+          }
+        }
+      }
+    },
+    "Cavo staccato senza rete: aspetto il cavo o la rete per %lld secondi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cable unplugged with no network: waiting for the cable or the network for %lld seconds"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cavo staccato senza rete: aspetto il cavo o la rete per %lld secondi"
           }
         }
       }
@@ -2449,6 +2483,23 @@
         }
       }
     },
+    "Esposizione automatica dal computer: resta il blocco AE/AF del tocco lungo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auto exposure from the computer: the AE/AF lock from the long press stays"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esposizione automatica dal computer: resta il blocco AE/AF del tocco lungo"
+          }
+        }
+      }
+    },
     "Esposizione e messa a fuoco restano ferme come le hai bloccate. Sblocca per regolarle a mano." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3040,6 +3091,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Il computer ha chiuso il collegamento: riparto da solo quando WebcamLR si riapre, oppure tocca «Riprova ora»."
+          }
+        }
+      }
+    },
+    "Il computer ha chiuso la strada appena presa: riprovo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The computer closed the connection just taken: trying again"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il computer ha chiuso la strada appena presa: riprovo"
           }
         }
       }
@@ -5186,6 +5254,23 @@
         }
       }
     },
+    "Provo %@ anche per nome, oltre agli indirizzi del QR code" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Also trying %@ by name, besides the QR code addresses"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Provo %@ anche per nome, oltre agli indirizzi del QR code"
+          }
+        }
+      }
+    },
     "Provo di nuovo %@ (%@)" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5509,6 +5594,23 @@
         }
       }
     },
+    "Ricerca: aspetto la risposta alla domanda «Rete locale»" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search: waiting for the answer to the “Local Network” prompt"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ricerca: aspetto la risposta alla domanda «Rete locale»"
+          }
+        }
+      }
+    },
     "Ricollega il cavo: il collegamento riparte da solo. Oppure controlla che iPhone e computer siano sulla stessa rete Wi-Fi e tocca «Riprova»." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5641,6 +5743,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ripristina acquisti"
+          }
+        }
+      }
+    },
+    "Ripristino acquisti non riuscito: %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restoring purchases failed: %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ripristino acquisti non riuscito: %@"
           }
         }
       }
@@ -6797,6 +6916,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Temperatura"
+          }
+        }
+      }
+    },
+    "Tengo obiettivo, zoom o torcia scelti sul telefono durante la riconnessione" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keeping the lens, zoom or torch chosen on the phone during the reconnection"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tengo obiettivo, zoom o torcia scelti sul telefono durante la riconnessione"
           }
         }
       }

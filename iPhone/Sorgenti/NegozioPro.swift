@@ -46,6 +46,8 @@ final class NegozioPro {
     private(set) var inAttesa = false
     /// Una frase per l'utente dopo un acquisto o un ripristino non riusciti.
     private(set) var avviso: String?
+    /// Collaudo 62: «Ripristina acquisti» andato a buon fine con Pro attivo: la pagina lo conferma.
+    private(set) var ripristinoConfermato = false
     /// StoreKit ha già detto almeno una volta quali diritti ci sono.
     private(set) var dirittiLetti = false
     /// Da dove viene il Pro: acquisto proprio o condiviso In famiglia.
@@ -143,6 +145,7 @@ final class NegozioPro {
         guard let prodotto, operazione == .nessuna else { return }
         operazione = .acquisto
         avviso = nil
+        ripristinoConfermato = false
         do {
             let risultato = try await prodotto.purchase()
             switch risultato {
@@ -173,15 +176,25 @@ final class NegozioPro {
         guard operazione == .nessuna else { return }
         operazione = .ripristino
         avviso = nil
+        ripristinoConfermato = false
         var annullato = false
+        var sincronizzato = false
         do {
             try await AppStore.sync()
+            sincronizzato = true
         } catch StoreKitError.userCancelled {
             annullato = true
         } catch {
             avviso = String(localized: "Ripristino non riuscito. Controlla la connessione e riprova.")
+            RegistroCollegamento.scrivi(String(localized: "Ripristino acquisti non riuscito: \(error.localizedDescription)"))
         }
         await aggiornaDiritti()
+        // Collaudo 60: «Chiedi di acquistare» rifiutato non manda nessuna transazione. Dopo un ripristino riuscito
+        // senza diritto, la richiesta non è più da aspettare: la scritta «in attesa» lascia il posto all'esito.
+        if sincronizzato && !attivo && inAttesa {
+            inAttesa = false
+        }
+        ripristinoConfermato = sincronizzato && attivo
         if !attivo && avviso == nil && !annullato {
             avviso = String(localized: "Nessun acquisto di WebcamLR Pro per questo Apple ID.")
         }

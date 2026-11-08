@@ -66,7 +66,170 @@ struct SchermataInOnda: View {
     /// Seconda prova (bug B): l'altezza della riga in basso (obiettivi), lasciata libera sotto avvisi e pannelli.
     @State private var altezzaInBasso: CGFloat = 54
 
+    // Il corpo è spezzato in quattro parti: in una sola espressione il compilatore non riesce a
+    // verificare i tipi in tempo utile («unable to type-check this expression in reasonable time»).
     var body: some View {
+        conAnnunci
+        .onChange(of: classeVerticale) { _, _ in controllaVistaPulita() }
+        .onChange(of: foglioAperto) { _, _ in controllaVistaPulita() }
+        .onChange(of: sessione.stato) { _, _ in controllaVistaPulita() }
+        .onChange(of: sessione.codiceConferma) { _, _ in controllaVistaPulita() }
+        .onChange(of: avvisi.attuale?.id) { _, _ in controllaVistaPulita() }
+        .onReceive(NotificationCenter.default.publisher(for: UIAccessibility.voiceOverStatusDidChangeNotification)) { _ in
+            controllaVistaPulita()
+            // G2.8: con VoiceOver gli avvisi non si chiudono da soli; spento, riprendono i 6 secondi.
+            avvisi.voiceOverCambiato()
+        }
+        .onAppear {
+            // La sessione è già partita al tocco su «Collega» (SchermataConnessione), non a fine animazione.
+            if livellaAccesa { livella.avvia() }
+            lato.avvia()
+            rimandaOscuramento()
+            avvisi.aggiorna(avvisiAttivi)
+        }
+        .onDisappear {
+            sessione.termina()
+            livella.ferma()
+            lato.ferma()
+            compitoOscuramento?.cancel()
+            compitoVistaPulita?.cancel()
+            compitoZoom?.cancel()
+            compitoDoppioTocco?.cancel()
+            compitoSoloFrontale?.cancel()
+            avvisi.ferma()
+        }
+    }
+
+    /// Annunci a VoiceOver e vibrazione, che seguono stato, pausa, codice e avvisi.
+    private var conAnnunci: some View {
+        conOsservatori
+        // G2.8 e A2: collegato, in onda, pausa, riconnessione, errore, codice di conferma e ogni avviso nuovo detti
+        // a VoiceOver; quando un'app prende il video anche una vibrazione leggera.
+        .onChange(of: sessione.stato) { prima, adesso in annunciaStato(da: prima, a: adesso) }
+        // Solo il video preso o lasciato: al ritorno dalla riconnessione `in-onda` arriva di nuovo dal computer.
+        .onChange(of: videoPreso) { _, inOnda in
+            guard sessione.stato == .collegato, sessione.pausa.motivo == nil else { return }
+            if inOnda { Vibrazione.inOnda() }
+            annuncia(testoAnnuncioCollegato)
+        }
+        .onChange(of: sessione.pausa.motivo) { prima, adesso in
+            guard sessione.stato == .collegato else { return }
+            // Sottofondo: l'app non si vede. Fotocamera interrotta: la causa la dice già la sessione.
+            if let adesso {
+                guard prima == nil, adesso != MotiviPausa.sottofondo, adesso != MotiviPausa.fotocameraInterrotta else { return }
+                annuncia(String(localized: "Video in pausa"))
+            } else if let prima, prima != MotiviPausa.sottofondo, prima != MotiviPausa.nessunaApp {
+                // «Nessuna app» finisce perché un'app prende il video: lo annuncia già `inOndaQui`.
+                annuncia(testoAnnuncioCollegato)
+            }
+        }
+        .onChange(of: sessione.codiceConferma) { _, codice in
+            guard let codice else { return }
+            annunciaCodice(codice)
+        }
+        .onChange(of: avvisi.attuale?.id) { _, _ in
+            // Il microfono fermo lo annuncia già la sessione.
+            guard let avviso = avvisi.attuale, avviso.id != "microfono-perso" else { return }
+            annuncia(avviso.testo)
+        }
+    }
+
+    /// Gobbo, livella, oscuramento e avvisi a schermo.
+    private var conOsservatori: some View {
+        conFogli
+        .onChange(of: sessione.gobbo.visibile) { _, visibile in
+            // Col gobbo lo schermo resta acceso e non si oscura da solo: un testo nuovo riaccende lo schermo.
+            if visibile {
+                withAnimation { sessione.oscurato = false }
+                compitoOscuramento?.cancel()
+            } else {
+                rimandaOscuramento()
+            }
+        }
+        .onChange(of: livellaAccesa) { _, accesa in
+            // Si può accendere dalle Impostazioni aperte da qui.
+            if accesa && !sessione.oscurato { livella.avvia() } else { livella.ferma() }
+        }
+        // R17: a schermo oscurato la livella non si vede: niente sensori di movimento finché non si riaccende.
+        .onChange(of: sessione.oscurato) { _, oscurato in
+            if oscurato { livella.ferma() } else if livellaAccesa { livella.avvia() }
+        }
+        .onChange(of: avvisiAttivi.map(\.id)) { _, _ in
+            withAnimation { avvisi.aggiorna(avvisiAttivi) }
+        }
+        // G2.2: il testo cambia con la condizione (la batteria scende): l'avviso a schermo e l'icona lo seguono.
+        .onChange(of: avvisiAttivi.map(\.testo)) { _, _ in
+            avvisi.aggiornaTesti(avvisiAttivi)
+        }
+    }
+
+    /// Barre di sistema, fogli e domanda prima di scollegare.
+    private var conFogli: some View {
+        schermata
+        .preferredColorScheme(.dark)
+        .toolbar(.hidden, for: .navigationBar)
+        // G1.7: chiudere questa pagina termina la sessione. Niente «indietro» di sistema: niente pulsante e niente
+        // scorrimento dal bordo sinistro (`BloccoIndietro`). Si scollega solo da «Scollega», che chiede prima.
+        .navigationBarBackButtonHidden(true)
+        .background { BloccoIndietro().frame(width: 0, height: 0).accessibilityHidden(true) }
+        .statusBarHidden()
+        .persistentSystemOverlays(.hidden)
+        .sheet(item: $domandaAperta, onDismiss: { rimandaOscuramento() }) { domanda in
+            FoglioDomande(aperta: domanda.id)
+        }
+        .sheet(isPresented: $mostraDettagli, onDismiss: { rimandaOscuramento() }) {
+            FoglioDettagli(sessione: sessione, stato: testoStato)
+                .presentationDetents([.medium, .large])
+        }
+        .sheet(isPresented: $mostraImpostazioni, onDismiss: {
+            // Risoluzione, fotogrammi e formato cambiati: la fotocamera si riconfigura una volta, qui.
+            sessione.applicaImpostazioni()
+            if let foglio = foglioInAttesa {
+                foglioInAttesa = nil
+                apri(foglio)
+            } else {
+                rimandaOscuramento()
+            }
+        }) {
+            NavigationStack {
+                SchermataImpostazioni(duranteLaSessione: true, sessione: sessione,
+                                      ultimaLatenzaMs: sessione.ultimaLatenzaMs) { foglio in
+                    foglioInAttesa = foglio
+                    mostraImpostazioni = false
+                }
+                .pulsanteFine { mostraImpostazioni = false }
+            }
+            .tint(Tema.accento)
+            .preferredColorScheme(.dark)
+        }
+        .sheet(isPresented: $mostraMessaAFuoco, onDismiss: { chiusoFoglioAMeta() }) {
+            FoglioMessaAFuoco(sessione: sessione)
+                .presentationDetents([.medium, .large])
+                .presentationBackgroundInteraction(.enabled(upThrough: .medium))
+        }
+        // G1.6: la domanda dice cosa si ferma davvero. Durante il codice di conferma non c'è ancora un video:
+        // si annulla il collegamento. Il gesto «indietro» è spento (G1.7, `BloccoIndietro`): si passa sempre da qui.
+        .confirmationDialog(titoloConfermaScollega, isPresented: $confermaScollega, titleVisibility: .visible) {
+            if sessione.codiceConferma != nil {
+                Button("Annulla collegamento", role: .destructive) { chiudi() }
+                Button("Continua ad aspettare", role: .cancel) { rimandaOscuramento() }
+            } else {
+                Button("Scollega", role: .destructive) { chiudi() }
+                Button("Annulla", role: .cancel) { rimandaOscuramento() }
+            }
+        } message: {
+            if sessione.codiceConferma == nil {
+                if let app = sessione.inOnda?.app {
+                    Text("\(app) sta usando il video: si fermerà anche lì.")
+                } else {
+                    Text("Il video si ferma e torni alla lista dei computer.")
+                }
+            }
+        }
+    }
+
+    /// Il video e tutto quello che gli sta sopra.
+    private var schermata: some View {
         ZStack {
             // Il nero delle bande attorno al video, come nella Fotocamera: non è un colore dell'interfaccia.
             Color.black.ignoresSafeArea()
@@ -158,148 +321,6 @@ struct SchermataInOnda: View {
                 SchermoOscurato(sessione: sessione)
                     .ignoresSafeArea()
             }
-        }
-        .preferredColorScheme(.dark)
-        .toolbar(.hidden, for: .navigationBar)
-        // G1.7: chiudere questa pagina termina la sessione. Niente «indietro» di sistema: niente pulsante e niente
-        // scorrimento dal bordo sinistro (`BloccoIndietro`). Si scollega solo da «Scollega», che chiede prima.
-        .navigationBarBackButtonHidden(true)
-        .background { BloccoIndietro().frame(width: 0, height: 0).accessibilityHidden(true) }
-        .statusBarHidden()
-        .persistentSystemOverlays(.hidden)
-        .sheet(item: $domandaAperta, onDismiss: { rimandaOscuramento() }) { domanda in
-            FoglioDomande(aperta: domanda.id)
-        }
-        .sheet(isPresented: $mostraDettagli, onDismiss: { rimandaOscuramento() }) {
-            FoglioDettagli(sessione: sessione, stato: testoStato)
-                .presentationDetents([.medium, .large])
-        }
-        .sheet(isPresented: $mostraImpostazioni, onDismiss: {
-            // Risoluzione, fotogrammi e formato cambiati: la fotocamera si riconfigura una volta, qui.
-            sessione.applicaImpostazioni()
-            if let foglio = foglioInAttesa {
-                foglioInAttesa = nil
-                apri(foglio)
-            } else {
-                rimandaOscuramento()
-            }
-        }) {
-            NavigationStack {
-                SchermataImpostazioni(duranteLaSessione: true, sessione: sessione,
-                                      ultimaLatenzaMs: sessione.ultimaLatenzaMs) { foglio in
-                    foglioInAttesa = foglio
-                    mostraImpostazioni = false
-                }
-                .pulsanteFine { mostraImpostazioni = false }
-            }
-            .tint(Tema.accento)
-            .preferredColorScheme(.dark)
-        }
-        .sheet(isPresented: $mostraMessaAFuoco, onDismiss: { chiusoFoglioAMeta() }) {
-            FoglioMessaAFuoco(sessione: sessione)
-                .presentationDetents([.medium, .large])
-                .presentationBackgroundInteraction(.enabled(upThrough: .medium))
-        }
-        // G1.6: la domanda dice cosa si ferma davvero. Durante il codice di conferma non c'è ancora un video:
-        // si annulla il collegamento. Il gesto «indietro» è spento (G1.7, `BloccoIndietro`): si passa sempre da qui.
-        .confirmationDialog(titoloConfermaScollega, isPresented: $confermaScollega, titleVisibility: .visible) {
-            if sessione.codiceConferma != nil {
-                Button("Annulla collegamento", role: .destructive) { chiudi() }
-                Button("Continua ad aspettare", role: .cancel) { rimandaOscuramento() }
-            } else {
-                Button("Scollega", role: .destructive) { chiudi() }
-                Button("Annulla", role: .cancel) { rimandaOscuramento() }
-            }
-        } message: {
-            if sessione.codiceConferma == nil {
-                if let app = sessione.inOnda?.app {
-                    Text("\(app) sta usando il video: si fermerà anche lì.")
-                } else {
-                    Text("Il video si ferma e torni alla lista dei computer.")
-                }
-            }
-        }
-        .onChange(of: sessione.gobbo.visibile) { _, visibile in
-            // Col gobbo lo schermo resta acceso e non si oscura da solo: un testo nuovo riaccende lo schermo.
-            if visibile {
-                withAnimation { sessione.oscurato = false }
-                compitoOscuramento?.cancel()
-            } else {
-                rimandaOscuramento()
-            }
-        }
-        .onChange(of: livellaAccesa) { _, accesa in
-            // Si può accendere dalle Impostazioni aperte da qui.
-            if accesa && !sessione.oscurato { livella.avvia() } else { livella.ferma() }
-        }
-        // R17: a schermo oscurato la livella non si vede: niente sensori di movimento finché non si riaccende.
-        .onChange(of: sessione.oscurato) { _, oscurato in
-            if oscurato { livella.ferma() } else if livellaAccesa { livella.avvia() }
-        }
-        .onChange(of: avvisiAttivi.map(\.id)) { _, _ in
-            withAnimation { avvisi.aggiorna(avvisiAttivi) }
-        }
-        // G2.2: il testo cambia con la condizione (la batteria scende): l'avviso a schermo e l'icona lo seguono.
-        .onChange(of: avvisiAttivi.map(\.testo)) { _, _ in
-            avvisi.aggiornaTesti(avvisiAttivi)
-        }
-        // G2.8 e A2: collegato, in onda, pausa, riconnessione, errore, codice di conferma e ogni avviso nuovo detti
-        // a VoiceOver; quando un'app prende il video anche una vibrazione leggera.
-        .onChange(of: sessione.stato) { prima, adesso in annunciaStato(da: prima, a: adesso) }
-        // Solo il video preso o lasciato: al ritorno dalla riconnessione `in-onda` arriva di nuovo dal computer.
-        .onChange(of: sessione.inOnda != nil && !sessione.prontaCam2) { _, inOnda in
-            guard sessione.stato == .collegato, sessione.pausa.motivo == nil else { return }
-            if inOnda { Vibrazione.inOnda() }
-            annuncia(testoAnnuncioCollegato)
-        }
-        .onChange(of: sessione.pausa.motivo) { prima, adesso in
-            guard sessione.stato == .collegato else { return }
-            // Sottofondo: l'app non si vede. Fotocamera interrotta: la causa la dice già la sessione.
-            if let adesso {
-                guard prima == nil, adesso != MotiviPausa.sottofondo, adesso != MotiviPausa.fotocameraInterrotta else { return }
-                annuncia(String(localized: "Video in pausa"))
-            } else if let prima, prima != MotiviPausa.sottofondo, prima != MotiviPausa.nessunaApp {
-                // «Nessuna app» finisce perché un'app prende il video: lo annuncia già `inOndaQui`.
-                annuncia(testoAnnuncioCollegato)
-            }
-        }
-        .onChange(of: sessione.codiceConferma) { _, codice in
-            guard let codice else { return }
-            annuncia(String(localized: "Conferma sul computer") + ". "
-                     + String(localized: "Codice di conferma \(codice.map { String($0) }.joined(separator: " "))"))
-        }
-        .onChange(of: avvisi.attuale?.id) { _, _ in
-            // Il microfono fermo lo annuncia già la sessione.
-            guard let avviso = avvisi.attuale, avviso.id != "microfono-perso" else { return }
-            annuncia(avviso.testo)
-        }
-        .onChange(of: classeVerticale) { _, _ in controllaVistaPulita() }
-        .onChange(of: foglioAperto) { _, _ in controllaVistaPulita() }
-        .onChange(of: sessione.stato) { _, _ in controllaVistaPulita() }
-        .onChange(of: sessione.codiceConferma) { _, _ in controllaVistaPulita() }
-        .onChange(of: avvisi.attuale?.id) { _, _ in controllaVistaPulita() }
-        .onReceive(NotificationCenter.default.publisher(for: UIAccessibility.voiceOverStatusDidChangeNotification)) { _ in
-            controllaVistaPulita()
-            // G2.8: con VoiceOver gli avvisi non si chiudono da soli; spento, riprendono i 6 secondi.
-            avvisi.voiceOverCambiato()
-        }
-        .onAppear {
-            // La sessione è già partita al tocco su «Collega» (SchermataConnessione), non a fine animazione.
-            if livellaAccesa { livella.avvia() }
-            lato.avvia()
-            rimandaOscuramento()
-            avvisi.aggiorna(avvisiAttivi)
-        }
-        .onDisappear {
-            sessione.termina()
-            livella.ferma()
-            lato.ferma()
-            compitoOscuramento?.cancel()
-            compitoVistaPulita?.cancel()
-            compitoZoom?.cancel()
-            compitoDoppioTocco?.cancel()
-            compitoSoloFrontale?.cancel()
-            avvisi.ferma()
         }
     }
 
@@ -459,6 +480,19 @@ struct SchermataInOnda: View {
     // MARK: - Annunci (G2.8)
 
     /// Questo telefono è nel video di un'app (con più telefoni, quello scelto).
+    /// Un'app sul computer usa il video di questo telefono (anche fuori da `.collegato`).
+    private var videoPreso: Bool {
+        sessione.inOnda != nil && !sessione.prontaCam2
+    }
+
+    /// Il codice di conferma detto a VoiceOver cifra per cifra.
+    private func annunciaCodice(_ codice: String) {
+        let cifre: String = codice.map { String($0) }.joined(separator: " ")
+        let titolo: String = String(localized: "Conferma sul computer")
+        let testo: String = String(localized: "Codice di conferma \(cifre)")
+        annuncia(titolo + ". " + testo)
+    }
+
     private var inOndaQui: Bool {
         sessione.stato == .collegato && sessione.inOnda != nil && !sessione.prontaCam2
     }

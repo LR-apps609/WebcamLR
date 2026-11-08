@@ -314,6 +314,97 @@ public class TelefonoSimulatoTest
     }
 
     [Fact]
+    public async Task RifiutatoDaPocoNonFaRicomparireLaDomanda()
+    {
+        // Collaudo 37: dopo «Non consentire» la stessa chiave per due minuti non riapre la domanda e non vede il codice.
+        using var idComputer = IdentitaDispositivo.Nuova();
+        using var idTelefono = IdentitaDispositivo.Nuova();
+        var domande = 0;
+        long adesso = 1_000_000;
+        var abbinamento = new Abbinamento(idComputer)
+        {
+            Orologio = () => Volatile.Read(ref adesso),
+            ChiediConferma = (_, _, _) =>
+            {
+                Interlocked.Increment(ref domande);
+                return Task.FromResult(false);
+            },
+        };
+        var rifiutatiDaPoco = 0;
+        using var ricevitore = new Ricevitore(abbinamento, sessione => sessione.RifiutatoDaPoco += _ => Interlocked.Increment(ref rifiutatiDaPoco));
+
+        await using (var primo = new TelefonoFinto(idTelefono))
+        {
+            await primo.CollegaAsync(ricevitore.Ascoltatore.Porta);
+            await primo.AttendiAsync<Approvazione>().WaitAsync(Limite);
+            await primo.AttendiAsync<Arrivederci>().WaitAsync(Limite);
+        }
+        Assert.True(abbinamento.RifiutatoDaPoco(idTelefono.Impronta));
+
+        await using (var secondo = new TelefonoFinto(idTelefono))
+        {
+            await secondo.CollegaAsync(ricevitore.Ascoltatore.Porta);
+            var primoMessaggio = await secondo.Ricevuti.Reader.ReadAsync().AsTask().WaitAsync(Limite);
+            Assert.IsType<Arrivederci>(primoMessaggio);
+        }
+        Assert.Equal(1, Volatile.Read(ref domande));
+        Assert.Equal(1, Volatile.Read(ref rifiutatiDaPoco));
+
+        // Passata la pausa si chiede di nuovo.
+        Interlocked.Add(ref adesso, (long)Abbinamento.PausaDopoRifiuto.TotalMilliseconds);
+        await using (var terzo = new TelefonoFinto(idTelefono))
+        {
+            await terzo.CollegaAsync(ricevitore.Ascoltatore.Porta);
+            await terzo.AttendiAsync<Approvazione>().WaitAsync(Limite);
+            await terzo.AttendiAsync<Arrivederci>().WaitAsync(Limite);
+        }
+        Assert.Equal(2, Volatile.Read(ref domande));
+    }
+
+    [Fact]
+    public async Task DueTelefoniNuoviUnaDomandaAllaVolta()
+    {
+        // Collaudo 33: la domanda per il secondo aspetta che si chiuda quella del primo, invece di rifiutarlo.
+        using var idComputer = IdentitaDispositivo.Nuova();
+        var risposte = System.Threading.Channels.Channel.CreateUnbounded<(string Nome, TaskCompletionSource<bool> Risposta)>();
+        var aperte = 0;
+        var massimoAperte = 0;
+        var abbinamento = new Abbinamento(idComputer)
+        {
+            ChiediConferma = async (nome, _, _) =>
+            {
+                var ora = Interlocked.Increment(ref aperte);
+                if (ora > Volatile.Read(ref massimoAperte)) Volatile.Write(ref massimoAperte, ora);
+                var risposta = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                risposte.Writer.TryWrite((nome, risposta));
+                try { return await risposta.Task; }
+                finally { Interlocked.Decrement(ref aperte); }
+            },
+        };
+        using var ricevitore = new Ricevitore(abbinamento);
+
+        await using var a = new TelefonoFinto();
+        await a.CollegaAsync(ricevitore.Ascoltatore.Porta, "A");
+        await a.AttendiAsync<Approvazione>().WaitAsync(Limite);
+        var domandaA = await risposte.Reader.ReadAsync().AsTask().WaitAsync(Limite);
+        Assert.Equal("A", domandaA.Nome);
+
+        await using var b = new TelefonoFinto();
+        await b.CollegaAsync(ricevitore.Ascoltatore.Porta, "B");
+        await b.AttendiAsync<Approvazione>().WaitAsync(Limite);
+        await Task.Delay(300);
+        Assert.False(risposte.Reader.TryRead(out _));
+
+        domandaA.Risposta.SetResult(true);
+        await a.AttendiAsync<Benvenuto>().WaitAsync(Limite);
+        var domandaB = await risposte.Reader.ReadAsync().AsTask().WaitAsync(Limite);
+        Assert.Equal("B", domandaB.Nome);
+        domandaB.Risposta.SetResult(true);
+        await b.AttendiAsync<Benvenuto>().WaitAsync(Limite);
+        Assert.Equal(1, Volatile.Read(ref massimoAperte));
+    }
+
+    [Fact]
     public async Task TelefonoDelProtocollo1VieneChiuso()
     {
         using var idComputer = IdentitaDispositivo.Nuova();

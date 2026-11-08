@@ -105,6 +105,7 @@ public sealed partial class MainWindow
         catch (Exception) { provenienza = tipo; }
         registro.Aggiungi(Testi.T("Registro_NuovaConnessione", provenienza));
         nuova.ConfermaInCorso += (nome, _) => registro.Aggiungi(Testi.T("Registro_ChiestaConferma", nome));
+        nuova.RifiutatoDaPoco += ciao => registro.Aggiungi(Testi.T("Registro_RifiutatoDaPoco", ciao.Nome));
         nuova.NonAmmesso += ciao =>
         {
             // WebcamLR Pro: con il telefono nella webcam gratis il secondo non entra; altrimenti i posti sono pieni.

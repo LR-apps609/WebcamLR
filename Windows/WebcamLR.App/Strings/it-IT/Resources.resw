@@ -959,6 +959,9 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
   <data name="Registro_ChiestaConferma" xml:space="preserve">
     <value>«{0}» è nuovo: chiesta la conferma con il codice</value>
   </data>
+  <data name="Registro_RifiutatoDaPoco" xml:space="preserve">
+    <value>«{0}» è stato rifiutato da poco: per due minuti non si chiede di nuovo</value>
+  </data>
   <data name="Registro_NonEntraPro" xml:space="preserve">
     <value>«{0}» non entra: due telefoni insieme sono di WebcamLR Pro</value>
   </data>

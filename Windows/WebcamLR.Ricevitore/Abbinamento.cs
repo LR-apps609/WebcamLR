@@ -42,6 +42,66 @@ public sealed class Abbinamento
     /// </summary>
     public Func<string, string, CancellationToken, Task<bool>>? ChiediConferma { get; set; }
 
+    /// <summary>
+    /// Dopo «Non consentire» (o il tempo scaduto) la stessa impronta non fa ricomparire la domanda per questo tempo
+    /// (collaudo 37): chi è in rete non può riaprirla senza fine né portare la finestra davanti durante la chiamata.
+    /// </summary>
+    public static readonly TimeSpan PausaDopoRifiuto = TimeSpan.FromMinutes(2);
+
+    /// <summary>Millisecondi, per <see cref="PausaDopoRifiuto"/>; nei test si cambia.</summary>
+    public Func<long> Orologio { get; set; } = () => Environment.TickCount64;
+
+    private readonly Dictionary<string, long> rifiutati = [];
+
+    /// <summary>Una domanda «Consentire …?» alla volta: la seconda aspetta che la prima sia chiusa (collaudo 33).</summary>
+    private readonly SemaphoreSlim unaDomanda = new(1, 1);
+
+    /// <summary>La domanda per questa impronta è stata rifiutata da meno di <see cref="PausaDopoRifiuto"/>.</summary>
+    public bool RifiutatoDaPoco(string impronta)
+    {
+        lock (blocco)
+        {
+            var adesso = Orologio();
+            foreach (var vecchio in rifiutati.Where(r => adesso - r.Value >= (long)PausaDopoRifiuto.TotalMilliseconds).Select(r => r.Key).ToList())
+                rifiutati.Remove(vecchio);
+            return rifiutati.ContainsKey(impronta);
+        }
+    }
+
+    /// <summary>L'utente ha detto no (o non ha risposto in tempo) a questa impronta.</summary>
+    public void SegnaRifiuto(string impronta)
+    {
+        lock (blocco) rifiutati[impronta] = Orologio();
+    }
+
+    /// <summary>
+    /// Chiede la conferma con <see cref="ChiediConferma"/>, una domanda alla volta: se ce n'è già una aperta per un altro
+    /// telefono, questa aspetta che sia chiusa (entro <paramref name="scaduto"/>, il tempo del telefono). Il no si ricorda.
+    /// </summary>
+    public async Task<bool> ConfermaAsync(string impronta, string nome, string codice, CancellationToken scaduto)
+    {
+        if (ChiediConferma is not { } chiedi) return false;
+        bool consentito;
+        try
+        {
+            await unaDomanda.WaitAsync(scaduto);
+        }
+        catch (OperationCanceledException)
+        {
+            return false;
+        }
+        try
+        {
+            try { consentito = await chiedi(nome, codice, scaduto); }
+            catch (OperationCanceledException) { consentito = false; }
+        }
+        finally
+        {
+            unaDomanda.Release();
+        }
+        return consentito;
+    }
+
     public bool Fidato(string impronta)
     {
         lock (blocco) return fidati.ContainsKey(impronta);

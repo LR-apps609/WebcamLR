@@ -959,6 +959,9 @@ The details are in {1}: send them with “Report a bug”.</value>
   <data name="Registro_ChiestaConferma" xml:space="preserve">
     <value>“{0}” is new: asked for confirmation with the code</value>
   </data>
+  <data name="Registro_RifiutatoDaPoco" xml:space="preserve">
+    <value>“{0}” was declined a moment ago: not asking again for two minutes</value>
+  </data>
   <data name="Registro_NonEntraPro" xml:space="preserve">
     <value>“{0}” not connected: two phones at once are part of WebcamLR Pro</value>
   </data>

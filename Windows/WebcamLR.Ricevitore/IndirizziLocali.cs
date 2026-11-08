@@ -81,7 +81,7 @@ public static class IndirizziLocali
         var ordine = 0;
         foreach (var scheda in schede)
         {
-            if (Virtuale(scheda)) continue;
+            if (Virtuale(scheda) && !SwitchEsterno(scheda)) continue;
             foreach (var grezzo in scheda.Indirizzi)
             {
                 var indirizzo = grezzo.IsIPv4MappedToIPv6 ? grezzo.MapToIPv4() : grezzo;
@@ -125,6 +125,18 @@ public static class IndirizziLocali
     public static bool Virtuale(SchedaPerQR scheda) =>
         scheda.Tipo is NetworkInterfaceType.Loopback or NetworkInterfaceType.Tunnel or NetworkInterfaceType.Ppp
         || Contiene(scheda, ParoleVirtuali);
+
+    /// <summary>
+    /// Lo switch «Esterno» di Hyper-V (macchine virtuali, a volte Docker): Windows sposta l'indirizzo della rete vera
+    /// sulla scheda «vEthernet (…)» e lascia la scheda fisica senza IPv4. Si riconosce dal gateway predefinito,
+    /// che le vEthernet interne (WSL, Default Switch) non hanno: conta come un cavo di rete.
+    /// </summary>
+    public static bool SwitchEsterno(SchedaPerQR scheda) =>
+        scheda.ConGateway
+        && scheda.Tipo is not (NetworkInterfaceType.Loopback or NetworkInterfaceType.Tunnel or NetworkInterfaceType.Ppp)
+        && Contiene(scheda, ParoleHyperV);
+
+    private static readonly string[] ParoleHyperV = ["Hyper-V", "vEthernet"];
 
     /// <summary>169.254.x.x: l'indirizzo che Windows si dà da solo quando la rete non risponde.</summary>
     public static bool Automatico(IPAddress indirizzo)

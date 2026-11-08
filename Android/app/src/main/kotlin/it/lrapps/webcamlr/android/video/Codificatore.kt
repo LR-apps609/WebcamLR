@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
+import android.os.Looper
 import android.util.Log
 import android.view.Surface
 import it.lrapps.webcamlr.android.logica.BitrateVideo
@@ -198,6 +199,8 @@ class Codificatore(
     }
 
     fun ferma() {
+        rinvio.removeCallbacks(chiaveRinviata)
+        chiaveDalComputerInAttesa = false
         val vecchio = codec ?: return
         codec = null
         try {
@@ -225,6 +228,32 @@ class Codificatore(
             attuale.setParameters(Bundle().apply { putInt(MediaCodec.PARAMETER_KEY_REQUEST_SYNC_FRAME, 0) })
         } catch (e: Exception) {
             Log.w(TAG, "Fotogramma chiave non richiesto", e)
+        }
+    }
+
+    /** Qualità 13: c'è già una richiesta del computer in attesa dello scadere dei 500 ms. */
+    @Volatile private var chiaveDalComputerInAttesa = false
+    private val rinvio = Handler(Looper.getMainLooper())
+    private val chiaveRinviata = Runnable {
+        chiaveDalComputerInAttesa = false
+        chiaveChiestaDalComputer()
+    }
+
+    /**
+     * Qualità 13: il computer chiede un fotogramma chiave (`chiedi-chiave`: decoder in errore o partito a metà). Al
+     * massimo uno ogni 500 ms (Protocollo.md, «Fotogramma chiave su richiesta»); a differenza di
+     * [richiediFotogrammaChiave] una richiesta che arriva prima non si perde: le richieste di quel mezzo secondo si
+     * uniscono in una sola, servita allo scadere. Da qualsiasi thread.
+     */
+    @Synchronized
+    fun chiaveChiestaDalComputer() {
+        if (codec == null || chiaveDalComputerInAttesa) return
+        val trascorsi = android.os.SystemClock.elapsedRealtime() - ultimaRichiestaChiave
+        if (trascorsi >= 500) {
+            richiediFotogrammaChiave(subito = true)
+        } else {
+            chiaveDalComputerInAttesa = true
+            rinvio.postDelayed(chiaveRinviata, 500 - trascorsi)
         }
     }
 

@@ -656,6 +656,10 @@ final class SessioneTelefono {
             guard inUso.valore else { return }
             codificatore.richiediFotogrammaChiave()
         }
+        nuovo.suChiediChiave = {
+            guard inUso.valore else { return }
+            codificatore.chiaveChiestaDalComputer()
+        }
         nuovo.suSecondo = { [weak self] scartati, saturo in
             guard inUso.valore else { return }
             let debole = codificatore.adattaAllaRete(scartati: scartati, saturo: saturo)
@@ -1016,6 +1020,9 @@ final class SessioneTelefono {
         let codificatore = self.codificatore
         nuovo.suPerdita = {
             codificatore.richiediFotogrammaChiave()
+        }
+        nuovo.suChiediChiave = {
+            codificatore.chiaveChiestaDalComputer()
         }
         // Una volta al secondo: il bitrate segue la rete, l'interfaccia riceve solo il riassunto.
         nuovo.suSecondo = { [weak self] scartati, saturo in

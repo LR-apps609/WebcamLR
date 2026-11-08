@@ -71,6 +71,11 @@ final class Codificatore: @unchecked Sendable {
     /// richiesta, subito: dopo una perdita (`richiediFotogrammaChiave`), a ogni nuovo collegamento o ripresa
     /// (`ricomincia`) e a ogni sessione di codifica nuova.
     private static let intervalloChiave = 10.0
+    /// Qualità 13: il computer ha chiesto un fotogramma chiave (`chiedi-chiave`) e non l'abbiamo ancora fatto.
+    private var chiaveDalComputer = false
+    /// Al massimo un fotogramma chiave su richiesta del computer ogni mezzo secondo (Protocollo.md, «Fotogramma
+    /// chiave su richiesta»): le richieste che arrivano prima si uniscono e si servono allo scadere.
+    private static let intervalloChiaveSuRichiesta = 0.5
     /// La sessione attuale ha già consegnato almeno un fotogramma.
     private var sessioneProvata = false
     /// Una sessione a bassa latenza si è guastata prima del primo fotogramma (formato che quel codificatore non
@@ -141,6 +146,13 @@ final class Codificatore: @unchecked Sendable {
     /// Il prossimo fotogramma sarà un fotogramma chiave (dopo una perdita o un nuovo collegamento).
     func richiediFotogrammaChiave() {
         blocco.withLock { chiaveRichiesta = true }
+    }
+
+    /// Qualità 13: il computer chiede un fotogramma chiave (`chiedi-chiave`: decoder in errore o partito a metà). Il
+    /// prossimo fotogramma è chiave, con SPS e PPS, ma non prima di mezzo secondo dall'ultimo fotogramma chiave forzato:
+    /// più richieste in quel mezzo secondo diventano una sola. Da qualsiasi thread.
+    func chiaveChiestaDalComputer() {
+        blocco.withLock { chiaveDalComputer = true }
     }
 
     /// Qualità ed efficienza: il collegamento è sul cavo (USB o di rete) o senza fili. Cambia il bitrate di
@@ -249,8 +261,16 @@ final class Codificatore: @unchecked Sendable {
                ultimaChiave.map({ secondi < $0 || secondi - $0 >= Self.intervalloChiave }) ?? true {
                 chiaveRichiesta = true
             }
+            // Qualità 13: la richiesta del computer passa appena è trascorso mezzo secondo dall'ultimo fotogramma
+            // chiave forzato (o subito, se l'orologio è tornato indietro o non ce n'è ancora stato uno).
+            if chiaveDalComputer, !secondi.isFinite
+                || ultimaChiave.map({ secondi < $0 || secondi - $0 >= Self.intervalloChiaveSuRichiesta }) ?? true {
+                chiaveRichiesta = true
+            }
             let forza = chiaveRichiesta
             chiaveRichiesta = false
+            // Un fotogramma chiave per qualsiasi motivo soddisfa anche la richiesta del computer.
+            if forza { chiaveDalComputer = false }
             if forza, secondi.isFinite { ultimaChiave = secondi }
             return (self.sessione, forza, nuovoFormato)
         }

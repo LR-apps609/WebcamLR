@@ -27,3 +27,6 @@ Strumenti/account.txt
 
 # Installatori costruiti (Strumenti/Crea installer Windows.bat)
 Distribuzione/
+
+# Python (Strumenti/banco_sfondo importa genera_sfondi.py)
+__pycache__/

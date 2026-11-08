@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Il banco della qualità dello sfondo (Strumenti/banco_sfondo): passa i fotogrammi nella libreria C# vera
+       (RitaglioPersona e Compositore di WebcamLR.Effetti) per controllare che la versione numpy faccia gli stessi conti
+       e per misurare i tempi della resa di Windows. Non fa parte dell'app. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>VerificaCs</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Windows\WebcamLR.Effetti\WebcamLR.Effetti.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -290,6 +290,8 @@
     <string name="ricollego_tra">Reconnecting to %1$s in %2$d…</string>
     <string name="collega_a">Connect to %1$s</string>
     <string name="collega">Connect</string>
+    <string name="collega_altro_domanda">Connect to %1$s?</string>
+    <string name="collega_altro_spiegazione">The connection with %1$s closes and the video moves to this computer.</string>
     <string name="aiuto_altre_risposte">More answers in the FAQ</string>
     <string name="come_funziona">How it works</string>
     <string name="indirizzo_titolo">Computer address</string>

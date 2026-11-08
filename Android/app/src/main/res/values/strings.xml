@@ -292,6 +292,8 @@
     <string name="ricollego_tra">Mi ricollego a %1$s tra %2$d…</string>
     <string name="collega_a">Collega a %1$s</string>
     <string name="collega">Collega</string>
+    <string name="collega_altro_domanda">Collegarsi a %1$s?</string>
+    <string name="collega_altro_spiegazione">Il collegamento con %1$s si chiude e il video passa a questo computer.</string>
     <string name="aiuto_altre_risposte">Altre risposte nelle domande frequenti</string>
     <string name="come_funziona">Come funziona</string>
     <string name="indirizzo_titolo">Indirizzo del computer</string>

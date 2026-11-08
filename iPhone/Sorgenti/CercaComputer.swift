@@ -94,6 +94,13 @@ final class CercaComputer {
     private var sullaRete: [ComputerTrovato] = []
     private var diretti: [ComputerTrovato] = []
     private var compitoRipiego: Task<Void, Never>?
+    /// Collaudo 50: la prima volta iOS chiede il permesso «Rete locale» e, finché la domanda è aperta, la ricerca
+    /// risponde come se fosse negato (TN3179). Si aspetta la risposta (il primo `.ready`) prima di dirlo negato.
+    private var compitoPermesso: Task<Void, Never>?
+    private var negatoInAttesa = false
+    /// Vero dopo la prima risposta alla domanda (ricerca pronta, o negato anche dopo l'attesa): da lì un rifiuto vale subito.
+    private static let chiaveDomandaFatta = "domandaReteLocaleFatta"
+    private static let attesaRisposta: Duration = .seconds(15)
 
     func avvia() {
         guard browser == nil else { return }
@@ -154,6 +161,9 @@ final class CercaComputer {
     func ferma() {
         compitoRipiego?.cancel()
         compitoRipiego = nil
+        compitoPermesso?.cancel()
+        compitoPermesso = nil
+        negatoInAttesa = false
         browser?.cancel()
         browser = nil
         browserDiretto?.cancel()
@@ -167,14 +177,20 @@ final class CercaComputer {
         switch nuovo {
         case .ready:
             stato = .inCerca
+            compitoPermesso?.cancel()
+            compitoPermesso = nil
+            negatoInAttesa = false
+            UserDefaults.standard.set(true, forKey: Self.chiaveDomandaFatta)
             // La ricerca funziona: il permesso «Rete locale» c'è (serve alla diagnosi, 1.3).
             StatoRete.condiviso.permessoNegato = false
         case .waiting(let errore), .failed(let errore):
             // -65570 = kDNSServiceErr_PolicyDenied: l'utente non ha concesso la rete locale.
             if case .dns(let codice) = errore, codice == -65570 {
-                if stato != .permessoNegato { RegistroCollegamento.scrivi(String(localized: "Ricerca ferma: permesso «Rete locale» negato")) }
-                stato = .permessoNegato
-                StatoRete.condiviso.permessoNegato = true
+                if UserDefaults.standard.bool(forKey: Self.chiaveDomandaFatta) || stato == .permessoNegato {
+                    segnaPermessoNegato()
+                } else {
+                    aspettaRispostaAllaDomanda()
+                }
             } else {
                 stato = .errore(errore.localizedDescription)
             }
@@ -190,6 +206,31 @@ final class CercaComputer {
             }
         default:
             break
+        }
+    }
+
+    private func segnaPermessoNegato() {
+        compitoPermesso?.cancel()
+        compitoPermesso = nil
+        negatoInAttesa = false
+        UserDefaults.standard.set(true, forKey: Self.chiaveDomandaFatta)
+        if stato != .permessoNegato { RegistroCollegamento.scrivi(String(localized: "Ricerca ferma: permesso «Rete locale» negato")) }
+        stato = .permessoNegato
+        StatoRete.condiviso.permessoNegato = true
+    }
+
+    /// Collaudo 50: domanda «Rete locale» forse ancora aperta. La schermata resta in «Cerco il tuo computer…»; se dopo
+    /// `attesaRisposta` la ricerca non è ancora pronta, il permesso è negato davvero.
+    private func aspettaRispostaAllaDomanda() {
+        guard !negatoInAttesa else { return }
+        negatoInAttesa = true
+        if stato != .fermo { stato = .inCerca }
+        RegistroCollegamento.scrivi(String(localized: "Ricerca: aspetto la risposta alla domanda «Rete locale»"))
+        let attesa = Self.attesaRisposta
+        compitoPermesso = Task { [weak self] in
+            try? await Task.sleep(for: attesa)
+            guard !Task.isCancelled, let self, self.negatoInAttesa, self.stato != .fermo else { return }
+            self.segnaPermessoNegato()
         }
     }
 }

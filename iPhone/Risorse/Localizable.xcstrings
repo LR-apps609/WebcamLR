@@ -5509,6 +5509,23 @@
         }
       }
     },
+    "Ricerca: aspetto la risposta alla domanda «Rete locale»" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search: waiting for the answer to the “Local Network” prompt"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ricerca: aspetto la risposta alla domanda «Rete locale»"
+          }
+        }
+      }
+    },
     "Ricollega il cavo: il collegamento riparte da solo. Oppure controlla che iPhone e computer siano sulla stessa rete Wi-Fi e tocca «Riprova»." : {
       "extractionState" : "manual",
       "localizations" : {

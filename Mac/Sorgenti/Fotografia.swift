@@ -7,12 +7,15 @@ import UniformTypeIdentifiers
 enum Fotografia {
     enum Errore: LocalizedError {
         case nessunVideo
+        /// Il telefono è in pausa o il collegamento è interrotto: a schermo c'è l'attesa, non il video.
+        case videoFermo
         case salvataggio
         case registrazione
 
         var errorDescription: String? {
             switch self {
             case .nessunVideo: String(localized: "Non c'è ancora video: collega il telefono e riprova.")
+            case .videoFermo: String(localized: "Il video del telefono è fermo (in pausa o in attesa): riprova quando torna.")
             case .salvataggio: String(localized: "Non riesco a salvare in Immagini › WebcamLR: controlla lo spazio sul disco e riprova.")
             case .registrazione: String(localized: "Non riesco a creare la registrazione in Filmati › WebcamLR: controlla lo spazio sul disco e riprova.")
             }

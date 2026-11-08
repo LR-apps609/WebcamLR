@@ -2660,6 +2660,16 @@
         }
       }
     },
+    "Il video del telefono è fermo (in pausa o in attesa): riprova quando torna." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The phone's video is stopped (paused or waiting): try again when it's back."
+          }
+        }
+      }
+    },
     "Il video e i comandi viaggiano cifrati. I telefoni nuovi si collegano solo con il QR code di questo Mac o dopo che li confermi con il codice di conferma." : {
       "localizations" : {
         "en" : {

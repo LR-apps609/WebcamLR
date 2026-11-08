@@ -221,12 +221,14 @@ final class Schermo: @unchecked Sendable {
         }
     }
 
-    /// L'ultima immagine ricevuta, per una foto; nil se non c'è ancora video.
-    func fotografa(_ completamento: @escaping @Sendable (CGImage?) -> Void) {
+    /// L'ultima immagine ricevuta, per una foto; nil se non c'è ancora video, o se a schermo c'è l'attesa (pausa,
+    /// collegamento interrotto: l'ultima immagine sarebbe vecchia e ferma). `fermo` dice quale dei due.
+    func fotografa(_ completamento: @escaping @Sendable (_ immagine: CGImage?, _ fermo: Bool) -> Void) {
         coda.async {
-            guard let immagine = self.ultimaImmagine else { return completamento(nil) }
+            guard self.mostrata == nil else { return completamento(nil, true) }
+            guard let immagine = self.ultimaImmagine else { return completamento(nil, false) }
             let ci = CIImage(cvPixelBuffer: immagine)
-            completamento(self.contestoFoto.createCGImage(ci, from: ci.extent))
+            completamento(self.contestoFoto.createCGImage(ci, from: ci.extent), false)
         }
     }
 

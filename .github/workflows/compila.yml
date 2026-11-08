@@ -35,6 +35,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Prepara la cartella dei registri
+        run: mkdir -p registri
+
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
@@ -45,9 +48,6 @@ jobs:
           java-version: "17"
 
       - uses: gradle/actions/setup-gradle@v4
-
-      - name: Prepara la cartella dei registri
-        run: mkdir -p registri
 
       # Tutti i progetti di test .NET sono net8.0: girano anche su Linux (Effetti usa OnnxRuntime senza DirectML).
       - name: dotnet test (Protocollo, Ricevitore, Webcam.Logica, Setup.Logica, Effetti)
@@ -71,6 +71,12 @@ jobs:
         if: ${{ !cancelled() }}
         run: python3 Strumenti/genera_token.py --controlla 2>&1 | tee registri/token.log
 
+      - name: Errori e test falliti dai registri
+        if: failure()
+        run: |
+          grep -HnE '(error|Error)( [A-Z]+[0-9]+)?:|^e: |FAILED|failed|Failed|What went wrong' registri/*.log \
+            | grep -vE 'warning|0 failures|Failed: 0' | sort -u | head -400 || true
+
       - name: Carica i registri
         if: failure()
         uses: actions/upload-artifact@v4
@@ -92,6 +98,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Prepara la cartella dei registri
+        run: mkdir -p registri
+
       - name: Xcode più recente
         uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -104,7 +113,6 @@ jobs:
           xcodebuild -version
           swift --version
           command -v xcbeautify || brew install xcbeautify
-          mkdir -p registri
 
       - name: swift test (Protocollo)
         if: ${{ !cancelled() }}
@@ -150,6 +158,12 @@ jobs:
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build 2>&1 \
             | tee registri/xcodebuild-iphone.log | xcbeautify --renderer github-actions
 
+      - name: Errori e test falliti dai registri
+        if: failure()
+        run: |
+          grep -HnE '(error|Error)( [A-Z]+[0-9]+)?:|^e: |FAILED|failed|Failed|What went wrong' registri/*.log \
+            | grep -vE 'warning|0 failures|Failed: 0' | sort -u | head -400 || true
+
       - name: Carica i registri
         if: failure()
         uses: actions/upload-artifact@v4
@@ -165,12 +179,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Prepara la cartella dei registri
+        run: mkdir -p registri
+
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
-
-      - name: Prepara la cartella dei registri
-        run: mkdir -p registri
 
       # Non c'è un .sln: l'app (WinUI 3) si porta dietro Protocollo, Ricevitore, Effetti, Microfono e Webcam.Logica,
       # e con il suo bersaglio anche Webcam, Webcam.Installa e il filtro DirectShow (anche x86).
@@ -206,6 +220,12 @@ jobs:
           done
           exit $esito
 
+      - name: Errori e test falliti dai registri
+        if: failure()
+        run: |
+          grep -HnE '(error|Error)( [A-Z]+[0-9]+)?:|^e: |FAILED|failed|Failed|What went wrong' registri/*.log \
+            | grep -vE 'warning|0 failures|Failed: 0' | sort -u | head -400 || true
+
       - name: Carica i registri
         if: failure()
         uses: actions/upload-artifact@v4
@@ -221,35 +241,56 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Prepara la cartella dei registri
+        run: mkdir -p registri
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
 
-      - name: Android SDK
-        uses: android-actions/setup-android@v3
+      # Niente android-actions/setup-android: ubuntu-latest ha già l'Android SDK in ANDROID_HOME
+      # (e setup-android@v3 fallisce con «Failed to find package 'tools'»).
+      - name: Android SDK del runner
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls "$ANDROID_HOME/platforms" "$ANDROID_HOME/build-tools"
+
+      # Solo in CI: settings.gradle.kts limita il repository di Google a com.android, com.google.android,
+      # com.google.mediapipe e androidx, ma Google Play Billing 7.1.1 chiede com.google.firebase:firebase-encoders*,
+      # che stanno solo lì. Senza questo script la build si ferma prima di compilare il Kotlin.
+      # È un errore del progetto (elencato tra gli errori del codice): qui lo si aggira per arrivare al compilatore.
+      - name: Script di Gradle per CI (firebase dal repository di Google)
+        run: |
+          cat > "$RUNNER_TEMP/ci.init.gradle" <<'FINE'
+          settingsEvaluated { impostazioni ->
+              impostazioni.dependencyResolutionManagement.repositories.google {
+                  name = "GoogleSoloFirebaseCI"
+                  content { includeGroupByRegex("com\\.google\\.firebase.*") }
+              }
+          }
+          FINE
+          cat "$RUNNER_TEMP/ci.init.gradle"
+          echo "INIT_CI=--init-script $RUNNER_TEMP/ci.init.gradle" >> "$GITHUB_ENV"
 
       - uses: gradle/actions/setup-gradle@v4
-
-      - name: Prepara la cartella dei registri
-        run: mkdir -p registri
 
       - name: assembleDebug
         if: ${{ !cancelled() }}
         working-directory: Android
-        run: ./gradlew --no-daemon --continue :app:assembleDebug 2>&1 | tee ../registri/gradle-assemble.log
+        run: ./gradlew --no-daemon --continue $INIT_CI :app:assembleDebug 2>&1 | tee ../registri/gradle-assemble.log
 
       - name: Test della logica (testDebugUnitTest)
         if: ${{ !cancelled() }}
         working-directory: Android
-        run: ./gradlew --no-daemon --continue :app:testDebugUnitTest 2>&1 | tee ../registri/gradle-test.log
+        run: ./gradlew --no-daemon --continue $INIT_CI :app:testDebugUnitTest 2>&1 | tee ../registri/gradle-test.log
 
       # Lint: segnala, ma non blocca il lavoro.
       - name: Lint (lintDebug)
         if: ${{ !cancelled() }}
         continue-on-error: true
         working-directory: Android
-        run: ./gradlew --no-daemon :app:lintDebug 2>&1 | tee ../registri/gradle-lint.log
+        run: ./gradlew --no-daemon $INIT_CI :app:lintDebug 2>&1 | tee ../registri/gradle-lint.log
 
       - name: Annotazioni degli errori Kotlin
         if: ${{ !cancelled() }}
@@ -260,6 +301,12 @@ jobs:
             messaggio=$(echo "$riga" | sed -E 's#^e: file://([^:]+):([0-9]+):([0-9]+) (.*)$#\4#')
             echo "::error file=${percorso#$GITHUB_WORKSPACE/},line=$numero::$messaggio"
           done || true
+
+      - name: Errori e test falliti dai registri
+        if: failure()
+        run: |
+          grep -HnE '(error|Error)( [A-Z]+[0-9]+)?:|^e: |FAILED|failed|Failed|What went wrong' registri/*.log \
+            | grep -vE 'warning|0 failures|Failed: 0' | sort -u | head -400 || true
 
       - name: Carica i registri
         if: failure()

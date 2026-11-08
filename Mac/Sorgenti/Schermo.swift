@@ -98,6 +98,10 @@ final class Schermo: @unchecked Sendable {
     private var riservaAttuale: Int64 = 0
     private var uscitePiuTardi = 0
     private var registratore: Registratore?
+    /// Un file chiuso da solo (`interrompiRegistrazione`) non ha ancora finito di scriversi. Solo sulla coda.
+    private var chiusureInterrotteInCorso = 0
+    /// Chi ha chiesto di fermare mentre quel file si chiudeva (⌘Q): risponde a file chiuso. Solo sulla coda.
+    private var attesaChiusuraInterrotta: [@Sendable (URL?) -> Void] = []
     /// In attesa della prima immagine a schermo di una sessione (1.11): si chiama una volta e si toglie.
     private var avvisoMostrato: (@Sendable () -> Void)?
     /// Creato una volta: un CIContext nuovo a ogni foto costava decine di millisecondi.
@@ -325,7 +329,12 @@ final class Schermo: @unchecked Sendable {
     /// Chiude il file; `completamento` riceve il file, oppure nil se non è stato registrato nulla.
     func fermaRegistrazione(_ completamento: @escaping @Sendable (URL?) -> Void) {
         coda.async {
-            guard let registratore = self.registratore else { return completamento(nil) }
+            guard let registratore = self.registratore else {
+                // Il file si è chiuso da solo un attimo fa e sta finendo di scriversi: si risponde dopo, così ⌘Q non
+                // esce con il .mov a metà.
+                if self.chiusureInterrotteInCorso > 0 { return self.attesaChiusuraInterrotta.append(completamento) }
+                return completamento(nil)
+            }
             self.registratore = nil
             registratore.chiudi(completamento)
         }
@@ -353,7 +362,18 @@ final class Schermo: @unchecked Sendable {
         self.registratore = nil
         let file = registratore.file
         let avviso = suRegistrazioneInterrotta
-        registratore.chiudi(causa: causa) { esito in avviso?(file, esito) }
+        chiusureInterrotteInCorso += 1
+        registratore.chiudi(causa: causa) { [weak self] esito in
+            avviso?(file, esito)
+            self?.coda.async {
+                guard let self else { return }
+                self.chiusureInterrotteInCorso = max(0, self.chiusureInterrotteInCorso - 1)
+                guard self.chiusureInterrotteInCorso == 0 else { return }
+                let attese = self.attesaChiusuraInterrotta
+                self.attesaChiusuraInterrotta = []
+                attese.forEach { $0(nil) }
+            }
+        }
     }
 
     // MARK: - Schermata di attesa

@@ -24,6 +24,8 @@ dependencyResolutionManagement {
                 includeGroupByRegex("com\\.google\\.android.*")
                 // MediaPipe Tasks (Apache 2.0): maschera della persona e volti per gli effetti.
                 includeGroupByRegex("com\\.google\\.mediapipe.*")
+                // Google Play Billing 7.x dipende da com.google.firebase:firebase-encoders*, che stanno solo qui.
+                includeGroupByRegex("com\\.google\\.firebase.*")
                 includeGroupByRegex("androidx.*")
             }
         }

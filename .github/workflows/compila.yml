@@ -256,41 +256,30 @@ jobs:
           echo "ANDROID_HOME=$ANDROID_HOME"
           ls "$ANDROID_HOME/platforms" "$ANDROID_HOME/build-tools"
 
-      # Solo in CI: settings.gradle.kts limita il repository di Google a com.android, com.google.android,
-      # com.google.mediapipe e androidx, ma Google Play Billing 7.1.1 chiede com.google.firebase:firebase-encoders*,
-      # che stanno solo lì. Senza questo script la build si ferma prima di compilare il Kotlin.
-      # È un errore del progetto (elencato tra gli errori del codice): qui lo si aggira per arrivare al compilatore.
-      - name: Script di Gradle per CI (firebase dal repository di Google)
-        run: |
-          cat > "$RUNNER_TEMP/ci.init.gradle" <<'FINE'
-          settingsEvaluated { impostazioni ->
-              impostazioni.dependencyResolutionManagement.repositories.google {
-                  name = "GoogleSoloFirebaseCI"
-                  content { includeGroupByRegex("com\\.google\\.firebase.*") }
-              }
-          }
-          FINE
-          cat "$RUNNER_TEMP/ci.init.gradle"
-          echo "INIT_CI=--init-script $RUNNER_TEMP/ci.init.gradle" >> "$GITHUB_ENV"
-
       - uses: gradle/actions/setup-gradle@v4
 
       - name: assembleDebug
         if: ${{ !cancelled() }}
         working-directory: Android
-        run: ./gradlew --no-daemon --continue $INIT_CI :app:assembleDebug 2>&1 | tee ../registri/gradle-assemble.log
+        run: ./gradlew --no-daemon --continue :app:assembleDebug 2>&1 | tee ../registri/gradle-assemble.log
 
       - name: Test della logica (testDebugUnitTest)
         if: ${{ !cancelled() }}
         working-directory: Android
-        run: ./gradlew --no-daemon --continue $INIT_CI :app:testDebugUnitTest 2>&1 | tee ../registri/gradle-test.log
+        run: ./gradlew --no-daemon --continue :app:testDebugUnitTest 2>&1 | tee ../registri/gradle-test.log
 
       # Lint: segnala, ma non blocca il lavoro.
       - name: Lint (lintDebug)
         if: ${{ !cancelled() }}
         continue-on-error: true
         working-directory: Android
-        run: ./gradlew --no-daemon $INIT_CI :app:lintDebug 2>&1 | tee ../registri/gradle-lint.log
+        run: ./gradlew --no-daemon :app:lintDebug 2>&1 | tee ../registri/gradle-lint.log
+
+      - name: Rapporto di lint (testo)
+        if: ${{ !cancelled() }}
+        run: |
+          f=$(find Android/app/build/reports -name 'lint-results-debug.txt' | head -1)
+          if [ -n "$f" ]; then sed -n '1,400p' "$f"; else echo "Nessun rapporto di lint"; fi
 
       - name: Annotazioni degli errori Kotlin
         if: ${{ !cancelled() }}

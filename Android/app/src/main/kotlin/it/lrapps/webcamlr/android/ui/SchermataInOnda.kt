@@ -618,16 +618,21 @@ private fun Modifier.margineSicuro(simmetrico: Boolean = false): Modifier {
     val direzione = LocalLayoutDirection.current
     val verticale = LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT
     val margini = LocalView.current.rootWindowInsets
-    val ritaglio = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) margini?.displayCutout else null
+    // Sinistra, alto, destra, basso del ritaglio: DisplayCutout esiste solo da Android 9 (API 28), l'app parte da 8.
+    val ritaglio = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        margini?.displayCutout?.let { intArrayOf(it.safeInsetLeft, it.safeInsetTop, it.safeInsetRight, it.safeInsetBottom) }
+    } else {
+        null
+    }
     val barraStato = if (verticale && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
         margini?.getInsetsIgnoringVisibility(android.view.WindowInsets.Type.statusBars())?.top ?: 0
     } else {
         0
     }
-    val sinistra = maxOf(zone.getLeft(densita, direzione), ritaglio?.safeInsetLeft ?: 0)
-    val destra = maxOf(zone.getRight(densita, direzione), ritaglio?.safeInsetRight ?: 0)
-    val alto = maxOf(zone.getTop(densita), ritaglio?.safeInsetTop ?: 0, barraStato)
-    val basso = maxOf(zone.getBottom(densita), ritaglio?.safeInsetBottom ?: 0)
+    val sinistra = maxOf(zone.getLeft(densita, direzione), ritaglio?.get(0) ?: 0)
+    val destra = maxOf(zone.getRight(densita, direzione), ritaglio?.get(2) ?: 0)
+    val alto = maxOf(zone.getTop(densita), ritaglio?.get(1) ?: 0, barraStato)
+    val basso = maxOf(zone.getBottom(densita), ritaglio?.get(3) ?: 0)
     val lato = maxOf(sinistra, destra)
     return with(densita) {
         absolutePadding(

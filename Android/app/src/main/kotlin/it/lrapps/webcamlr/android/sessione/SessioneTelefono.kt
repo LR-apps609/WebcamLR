@@ -1909,7 +1909,11 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         if (scelto != null) {
             val nuovo = FormatoRichiesto.da(richiesta) { l, a -> cattura.fpsMassimo(scelto, l, a) { ll, aa -> codificatore.fpsMassimo(ll, aa, richiesta.codec) } }
             if (nuovo != null) {
-                formatoRichiesto = nuovo
+                // Collaudo 57: senza HEVC hardware si conta l'H.264 che il codificatore userà davvero, altrimenti la
+                // stessa richiesta HEVC sembrava sempre diversa e riapriva fotocamera e codificatore ogni volta.
+                val codec = codificatore.codecEffettivo(nuovo.codec)
+                if (codec != nuovo.codec) android.util.Log.i("WebcamLR", "Chiesto ${nuovo.codec}, il telefono non lo ha in hardware: $codec")
+                formatoRichiesto = nuovo.copy(codec = codec)
                 val atteso = formatoEffettivo()
                 val attuale = formato
                 val uguale = attuale != null && maxOf(attuale.larghezza, attuale.altezza) == atteso.larghezza &&

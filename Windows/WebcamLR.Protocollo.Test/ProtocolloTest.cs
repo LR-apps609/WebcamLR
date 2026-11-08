@@ -420,4 +420,26 @@ public class AssociazioneTest
         Assert.Null(Associazione.Leggi("https://example.com"));
         Assert.Null(Associazione.Leggi("webcamlr://collega?p=52740"));
     }
+
+    [Theory]
+    [InlineData("{\"tipo\":\"stato\",\"inCarica\":false,\"temperatura\":\"normale\",\"obiettivo\":\"frontale\"}")]
+    [InlineData("{\"tipo\":\"stato\",\"batteria\":80,\"inCarica\":false,\"temperatura\":\"normale\"}")]
+    [InlineData("{\"tipo\":\"capacita\",\"obiettivi\":[\"frontale\"],\"zoomMassimo\":5}")]
+    [InlineData("{\"tipo\":\"ciao\",\"versione\":2,\"nome\":\"iPhone\",\"piattaforma\":\"iphone\"}")]
+    [InlineData("{\"tipo\":\"stato\",\"batteria\":80,\"inCarica\":false,\"temperatura\":\"normale\",\"obiettivo\":\"frontale\",\"scritta\":{\"ruolo\":\"x\"}}")]
+    public void CampoObbligatorioMancanteSaltaIlMessaggio(string json)
+    {
+        // Collaudo 35: come Swift e Kotlin, niente valori inventati (batteria 0, torcia falsa).
+        Assert.ThrowsAny<System.Text.Json.JsonException>(() => CodificaMessaggi.Decodifica(Encoding.UTF8.GetBytes(json)));
+        var pacchetto = new Pacchetto(TipoPacchetto.Controllo, 0, Encoding.UTF8.GetBytes(json));
+        Assert.Null(CodificaMessaggi.DaPacchettoSeLeggibile(pacchetto));
+    }
+
+    [Fact]
+    public void CampiFacoltativiMancantiVannoBene()
+    {
+        const string json = "{\"tipo\":\"capacita\",\"obiettivi\":[\"frontale\"],\"zoomMassimo\":5,\"torcia\":true}";
+        Assert.Equal(new Capacita(["frontale"], 5, true), CodificaMessaggi.Decodifica(Encoding.UTF8.GetBytes(json)));
+        Assert.Equal(new Comando(), CodificaMessaggi.Decodifica(Encoding.UTF8.GetBytes("{\"tipo\":\"comando\"}")));
+    }
 }

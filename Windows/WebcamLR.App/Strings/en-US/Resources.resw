@@ -1028,6 +1028,9 @@ The details are in {1}: send them with “Report a bug”.</value>
   <data name="Registro_ScollegatoDalPC" xml:space="preserve">
     <value>“{0}” disconnected by the PC</value>
   </data>
+  <data name="Registro_ScollegatoDalTelefono" xml:space="preserve">
+    <value>“{0}” disconnected on the phone</value>
+  </data>
   <data name="Registro_NonTornato" xml:space="preserve">
     <value>“{0}” didn’t come back within {1:0} seconds</value>
   </data>

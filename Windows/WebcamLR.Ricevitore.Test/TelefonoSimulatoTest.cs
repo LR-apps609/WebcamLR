@@ -405,6 +405,34 @@ public class TelefonoSimulatoTest
     }
 
     [Fact]
+    public async Task ArrivederciDelTelefonoSiDistingueDallaCaduta()
+    {
+        // Collaudo 34: l'arrivederci del telefono è voluto; una presa che si chiude è una caduta.
+        using var idComputer = IdentitaDispositivo.Nuova();
+        var abbinamento = new Abbinamento(idComputer);
+        using (var ricevitore = new Ricevitore(abbinamento))
+        {
+            await using var telefono = new TelefonoFinto();
+            await telefono.CollegaAsync(ricevitore.Ascoltatore.Porta, gettone: abbinamento.Gettone);
+            await telefono.AttendiAsync<Benvenuto>().WaitAsync(Limite);
+            await telefono.InviaAsync(new Arrivederci());
+            await ricevitore.Chiusa.Task.WaitAsync(Limite);
+            var sessione = await ricevitore.Sessione.Task;
+            Assert.True(sessione.ChiusaDalTelefono);
+            Assert.False(sessione.ChiusaDalComputer);
+        }
+        using (var ricevitore = new Ricevitore(abbinamento))
+        {
+            var telefono = new TelefonoFinto();
+            await telefono.CollegaAsync(ricevitore.Ascoltatore.Porta, gettone: abbinamento.Gettone);
+            await telefono.AttendiAsync<Benvenuto>().WaitAsync(Limite);
+            await telefono.DisposeAsync();
+            await ricevitore.Chiusa.Task.WaitAsync(Limite);
+            Assert.False((await ricevitore.Sessione.Task).ChiusaDalTelefono);
+        }
+    }
+
+    [Fact]
     public async Task TelefonoDelProtocollo1VieneChiuso()
     {
         using var idComputer = IdentitaDispositivo.Nuova();

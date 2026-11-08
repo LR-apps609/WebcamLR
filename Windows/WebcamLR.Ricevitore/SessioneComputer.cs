@@ -127,6 +127,13 @@ public sealed class SessioneComputer : IAsyncDisposable
     private int chiusaDalComputer;
 
     /// <summary>
+    /// Vero se l'ha chiusa il telefono con «arrivederci» (Scollega sul telefono, un altro computer, o il passaggio
+    /// dal cavo al Wi-Fi): non è una caduta di rete, e il telefono non va aspettato 15 secondi (collaudo 34).
+    /// </summary>
+    public bool ChiusaDalTelefono => Volatile.Read(ref chiusaDalTelefono) == 1;
+    private int chiusaDalTelefono;
+
+    /// <summary>
     /// Chiusa (o da chiudere) dal computer per la strada scelta, non per «Scollega»: resta l'altra strada dello stesso
     /// telefono (<see cref="RegolaCollegamento"/>). Sul cavo il telefono può tornare quando la scelta cambia.
     /// </summary>
@@ -404,6 +411,7 @@ public sealed class SessioneComputer : IAsyncDisposable
                 EffettoChiesto?.Invoke(richiesta);
                 break;
             case Arrivederci:
+                Volatile.Write(ref chiusaDalTelefono, 1);
                 Termina();
                 break;
         }
@@ -424,6 +432,7 @@ public sealed class SessioneComputer : IAsyncDisposable
                 _ = AccettaAsync(ValoriSicuri.Sanifica(ciao));
                 break;
             case Arrivederci:
+                Volatile.Write(ref chiusaDalTelefono, 1);
                 Termina();
                 break;
             case not Prova when !provato:

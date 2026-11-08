@@ -1028,6 +1028,9 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
   <data name="Registro_ScollegatoDalPC" xml:space="preserve">
     <value>«{0}» scollegato dal PC</value>
   </data>
+  <data name="Registro_ScollegatoDalTelefono" xml:space="preserve">
+    <value>«{0}» scollegato dal telefono</value>
+  </data>
   <data name="Registro_NonTornato" xml:space="preserve">
     <value>«{0}» non è tornato in {1:0} secondi</value>
   </data>

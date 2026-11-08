@@ -96,6 +96,9 @@ final class NegozioPro {
             salvaOriginale(trovata)
             condivisoInFamiglia = trovata.ownershipType == .familyShared
             inAttesa = false
+            // Pro arrivato da fuori (per esempio «Chiedi di acquistare» approvato): un avviso rimasto da prima
+            // («Nessun acquisto…») si vedrebbe anche nella pagina con Pro attivo. Durante il ripristino resta il suo esito.
+            if operazione != .ripristino { avviso = nil }
         } else {
             condivisoInFamiglia = false
         }

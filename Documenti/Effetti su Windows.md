@@ -51,8 +51,12 @@ telefono ──H.264/HEVC──▶ MotoreVideo (WebcamLR.App)
   foto chiesta).
 - **Niente attese nel fotogramma**: il fotogramma N si compone con la maschera di N; se l'analisi è occupata ne aspetta
   al massimo uno, un terzo fa scartare il più vecchio (come il Mac). Ritardo aggiunto = maschera + resa.
-- **Riservatezza** (lezione del Mac): con lo sfondo acceso un fotogramma senza maschera usa l'ultima maschera buona; se
-  non ce n'è nessuna non si consegna niente (anteprima e webcam tengono l'ultima immagine elaborata). Mai lo sfondo vero.
+- **Riservatezza** (lezione del Mac): con lo sfondo acceso un fotogramma senza maschera usa l'ultima maschera buona, se
+  non ha più di 0,5 s (`EtaMassimaMaschera`); se è più vecchia o non ce n'è nessuna non si consegna niente (anteprima e
+  webcam tengono l'ultima immagine elaborata). Mai lo sfondo vero.
+- **Scheda video persa** (driver aggiornato, sospensione, TDR): dopo 3 errori della maschera di fila la fonte si chiude e
+  il fotogramma dopo la riapre; la prima volta come prima, dalla seconda solo sul processore. Al massimo 3 riaperture,
+  il conto si azzera dopo 300 maschere buone di fila. Nel registro: «il ritaglio si chiude e si riapre».
   Un errore di resa non consegna l'originale. Dopo `Ferma`/`Azzera` (telefono via, cambio di telefono o di formato) i
   fotogrammi ancora in lavorazione non arrivano più alle uscite (generazione).
 - **Specchio e sfondo solo con la fotocamera frontale** (`stato.obiettivo`), come oggi: con la posteriore i pulsanti
@@ -124,7 +128,10 @@ le misure ballano del ±30%). Un PC desktop con 6–8 core veri dovrebbe stare a
 Analisi: riduzioni a metà e a un quarto 1,3 ms; maschera dal quarto sul processore 4 ms (leggero) e 52 ms (pieno: per
 questo il pieno va sulla scheda video, o si scende al leggero da soli). Analisi e resa lavorano in parallelo: a 30 fps
 (33 ms) la sfocatura con un filtro ci sta anche qui; «tutto insieme» no, e allora il livello scende (bordo leggero,
-poi veloce) e i fotogrammi in eccesso si saltano. Nel registro ogni 30 secondi: «Effetti sul PC: … ms (maschera …, resa
+poi veloce) e i fotogrammi in eccesso si saltano. Il livello scende se in media su 60 fotogrammi maschera o resa superano
+l'85% del tempo di un fotogramma: la media della metà centrale degli ultimi 30 intervalli d'arrivo, mai sotto 1/60 s (un
+intoppo del Wi-Fi o una raffica non contano). I primi 5 fotogrammi dopo un azzeramento o una fonte nuova non contano
+(riscaldamento di DirectML); maschera e resa si confrontano sulle medie per scegliere se passare subito al veloce. Nel registro ogni 30 secondi: «Effetti sul PC: … ms (maschera …, resa
 …; livello; scheda video/processore, modello) · scartati · senza maschera · anteprima»; nei numeri la riga «Effetti».
 
 ## Modello scelto

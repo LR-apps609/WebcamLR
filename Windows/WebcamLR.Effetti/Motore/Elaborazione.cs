@@ -321,13 +321,19 @@ public static unsafe class Elaborazione
     public const float CentroSoglia = 0.42f;
 
     /// <summary>
-    /// Soglia morbida attorno a <see cref="CentroSoglia"/>, larga <paramref name="larghezza"/>: t tra 0 e 1, poi
+    /// Con lo sfondo sfocato la soglia è 0,3–0,7 (centro 0,5, larghezza 0,4): con la maschera mediata nel tempo
+    /// (<see cref="MediaNelMovimento"/>) il bordo è più giusto e trema meno (variante «D*», Documenti/Qualità sfondo - banco.md).
+    /// </summary>
+    public const float CentroSogliaSfocato = 0.5f, LarghezzaSogliaSfocato = 0.4f;
+
+    /// <summary>
+    /// Soglia morbida attorno a <paramref name="centro"/>, larga <paramref name="larghezza"/>: t tra 0 e 1, poi
     /// smoothstep 3t² − 2t³ (come sogliaMorbida del Mac). Risultato in byte 0–255, tanti quanti <paramref name="uscita"/>.
     /// </summary>
-    public static void SogliaMorbida(float[] valori, byte[] uscita, float larghezza)
+    public static void SogliaMorbida(float[] valori, byte[] uscita, float larghezza, float centro = CentroSoglia)
     {
         var ampiezza = Math.Clamp(larghezza, 0.05f, 1f);
-        var inizio = CentroSoglia - ampiezza / 2;
+        var inizio = centro - ampiezza / 2;
         for (var i = 0; i < uscita.Length; i++)
         {
             var t = Math.Clamp((valori[i] - inizio) / ampiezza, 0f, 1f);

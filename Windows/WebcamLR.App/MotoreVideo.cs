@@ -65,7 +65,7 @@ public sealed class MotoreVideo : IDisposable
 
     public MotoreVideo()
     {
-        motore = new MotoreEffetti(Stato, livello => FonteRitaglio.PerLivello(livello));
+        motore = new MotoreEffetti(Stato, (livello, acceleratore) => FonteRitaglio.PerLivello(livello, acceleratore: acceleratore));
     }
 
     /// <summary>

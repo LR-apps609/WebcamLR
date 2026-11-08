@@ -168,6 +168,17 @@ public class MotoreTest(ITestOutputHelper uscita)
         Assert.Equal(255, uscita[2]);
     }
 
+    [Fact]
+    public void ConLoSfocatoLaSogliaVaDa03A07()
+    {
+        var uscita = new byte[4];
+        Elaborazione.SogliaMorbida([0.5f, 0.3f, 0.7f, 0.42f], uscita, Elaborazione.LarghezzaSogliaSfocato, Elaborazione.CentroSogliaSfocato);
+        Assert.InRange((int)uscita[0], 126, 129);
+        Assert.Equal(0, uscita[1]);
+        Assert.Equal(255, uscita[2]);
+        Assert.InRange((int)uscita[3], 40, 70);
+    }
+
     [Theory]
     [InlineData(0.25, 0)]
     [InlineData(0.55, 1)]
@@ -349,6 +360,7 @@ public class MotoreTest(ITestOutputHelper uscita)
     {
         var scelta = new SceltaLivello();
         for (var i = 0; i < 30; i++) scelta.Intervallo(33_333);
+        for (var i = 0; i < SceltaLivello.FotogrammiDiRiscaldamento; i++) Assert.Null(scelta.Aggiungi(500, 500, out _));
         for (var i = 0; i < SceltaLivello.FotogrammiPerDecidere; i++) Assert.Null(scelta.Aggiungi(10, 12, out _));
         Assert.Equal(LivelloResa.Pieno, scelta.Livello);
         // La resa troppo lenta: prima il bordo leggero.
@@ -361,6 +373,95 @@ public class MotoreTest(ITestOutputHelper uscita)
         Assert.Equal(LivelloResa.Veloce, nuovo);
         scelta.Azzera();
         Assert.Equal(LivelloResa.Pieno, scelta.Livello);
+    }
+
+    /// <summary>Una finestra di decisione intera (dopo il riscaldamento) con gli stessi tempi; il livello nuovo o null.</summary>
+    private static LivelloResa? Finestra(SceltaLivello scelta, double mascheraMs, double resaMs)
+    {
+        LivelloResa? nuovo = null;
+        for (var i = 0; i < SceltaLivello.FotogrammiPerDecidere; i++) nuovo ??= scelta.Aggiungi(mascheraMs, resaMs, out _);
+        return nuovo;
+    }
+
+    private static SceltaLivello Scaldata()
+    {
+        var scelta = new SceltaLivello();
+        for (var i = 0; i < SceltaLivello.FotogrammiDiRiscaldamento; i++) scelta.Aggiungi(0, 0, out _);
+        return scelta;
+    }
+
+    [Fact]
+    public void UnIntervalloAnomaloNonFaScendere()
+    {
+        // Collaudo 20: un solo intervallo da 1 ms (due fotogrammi a raffica dopo un intoppo del Wi-Fi) tra 29 da 33 ms.
+        var scelta = Scaldata();
+        for (var i = 0; i < 29; i++) scelta.Intervallo(33_333);
+        scelta.Intervallo(1_000);
+        Assert.Null(Finestra(scelta, 10, 8));
+        Assert.Equal(LivelloResa.Pieno, scelta.Livello);
+
+        // Fotogrammi che arrivano a coppie (2 ms e 64 ms, in media 33): il fotogramma vale ancora circa 33 ms.
+        scelta = Scaldata();
+        for (var i = 0; i < 30; i++) scelta.Intervallo(i % 2 == 0 ? 2_000UL : 64_000UL);
+        Assert.Null(Finestra(scelta, 10, 8));
+        Assert.Equal(LivelloResa.Pieno, scelta.Livello);
+
+        // Una pausa lunga non fa credere a un fotogramma lento: a 30 fps con 31 ms di resa si scende lo stesso.
+        scelta = Scaldata();
+        for (var i = 0; i < 28; i++) scelta.Intervallo(33_333);
+        scelta.Intervallo(400_000);
+        scelta.Intervallo(300_000);
+        LivelloResa? nuovo = null;
+        var fotogrammaMs = 0.0;
+        for (var i = 0; i < SceltaLivello.FotogrammiPerDecidere && nuovo is null; i++) nuovo = scelta.Aggiungi(10, 31, out fotogrammaMs);
+        Assert.Equal(LivelloResa.BordoLeggero, nuovo);
+        Assert.InRange(fotogrammaMs, 33, 34);
+
+        // Mai sotto 1/60 di secondo, anche se gli intervalli sono tutti brevissimi.
+        scelta = Scaldata();
+        for (var i = 0; i < 30; i++) scelta.Intervallo(1_000);
+        Assert.Null(Finestra(scelta, 10, 12));
+    }
+
+    [Fact]
+    public void IlRiscaldamentoDellaSchedaVideoNonFaScendere()
+    {
+        // Collaudo 21: la prima maschera con DirectML compila gli shader (1,5 s), le altre durano 10 ms.
+        var scelta = new SceltaLivello();
+        for (var i = 0; i < 30; i++) scelta.Intervallo(33_333);
+        Assert.Null(scelta.Aggiungi(1500, 12, out _));
+        for (var i = 0; i < SceltaLivello.FotogrammiPerDecidere * 2; i++) Assert.Null(scelta.Aggiungi(10, 12, out _));
+        Assert.Equal(LivelloResa.Pieno, scelta.Livello);
+        // Una fonte nuova (riaperta o cambiata) scalda di nuovo.
+        scelta.FonteNuova();
+        Assert.Null(scelta.Aggiungi(2000, 12, out _));
+        for (var i = 0; i < SceltaLivello.FotogrammiPerDecidere * 2; i++) Assert.Null(scelta.Aggiungi(10, 12, out _));
+        // E così dopo un azzeramento (telefono girato, sessione nuova).
+        scelta.Azzera();
+        for (var i = 0; i < 30; i++) scelta.Intervallo(33_333);
+        Assert.Null(scelta.Aggiungi(1500, 12, out _));
+        for (var i = 0; i < SceltaLivello.FotogrammiPerDecidere * 2; i++) Assert.Null(scelta.Aggiungi(10, 12, out _));
+        Assert.Equal(LivelloResa.Pieno, scelta.Livello);
+    }
+
+    [Fact]
+    public void LaSceltaTraVeloceEBordoSiFaSulleMedie()
+    {
+        // Collaudo 23: 59 fotogrammi con la maschera lenta e l'ultimo con una maschera breve: il collo è la maschera.
+        var scelta = Scaldata();
+        for (var i = 0; i < 30; i++) scelta.Intervallo(33_333);
+        LivelloResa? nuovo = null;
+        for (var i = 0; i < SceltaLivello.FotogrammiPerDecidere - 1; i++) nuovo ??= scelta.Aggiungi(45, 10, out _);
+        nuovo ??= scelta.Aggiungi(9, 10, out _);
+        Assert.Equal(LivelloResa.Veloce, nuovo);
+
+        // Al contrario: una sola resa lenta alla fine non manda al modello leggero, basta il bordo leggero.
+        scelta = Scaldata();
+        for (var i = 0; i < 30; i++) scelta.Intervallo(33_333);
+        nuovo = null;
+        for (var i = 0; i < SceltaLivello.FotogrammiPerDecidere - 1; i++) nuovo ??= scelta.Aggiungi(10, 40, out _);
+        nuovo ??= scelta.Aggiungi(60, 10, out _);
+        Assert.Equal(LivelloResa.BordoLeggero, nuovo);
     }
 
     // MARK: motore
@@ -508,6 +609,89 @@ public class MotoreTest(ITestOutputHelper uscita)
         altro.Elabora(Riempita(altro), _ => Interlocked.Increment(ref arrivate));
         Thread.Sleep(300);
         Assert.Equal(0, arrivate);
+    }
+
+    [Fact]
+    public void SchedaVideoPersaLaFonteSiRiapre()
+    {
+        // Collaudo 22: la prima fonte funziona due volte, poi lancia sempre (DXGI_ERROR_DEVICE_REMOVED); la seconda va.
+        var stato = new StatoEffettiComputer();
+        stato.Imposta(new ImpostazioniMotore { Sfondo = ModiSfondo.Sostituito, IntensitaSfondo = 1 });
+        var create = new List<Acceleratore>();
+        var chiamatePrima = 0;
+        using var motore = new MotoreEffetti(stato, (_, acceleratore) =>
+        {
+            lock (create) create.Add(acceleratore);
+            return create.Count == 1
+                ? new FonteFinta(() => ++chiamatePrima <= 2 ? MascheraScena() : throw new InvalidOperationException("scheda video persa"))
+                : new FonteFinta();
+        });
+        motore.Abilita(true);
+        var consegnate = 0;
+        for (var i = 0; i < 10; i++)
+        {
+            using var fatto = new SemaphoreSlim(0);
+            motore.Elabora(Riempita(motore), _ =>
+            {
+                Interlocked.Increment(ref consegnate);
+                fatto.Release();
+            });
+            fatto.Wait(1000);
+        }
+        Assert.Equal([Acceleratore.Automatico, Acceleratore.Automatico], create);
+        Assert.Equal(10, consegnate);
+        var note = motore.PrendiNote();
+        Assert.Contains(note, n => n is MotoreEffetti.Nota.FonteRiaperta { ErroriDiFila: MotoreEffetti.ErroriPerRiaprire, SulProcessore: false });
+        Assert.Equal(MotoreEffetti.ErroriPerRiaprire, motore.PrendiMisure().ErroriMaschera);
+    }
+
+    [Fact]
+    public void SeLaSchedaVideoNonTornaSiPassaAlProcessore()
+    {
+        // Ogni fonte nuova sulla scheda video fallisce: la seconda riapertura è sul processore, poi niente giri senza fine.
+        var stato = new StatoEffettiComputer();
+        stato.Imposta(new ImpostazioniMotore { Sfondo = ModiSfondo.Sfocato });
+        var create = new List<Acceleratore>();
+        using var motore = new MotoreEffetti(stato, (_, acceleratore) =>
+        {
+            lock (create) create.Add(acceleratore);
+            return new FonteFinta(() => throw new InvalidOperationException("ancora persa"));
+        });
+        motore.Abilita(true);
+        for (var i = 0; i < 20; i++)
+        {
+            motore.Elabora(Riempita(motore), _ => { });
+            Thread.Sleep(20);
+        }
+        Thread.Sleep(200);
+        Assert.Equal(
+            [Acceleratore.Automatico, Acceleratore.Automatico, Acceleratore.Processore, Acceleratore.Processore],
+            create);
+        Assert.Contains(motore.PrendiNote(), n => n is MotoreEffetti.Nota.FonteRiaperta { SulProcessore: true });
+    }
+
+    [Fact]
+    public void UnaMascheraVecchiaNonSiUsa()
+    {
+        // Riservatezza: una sagoma ferma da più di mezzo secondo lascerebbe vedere la stanza dove la persona si sposta.
+        var stato = new StatoEffettiComputer();
+        stato.Imposta(new ImpostazioniMotore { Sfondo = ModiSfondo.Sostituito, IntensitaSfondo = 1 });
+        var chiamate = 0;
+        using var motore = new MotoreEffetti(stato, _ => new FonteFinta(() => ++chiamate == 1 ? MascheraScena() : throw new InvalidOperationException("prova")));
+        motore.Abilita(true);
+        var consegnate = 0;
+        using var fatto = new SemaphoreSlim(0);
+        motore.Elabora(Riempita(motore), _ =>
+        {
+            Interlocked.Increment(ref consegnate);
+            fatto.Release();
+        });
+        Assert.True(fatto.Wait(5000));
+        Thread.Sleep((int)(MotoreEffetti.EtaMassimaMaschera / 1000) + 100);
+        motore.Elabora(Riempita(motore), _ => Interlocked.Increment(ref consegnate));
+        Thread.Sleep(300);
+        Assert.Equal(1, consegnate);
+        Assert.True(motore.PrendiMisure().SenzaMaschera >= 1);
     }
 
     [Fact]

@@ -51,8 +51,12 @@ telefono ──H.264/HEVC──▶ MotoreVideo (WebcamLR.App)
   foto chiesta).
 - **Niente attese nel fotogramma**: il fotogramma N si compone con la maschera di N; se l'analisi è occupata ne aspetta
   al massimo uno, un terzo fa scartare il più vecchio (come il Mac). Ritardo aggiunto = maschera + resa.
-- **Riservatezza** (lezione del Mac): con lo sfondo acceso un fotogramma senza maschera usa l'ultima maschera buona; se
-  non ce n'è nessuna non si consegna niente (anteprima e webcam tengono l'ultima immagine elaborata). Mai lo sfondo vero.
+- **Riservatezza** (lezione del Mac): con lo sfondo acceso un fotogramma senza maschera usa l'ultima maschera buona, se
+  non ha più di 0,5 s (`EtaMassimaMaschera`); se è più vecchia o non ce n'è nessuna non si consegna niente (anteprima e
+  webcam tengono l'ultima immagine elaborata). Mai lo sfondo vero.
+- **Scheda video persa** (driver aggiornato, sospensione, TDR): dopo 3 errori della maschera di fila la fonte si chiude e
+  il fotogramma dopo la riapre; la prima volta come prima, dalla seconda solo sul processore. Al massimo 3 riaperture,
+  il conto si azzera dopo 300 maschere buone di fila. Nel registro: «il ritaglio si chiude e si riapre».
   Un errore di resa non consegna l'originale. Dopo `Ferma`/`Azzera` (telefono via, cambio di telefono o di formato) i
   fotogrammi ancora in lavorazione non arrivano più alle uscite (generazione).
 - **Specchio e sfondo solo con la fotocamera frontale** (`stato.obiettivo`), come oggi: con la posteriore i pulsanti
@@ -79,8 +83,9 @@ telefono ──H.264/HEVC──▶ MotoreVideo (WebcamLR.App)
 ### Ricette (portate dal Mac e dall'iPhone)
 
 - **Bordo**: maschera dal quarto della misura, filtro guidato «veloce» (coefficienti al quarto, resa a metà risoluzione,
-  guida = luminosità del video) = bordo guidato dal colore; soglia morbida smoothstep centrata a **0,42**, larga 0,5
-  (sfocato) o da 0,8 a 0,2 con l'intensità (sostituito).
+  guida = luminosità del video) = bordo guidato dal colore; soglia morbida smoothstep **0,3–0,7** (centro 0,5, larga
+  0,4: variante «D\*» del banco di qualità, `Documenti/Qualità sfondo - banco.md`) con lo sfocato, centrata a 0,42 e
+  larga da 0,8 a 0,2 con l'intensità con il sostituito.
 - **Sfocatura senza alone**: persona allargata (2m − 0,3) tolta come alfa, sfocatura gaussiana di sfondo × alfa e
   dell'alfa, poi divisione: ogni punto prende colore solo dallo sfondo vicino. Sigma a 1080p 32 × intensità^1,6 (Poco
   3,5 px, Medio 12 px, Tanto 32 px), calcolata sul gradino della piramide (1/4…1/32) dove resta sotto i 3 px.
@@ -123,7 +128,10 @@ le misure ballano del ±30%). Un PC desktop con 6–8 core veri dovrebbe stare a
 Analisi: riduzioni a metà e a un quarto 1,3 ms; maschera dal quarto sul processore 4 ms (leggero) e 52 ms (pieno: per
 questo il pieno va sulla scheda video, o si scende al leggero da soli). Analisi e resa lavorano in parallelo: a 30 fps
 (33 ms) la sfocatura con un filtro ci sta anche qui; «tutto insieme» no, e allora il livello scende (bordo leggero,
-poi veloce) e i fotogrammi in eccesso si saltano. Nel registro ogni 30 secondi: «Effetti sul PC: … ms (maschera …, resa
+poi veloce) e i fotogrammi in eccesso si saltano. Il livello scende se in media su 60 fotogrammi maschera o resa superano
+l'85% del tempo di un fotogramma: la media della metà centrale degli ultimi 30 intervalli d'arrivo, mai sotto 1/60 s (un
+intoppo del Wi-Fi o una raffica non contano). I primi 5 fotogrammi dopo un azzeramento o una fonte nuova non contano
+(riscaldamento di DirectML); maschera e resa si confrontano sulle medie per scegliere se passare subito al veloce. Nel registro ogni 30 secondi: «Effetti sul PC: … ms (maschera …, resa
 …; livello; scheda video/processore, modello) · scartati · senza maschera · anteprima»; nei numeri la riga «Effetti».
 
 ## Modello scelto
@@ -237,6 +245,11 @@ var maschera = ritaglio.Calcola(bgra, 1920, 1080, passo); // bloccante: fuori da
 - **Post-elaborazione** (`Preparazione.Persona`): persona = 1 − sfondo col multiclasse, il canale unico col leggero.
 - **Filtro nel tempo senza ritardo** (`FiltroTemporale`): lo stesso di Android, peso della nuova 0,7 + 3 × |differenza|
   (al massimo 1): il tremolio del bordo si smorza, il movimento passa subito. Nessun fotogramma di attesa.
+- **Media dal movimento** (`MediaNelMovimento`, dopo il filtro nel tempo; variante «D\*» del banco di qualità): media
+  della maschera con peso della nuova 0,35 + 12 × |ΔY| (ΔY = differenza di luminanza tra due fotogrammi alla misura della
+  maschera, media 5×5), tra 0,35 e 1: dove l'immagine è ferma il bordo trema un terzo in meno, dove si muove vale subito
+  la nuova. Stessi conti di `Strumenti/banco_sfondo/varianti.py` (classe C): `verifica_cs.py` dà 0 punti diversi sul
+  modello pieno.
 - **Ripiego** (`MisuraVelocita`): senza DirectML si parte dal leggero; col pieno, dopo 5 maschere di riscaldamento e
   20 di prova, se la media supera 25 ms si passa al leggero per il resto della sessione (sulla stessa scheda video). Il
   motivo è in `MotivoRipiego`, per il registro.

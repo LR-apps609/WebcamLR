@@ -29,6 +29,9 @@ public sealed record OpzioniRitaglio
     /// <summary>Filtro nel tempo senza ritardo (<see cref="FiltroTemporale"/>).</summary>
     public bool FiltroNelTempo { get; init; } = true;
 
+    /// <summary>Dopo il filtro nel tempo, la media che dipende dal movimento (<see cref="MediaNelMovimento"/>).</summary>
+    public bool MediaNelMovimento { get; init; } = true;
+
     /// <summary>Cartella dei .onnx; null: «Modelli» accanto all'exe.</summary>
     public string? CartellaModelli { get; init; }
 
@@ -74,6 +77,8 @@ public sealed class RitaglioPersona : IDisposable
     private readonly OpzioniRitaglio opzioni;
     private readonly string cartella;
     private readonly FiltroTemporale filtro = new();
+    private readonly MediaNelMovimento media = new();
+    private float[] rgbMovimento = [];
     private readonly MisuraVelocita misura = new();
     private Motore motore;
     private bool ripiegoTentato;
@@ -154,6 +159,7 @@ public sealed class RitaglioPersona : IDisposable
             m.Esegui();
             Preparazione.Persona(m.Uscita, d.Canali, m.Persona);
             if (opzioni.FiltroNelTempo) filtro.Applica(m.Persona);
+            if (opzioni.MediaNelMovimento) media.Applica(m.Persona, ImmagineInUnoAMisura(bgra, larghezza, altezza, passo, m), d.Larghezza, d.Altezza);
             var valori = new byte[m.Persona.Length];
             for (var i = 0; i < valori.Length; i++) valori[i] = (byte)(m.Persona[i] * 255f + 0.5f);
             byte[]? volto = null;
@@ -173,6 +179,7 @@ public sealed class RitaglioPersona : IDisposable
                     motore = Motore.Apri(DescrizioneModello.Leggero, cartella, opzioni, directMl: InUso == Acceleratore.SchedaVideo);
                     m.Dispose();
                     filtro.Dimentica();
+                    media.Dimentica();
                 }
                 catch (Exception e)
                 {
@@ -182,6 +189,19 @@ public sealed class RitaglioPersona : IDisposable
             }
             return new MascheraPersona(valori, d.Larghezza, d.Altezza, d.Modello, ms, volto);
         }
+    }
+
+    /// <summary>
+    /// L'immagine alla misura del modello in RGB [0, 1] per il movimento: l'ingresso del modello se ha già questa scala (il
+    /// leggero), altrimenti ricalcolata con la stessa media dei pixel.
+    /// </summary>
+    private float[] ImmagineInUnoAMisura(ReadOnlySpan<byte> bgra, int larghezza, int altezza, int passo, Motore m)
+    {
+        var d = m.Descrizione;
+        if (d.Scala == 1f / 255f && d.Spostamento == 0f) return m.Ingresso;
+        if (rgbMovimento.Length != d.Larghezza * d.Altezza * 3) rgbMovimento = new float[d.Larghezza * d.Altezza * 3];
+        Preparazione.BgraInRgb(bgra, larghezza, altezza, passo, rgbMovimento, d.Larghezza, d.Altezza, 1f / 255f, 0f);
+        return rgbMovimento;
     }
 
     public void Dispose()

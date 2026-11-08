@@ -1873,6 +1873,12 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
   <data name="Registro_EffettiErrore" xml:space="preserve">
     <value>Effetti: maschera non riuscita ({0} in tutto): {1}</value>
   </data>
+  <data name="Registro_EffettiFonteRiaperta" xml:space="preserve">
+    <value>Effetti: {0} errori di fila nella maschera (scheda video persa?): il ritaglio si chiude e si riapre</value>
+  </data>
+  <data name="Registro_EffettiFonteRiapertaProcessore" xml:space="preserve">
+    <value>Effetti: {0} errori di fila nella maschera (scheda video persa?): il ritaglio si riapre sul processore</value>
+  </data>
   <data name="Registro_EffettiFonte" xml:space="preserve">
     <value>Effetti: ritaglio della persona: {0}</value>
   </data>

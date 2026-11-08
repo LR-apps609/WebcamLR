@@ -39,12 +39,17 @@ public sealed class FonteRitaglio(RitaglioPersona ritaglio) : IFonteMaschera
 
     public void Dispose() => ritaglio.Dispose();
 
-    /// <summary>La fonte per un livello: il veloce chiede il modello leggero, gli altri il pieno (con il ripiego automatico).</summary>
-    public static IFonteMaschera PerLivello(LivelloResa livello, string? cartellaModelli = null) =>
+    /// <summary>
+    /// La fonte per un livello: il veloce chiede il modello leggero, gli altri il pieno (con il ripiego automatico).
+    /// <paramref name="acceleratore"/>: <see cref="Acceleratore.Processore"/> quando la scheda video si è persa.
+    /// </summary>
+    public static IFonteMaschera PerLivello(LivelloResa livello, string? cartellaModelli = null,
+        Acceleratore acceleratore = Acceleratore.Automatico) =>
         new FonteRitaglio(RitaglioPersona.Crea(new OpzioniRitaglio
         {
             Modello = livello == LivelloResa.Veloce ? ModelloRitaglio.Leggero : ModelloRitaglio.Pieno,
             CartellaModelli = cartellaModelli,
+            Acceleratore = acceleratore,
         }));
 }
 
@@ -80,17 +85,27 @@ public sealed class CodaSeriale : IDisposable
 
 /// <summary>
 /// Quando scendere di qualità (come regolaQualita del Mac): se, in media su circa 2 secondi, la maschera o la resa
-/// superano l'85% del tempo di un fotogramma (il più breve degli ultimi 30 intervalli), un gradino più in basso. Non
-/// risale mai da sola: niente sbalzi di qualità (riparte dal pieno con un video o un telefono nuovo).
+/// superano l'85% del tempo di un fotogramma, un gradino più in basso. Il tempo di un fotogramma è la media della metà
+/// centrale degli ultimi 30 intervalli d'arrivo (un intoppo del Wi-Fi, una raffica di due fotogrammi o una pausa non
+/// contano), mai sotto 1/60 di secondo. I primi fotogrammi dopo <see cref="Azzera"/> o una fonte nuova non contano: la
+/// scheda video si scalda alla prima maschera (DirectML compila gli shader, 1–2 s). Non risale mai da sola: niente
+/// sbalzi di qualità (riparte dal pieno con un video o un telefono nuovo).
 /// </summary>
 public sealed class SceltaLivello
 {
     public const int FotogrammiPerDecidere = 60;
     public const double QuotaFotogramma = 0.85;
 
+    /// <summary>I fotogrammi che non contano dopo un azzeramento o una fonte nuova (come il riscaldamento di MisuraVelocita).</summary>
+    public const int FotogrammiDiRiscaldamento = 5;
+
+    /// <summary>Il fotogramma più breve che si considera (ms): oltre i 60 fps non si va.</summary>
+    public const double FotogrammaMinimoMs = 1000.0 / 60;
+
     private readonly Queue<ulong> intervalli = new();
-    private double somma;
+    private double somma, sommaMaschera, sommaResa;
     private int conta;
+    private int daScartare = FotogrammiDiRiscaldamento;
 
     public LivelloResa Livello { get; private set; } = LivelloResa.Pieno;
 
@@ -101,30 +116,54 @@ public sealed class SceltaLivello
         while (intervalli.Count > 30) intervalli.Dequeue();
     }
 
+    /// <summary>La fonte della maschera è nuova (aperta, riaperta, cambiata): i prossimi fotogrammi scaldano la scheda video.</summary>
+    public void FonteNuova() => daScartare = FotogrammiDiRiscaldamento;
+
     /// <summary>I tempi di un fotogramma reso; il livello nuovo quando scende, altrimenti null.</summary>
     public LivelloResa? Aggiungi(double mascheraMs, double resaMs, out double fotogrammaMs)
     {
         fotogrammaMs = 0;
+        if (daScartare > 0)
+        {
+            daScartare--;
+            return null;
+        }
         somma += Math.Max(mascheraMs, resaMs);
+        sommaMaschera += mascheraMs;
+        sommaResa += resaMs;
         conta++;
         if (conta < FotogrammiPerDecidere) return null;
         var media = somma / conta;
-        somma = 0;
+        var maschera = sommaMaschera / conta;
+        var resa = sommaResa / conta;
+        somma = sommaMaschera = sommaResa = 0;
         conta = 0;
         if (intervalli.Count == 0 || Livello == LivelloResa.Veloce) return null;
-        fotogrammaMs = intervalli.Min() / 1000.0;
+        fotogrammaMs = TempoFotogrammaMs();
         if (media <= fotogrammaMs * QuotaFotogramma) return null;
-        // La maschera è il collo di bottiglia: subito al modello leggero; altrimenti prima il bordo leggero.
-        Livello = mascheraMs > resaMs ? LivelloResa.Veloce : Livello + 1;
+        // La maschera è il collo di bottiglia (in media sulla finestra): subito al modello leggero; altrimenti prima il
+        // bordo leggero.
+        Livello = maschera > resa ? LivelloResa.Veloce : Livello + 1;
         return Livello;
+    }
+
+    /// <summary>La media della metà centrale degli intervalli (ms), almeno <see cref="FotogrammaMinimoMs"/>.</summary>
+    private double TempoFotogrammaMs()
+    {
+        var ordinati = intervalli.Order().ToArray();
+        int via = ordinati.Length / 4, quanti = ordinati.Length - 2 * via;
+        double totale = 0;
+        for (var i = via; i < via + quanti; i++) totale += ordinati[i];
+        return Math.Max(totale / quanti / 1000.0, FotogrammaMinimoMs);
     }
 
     public void Azzera()
     {
         Livello = LivelloResa.Pieno;
         intervalli.Clear();
-        somma = 0;
+        somma = sommaMaschera = sommaResa = 0;
         conta = 0;
+        daScartare = FotogrammiDiRiscaldamento;
     }
 }
 
@@ -144,12 +183,27 @@ public sealed class SceltaLivello
 /// Senza effetti accesi <see cref="Elabora"/> risponde falso e l'immagine va alle uscite com'è (costo zero).
 ///
 /// Riservatezza: con lo sfondo acceso un fotogramma senza maschera (errore, modello che si apre) usa l'ultima maschera
-/// buona; se non ce n'è nessuna non si consegna (le uscite tengono l'ultima immagine elaborata). Mai lo sfondo vero.
+/// buona, se non ha più di mezzo secondo (una sagoma ferma lascerebbe vedere la stanza dove la persona si sposta); se
+/// non ce n'è nessuna non si consegna (le uscite tengono l'ultima immagine elaborata). Mai lo sfondo vero.
+/// Se la maschera fallisce più volte di fila (scheda video persa: driver aggiornato, sospensione, TDR) la fonte si chiude
+/// e si riapre; dalla seconda volta sul processore.
 /// </summary>
 public sealed class MotoreEffetti : IDisposable
 {
     /// <summary>Le immagini di uscita in giro: anteprima, mini, webcam, foto e registrazione insieme ne tengono qualcuna.</summary>
     public const int ImmaginiInUscita = 16;
+
+    /// <summary>Errori della maschera di fila dopo i quali la fonte si chiude e si riapre.</summary>
+    public const int ErroriPerRiaprire = 3;
+
+    /// <summary>Riaperture al massimo, finché non torna una serie di maschere buone (niente giri senza fine).</summary>
+    public const int RiapertureMassime = 3;
+
+    /// <summary>Quante maschere buone di fila azzerano il conto delle riaperture (circa 10 s a 30 fps).</summary>
+    public const int MaschereBuonePerDimenticare = 300;
+
+    /// <summary>Quanto può essere vecchia (µs) l'ultima maschera buona usata al posto di quella che manca.</summary>
+    public const ulong EtaMassimaMaschera = 500_000;
 
     /// <summary>I numeri dell'ultimo secondo, per le «Tappe» e il registro.</summary>
     /// <param name="EffettiMs">Dall'ingresso nel motore all'uscita (mediana di un secondo); null se il motore non lavora.</param>
@@ -163,6 +217,8 @@ public sealed class MotoreEffetti : IDisposable
         public sealed record Livello(LivelloResa Nuovo, int MascheraMs, int ResaMs, int FotogrammaMs) : Nota;
         public sealed record ErroreMaschera(string Errore, int Totale) : Nota;
         public sealed record Fonte(Acceleratore InUso, ModelloRitaglio Modello, string? Motivo) : Nota;
+        /// <summary>La maschera fallisce di fila: la fonte si chiude e si riapre (sul processore se <paramref name="SulProcessore"/>).</summary>
+        public sealed record FonteRiaperta(int ErroriDiFila, bool SulProcessore) : Nota;
     }
 
     private sealed class Lavoro
@@ -177,7 +233,7 @@ public sealed class MotoreEffetti : IDisposable
     }
 
     private readonly StatoEffettiComputer stato;
-    private readonly Func<LivelloResa, IFonteMaschera> creaFonte;
+    private readonly Func<LivelloResa, Acceleratore, IFonteMaschera> creaFonte;
     private readonly CodaSeriale codaAnalisi = new("Effetti: analisi");
     private readonly CodaSeriale codaResa = new("Effetti: resa");
     private readonly RiservaImmagini ingressi = new(8);
@@ -207,11 +263,14 @@ public sealed class MotoreEffetti : IDisposable
     private int? ritardoMs;
     private ulong inizioRitardi, istanteRitardo;
     private MascheraPersona? ultimaMaschera;
+    private ulong arrivoUltimaMaschera;
     private (Acceleratore InUso, ModelloRitaglio Modello)? descrizioneFonte;
 
     // Solo sulla coda di analisi.
     private IFonteMaschera? fonte;
     private LivelloResa? livelloFonte;
+    private int erroriDiFila, maschereBuone, riaperture;
+    private bool soloProcessore;
 
     // Solo sulla coda di resa.
     private readonly Compositore compositore = new();
@@ -220,10 +279,18 @@ public sealed class MotoreEffetti : IDisposable
     private ulong ultimoArrivoResa;
     private (int L, int A)? misuraVideo;
 
-    public MotoreEffetti(StatoEffettiComputer stato, Func<LivelloResa, IFonteMaschera> creaFonte)
+    /// <param name="creaFonte">La fonte per un livello, sulla scheda video se c'è (<see cref="Acceleratore.Automatico"/>) o
+    /// solo sul processore (dopo che la scheda video si è persa).</param>
+    public MotoreEffetti(StatoEffettiComputer stato, Func<LivelloResa, Acceleratore, IFonteMaschera> creaFonte)
     {
         this.stato = stato;
         this.creaFonte = creaFonte;
+    }
+
+    /// <summary>Con una fonte che non sceglie dove gira (i test).</summary>
+    public MotoreEffetti(StatoEffettiComputer stato, Func<LivelloResa, IFonteMaschera> creaFonte)
+        : this(stato, (livello, _) => creaFonte(livello))
+    {
     }
 
     /// <summary>Microsecondi dall'avvio del motore.</summary>
@@ -376,8 +443,9 @@ public sealed class MotoreEffetti : IDisposable
     }
 
     /// <summary>
-    /// Prepara la maschera in anticipo (apre il modello e scalda la scheda video), così il primo fotogramma con lo sfondo
-    /// non aspetta. Da chiamare quando si accende lo sfondo.
+    /// Prepara la maschera in anticipo (apre il modello), così il primo fotogramma con lo sfondo non aspetta l'apertura.
+    /// Da chiamare quando si accende lo sfondo. La scheda video si scalda alla prima maschera: quei tempi non contano per
+    /// la qualità (<see cref="SceltaLivello.FonteNuova"/>).
     /// </summary>
     public void Prepara() => codaAnalisi.Accoda(() => FontePerLivello());
 
@@ -409,12 +477,13 @@ public sealed class MotoreEffetti : IDisposable
         fonte = null;
         try
         {
-            fonte = creaFonte(serve);
+            fonte = creaFonte(serve, soloProcessore ? Acceleratore.Processore : Acceleratore.Automatico);
             livelloFonte = serve;
             lock (blocco)
             {
                 descrizioneFonte = (fonte.InUso, fonte.Modello);
                 note.Add(new Nota.Fonte(fonte.InUso, fonte.Modello, fonte.MotivoRipiego));
+                scelta.FonteNuova();
             }
         }
         catch (Exception errore)
@@ -428,6 +497,7 @@ public sealed class MotoreEffetti : IDisposable
     private void Analizza(Lavoro lavoro)
     {
         var inizio = Adesso;
+        var inCalcolo = false;
         try
         {
             lavoro.Meta = Elaborazione.Dimezza(lavoro.Immagine, riduzioni.Prendi(Math.Max(1, lavoro.Immagine.Larghezza / 2), Math.Max(1, lavoro.Immagine.Altezza / 2)));
@@ -435,7 +505,10 @@ public sealed class MotoreEffetti : IDisposable
             if (FontePerLivello() is { } f)
             {
                 var precedente = descrizioneFonte;
+                inCalcolo = true;
                 lavoro.Maschera = f.Calcola(lavoro.Quarto);
+                inCalcolo = false;
+                MascheraBuona();
                 if ((f.InUso, f.Modello) != precedente)
                 {
                     lock (blocco)
@@ -449,6 +522,7 @@ public sealed class MotoreEffetti : IDisposable
         catch (Exception errore)
         {
             ContaErrore(errore);
+            if (inCalcolo) ErroreDellaFonte();
         }
         lavoro.MascheraMs = (Adesso - inizio) / 1000.0;
         // I volti dalla stessa maschera, se servono.
@@ -458,10 +532,16 @@ public sealed class MotoreEffetti : IDisposable
         {
             sommaMaschera += lavoro.MascheraMs;
             contaMaschera++;
-            if (lavoro.Maschera is not null && lavoro.Generazione == generazione) ultimaMaschera = lavoro.Maschera;
-            else if (ultimaMaschera is not null && lavoro.Generazione == generazione)
+            if (lavoro.Maschera is not null && lavoro.Generazione == generazione)
             {
-                // Riservatezza: niente maschera per questo fotogramma, si usa l'ultima buona.
+                ultimaMaschera = lavoro.Maschera;
+                arrivoUltimaMaschera = lavoro.Arrivo;
+            }
+            else if (ultimaMaschera is not null && lavoro.Generazione == generazione
+                && lavoro.Arrivo - Math.Min(arrivoUltimaMaschera, lavoro.Arrivo) <= EtaMassimaMaschera)
+            {
+                // Riservatezza: niente maschera per questo fotogramma, si usa l'ultima buona (se è recente; altrimenti
+                // niente consegna, vedi Compositore).
                 lavoro.Maschera = ultimaMaschera;
                 senzaMaschera++;
             }
@@ -481,17 +561,22 @@ public sealed class MotoreEffetti : IDisposable
 
     private void AnalizzaSoloVolti(ImmagineBgra piccola, int larghezzaVideo, int altezzaVideo)
     {
+        var inCalcolo = false;
         try
         {
             if (FontePerLivello() is { } f)
             {
+                inCalcolo = true;
                 var maschera = f.Calcola(piccola);
+                inCalcolo = false;
+                MascheraBuona();
                 SegnaVolti(maschera, larghezzaVideo, altezzaVideo, Adesso);
             }
         }
         catch (Exception errore)
         {
             ContaErrore(errore);
+            if (inCalcolo) ErroreDellaFonte();
         }
         riduzioni.Restituisci(piccola);
         lock (blocco) LiberaAnalisi();
@@ -515,6 +600,38 @@ public sealed class MotoreEffetti : IDisposable
         {
             analisiOccupata = false;
         }
+    }
+
+    /// <summary>Coda di analisi: una maschera calcolata, la fonte funziona.</summary>
+    private void MascheraBuona()
+    {
+        erroriDiFila = 0;
+        if (riaperture > 0 && ++maschereBuone >= MaschereBuonePerDimenticare)
+        {
+            riaperture = 0;
+            maschereBuone = 0;
+        }
+    }
+
+    /// <summary>
+    /// Coda di analisi: la fonte ha lanciato un errore calcolando la maschera. Dopo <see cref="ErroriPerRiaprire"/> di fila
+    /// (la scheda video si è persa: driver aggiornato, sospensione, TDR; ONNX Runtime non si riprende da solo) la fonte
+    /// si chiude e il prossimo fotogramma la riapre: la prima volta come prima (DirectML su un dispositivo nuovo), dalla
+    /// seconda solo sul processore. Al massimo <see cref="RiapertureMassime"/> volte finché non tornano maschere buone.
+    /// </summary>
+    private void ErroreDellaFonte()
+    {
+        maschereBuone = 0;
+        if (++erroriDiFila < ErroriPerRiaprire || fonte is null || riaperture >= RiapertureMassime) return;
+        var errori = erroriDiFila;
+        erroriDiFila = 0;
+        riaperture++;
+        if (riaperture >= 2) soloProcessore = true;
+        try { fonte.Dispose(); }
+        catch (Exception) { }
+        fonte = null;
+        livelloFonte = null;
+        lock (blocco) note.Add(new Nota.FonteRiaperta(errori, soloProcessore));
     }
 
     /// <summary>Ogni errore della maschera si conta; nel registro il primo subito, poi al massimo uno ogni 10 secondi.</summary>

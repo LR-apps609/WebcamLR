@@ -302,6 +302,15 @@ class ProtocolloTest {
         assertEquals(UsaProspettiva, decodifica("""{"tipo":"usa-prospettiva"}"""))
     }
 
+    /** Lo stesso JSON di testChiediChiaveComeNelDocumento (Swift) e ChiediChiaveComeNelDocumento (C#). */
+    @Test
+    fun chiediChiaveComeNelDocumento() {
+        assertEquals("""{"tipo":"chiedi-chiave"}""", json(ChiediChiave))
+        assertEquals(ChiediChiave, decodifica("""{"tipo":"chiedi-chiave"}"""))
+        // Un campo in più (versione futura) non cambia il messaggio.
+        assertEquals(ChiediChiave, decodifica("""{"tipo":"chiedi-chiave","motivo":"x"}"""))
+    }
+
     @Test
     fun anteprimaEFormatoAudioComeNelDocumento() {
         assertEquals("""{"tipo":"anteprima","visibile":false}""", json(Anteprima(false)))

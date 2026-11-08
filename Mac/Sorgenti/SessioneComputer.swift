@@ -196,12 +196,27 @@ final class SessioneComputer: @unchecked Sendable {
             self.schermo = schermo
         }
         bloccoVideo.unlock()
+        // Qualità 13: il decodificatore dello schermo chiede un fotogramma chiave a questa sessione (con il limite di
+        // una richiesta al secondo, nello schermo). Debole: lo schermo resta al telefono, la sessione può finire.
+        if primaVolta {
+            schermo.chiediChiave { [weak self] in
+                guard let self else { return }
+                self.coda.async { self.chiediChiave() }
+            }
+        }
         coda.async {
             if primaVolta { self.mandaBenvenuto() }
             // Il `formato` può essere arrivato prima di qui: lo schermo deve sapere il codec prima dei fotogrammi.
             if let formato = self.formato, let attuale = self.schermoAttuale() { attuale.imposta(codec: formato.codec) }
             self.mandaVideoInAttesa()
         }
+    }
+
+    /// Sulla coda della sessione: `chiedi-chiave` al telefono (Protocollo.md, «Fotogramma chiave su richiesta»). Solo
+    /// se questa sessione è ancora quella attuale e accettata; un telefono vecchio lo ignora.
+    private func chiediChiave() {
+        guard accettato, schermoAttuale() != nil else { return }
+        invia(.chiediChiave)
     }
 
     /// Dal Ricevitore (P21): questo telefono è (o non è più) quello del microfono «WebcamLR (microphone)».

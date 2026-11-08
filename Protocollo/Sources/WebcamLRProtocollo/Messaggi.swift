@@ -695,6 +695,8 @@ public enum Messaggio: Equatable, Sendable {
     case arrivederci
     /// Dal telefono non selezionato: chiede di andare nella webcam (vedi «Più telefoni: la prospettiva»).
     case usaProspettiva
+    /// Dal computer: il prossimo fotogramma sia chiave, con i parametri (vedi «Fotogramma chiave su richiesta»).
+    case chiediChiave
     case stretta(Stretta)
     case prova(Prova)
     case approvazione(Approvazione)
@@ -720,6 +722,7 @@ public enum Messaggio: Equatable, Sendable {
         case .chiediEffetto: "chiedi-effetto"
         case .arrivederci: "arrivederci"
         case .usaProspettiva: "usa-prospettiva"
+        case .chiediChiave: "chiedi-chiave"
         case .stretta: "stretta"
         case .prova: "prova"
         case .approvazione: "approvazione"
@@ -753,6 +756,7 @@ extension Messaggio: Codable {
         case "chiedi-effetto": self = .chiediEffetto(try RichiestaEffetto(from: decoder))
         case "arrivederci": self = .arrivederci
         case "usa-prospettiva": self = .usaProspettiva
+        case "chiedi-chiave": self = .chiediChiave
         case "stretta": self = .stretta(try Stretta(from: decoder))
         case "prova": self = .prova(try Prova(from: decoder))
         case "approvazione": self = .approvazione(try Approvazione(from: decoder))
@@ -782,7 +786,7 @@ extension Messaggio: Codable {
         case .stretta(let m): try m.encode(to: encoder)
         case .prova(let m): try m.encode(to: encoder)
         case .approvazione(let m): try m.encode(to: encoder)
-        case .arrivederci, .usaProspettiva, .sconosciuto: break
+        case .arrivederci, .usaProspettiva, .chiediChiave, .sconosciuto: break
         }
     }
 }

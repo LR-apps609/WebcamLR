@@ -80,6 +80,7 @@ import it.lrapps.webcamlr.protocollo.Anteprima
 import it.lrapps.webcamlr.protocollo.Approvazione
 import it.lrapps.webcamlr.protocollo.Benvenuto
 import it.lrapps.webcamlr.protocollo.Capacita
+import it.lrapps.webcamlr.protocollo.ChiediChiave
 import it.lrapps.webcamlr.protocollo.ChiediEffetto
 import it.lrapps.webcamlr.protocollo.Ciao
 import it.lrapps.webcamlr.protocollo.Codec
@@ -1214,6 +1215,8 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
                 is InOnda -> inOndaArrivato(messaggio)
                 is Anteprima -> pausaDecisa.anteprima(messaggio.visibile)
                 is FormatoVideo -> chiediFormato(messaggio)
+                // Qualità 13: il decoder del computer non può partire: il prossimo fotogramma sarà chiave.
+                is ChiediChiave -> codificatore.chiaveChiestaDalComputer()
                 else -> Unit
             }
             is EventoCollegamento.Immagine -> riceviImmagine(evento.immagine)

@@ -57,6 +57,8 @@ public sealed partial class MainWindow
         motoreVideo.ServonoFotogrammi = () => uscitaWebcam.InUso || Volatile.Read(ref registrazione) is RegistrazioneElaborata;
         motoreVideo.Fotogramma += SuFotogrammaMotore;
         motoreVideo.Evento += registro.Aggiungi;
+        // Qualità 13: il decodificatore del motore parte o resta indietro: il fotogramma chiave si chiede subito.
+        motoreVideo.ChiaveMancante += () => _ = telefoni.SessioneSelezionata?.ChiediChiaveAsync();
         motoreVideo.Stato.ImpostaDisegnoScritta(new DisegnoScritta());
         controlloElaborata = coda.CreateTimer();
         controlloElaborata.Interval = TimeSpan.FromMilliseconds(250);

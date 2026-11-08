@@ -32,6 +32,8 @@ public sealed partial class MainWindow
         // Lo specchio è uno solo (1.14): il video arriva già girato dal telefono, la webcam non lo gira di nuovo.
         uscitaWebcam.Specchia = false;
         uscitaWebcam.Evento += testo => registro.Aggiungi(testo);
+        // Qualità 13: la webcam parte quando un'app la apre, a metà del flusso: il fotogramma chiave si chiede subito.
+        uscitaWebcam.ChiaveMancante += () => _ = telefoni.SessioneSelezionata?.ChiediChiaveAsync();
         uscitaWebcam.InUsoCambiato += inUso => coda.TryEnqueue(() =>
         {
             ImpostaInOnda(inUso);

@@ -42,6 +42,8 @@ final class Collegamento: @unchecked Sendable {
     var suEvento: (@MainActor (Evento) -> Void)?
     /// Chiamata quando un fotogramma è stato scartato: serve un fotogramma chiave.
     var suPerdita: (() -> Void)?
+    /// Qualità 13: il computer chiede un fotogramma chiave (`chiedi-chiave`). Sulla coda del collegamento.
+    var suChiediChiave: (() -> Void)?
     /// Una volta al secondo, sulla coda del collegamento: fotogrammi scartati e se la rete era satura
     /// (quasi sempre fotogrammi in attesa). Serve alla qualità che segue la rete (round 2).
     var suSecondo: ((_ scartati: Int, _ saturo: Bool) -> Void)?
@@ -478,6 +480,9 @@ final class Collegamento: @unchecked Sendable {
         switch messaggio {
         case .ping(let ping):
             spedisciMessaggio(.pong(Pong(t: ping.t, telefono: Orologio.adesso())))
+        case .chiediChiave:
+            // Subito al codificatore, senza passare dalla coda principale: il limite di 500 ms è lì.
+            suChiediChiave?()
         case .arrivederci:
             congedato = true
             connessione.cancel()

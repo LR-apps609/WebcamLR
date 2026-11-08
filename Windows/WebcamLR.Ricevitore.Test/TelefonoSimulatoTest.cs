@@ -25,7 +25,8 @@ public class TelefonoSimulatoTest
         public readonly TaskCompletionSource Chiusa = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public readonly Abbinamento Abbinamento;
 
-        public Ricevitore(Abbinamento abbinamento, Action<SessioneComputer>? prepara = null, Func<ulong>? orologioSilenzio = null)
+        public Ricevitore(Abbinamento abbinamento, Action<SessioneComputer>? prepara = null, Func<ulong>? orologioSilenzio = null,
+            Func<ulong>? orologioChiave = null)
         {
             Abbinamento = abbinamento;
             Ascoltatore.NuovoTelefono += presa =>
@@ -33,6 +34,7 @@ public class TelefonoSimulatoTest
                 var sessione = new SessioneComputer(presa, "PC di prova", abbinamento, TimeSpan.FromMilliseconds(200))
                 {
                     OrologioSilenzio = orologioSilenzio ?? Orologio.Adesso,
+                    OrologioChiave = orologioChiave ?? Orologio.Adesso,
                 };
                 sessione.Salutato += ciao => Salutato.TrySetResult(ciao);
                 sessione.Chiusa += () => Chiusa.TrySetResult();
@@ -140,6 +142,93 @@ public class TelefonoSimulatoTest
         Interlocked.Exchange(ref spostamento, 30_000_000);
         // Un salto oltre i 10 s di silenzio chiude subito (il telefono si ricollega da solo).
         await ricevitore.Chiusa.Task.WaitAsync(Limite);
+    }
+
+    /// <summary>Quanti «chiedi-chiave» sono arrivati al telefono finto (gli altri messaggi si buttano), dopo un attimo.</summary>
+    private static async Task<int> ContaChiediChiaveAsync(TelefonoFinto telefono, int attesaMs = 400)
+    {
+        await Task.Delay(attesaMs);
+        var quanti = 0;
+        while (telefono.Ricevuti.Reader.TryRead(out var messaggio))
+        {
+            if (messaggio is ChiediChiave) quanti++;
+        }
+        return quanti;
+    }
+
+    private static Pacchetto Fotogramma(bool chiave) =>
+        new FotogrammaVideo(OrologioTelefono() - RitardoSimulato, chiave, chiave, new byte[500]).ComePacchetto();
+
+    /// <summary>
+    /// Qualità 13 (Protocollo.md, «Fotogramma chiave su richiesta»): il primo fotogramma video non è chiave (computer
+    /// preso a metà del flusso) e il telefono riceve subito «chiedi-chiave». Con altri fotogrammi non chiave nello stesso
+    /// secondo nessuna richiesta in più; dopo il secondo, di nuovo. Arrivata la chiave, niente più richieste; un
+    /// «formato» nuovo seguito da un fotogramma non chiave ne fa partire un'altra.
+    /// </summary>
+    [Fact]
+    public async Task SenzaFotogrammaChiaveIlComputerLoChiede()
+    {
+        using var idComputer = IdentitaDispositivo.Nuova();
+        var abbinamento = new Abbinamento(idComputer);
+        long spostamento = 0;
+        ulong OrologioFinto() => Orologio.Adesso() + (ulong)Interlocked.Read(ref spostamento);
+        using var ricevitore = new Ricevitore(abbinamento, orologioChiave: OrologioFinto);
+        await using var telefono = new TelefonoFinto(orologio: OrologioTelefono);
+        await telefono.CollegaAsync(ricevitore.Ascoltatore.Porta, gettone: abbinamento.Gettone);
+        await telefono.AttendiAsync<Benvenuto>().WaitAsync(Limite);
+        var sessione = await ricevitore.Sessione.Task.WaitAsync(Limite);
+        await telefono.InviaAsync(new FormatoVideo(Codec.H264, 1280, 720, 30));
+
+        // Il primo fotogramma non è chiave: la richiesta arriva.
+        await telefono.InviaAsync(Fotogramma(chiave: false));
+        await telefono.AttendiAsync<ChiediChiave>().WaitAsync(Limite);
+
+        // Altri cinque nello stesso secondo (l'orologio finto è fermo): nessuna richiesta in più, anche dalla finestra.
+        for (var i = 0; i < 5; i++) await telefono.InviaAsync(Fotogramma(chiave: false));
+        Assert.False(await sessione.ChiediChiaveAsync());
+        Assert.Equal(0, await ContaChiediChiaveAsync(telefono));
+
+        // Passato il secondo la chiave non è ancora arrivata: si chiede di nuovo, una volta sola.
+        Interlocked.Exchange(ref spostamento, 1_100_000);
+        for (var i = 0; i < 3; i++) await telefono.InviaAsync(Fotogramma(chiave: false));
+        Assert.Equal(1, await ContaChiediChiaveAsync(telefono));
+
+        // Arriva la chiave: i fotogrammi dopo vanno bene, niente richieste anche a secondo passato.
+        await telefono.InviaAsync(Fotogramma(chiave: true));
+        Interlocked.Exchange(ref spostamento, 3_000_000);
+        for (var i = 0; i < 3; i++) await telefono.InviaAsync(Fotogramma(chiave: false));
+        Assert.Equal(0, await ContaChiediChiaveAsync(telefono));
+
+        // Il decodificatore della finestra sbaglia: la richiesta parte (il secondo è passato), una sola.
+        Assert.True(await sessione.ChiediChiaveAsync());
+        Assert.False(await sessione.ChiediChiaveAsync());
+        await telefono.AttendiAsync<ChiediChiave>().WaitAsync(Limite);
+
+        // Formato nuovo e poi un fotogramma non chiave: si riparte da una chiave, e la si chiede.
+        Interlocked.Exchange(ref spostamento, 5_000_000);
+        await telefono.InviaAsync(new FormatoVideo(Codec.H264, 1920, 1080, 30));
+        await telefono.InviaAsync(Fotogramma(chiave: false));
+        await telefono.AttendiAsync<ChiediChiave>().WaitAsync(Limite);
+    }
+
+    /// <summary>Un flusso che parte da un fotogramma chiave, come sempre: il telefono non riceve mai «chiedi-chiave».</summary>
+    [Fact]
+    public async Task ConIlFotogrammaChiaveNessunaRichiesta()
+    {
+        using var idComputer = IdentitaDispositivo.Nuova();
+        var abbinamento = new Abbinamento(idComputer);
+        using var ricevitore = new Ricevitore(abbinamento);
+        await using var telefono = new TelefonoFinto(orologio: OrologioTelefono);
+        await telefono.CollegaAsync(ricevitore.Ascoltatore.Porta, gettone: abbinamento.Gettone);
+        await telefono.AttendiAsync<Benvenuto>().WaitAsync(Limite);
+        await telefono.InviaAsync(new FormatoVideo(Codec.H264, 1280, 720, 30));
+        await telefono.InviaAsync(Fotogramma(chiave: true));
+        for (var i = 0; i < 10; i++)
+        {
+            await telefono.InviaAsync(Fotogramma(chiave: false));
+            await Task.Delay(33);
+        }
+        Assert.Equal(0, await ContaChiediChiaveAsync(telefono));
     }
 
     [Fact]

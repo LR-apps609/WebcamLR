@@ -242,6 +242,15 @@ public class ProtocolloTest
         ComeSwift("""{"tipo":"usa-prospettiva"}""", new UsaProspettiva());
     }
 
+    /// <summary>Lo stesso JSON di «testChiediChiaveComeNelDocumento» (Swift) e «chiediChiaveComeNelDocumento» (Kotlin).</summary>
+    [Fact]
+    public void ChiediChiaveComeNelDocumento()
+    {
+        ComeSwift("""{"tipo":"chiedi-chiave"}""", new ChiediChiave());
+        // Un campo in più (versione futura) non cambia il messaggio.
+        Assert.Equal(new ChiediChiave(), CodificaMessaggi.Decodifica("""{"tipo":"chiedi-chiave","motivo":"x"}"""u8));
+    }
+
     [Fact]
     public void AnteprimaEFormatoAudioComeNelDocumento()
     {

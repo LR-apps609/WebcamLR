@@ -181,6 +181,9 @@ public sealed record Arrivederci : Messaggio;
 /// <summary>Dal telefono non selezionato: chiede di andare nella webcam (Protocollo.md, «Più telefoni: la prospettiva»).</summary>
 public sealed record UsaProspettiva : Messaggio;
 
+/// <summary>Dal computer: il prossimo fotogramma sia chiave, con i parametri (Protocollo.md, «Fotogramma chiave su richiesta»).</summary>
+public sealed record ChiediChiave : Messaggio;
+
 /// <summary>Stretta di mano del collegamento sicuro (versione 2), in chiaro: byte in base64.</summary>
 /// <param name="Chiave">Chiave pubblica ECDH effimera, 65 byte.</param>
 /// <param name="Identita">Chiave pubblica di firma permanente, 65 byte.</param>
@@ -377,6 +380,7 @@ public static class CodificaMessaggi
         ChiediEffetto => "chiedi-effetto",
         Arrivederci => "arrivederci",
         UsaProspettiva => "usa-prospettiva",
+        ChiediChiave => "chiedi-chiave",
         Stretta => "stretta",
         Prova => "prova",
         Approvazione => "approvazione",
@@ -387,7 +391,7 @@ public static class CodificaMessaggi
     public static byte[] Codifica(Messaggio messaggio)
     {
         var oggetto = new JsonObject { ["tipo"] = Tipo(messaggio) };
-        if (messaggio is not (Arrivederci or UsaProspettiva or Sconosciuto))
+        if (messaggio is not (Arrivederci or UsaProspettiva or ChiediChiave or Sconosciuto))
         {
             var campi = JsonSerializer.SerializeToNode(messaggio, messaggio.GetType(), Opzioni)!.AsObject();
             foreach (var (chiave, valore) in campi.ToList())
@@ -422,6 +426,7 @@ public static class CodificaMessaggi
             "chiedi-effetto" => nodo.Deserialize<ChiediEffetto>(Opzioni)!,
             "arrivederci" => new Arrivederci(),
             "usa-prospettiva" => new UsaProspettiva(),
+            "chiedi-chiave" => new ChiediChiave(),
             "stretta" => nodo.Deserialize<Stretta>(Opzioni)!,
             "prova" => nodo.Deserialize<Prova>(Opzioni)!,
             "approvazione" => nodo.Deserialize<Approvazione>(Opzioni)!,

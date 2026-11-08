@@ -56,6 +56,13 @@ public sealed class MotoreVideo : IDisposable
     /// <summary>Una riga per il registro (decodifica che non parte).</summary>
     public event Action<string>? Evento;
 
+    /// <summary>Qualità 13: il decodificatore aspetta un fotogramma chiave (vedi <see cref="AnteprimaVideo.ChiaveMancante"/>).</summary>
+    public event Action? ChiaveMancante
+    {
+        add => decodificatore.ChiaveMancante += value;
+        remove => decodificatore.ChiaveMancante -= value;
+    }
+
     public MotoreVideo()
     {
         motore = new MotoreEffetti(Stato, livello => FonteRitaglio.PerLivello(livello));

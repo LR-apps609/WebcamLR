@@ -90,6 +90,16 @@ public sealed class SessioneComputer : IAsyncDisposable
     private Task? lavoro;
     /// <summary>Solo sul thread di lettura: il primo fotogramma è già stato segnato nella misura dell'avvio.</summary>
     private bool videoArrivato;
+    /// <summary>
+    /// Solo sul thread di lettura (Qualità 13): da qui il video ha già un fotogramma chiave da cui partire. Torna falso a
+    /// ogni «formato»: dopo un cambio di formato si riparte da una chiave.
+    /// </summary>
+    private bool chiaveArrivata;
+    /// <summary>L'ultimo «chiedi-chiave» (<see cref="OrologioChiave"/>, µs), sotto <see cref="blocco"/>; null = nessuno.</summary>
+    private ulong? ultimaChiaveChiesta;
+
+    /// <summary>Al massimo un «chiedi-chiave» al secondo (Protocollo.md, «Fotogramma chiave su richiesta»).</summary>
+    public static readonly TimeSpan IntervalloChiediChiave = TimeSpan.FromSeconds(1);
 
     // Pausa intelligente: l'«anteprima» parte dopo il benvenuto e poi a ogni cambiamento, una alla volta e senza ripetere.
     private int anteprimaVisibile = 1;
@@ -198,6 +208,34 @@ public sealed class SessioneComputer : IAsyncDisposable
     public bool InSottofondo
     {
         get { lock (blocco) return pausa.Tollerato((long)(OrologioSilenzio() / 1000)); }
+    }
+
+    /// <summary>
+    /// L'orologio (µs) del limite di un «chiedi-chiave» al secondo. Di serie <see cref="Orologio.Adesso"/>; nei test un
+    /// orologio finto.
+    /// </summary>
+    public Func<ulong> OrologioChiave { get; init; } = Orologio.Adesso;
+
+    /// <summary>
+    /// Qualità 13: chiede al telefono un fotogramma chiave (<c>chiedi-chiave</c>), per un decodificatore che non può andare
+    /// avanti (errore, fotogrammi scartati, partito a metà del flusso). Al massimo uno ogni
+    /// <see cref="IntervalloChiediChiave"/>: le richieste in più si ignorano (il telefono unisce comunque le sue). Da
+    /// qualsiasi thread; non lancia mai. Un telefono vecchio ignora il messaggio.
+    /// </summary>
+    /// <returns>Vero se il messaggio è partito, falso se era troppo presto o la sessione non è pronta.</returns>
+    public async Task<bool> ChiediChiaveAsync()
+    {
+        if (Volatile.Read(ref benvenutoInviato) == 0 || Terminata) return false;
+        var adesso = OrologioChiave();
+        lock (blocco)
+        {
+            if (ultimaChiaveChiesta is ulong ultima && adesso >= ultima
+                && adesso - ultima < (ulong)IntervalloChiediChiave.TotalMicroseconds) return false;
+            ultimaChiaveChiesta = adesso;
+        }
+        try { await InviaAsync(new ChiediChiave()); }
+        catch (Exception) { return false; }
+        return true;
     }
 
     /// <summary>Vero dopo la chiusura, per qualsiasi motivo.</summary>
@@ -356,6 +394,10 @@ public sealed class SessioneComputer : IAsyncDisposable
                     videoArrivato = true;
                     Avvio.PrimoFotogramma();
                 }
+                // Qualità 13: video senza un fotogramma chiave da cui partire (sessione presa a metà, formato cambiato):
+                // lo si chiede subito, invece di aspettare quello fisso del telefono. Senza attendere: la lettura non si ferma.
+                if (fotogramma.Chiave) chiaveArrivata = true;
+                else if (!chiaveArrivata) _ = ChiediChiaveAsync();
                 lock (blocco)
                 {
                     fotogrammiUltimoSecondo++;
@@ -391,6 +433,8 @@ public sealed class SessioneComputer : IAsyncDisposable
             // Dalla rete: nei limiti prima di arrivare alla finestra (ValoriSicuri). Un formato non credibile si ignora.
             case FormatoVideo arrivato when ValoriSicuri.Sanifica(arrivato) is { } nuovo:
                 lock (blocco) formato = nuovo;
+                // Il telefono riparte da un fotogramma chiave con il formato nuovo (e la finestra rifà i decodificatori).
+                chiaveArrivata = false;
                 FormatoRicevuto?.Invoke(nuovo);
                 break;
             case FormatoAudio arrivato when ValoriSicuri.Sanifica(arrivato) is { } nuovo:

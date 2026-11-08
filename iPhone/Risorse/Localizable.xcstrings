@@ -5135,6 +5135,23 @@
         }
       }
     },
+    "Provo %@ anche per nome, oltre agli indirizzi del QR code" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Also trying %@ by name, besides the QR code addresses"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Provo %@ anche per nome, oltre agli indirizzi del QR code"
+          }
+        }
+      }
+    },
     "Provo di nuovo %@ (%@)" : {
       "extractionState" : "manual",
       "localizations" : {

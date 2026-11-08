@@ -47,6 +47,17 @@ extension ComputerTrovato {
                         altriIndirizzi: altriIndirizzi)
     }
 
+    /// Collaudo 8: lo stesso computer con in gara anche il suo servizio Bonjour, cercato per nome. Un computer
+    /// arrivato dal QR code ha solo i suoi indirizzi IP: dopo un cambio di indirizzo (DHCP, router nuovo) il servizio
+    /// si risolve con quello nuovo. `nil` se il servizio c'è già (annunciato, o già aggiunto) o se è il cavo.
+    func conServizio() -> ComputerTrovato? {
+        guard !cavo, !annunciato else { return nil }
+        let servizio = NWEndpoint.service(name: nome, type: Servizio.tipoBonjour, domain: "local.", interface: nil)
+        guard !altriIndirizzi.contains(servizio) else { return nil }
+        return ComputerTrovato(id: id, nome: nome, piattaforma: piattaforma, endpoint: endpoint, impronta: impronta,
+                               gettone: gettone, diretto: diretto, cavo: cavo, altriIndirizzi: altriIndirizzi + [servizio])
+    }
+
     /// Trovato dalla ricerca (Bonjour): il computer è acceso e WebcamLR è aperto.
     var annunciato: Bool {
         if case .service = endpoint { return true }

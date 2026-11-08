@@ -2501,6 +2501,12 @@ final class SessioneTelefono {
             if prima == true { registro.aggiungi(String(localized: "Non vedo più \(computer.nome)")) }
             return
         }
+        // Collaudo 8: abbinato col QR code, il telefono conosce solo gli indirizzi IP di allora. La ricerca lo trova
+        // per nome: da qui in poi si prova anche il servizio Bonjour, che segue un cambio di indirizzo.
+        if let conServizio = computer.conServizio() {
+            computer = conServizio
+            registro.aggiungi(String(localized: "Provo \(computer.nome) anche per nome, oltre agli indirizzi del QR code"))
+        }
         if prima == true { return }
         // Annunciato fin dall'inizio dopo un `arrivederci`: l'hanno scollegato sul computer, non ci si impone.
         if prima == nil && soloAlRitorno { return }

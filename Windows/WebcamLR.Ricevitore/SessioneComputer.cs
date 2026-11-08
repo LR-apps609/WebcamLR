@@ -471,9 +471,8 @@ public sealed class SessioneComputer : IAsyncDisposable
                 // Lo stesso tempo che il telefono aspetta dopo l'approvazione, compresa l'attesa di un'altra domanda aperta.
                 using var tempo = CancellationTokenSource.CreateLinkedTokenSource(annulla.Token);
                 tempo.CancelAfter(AttesaConferma);
-                consentito = await abbinamento.ConfermaAsync(impronta, ciao.Nome, sicura.Codice, tempo.Token);
-                // Un no, o il tempo scaduto; non il telefono andato via (può riprovare subito).
-                if (!consentito && !annulla.IsCancellationRequested) abbinamento.SegnaRifiuto(impronta);
+                // Un no, o il tempo scaduto, si ricorda; non il telefono andato via (può riprovare subito).
+                consentito = await abbinamento.ConfermaAsync(impronta, ciao.Nome, sicura.Codice, tempo.Token, annulla.Token);
             }
             if (!consentito)
             {

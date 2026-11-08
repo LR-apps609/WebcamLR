@@ -405,6 +405,30 @@ public class TelefonoSimulatoTest
     }
 
     [Fact]
+    public async Task IlTempoFinitoInFilaNonContaComeRifiuto()
+    {
+        // Collaudo 33 e 37: chi aspetta dietro un'altra domanda e finisce il tempo non ha visto nulla: niente pausa di due
+        // minuti. Il no detto davvero invece si ricorda, e il telefono andato via no.
+        using var idComputer = IdentitaDispositivo.Nuova();
+        var primaRisposta = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var abbinamento = new Abbinamento(idComputer)
+        {
+            ChiediConferma = (nome, _, scaduto) => nome == "A" ? primaRisposta.Task : Task.FromResult(false),
+        };
+        var prima = abbinamento.ConfermaAsync("a", "A", "123456", CancellationToken.None);
+        using (var breve = new CancellationTokenSource(TimeSpan.FromMilliseconds(100)))
+            Assert.False(await abbinamento.ConfermaAsync("b", "B", "654321", breve.Token).WaitAsync(Limite));
+        Assert.False(abbinamento.RifiutatoDaPoco("b"));
+        primaRisposta.SetResult(false);
+        Assert.False(await prima.WaitAsync(Limite));
+        Assert.True(abbinamento.RifiutatoDaPoco("a"));
+        using var via = new CancellationTokenSource();
+        via.Cancel();
+        Assert.False(await abbinamento.ConfermaAsync("c", "C", "111111", CancellationToken.None, via.Token).WaitAsync(Limite));
+        Assert.False(abbinamento.RifiutatoDaPoco("c"));
+    }
+
+    [Fact]
     public async Task ArrivederciDelTelefonoSiDistingueDallaCaduta()
     {
         // Collaudo 34: l'arrivederci del telefono è voluto; una presa che si chiude è una caduta.

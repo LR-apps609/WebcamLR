@@ -76,9 +76,12 @@ public sealed class Abbinamento
 
     /// <summary>
     /// Chiede la conferma con <see cref="ChiediConferma"/>, una domanda alla volta: se ce n'è già una aperta per un altro
-    /// telefono, questa aspetta che sia chiusa (entro <paramref name="scaduto"/>, il tempo del telefono). Il no si ricorda.
+    /// telefono, questa aspetta che sia chiusa (entro <paramref name="scaduto"/>, il tempo del telefono). Il no, o il tempo
+    /// scaduto con la domanda aperta, si ricorda (<see cref="PausaDopoRifiuto"/>); non se il telefono è andato via
+    /// (<paramref name="telefonoVia"/>) né se il tempo è finito in fila dietro un'altra domanda, che l'utente non ha visto.
     /// </summary>
-    public async Task<bool> ConfermaAsync(string impronta, string nome, string codice, CancellationToken scaduto)
+    public async Task<bool> ConfermaAsync(string impronta, string nome, string codice, CancellationToken scaduto,
+        CancellationToken telefonoVia = default)
     {
         if (ChiediConferma is not { } chiedi) return false;
         bool consentito;
@@ -94,6 +97,7 @@ public sealed class Abbinamento
         {
             try { consentito = await chiedi(nome, codice, scaduto); }
             catch (OperationCanceledException) { consentito = false; }
+            if (!consentito && !telefonoVia.IsCancellationRequested) SegnaRifiuto(impronta);
         }
         finally
         {

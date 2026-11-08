@@ -1021,8 +1021,9 @@ final class Ricevitore {
             }
             inConferma = identita
             registra(String(localized: "Telefono nuovo, «\(nome)»: chiedo conferma con il codice"))
-            // Un telefono del cavo non consentito (o senza risposta) non deve ripresentarsi ogni 2 secondi.
-            if canaliCavo[identita] != nil { pausaCavo.insert(identita) }
+            // Il cavo va in pausa solo con «Non consentire» (`rispondiConferma`). Senza risposta entro 60 secondi
+            // il client del cavo riprova con l'attesa che cresce dei rifiuti: così «Riprova» sull'iPhone fa
+            // ricomparire la domanda, invece di aspettare un cavo in pausa.
             // Prima la notifica (solo se WebcamLR è in secondo piano), poi l'app davanti con la domanda.
             Notifiche.condivise.richiestaConsenso(nome)
             finestraConferma.mostra(nome: nome, codice: codice) { [weak self] consentito in
@@ -2425,6 +2426,8 @@ final class Ricevitore {
         guard inConferma == identita else { return }
         inConferma = nil
         registra(consentito ? String(localized: "Telefono consentito") : String(localized: "Telefono non consentito"))
+        // Un telefono del cavo non consentito non deve ripresentarsi ogni 2 secondi: il cavo va in pausa.
+        if !consentito, canaliCavo[identita] != nil { pausaCavo.insert(identita) }
         candidati[identita]?.rispondi(consentito: consentito)
     }
 

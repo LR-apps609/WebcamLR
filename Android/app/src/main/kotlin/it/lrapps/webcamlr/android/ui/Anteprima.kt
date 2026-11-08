@@ -2,12 +2,15 @@ package it.lrapps.webcamlr.android.ui
 
 import android.app.Activity
 import android.content.Context
+import android.hardware.display.DisplayManager
 import android.os.Build
+import android.util.Log
 import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.WindowManager
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -26,6 +29,25 @@ fun AnteprimaVideo(renderizzatore: Renderizzatore, modifier: Modifier = Modifier
     val configurazione = LocalConfiguration.current
     LaunchedEffect(configurazione.orientation, configurazione.screenWidthDp) {
         renderizzatore.rotazioneSchermo = rotazioneSchermo(context)
+    }
+    // Collaudo 28: da orizzontale a orizzontale rovesciato (180°) non cambiano né la configurazione né le misure
+    // della SurfaceView, e su Android 10 surfaceChanged non arriva: solo il DisplayManager lo dice.
+    DisposableEffect(context, renderizzatore) {
+        val schermi = context.getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager
+        val ascolto = object : DisplayManager.DisplayListener {
+            override fun onDisplayAdded(id: Int) = Unit
+            override fun onDisplayRemoved(id: Int) = Unit
+            override fun onDisplayChanged(id: Int) {
+                val nuova = rotazioneSchermo(context)
+                if (nuova != renderizzatore.rotazioneSchermo) {
+                    Log.i("WebcamLR", "Schermo girato: rotazione $nuova")
+                    renderizzatore.rotazioneSchermo = nuova
+                }
+            }
+        }
+        if (schermi == null) Log.w("WebcamLR", "Nessun DisplayManager: un giro di 180° dello schermo non si vede")
+        schermi?.registerDisplayListener(ascolto, null)
+        onDispose { schermi?.unregisterDisplayListener(ascolto) }
     }
     AndroidView(
         modifier = modifier,

@@ -472,6 +472,8 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
 
     private var bloccoSveglia: PowerManager.WakeLock? = null
     private var bloccoWiFi: WifiManager.WifiLock? = null
+    /** Android 10–13: HIGH_PERF accanto a LOW_LATENCY, che a schermo spento non vale. */
+    private var bloccoWiFiSchermoSpento: WifiManager.WifiLock? = null
     private var ascoltoRete: ConnectivityManager.NetworkCallback? = null
     private val orientamento = object : OrientationEventListener(app) {
         override fun onOrientationChanged(gradi: Int) {
@@ -1850,6 +1852,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         } catch (e: Exception) {
             // Per esempio il codificatore hardware tolto dal sistema mentre l'app era in sottofondo: si riprova al
             // ritorno in primo piano (o con «Riprova») senza ricollegarsi.
+            android.util.Log.e("WebcamLR", "Codifica non avviata: ${voluto.larghezza}×${voluto.altezza}, ${voluto.fps} fps, ${voluto.codec}", e)
             fermaCodifica()
             fermaConErrore(Testi.testo(R.string.errore_video_titolo), Testi.testo(R.string.errore_video))
             erroreLocale = true
@@ -1911,7 +1914,11 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         if (scelto != null) {
             val nuovo = FormatoRichiesto.da(richiesta) { l, a -> cattura.fpsMassimo(scelto, l, a) { ll, aa -> codificatore.fpsMassimo(ll, aa, richiesta.codec) } }
             if (nuovo != null) {
-                formatoRichiesto = nuovo
+                // Collaudo 57: senza HEVC hardware si conta l'H.264 che il codificatore userà davvero, altrimenti la
+                // stessa richiesta HEVC sembrava sempre diversa e riapriva fotocamera e codificatore ogni volta.
+                val codec = codificatore.codecEffettivo(nuovo.codec)
+                if (codec != nuovo.codec) android.util.Log.i("WebcamLR", "Chiesto ${nuovo.codec}, il telefono non lo ha in hardware: $codec")
+                formatoRichiesto = nuovo.copy(codec = codec)
                 val atteso = formatoEffettivo()
                 val attuale = formato
                 val uguale = attuale != null && maxOf(attuale.larghezza, attuale.altezza) == atteso.larghezza &&
@@ -2439,26 +2446,41 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         }
     }
 
-    /** Processore e Wi-Fi svegli mentre si manda il video, anche a schermo spento. */
+    /**
+     * Processore e Wi-Fi svegli mentre si manda il video, anche a schermo spento. Il wake lock non ha scadenza
+     * (collaudo 30: quello di 6 ore non si riprendeva più): si rilascia in termina(), e con il processo che muore.
+     */
+    @android.annotation.SuppressLint("WakelockTimeout")
     private fun mantieniSveglio(attivo: Boolean) {
         if (attivo) {
             val energia = app.getSystemService(Context.POWER_SERVICE) as PowerManager
             bloccoSveglia = energia.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "WebcamLR:video").apply {
                 setReferenceCounted(false)
-                acquire(6 * 60 * 60 * 1000L)
+                acquire()
             }
             val wifi = app.getSystemService(Context.WIFI_SERVICE) as? WifiManager
-            @Suppress("DEPRECATION")
-            val modo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) WifiManager.WIFI_MODE_FULL_LOW_LATENCY else WifiManager.WIFI_MODE_FULL_HIGH_PERF
-            bloccoWiFi = wifi?.createWifiLock(modo, "WebcamLR:video")?.apply {
+            if (wifi == null) android.util.Log.w("WebcamLR", "Nessun WifiManager: Wi-Fi senza blocco")
+            fun blocco(modo: Int) = wifi?.createWifiLock(modo, "WebcamLR:video")?.apply {
                 setReferenceCounted(false)
-                runCatching { acquire() }
+                runCatching { acquire() }.onFailure { android.util.Log.w("WebcamLR", "Blocco Wi-Fi $modo non preso", it) }
+            }
+            @Suppress("DEPRECATION")
+            val altaResa = WifiManager.WIFI_MODE_FULL_HIGH_PERF
+            // Collaudo 29: LOW_LATENCY vale solo in primo piano a schermo acceso; fino ad Android 13 HIGH_PERF tiene
+            // il Wi-Fi fuori dal risparmio anche a schermo spento (da Android 14 non ha più effetto).
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                bloccoWiFi = blocco(WifiManager.WIFI_MODE_FULL_LOW_LATENCY)
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) bloccoWiFiSchermoSpento = blocco(altaResa)
+            } else {
+                bloccoWiFi = blocco(altaResa)
             }
         } else {
             runCatching { bloccoSveglia?.release() }
             runCatching { bloccoWiFi?.release() }
+            runCatching { bloccoWiFiSchermoSpento?.release() }
             bloccoSveglia = null
             bloccoWiFi = null
+            bloccoWiFiSchermoSpento = null
         }
     }
 

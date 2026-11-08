@@ -118,6 +118,7 @@
     <string name="pro_ripristina">Ripristina acquisti</string>
     <string name="pro_in_attesa">Acquisto in attesa di approvazione: Pro si sblocca da solo appena è confermato.</string>
     <string name="pro_collegamento_play">Collegamento a Google Play…</string>
+    <string name="pro_play_non_pronto">Google Play non è pronto per i pagamenti. Accedi con un account Google o aggiorna il Play Store, poi tocca Riprova.</string>
     <string name="pro_play_non_risponde">Google Play non risponde. Controlla la connessione; sui telefoni senza Google Play l\'acquisto non è disponibile.</string>
     <string name="pro_attivo">Pro attivo</string>
     <string name="pro_attivo_grazie">Grazie per aver scelto WebcamLR Pro: è tutto sbloccato.</string>
@@ -291,6 +292,8 @@
     <string name="ricollego_tra">Mi ricollego a %1$s tra %2$d…</string>
     <string name="collega_a">Collega a %1$s</string>
     <string name="collega">Collega</string>
+    <string name="collega_altro_domanda">Collegarsi a %1$s?</string>
+    <string name="collega_altro_spiegazione">Il collegamento con %1$s si chiude e il video passa a questo computer.</string>
     <string name="aiuto_altre_risposte">Altre risposte nelle domande frequenti</string>
     <string name="come_funziona">Come funziona</string>
     <string name="indirizzo_titolo">Indirizzo del computer</string>

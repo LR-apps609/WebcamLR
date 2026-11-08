@@ -11,7 +11,9 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -20,6 +22,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import it.lrapps.webcamlr.android.dati.Impostazioni
 import it.lrapps.webcamlr.android.rete.ComputerTrovato
@@ -32,6 +35,8 @@ import it.lrapps.webcamlr.android.ui.Colori
 import it.lrapps.webcamlr.android.ui.PaginaImpostazioni
 import it.lrapps.webcamlr.android.ui.PreferenzeInterfaccia
 import it.lrapps.webcamlr.android.ui.Presentazione
+import it.lrapps.webcamlr.android.ui.PulsantePieno
+import it.lrapps.webcamlr.android.ui.PulsanteSecondario
 import it.lrapps.webcamlr.android.ui.SchermataApp
 import it.lrapps.webcamlr.android.ui.SchermataComputer
 import it.lrapps.webcamlr.android.ui.SchermataDomande
@@ -41,6 +46,7 @@ import it.lrapps.webcamlr.android.ui.SchermataLettoreQR
 import it.lrapps.webcamlr.android.ui.SchermataPaginaImpostazioni
 import it.lrapps.webcamlr.android.ui.SchermataPro
 import it.lrapps.webcamlr.android.ui.SchermataSegnala
+import it.lrapps.webcamlr.android.ui.Stili
 import it.lrapps.webcamlr.android.ui.TemaWebcamLR
 import it.lrapps.webcamlr.android.ui.VoceAltro
 import it.lrapps.webcamlr.protocollo.Associazione
@@ -68,6 +74,8 @@ class MainActivity : ComponentActivity() {
 
     /** P5: «Scollega» nella notifica ha aperto l'app: «In onda» mostra la domanda della X invece di scollegare subito. */
     private var richiestaScollega by mutableStateOf(false)
+    /** Collaudo 55: un `webcamlr://collega` di un altro computer arrivato durante una sessione, da confermare. */
+    private var collegamentoDaConfermare by mutableStateOf<ComputerTrovato?>(null)
 
     /** Cosa fare quando arriva il permesso della fotocamera. */
     private var dopoIlPermesso: (() -> Unit)? = null
@@ -141,6 +149,9 @@ class MainActivity : ComponentActivity() {
         // P3 e P4: di ritorno da Impostazioni schede e righe dicono subito lo stato nuovo.
         Permessi.aggiorna(this)
         Sessioni.attuale?.tornataInPrimoPiano()
+        // Collaudo 49: gli acquisti si rileggono al ritorno in primo piano (e Google Play si ricollega se non c'era),
+        // per esempio dopo aver aggiunto l'account Google o aggiornato il Play Store.
+        it.lrapps.webcamlr.android.acquisti.NegozioPro.aggiorna()
     }
 
     /**
@@ -185,9 +196,47 @@ class MainActivity : ComponentActivity() {
         val testo = intent?.dataString ?: return
         val associazione = Associazione.leggi(testo) ?: return
         intent.data = null
-        if (Sessioni.attuale != null) return
+        val nuovo = ComputerTrovato.da(associazione)
+        val attuale = Sessioni.attuale
+        if (attuale != null) {
+            // Collaudo 55: prima il link si scartava in silenzio. Lo stesso computer: niente da fare; un altro: si
+            // chiede, e con il sì ci si collega come con il lettore QR interno.
+            val stesso = attuale.computer.let { (it.impronta != null && it.impronta == nuovo.impronta) || it.nome == nuovo.nome }
+            android.util.Log.i("WebcamLR", "Link di collegamento a ${nuovo.nome} durante la sessione con ${attuale.computer.nome}" + if (stesso) ": è lo stesso, lo ignoro" else ": chiedo")
+            if (!stesso) collegamentoDaConfermare = nuovo
+            return
+        }
         if (!Impostazioni.benvenutoVisto) Impostazioni.impostaBenvenutoVisto(true)
-        apriSessione(ComputerTrovato.da(associazione))
+        apriSessione(nuovo)
+    }
+
+    /** La domanda per [collegamentoDaConfermare]: con il sì si chiude la sessione attuale e si apre quella nuova. */
+    @Composable
+    private fun DomandaAltroComputer() {
+        val nuovo = collegamentoDaConfermare ?: return
+        val attuale = Sessioni.attuale
+        if (attuale == null) {
+            // La sessione è finita nel frattempo: ci si collega e basta (fuori dalla composizione).
+            LaunchedEffect(nuovo) {
+                collegamentoDaConfermare = null
+                apriSessione(nuovo)
+            }
+            return
+        }
+        AlertDialog(
+            onDismissRequest = { collegamentoDaConfermare = null },
+            title = { Text(stringResource(R.string.collega_altro_domanda, nuovo.nome)) },
+            text = { Text(stringResource(R.string.collega_altro_spiegazione, attuale.computer.nome), style = Stili.corpo, color = Colori.testoChiaro) },
+            confirmButton = {
+                PulsantePieno(stringResource(R.string.collega)) {
+                    collegamentoDaConfermare = null
+                    apriSessione(nuovo)
+                }
+            },
+            dismissButton = {
+                PulsanteSecondario(stringResource(R.string.annulla), compatto = true) { collegamentoDaConfermare = null }
+            },
+        )
     }
 
     @Composable
@@ -264,6 +313,7 @@ class MainActivity : ComponentActivity() {
             Schermata.Guida -> SchermataGuida(indietro = { indietro() })
             Schermata.Segnala -> SchermataSegnala(ultimaLatenzaMs = sessione?.ultimaLatenzaMs ?: ultimaLatenza, indietro = { indietro() })
         }
+        DomandaAltroComputer()
     }
 
     private var ultimaLatenza: Int? = null

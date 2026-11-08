@@ -102,8 +102,16 @@ class CercaComputer(context: Context) {
     }
 
     /** Sulla rete del Tethering USB cerchiamo anche da soli (vedi [RicercaCavo]). */
-    private val ricercaCavo = RicercaCavo { trovato -> principale.post { if (ascoltatore != null || cavoSolo) aggiungi(trovato) } }
+    private val ricercaCavo = RicercaCavo(
+        suTrovato = { trovato -> principale.post { if (ascoltatore != null || cavoSolo) aggiungi(trovato) } },
+        suPerso = { nome -> principale.post { persoSulCavo(nome) } },
+    )
     private var cavoSolo = false
+
+    /** Collaudo 24: gli indirizzi visti sul cavo per ogni nome, per toglierli quando il cavo lo perde. */
+    private val indirizziCavo = HashMap<String, Set<String>>()
+    /** I nomi che NsdManager vede adesso sul Wi-Fi (tra onServiceResolved e onServiceLost). */
+    private val visteWiFi = HashSet<String>()
 
     /** Ogni computer trovato (sul thread principale), per chi aspetta un computer preciso (la sessione che si ricollega). */
     var suTrovato: ((ComputerTrovato) -> Unit)? = null
@@ -111,12 +119,36 @@ class CercaComputer(context: Context) {
     /** Un computer trovato da una delle due ricerche: se c'è già (stesso nome) si uniscono gli indirizzi. */
     private fun aggiungi(trovato: ComputerTrovato) {
         suTrovato?.invoke(trovato)
+        if (trovato.viaCavo) {
+            indirizziCavo[trovato.nome] = indirizziCavo[trovato.nome].orEmpty() + trovato.indirizzi
+        } else {
+            visteWiFi.add(trovato.nome)
+        }
         val indice = computer.indexOfFirst { it.nome == trovato.nome }
         if (indice < 0) {
             computer.add(trovato)
         } else {
             val unito = if (trovato.viaCavo) computer[indice].unitoA(trovato) else trovato.unitoA(computer[indice])
             if (unito != computer[indice]) computer[indice] = unito
+        }
+    }
+
+    /**
+     * Il cavo non vede più quel computer: se è ancora sul Wi-Fi la voce torna «Wi-Fi» senza gli indirizzi del cavo,
+     * altrimenti sparisce.
+     */
+    private fun persoSulCavo(nome: String) {
+        val delCavo = indirizziCavo.remove(nome).orEmpty()
+        val indice = computer.indexOfFirst { it.nome == nome && it.viaCavo }
+        if (indice < 0) return
+        val voce = computer[indice]
+        val restano = voce.indirizzi.filter { it !in delCavo }
+        if (nome !in visteWiFi || restano.isEmpty()) {
+            Log.i(TAG, "Cavo: tolgo $nome dalla lista")
+            computer.removeAt(indice)
+        } else {
+            Log.i(TAG, "Cavo: $nome resta solo sul Wi-Fi")
+            computer[indice] = voce.copy(indirizzi = restano, viaCavo = false)
         }
     }
 
@@ -158,8 +190,17 @@ class CercaComputer(context: Context) {
 
             override fun onServiceLost(info: NsdServiceInfo) {
                 val nome = nomeLeggibile(info.serviceName)
-                // Visto anche sul cavo: resta (con gli indirizzi del cavo).
-                principale.post { computer.removeAll { it.nome == nome && !it.viaCavo } }
+                principale.post {
+                    visteWiFi.remove(nome)
+                    computer.removeAll { it.nome == nome && !it.viaCavo }
+                    // Visto anche sul cavo: resta, solo con gli indirizzi del cavo (finché il cavo lo vede).
+                    val indice = computer.indexOfFirst { it.nome == nome && it.viaCavo }
+                    if (indice >= 0) {
+                        val delCavo = indirizziCavo[nome].orEmpty()
+                        val restano = computer[indice].indirizzi.filter { it in delCavo }
+                        if (restano.isEmpty()) computer.removeAt(indice) else computer[indice] = computer[indice].copy(indirizzi = restano)
+                    }
+                }
             }
         }
         ascoltatore = nuovo

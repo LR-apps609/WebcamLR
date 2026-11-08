@@ -512,12 +512,16 @@ public sealed partial class MainWindow
     private void ApplicaProfilo(ProfiloFotocamera profilo, TelefonoCollegato scelto, Capacita capacita, string? obiettivo)
     {
         var manuale = profilo.EsposizioneManuale && ManualeDisponibile && capacita.IsoMinimo is not null;
-        var comando = new Comando(Obiettivo: obiettivo, Zoom: Math.Clamp(profilo.Zoom, 1, Math.Max(1, capacita.ZoomMassimo)),
-            Torcia: capacita.Torcia ? profilo.Torcia : null,
+        // Le capacità sono dell'obiettivo attuale (Protocollo.md, «capacita»): con un altro obiettivo zoom e torcia del
+        // profilo vanno come sono, e il telefono li porta ai limiti di quello nuovo (collaudo 43 e 45).
+        var cambiaObiettivo = obiettivo is not null && obiettivo != statoTelefono?.Obiettivo;
+        var comando = new Comando(Obiettivo: obiettivo,
+            Zoom: cambiaObiettivo ? Math.Max(1, profilo.Zoom) : Math.Clamp(profilo.Zoom, 1, Math.Max(1, capacita.ZoomMassimo)),
+            Torcia: cambiaObiettivo || capacita.Torcia ? profilo.Torcia : null,
             Esposizione: Math.Clamp(Math.Round(profilo.Esposizione, 1), -2, 2),
             Bianco: profilo.BiancoAutomatico ? 0 : (int)profilo.Bianco,
             Iso: manuale ? Math.Round(profilo.Iso) : 0, Tempo: manuale ? profilo.Tempo : 0);
-        if (obiettivo is not null && obiettivo != statoTelefono?.Obiettivo) obiettivoInAttesa = obiettivo;
+        if (cambiaObiettivo) obiettivoInAttesa = obiettivo;
         Comanda(comando);
         // I controlli come il telefono li avrà (Comanda ha già tolto le parti Pro con un telefono gratis).
         ImpostaComandi(scelto.Comandi);

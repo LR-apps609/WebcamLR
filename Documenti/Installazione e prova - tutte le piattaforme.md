@@ -11,7 +11,7 @@ Tempo: circa 1 ora la prima volta (installazioni comprese), poi 15–20 minuti a
 1. Chiudi Xcode. Terminale: `cd ~/Documents/WebcamLR && git pull`
 2. Doppio clic su `Strumenti/Costruisci e installa.command`, rispondi **N** (Apple ID gratuito). Aspetta «Fatto».
 3. In Xcode scegli il tuo iPhone in alto e premi **▶**. Gli acquisti sono in prova (file `WebcamLR.storekit`): nessun addebito.
-4. Per provare Pro: iPhone › App › **WebcamLR Pro** › «Sblocca Pro» › conferma. Per tornare gratis: Xcode › Debug › StoreKit ›
+4. Per provare Pro: iPhone › Impostazioni › **WebcamLR Pro** › «Sblocca Pro» › conferma. Per tornare gratis: Xcode › Debug › StoreKit ›
    Manage Transactions › seleziona › **Refund**.
 
 Errori: gli errori rossi di Xcode e `Strumenti/ultima-build.log`.

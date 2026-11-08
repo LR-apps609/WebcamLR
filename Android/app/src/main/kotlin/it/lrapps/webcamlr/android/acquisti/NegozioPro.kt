@@ -44,6 +44,8 @@ data class StatoPro(
     val dirittiLetti: Boolean = false,
     /** Google Play c'è su questo telefono (falso sui Huawei senza servizi Google: lì si compra più avanti con un account). */
     val giocoDisponibile: Boolean = true,
+    /** Il Play Store c'è ma il pagamento non è pronto (nessun account Google, Play Store da aggiornare): «Riprova». */
+    val playDaSistemare: Boolean = false,
 ) {
     enum class Operazione { NESSUNA, ACQUISTO, RIPRISTINO }
 }
@@ -101,6 +103,7 @@ object NegozioPro {
     fun avvia(context: Context) {
         if (cliente != null) return
         val app = context.applicationContext
+        contesto = app
         val salvate = app.getSharedPreferences("pro", Context.MODE_PRIVATE)
         preferenze = salvate
         cambia { it.copy(attivo = salvate.getBoolean("attivo", false)) }
@@ -167,8 +170,29 @@ object NegozioPro {
         }
     }
 
-    /** Il prezzo non è arrivato: «Riprova». */
-    fun riprovaProdotto() = caricaProdotto()
+    /**
+     * Il prezzo non è arrivato: «Riprova». Collaudo 48: con Google Play non collegato si ricollega subito (prima il
+     * tocco non faceva niente fino al tentativo automatico, fino a un minuto dopo).
+     */
+    fun riprovaProdotto() {
+        val c = cliente ?: return
+        if (c.isReady) {
+            caricaProdotto()
+            return
+        }
+        Log.i(TAG, "Riprova: ricollego Google Play")
+        tentativiConnessione = 0
+        cambia { it.copy(prodottoNonTrovato = false, playDaSistemare = false, giocoDisponibile = true) }
+        connetti()
+        // Se non risponde affatto si torna a «Riprova», invece di restare su «Collegamento a Google Play…».
+        principale.postDelayed({
+            val ora = stato.value
+            if (cliente?.isReady != true && !ora.prodottoNonTrovato && !ora.caricamentoProdotto && ora.giocoDisponibile) {
+                Log.w(TAG, "Riprova: Google Play non ha risposto in 8 s")
+                cambia { it.copy(prodottoNonTrovato = true) }
+            }
+        }, 8_000)
+    }
 
     /** Solo nelle versioni di prova (Android Studio): Pro acceso o spento senza comprare, per provare i limiti. */
     fun simula(attivo: Boolean?) {
@@ -179,33 +203,73 @@ object NegozioPro {
 
     // Interni
 
+    private var contesto: Context? = null
+
+    /**
+     * Collaudo 49: BILLING_UNAVAILABLE arriva anche con il Play Store presente (nessun account, Play Store vecchio):
+     * solo senza il pacchetto del Play Store si dice «senza Google Play». Nel dubbio si considera presente.
+     */
+    private fun playStorePresente(): Boolean {
+        val pacchetti = contesto?.packageManager ?: return true
+        return try {
+            pacchetti.getPackageInfo("com.android.vending", 0)
+            true
+        } catch (e: android.content.pm.PackageManager.NameNotFoundException) {
+            false
+        } catch (e: Exception) {
+            true
+        }
+    }
+
+    /** Quando è partito il collegamento in corso (0 = nessuno): due startConnection insieme danno un errore finto. */
+    private var collegamentoDa = 0L
+
     private fun connetti() {
         val c = cliente ?: return
         if (c.isReady) return
+        val adesso = android.os.SystemClock.elapsedRealtime()
+        // Ritorno in primo piano subito dopo l'avvio: il collegamento è già in corso (al massimo 30 s, poi si riprova).
+        if (collegamentoDa != 0L && adesso - collegamentoDa < 30_000) return
+        collegamentoDa = adesso
         try {
             c.startConnection(object : BillingClientStateListener {
                 override fun onBillingSetupFinished(esito: BillingResult) {
                     principale.post {
+                        collegamentoDa = 0L
                         if (esito.responseCode == BillingClient.BillingResponseCode.OK) {
                             tentativiConnessione = 0
-                            cambia { it.copy(giocoDisponibile = true) }
+                            cambia { it.copy(giocoDisponibile = true, playDaSistemare = false) }
                             leggiAcquisti(ripristino = stato.value.operazione == StatoPro.Operazione.RIPRISTINO)
                             caricaProdotto()
                         } else {
                             Log.w(TAG, "Google Play Billing: ${esito.responseCode} ${esito.debugMessage}")
-                            val assente = esito.responseCode == BillingClient.BillingResponseCode.BILLING_UNAVAILABLE
-                            cambia { it.copy(giocoDisponibile = !assente, prodottoNonTrovato = true, caricamentoProdotto = false) }
+                            val nonPronto = esito.responseCode == BillingClient.BillingResponseCode.BILLING_UNAVAILABLE
+                            val assente = nonPronto && !playStorePresente()
+                            if (nonPronto) Log.i(TAG, if (assente) "Google Play: il Play Store non c'è" else "Google Play: Play Store presente ma pagamento non pronto")
+                            cambia {
+                                it.copy(
+                                    giocoDisponibile = !assente,
+                                    playDaSistemare = nonPronto && !assente,
+                                    prodottoNonTrovato = true,
+                                    caricamentoProdotto = false,
+                                )
+                            }
                             if (!assente) riprovaPiuTardi()
                         }
                     }
                 }
 
                 override fun onBillingServiceDisconnected() {
-                    principale.post { riprovaPiuTardi() }
+                    principale.post {
+                        collegamentoDa = 0L
+                        riprovaPiuTardi()
+                    }
                 }
             })
         } catch (e: Exception) {
             Log.w(TAG, "Google Play Billing non raggiungibile", e)
+            collegamentoDa = 0L
+            cambia { it.copy(prodottoNonTrovato = true, caricamentoProdotto = false) }
         }
     }
 

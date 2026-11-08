@@ -116,6 +116,7 @@
     <string name="pro_ripristina">Restore purchases</string>
     <string name="pro_in_attesa">Purchase pending approval: Pro unlocks by itself as soon as it’s confirmed.</string>
     <string name="pro_collegamento_play">Connecting to Google Play…</string>
+    <string name="pro_play_non_pronto">Google Play isn’t ready for payments. Sign in with a Google account or update the Play Store, then tap Try again.</string>
     <string name="pro_play_non_risponde">Google Play isn’t responding. Check the connection; on phones without Google Play the purchase isn’t available.</string>
     <string name="pro_attivo">Pro active</string>
     <string name="pro_attivo_grazie">Thanks for choosing WebcamLR Pro: everything is unlocked.</string>

@@ -118,6 +118,7 @@
     <string name="pro_ripristina">Ripristina acquisti</string>
     <string name="pro_in_attesa">Acquisto in attesa di approvazione: Pro si sblocca da solo appena è confermato.</string>
     <string name="pro_collegamento_play">Collegamento a Google Play…</string>
+    <string name="pro_play_non_pronto">Google Play non è pronto per i pagamenti. Accedi con un account Google o aggiorna il Play Store, poi tocca Riprova.</string>
     <string name="pro_play_non_risponde">Google Play non risponde. Controlla la connessione; sui telefoni senza Google Play l\'acquisto non è disponibile.</string>
     <string name="pro_attivo">Pro attivo</string>
     <string name="pro_attivo_grazie">Grazie per aver scelto WebcamLR Pro: è tutto sbloccato.</string>

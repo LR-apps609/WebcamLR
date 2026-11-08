@@ -141,6 +141,9 @@ class MainActivity : ComponentActivity() {
         // P3 e P4: di ritorno da Impostazioni schede e righe dicono subito lo stato nuovo.
         Permessi.aggiorna(this)
         Sessioni.attuale?.tornataInPrimoPiano()
+        // Collaudo 49: gli acquisti si rileggono al ritorno in primo piano (e Google Play si ricollega se non c'era),
+        // per esempio dopo aver aggiunto l'account Google o aggiornato il Play Store.
+        it.lrapps.webcamlr.android.acquisti.NegozioPro.aggiorna()
     }
 
     /**

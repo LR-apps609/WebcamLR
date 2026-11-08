@@ -92,7 +92,7 @@ fun ContenutoPro() {
                         context.trovaActivity()?.let { Pro.acquista(it) }
                     }
                     stato.prodottoNonTrovato -> Column(verticalArrangement = Arrangement.spacedBy(Spazi.stretto), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(stringResource(R.string.pro_play_non_risponde), style = Stili.corpo, color = Colori.ambraTesto, modifier = Modifier.fillMaxWidth())
+                        Text(stringResource(if (stato.playDaSistemare) R.string.pro_play_non_pronto else R.string.pro_play_non_risponde), style = Stili.corpo, color = Colori.ambraTesto, modifier = Modifier.fillMaxWidth())
                         PulsanteSecondario(stringResource(R.string.riprova)) { Pro.riprovaProdotto() }
                     }
                     else -> Row(

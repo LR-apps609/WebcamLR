@@ -62,6 +62,9 @@ dependencies {
 
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.activity:activity-compose:1.9.3")
+    // Una dipendenza (Google Play Billing) porta un androidx.fragment vecchio: sotto la 1.3.0 i risultati di
+    // registerForActivityResult (permessi, scelta delle immagini) possono perdersi. Lint InvalidFragmentVersionForActivityResult.
+    implementation("androidx.fragment:fragment-ktx:1.8.5")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
     // BOM 2025.05.01: Compose 1.8.2 e Material 3 1.3.2, le stesse API con cui il codice è stato controllato

@@ -9,6 +9,8 @@ import SwiftUI
 /// - Aiuto: guida (⌘?), domande frequenti, «Il telefono non trova il Mac?» e «Segnala un bug…».
 /// Le scorciatoie valgono anche con la finestra mini davanti. Nella finestra principale ⌘C e i tasti singoli
 /// (1–4, +, −, F) li prende prima la finestra (MonitorTastiera), che lascia passare i tasti dei campi di testo.
+/// In un campo di testo i tasti singoli non arrivano a queste voci: `DelegatoApp.preparaTastiPerIlTesto`
+/// (WebcamLRMacApp.swift) li consegna al campo prima che AppKit cerchi le scorciatoie del menu.
 struct ComandiWebcamLR: Commands {
     let ricevitore: Ricevitore
     let riprese: Riprese

@@ -303,6 +303,14 @@ public sealed partial class MainWindow
         nuova.CapacitaRicevute += capacita => SuInterfaccia(collegato =>
         {
             collegato.Capacita = capacita;
+            // Un telefono entrato prima che arrivassero le capacità degli altri: se nessuno ha Pro, ora esce con l'avviso.
+            foreach (var fuori in telefoni.DaTogliereSenzaPro())
+            {
+                registro.Aggiungi(Testi.T("Registro_NonEntraPro", fuori.Nome));
+                if (Dimentica(fuori) is { } chiusa) _ = ChiudiSessioneAsync(chiusa);
+                AvvisaPieno(fuori.Nome, perPro: true);
+            }
+            if (!telefoni.Contiene(collegato)) return;
             CapacitaEffetti(collegato, capacita);
             // Effetti sul computer: alla prima della sessione telecomando o spegnimento; poi `effetti` se Pro è cambiato.
             DecidiEffetti(collegato, capacita);

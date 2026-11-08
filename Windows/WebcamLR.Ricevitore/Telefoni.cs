@@ -252,19 +252,74 @@ public sealed class ElencoTelefoni
     public int Massimo { get; }
 
     /// <summary>
-    /// WebcamLR Pro (come sul Mac): vero = un secondo telefono entra solo se quello nella webcam ha sbloccato Pro
-    /// (<c>capacita.pro</c>). Lo stesso telefono che torna entra sempre.
+    /// WebcamLR Pro (come sul Mac): vero = un secondo telefono entra solo se un telefono collegato ha sbloccato Pro
+    /// (<c>capacita.pro</c>), o se lo ha lui. Lo stesso telefono che torna entra sempre.
     /// </summary>
     public bool RichiedePro { get; set; }
 
-    /// <summary>Il telefono nella webcam ha Pro (dalle ultime capacità). Dentro il blocco.</summary>
-    private bool SecondoConsentito() => !RichiedePro || telefoni.Count == 0 || RegolePro.Attivo(selezionato?.Capacita);
+    /// <summary>
+    /// I telefoni che in questa esecuzione hanno detto di avere Pro (<c>capacita.pro</c>): se uno di loro si perde e
+    /// nella webcam resta un telefono gratis, può comunque rientrare, perché è lui che sblocca i due telefoni (collaudo 31/46).
+    /// </summary>
+    private readonly HashSet<string> conPro = [];
 
-    /// <summary>Vero se un telefono nuovo resta fuori solo perché quello nella webcam è gratis (per l'avviso giusto).</summary>
+    /// <summary>
+    /// Telefoni entrati mentre le capacità degli altri non erano ancora arrivate (collaudo 32): restano solo se, arrivate
+    /// tutte, almeno un telefono ha Pro (<see cref="DaTogliereSenzaPro"/>).
+    /// </summary>
+    private readonly HashSet<TelefonoCollegato> inProva = [];
+
+    /// <summary>Dentro il blocco: segna i telefoni dell'elenco che hanno Pro.</summary>
+    private void RicordaPro()
+    {
+        foreach (var telefono in telefoni)
+            if (RegolePro.Attivo(telefono.Capacita)) conPro.Add(telefono.Impronta);
+    }
+
+    /// <summary>
+    /// Dentro il blocco: il telefono con questa impronta può entrare come secondo. Sì senza la regola o senza telefoni; sì se
+    /// uno dei telefoni ha Pro, o se lo ha lui (visto prima in questa esecuzione); sì «in prova» se le capacità di un
+    /// telefono dell'elenco non sono ancora arrivate (<paramref name="inAttesa"/>): non si decide «gratis» senza saperlo.
+    /// </summary>
+    private bool SecondoConsentito(string impronta, out bool inAttesa)
+    {
+        inAttesa = false;
+        if (!RichiedePro || telefoni.Count == 0) return true;
+        RicordaPro();
+        if (conPro.Contains(impronta) || telefoni.Any(t => conPro.Contains(t.Impronta))) return true;
+        inAttesa = telefoni.Any(t => t.Capacita is null);
+        return inAttesa;
+    }
+
+    /// <summary>Vero se un telefono nuovo resta fuori solo perché quelli collegati sono gratis (per l'avviso giusto).</summary>
     public bool FuoriPerPro(string impronta)
     {
         lock (blocco)
-            return telefoni.All(t => t.Impronta != impronta) && telefoni.Count < Massimo && !SecondoConsentito();
+            return telefoni.All(t => t.Impronta != impronta) && telefoni.Count < Massimo && !SecondoConsentito(impronta, out _);
+    }
+
+    /// <summary>
+    /// Da chiamare a ogni <c>capacita</c> ricevuta: i telefoni entrati «in prova» che vanno tolti perché, arrivate le
+    /// capacità di tutti, nessuno ha Pro (allora vale l'avviso «due telefoni sono di Pro»). Vuoto finché manca una
+    /// capacità, o se uno ha Pro (allora restano).
+    /// </summary>
+    public IReadOnlyList<TelefonoCollegato> DaTogliereSenzaPro()
+    {
+        lock (blocco)
+        {
+            inProva.RemoveWhere(t => !telefoni.Contains(t));
+            if (inProva.Count == 0) return [];
+            RicordaPro();
+            if (!RichiedePro || telefoni.Any(t => conPro.Contains(t.Impronta)))
+            {
+                inProva.Clear();
+                return [];
+            }
+            if (telefoni.Any(t => t.Capacita is null)) return [];
+            var fuori = inProva.ToList();
+            inProva.Clear();
+            return fuori;
+        }
     }
 
     /// <summary>I telefoni nell'ordine in cui sono arrivati (una copia).</summary>
@@ -333,7 +388,7 @@ public sealed class ElencoTelefoni
     /// </summary>
     public bool PuoEntrare(string impronta)
     {
-        lock (blocco) return (telefoni.Count < Massimo && SecondoConsentito()) || telefoni.Any(t => t.Impronta == impronta);
+        lock (blocco) return (telefoni.Count < Massimo && SecondoConsentito(impronta, out _)) || telefoni.Any(t => t.Impronta == impronta);
     }
 
     /// <summary>L'orologio della regola dei 30 secondi (<see cref="RegolaCollegamento"/>), in millisecondi; nei test si cambia.</summary>
@@ -374,8 +429,9 @@ public sealed class ElencoTelefoni
                 return new Arrivo(esito, stesso, vecchia);
             }
             if (telefoni.Count >= Massimo) return new Arrivo(EsitoArrivo.Pieno, null, nuova);
-            if (!SecondoConsentito()) return new Arrivo(EsitoArrivo.SenzaPro, null, nuova);
+            if (!SecondoConsentito(impronta, out var inAttesa)) return new Arrivo(EsitoArrivo.SenzaPro, null, nuova);
             var telefono = new TelefonoCollegato(impronta, ciao, nuova, () => Orologio());
+            if (inAttesa) inProva.Add(telefono);
             telefoni.Add(telefono);
             selezionato ??= telefono;
             return new Arrivo(EsitoArrivo.Nuovo, telefono, null);
@@ -429,6 +485,9 @@ public sealed class ElencoTelefoni
     {
         lock (blocco)
         {
+            // Prima di toglierlo: se ha Pro, quando torna rientra anche con un telefono gratis nella webcam.
+            RicordaPro();
+            inProva.Remove(telefono);
             if (!telefoni.Remove(telefono)) return null;
             if (selezionato == telefono) selezionato = telefoni.FirstOrDefault();
             var sessione = telefono.Sessione;

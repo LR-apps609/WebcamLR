@@ -222,8 +222,9 @@ public class PiuTelefoniTest
         using var idB = IdentitaDispositivo.Nuova();
         using var pc = new Computer(Fidati(idComputer, idA, idB), precontrollo: false);
         pc.Elenco.RichiedePro = true;
-        var (a, _) = await CollegaAsync(pc, idA, "A");
+        var (a, arrivoA) = await CollegaAsync(pc, idA, "A");
         await using var _a = a;
+        arrivoA.Telefono!.Capacita = new Capacita(["frontale"], 1, false, Pro: false);
         await using var b = new TelefonoFinto(idB);
         await b.CollegaAsync(pc.WiFi.Porta, "B");
         var arrivoB = await pc.ArrivoAsync();
@@ -231,6 +232,81 @@ public class PiuTelefoniTest
         Assert.Null(arrivoB.Telefono);
         await b.AttendiAsync<Arrivederci>().WaitAsync(Limite);
         Assert.Equal(1, pc.Elenco.Conteggio);
+    }
+
+    [Fact]
+    public async Task IlTelefonoConProRientraAncheConUnGratisNellaWebcam()
+    {
+        // Collaudo 31/46: A (Pro) si perde e viene dimenticato, B (gratis) passa nella webcam; quando A torna, entra.
+        using var idComputer = IdentitaDispositivo.Nuova();
+        using var idA = IdentitaDispositivo.Nuova();
+        using var idB = IdentitaDispositivo.Nuova();
+        using var pc = new Computer(Fidati(idComputer, idA, idB));
+        pc.Elenco.RichiedePro = true;
+        var (a, arrivoA) = await CollegaAsync(pc, idA, "iPhone");
+        await using var _a = a;
+        arrivoA.Telefono!.Capacita = new Capacita(["frontale"], 1, false, Pro: true);
+        var (b, arrivoB) = await CollegaAsync(pc, idB, "Pixel");
+        await using var _b = b;
+        Assert.Equal(EsitoArrivo.Nuovo, arrivoB.Esito);
+        arrivoB.Telefono!.Capacita = new Capacita(["frontale"], 1, false, Pro: false);
+
+        pc.Elenco.Rimuovi(arrivoA.Telefono);
+        Assert.Same(arrivoB.Telefono, pc.Elenco.Selezionato);
+        Assert.True(pc.Elenco.PuoEntrare(idA.Impronta));
+        Assert.False(pc.Elenco.FuoriPerPro(idA.Impronta));
+        var (a2, arrivoA2) = await CollegaAsync(pc, idA, "iPhone");
+        await using var _a2 = a2;
+        Assert.Equal(EsitoArrivo.Nuovo, arrivoA2.Esito);
+        Assert.Equal(2, pc.Elenco.Conteggio);
+    }
+
+    [Fact]
+    public async Task SecondoArrivoPrimaDelleCapacitaDelPrimoEntraInProva()
+    {
+        // Collaudo 32: le capacità del primo non sono ancora arrivate. Il secondo entra; si decide quando arrivano.
+        using var idComputer = IdentitaDispositivo.Nuova();
+        using var idA = IdentitaDispositivo.Nuova();
+        using var idB = IdentitaDispositivo.Nuova();
+        using var pc = new Computer(Fidati(idComputer, idA, idB));
+        pc.Elenco.RichiedePro = true;
+        var (a, arrivoA) = await CollegaAsync(pc, idA, "iPhone");
+        await using var _a = a;
+        Assert.Null(arrivoA.Telefono!.Capacita);
+        Assert.True(pc.Elenco.PuoEntrare(idB.Impronta));
+        var (b, arrivoB) = await CollegaAsync(pc, idB, "Pixel");
+        await using var _b = b;
+        Assert.Equal(EsitoArrivo.Nuovo, arrivoB.Esito);
+        Assert.Empty(pc.Elenco.DaTogliereSenzaPro());
+
+        // Il primo ha Pro: il secondo resta.
+        arrivoA.Telefono.Capacita = new Capacita(["frontale"], 1, false, Pro: true);
+        Assert.Empty(pc.Elenco.DaTogliereSenzaPro());
+        arrivoB.Telefono!.Capacita = new Capacita(["frontale"], 1, false, Pro: false);
+        Assert.Empty(pc.Elenco.DaTogliereSenzaPro());
+        Assert.Equal(2, pc.Elenco.Conteggio);
+    }
+
+    [Fact]
+    public async Task SecondoInProvaEsceSeNessunoHaPro()
+    {
+        // Collaudo 32, l'altro caso: arrivate tutte le capacità e nessuno ha Pro, il secondo esce (con l'avviso di Pro).
+        using var idComputer = IdentitaDispositivo.Nuova();
+        using var idA = IdentitaDispositivo.Nuova();
+        using var idB = IdentitaDispositivo.Nuova();
+        using var pc = new Computer(Fidati(idComputer, idA, idB));
+        pc.Elenco.RichiedePro = true;
+        var (a, arrivoA) = await CollegaAsync(pc, idA, "iPhone");
+        await using var _a = a;
+        var (b, arrivoB) = await CollegaAsync(pc, idB, "Pixel");
+        await using var _b = b;
+        Assert.Equal(EsitoArrivo.Nuovo, arrivoB.Esito);
+        arrivoB.Telefono!.Capacita = new Capacita(["frontale"], 1, false, Pro: false);
+        Assert.Empty(pc.Elenco.DaTogliereSenzaPro());
+        arrivoA.Telefono!.Capacita = new Capacita(["frontale"], 1, false, Pro: false);
+        Assert.Equal([arrivoB.Telefono], pc.Elenco.DaTogliereSenzaPro());
+        // Una volta sola.
+        Assert.Empty(pc.Elenco.DaTogliereSenzaPro());
     }
 
     [Fact]

@@ -447,7 +447,9 @@ final class SessioneComputer: @unchecked Sendable {
             provato = true
             gettoneProva = prova.gettone
         case .ciao(let ciao) where provato:
-            accetta(ciao, sicura: sicura)
+            // Il nome arriva dalla rete e va nella domanda «Consentire …?», nel registro, nelle notifiche e tra i
+            // fidati: nei limiti prima di tutto, come su Windows (ValoriSicuri.Sanifica).
+            accetta(Self.pulito(ciao), sicura: sicura)
         case .arrivederci:
             trasporto.annulla()
         default:
@@ -455,6 +457,39 @@ final class SessioneComputer: @unchecked Sendable {
             // (per esempio un «formato» in anticipo) si ignora.
             guard provato else { throw ErroreProtocollo.contenutoNonValido }
         }
+    }
+
+    static let nomeMassimo = 64
+    static let versioneMassima = 40
+
+    /// Nome e versione del telefono: senza caratteri di controllo né di direzione del testo (U+202E e simili),
+    /// al massimo 64 caratteri, mai vuoti. Le sequenze delle emoji (U+200D) restano.
+    static func pulito(_ ciao: Ciao) -> Ciao {
+        var pulito = ciao
+        let nome = testoPulito(ciao.nome, massimo: nomeMassimo)
+        pulito.nome = nome.isEmpty ? String(localized: "Telefono") : nome
+        pulito.versioneApp = testoPulito(ciao.versioneApp, massimo: versioneMassima)
+        return pulito
+    }
+
+    private static let direzioneDelTesto: Set<UInt32> = [0x061C, 0x200E, 0x200F, 0x202A, 0x202B, 0x202C, 0x202D, 0x202E,
+                                                        0x2066, 0x2067, 0x2068, 0x2069]
+
+    static func testoPulito(_ testo: String, massimo: Int) -> String {
+        var scalari = String.UnicodeScalarView()
+        var tenuti = 0
+        for scalare in testo.unicodeScalars {
+            switch scalare.properties.generalCategory {
+            case .control, .lineSeparator, .paragraphSeparator: continue
+            default: break
+            }
+            if direzioneDelTesto.contains(scalare.value) { continue }
+            scalari.append(scalare)
+            tenuti += 1
+            // Basta molto meno di un nome da un megabyte per avere 64 caratteri.
+            if tenuti > massimo * 16 { break }
+        }
+        return String(String(scalari).prefix(massimo)).trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private func accetta(_ ciao: Ciao, sicura: SessioneSicura) {

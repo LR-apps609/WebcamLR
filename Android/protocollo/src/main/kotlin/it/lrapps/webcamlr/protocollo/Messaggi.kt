@@ -306,6 +306,11 @@ data object UsaProspettiva : Messaggio {
     override val tipo get() = "usa-prospettiva"
 }
 
+/** Dal computer: il prossimo fotogramma sia chiave, con i parametri (Protocollo.md, «Fotogramma chiave su richiesta»). */
+data object ChiediChiave : Messaggio {
+    override val tipo get() = "chiedi-chiave"
+}
+
 /** Stretta di mano del collegamento sicuro (versione 2), in chiaro: byte in base64. */
 data class Stretta(
     val versione: Int,
@@ -545,7 +550,7 @@ object CodificaMessaggi {
             )
             is Prova -> mapOf("firma" to messaggio.firma, "gettone" to messaggio.gettone)
             is Approvazione -> mapOf("codice" to messaggio.codice)
-            Arrivederci, UsaProspettiva, is Sconosciuto -> emptyMap()
+            Arrivederci, UsaProspettiva, ChiediChiave, is Sconosciuto -> emptyMap()
         }
         return campi + ("tipo" to messaggio.tipo)
     }
@@ -684,6 +689,7 @@ object CodificaMessaggi {
             )
             "arrivederci" -> Arrivederci
             "usa-prospettiva" -> UsaProspettiva
+            "chiedi-chiave" -> ChiediChiave
             "stretta" -> Stretta(
                 campi.intero("versione"), campi.testo("chiave"), campi.testo("identita"), campi.testoOpzionale("firma"),
             )

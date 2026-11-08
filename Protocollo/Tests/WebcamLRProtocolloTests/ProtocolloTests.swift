@@ -234,6 +234,14 @@ final class ProtocolloTests: XCTestCase {
         XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(#"{"tipo":"usa-prospettiva"}"#.utf8)).messaggio(), .usaProspettiva)
     }
 
+    /// Lo stesso JSON di «ChiediChiaveComeNelDocumento» in C# e Kotlin: messaggio senza campi.
+    func testChiediChiaveComeNelDocumento() throws {
+        XCTAssertEqual(try json(.chiediChiave), #"{"tipo":"chiedi-chiave"}"#)
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(#"{"tipo":"chiedi-chiave"}"#.utf8)).messaggio(), .chiediChiave)
+        // Un campo in più (versione futura) non cambia il messaggio.
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(#"{"tipo":"chiedi-chiave","motivo":"x"}"#.utf8)).messaggio(), .chiediChiave)
+    }
+
     func testAnteprimaEFormatoAudioComeNelDocumento() throws {
         XCTAssertEqual(try json(.anteprima(Anteprima(visibile: false))), #"{"tipo":"anteprima","visibile":false}"#)
         XCTAssertEqual(try json(.formatoAudio(FormatoAudio())),

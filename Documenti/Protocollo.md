@@ -54,7 +54,7 @@ Flag:
 - bit 0: fotogramma chiave
 - bit 1: contiene i parametri del codec (SPS/PPS, e VPS per HEVC)
 
-Ogni fotogramma chiave porta con sé i parametri del codec, così il computer può partire da qualsiasi fotogramma chiave.
+Ogni fotogramma chiave porta con sé i parametri del codec, così il computer può partire da qualsiasi fotogramma chiave. Il telefono ne manda uno almeno ogni 10 secondi, e prima se il computer lo chiede con `chiedi-chiave` (vedi *Fotogramma chiave su richiesta*).
 
 ### Tipo 3 · audio
 
@@ -90,6 +90,7 @@ Nomi dei campi in italiano, `camelCase`. I valori enumerati sono stringhe minusc
 | `chiedi-effetto` | telefono → computer | tutti facoltativi: `specchia`, `sfondo`, `luceVolto` | Un tocco su un pulsante del telefono: il computer applica e risponde con `effetti` (vedi *Effetti sul computer*) |
 | `gobbo` | computer → telefono | tutti facoltativi: `testo`, `velocita`, `attivo`, `dimensione`, `posizione` | Il gobbo sul telefono (vedi *Gobbo*); si applicano solo i campi presenti |
 | `formato-audio` | telefono → computer | `codec`, `frequenza`, `canali`, `configurazione` | Prima del primo pacchetto audio e a ogni cambiamento (vedi *Audio*) |
+| `chiedi-chiave` | computer → telefono | — | Il computer non può decodificare: il telefono manda come chiave il prossimo fotogramma (vedi *Fotogramma chiave su richiesta*) |
 | `arrivederci` | entrambe | — | Chiusura volontaria, prima di chiudere la connessione |
 
 Valori:
@@ -108,7 +109,7 @@ Valori:
 - `iso`: sensibilità manuale, entro `isoMinimo`–`isoMassimo`; 0 = automatica
 - `tempo`: tempo di posa manuale come denominatore (60 = 1/60 di secondo); 0 = automatico. Con `iso` e `tempo` entrambi a 0 si torna all'esposizione automatica. Il telefono non supera mai la durata di un fotogramma: un tempo più lungo diventa il tempo senza bande più lungo che sta nel fotogramma (luci a 50 Hz: a 30 fps 1/50, a 60 fps 1/100; a 60 Hz: 1/30, 1/60), e i fotogrammi al secondo non cambiano. In `stato.tempo` il telefono manda il valore richiesto. Il computer propone tempi multipli di 1/100 s (1/25, 1/50, 1/100), che con le luci a 50 Hz non fanno bande
 
-Tutti i campi aggiunti dopo la prima versione 2 (effetti, `pausa`, `gobbo`, `formati`, `formatiPro`, `audio`, `specchia`, `pro`, `collegamento`, `sceltaCollegamento`, `in-onda.selezionato`, il messaggio `usa-prospettiva`, i comandi della fotocamera in `stato`, i messaggi `anteprima`, `gobbo`, `formato-audio`, `immagineSfondo`, `togliLogo`, `immaginePersonale`, `logo`, `sfondiPronti`, `immagini`, `sfocaturaSistema`, `luceSistema`, `calore`, `effettiSulComputer`, i messaggi `effetti` e `chiedi-effetto`) sono **facoltativi**: chi non li conosce li ignora, chi li aspetta e non li riceve fa come se l'altro non li sapesse fare. I campi a `null` non si scrivono mai: per «togliere» qualcosa si manda un valore esplicito (es. la scritta con il nome vuoto). Un valore enumerato sconosciuto non è mai un errore: vedi *Valori sconosciuti*.
+Tutti i campi aggiunti dopo la prima versione 2 (effetti, `pausa`, `gobbo`, `formati`, `formatiPro`, `audio`, `specchia`, `pro`, `collegamento`, `sceltaCollegamento`, `in-onda.selezionato`, il messaggio `usa-prospettiva`, i comandi della fotocamera in `stato`, i messaggi `anteprima`, `gobbo`, `formato-audio`, `immagineSfondo`, `togliLogo`, `immaginePersonale`, `logo`, `sfondiPronti`, `immagini`, `sfocaturaSistema`, `luceSistema`, `calore`, `effettiSulComputer`, i messaggi `effetti` e `chiedi-effetto`, il messaggio `chiedi-chiave`) sono **facoltativi**: chi non li conosce li ignora, chi li aspetta e non li riceve fa come se l'altro non li sapesse fare. I campi a `null` non si scrivono mai: per «togliere» qualcosa si manda un valore esplicito (es. la scritta con il nome vuoto). Un valore enumerato sconosciuto non è mai un errore: vedi *Valori sconosciuti*.
 
 Quando lo stesso telefono (stesso `nome` nel `ciao`) si ricollega, il computer gli rimanda in un solo `comando` zoom, torcia, esposizione, bianco, `iso` e `tempo` che sta mostrando: la sessione sul telefono può essere nuova e ripartita in automatico. Un telefono diverso parte con i comandi del computer azzerati.
 
@@ -382,6 +383,28 @@ Con `ping` e `pong` il computer misura il tempo di andata e ritorno e la differe
 Per la differenza tra gli orologi si usa il `pong` con il tempo di andata e ritorno più breve tra gli ultimi 10: è quello meno disturbato dalla rete.
 
 Orologi: sul telefono e sul Mac è il tempo di sistema dall'avvio (`mach_absolute_time`, lo stesso dei timestamp della fotocamera), in microsecondi.
+
+## Fotogramma chiave su richiesta (dall'8 novembre)
+
+Senza un fotogramma chiave il computer non può decodificare: se si collega a metà, se il decoder sbaglia o se scarta un fotogramma, l'immagine resterebbe rotta o ferma fino al fotogramma chiave fisso (ogni 10 secondi). Con `chiedi-chiave` (computer → telefono, senza campi) si riparte in meno di un secondo.
+
+**Telefono**:
+
+- Alla ricezione produce come **chiave** il prossimo fotogramma che codifica, appena può, con i parametri del codec (flag 0 e 1, come ogni fotogramma chiave).
+- Al massimo **un** fotogramma chiave su richiesta ogni **500 ms**: le richieste che arrivano prima si uniscono in una sola, servita allo scadere dei 500 ms (non si perdono). Il fotogramma chiave fisso ogni 10 secondi resta.
+- Un telefono vecchio non conosce il messaggio e lo ignora, come ogni `tipo` sconosciuto: il computer aspetta il prossimo fotogramma chiave fisso, come prima.
+
+**Computer**: lo manda
+
+- (a) quando il decoder dà errore su un fotogramma o lo scarta (es. VideoToolbox `-12911` sul Mac, un errore di Media Foundation su Windows), e da lì scarta i fotogrammi non chiave finché non arriva una chiave;
+- (b) quando riceve video ma non ha ancora un fotogramma chiave da cui partire: collegamento a metà del flusso, primo fotogramma dopo un cambio di `formato` o dopo la *Pausa intelligente* che non è chiave;
+- (c) quando c'è un buco nel flusso. Il video viaggia su TCP, che non perde pacchetti: l'unico buco possibile è un fotogramma che il computer stesso butta (coda piena, sessione del decoder rifatta), e si tratta come (a). Non c'è un numero di sequenza, quindi nessun altro buco si rileva.
+
+Al massimo **uno** ogni **1 secondo** per telefono: se la chiave non arriva entro un secondo, il computer può chiederla di nuovo. Lo manda a qualsiasi telefono: non serve una `capacita`.
+
+```json
+{"tipo":"chiedi-chiave"}
+```
 
 ## Sequenza tipica
 

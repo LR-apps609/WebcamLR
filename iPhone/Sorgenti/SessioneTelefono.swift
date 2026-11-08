@@ -1188,6 +1188,9 @@ final class SessioneTelefono {
                 stato = .riconnessione(tentativo: max(tentativi, 1))
                 // 1.12: in attesa la fotocamera resta spenta anche senza rete (si era accesa al collegamento sicuro).
                 if inAttesaDelComputer { spegniFotocameraInAttesa() }
+                // Collaudo 5: cavo staccato e nessuna rete (modalità aereo). Nessun tentativo programma il prossimo:
+                // senza una scadenza si resterebbe in «Riconnessione» per sempre, con la fotocamera accesa.
+                if daCavoAlWiFi { programmaFineCavoSenzaRete() }
                 return
             }
             // 1.12: in attesa ogni tentativo andato a vuoto programma il prossimo, sempre più distante.
@@ -1314,6 +1317,26 @@ final class SessioneTelefono {
                                                           : String(localized: "Collegamento via cavo non riuscito"),
                                 descrizione: String(localized: "Controlla il cavo e che WebcamLR sia aperto sul computer: appena il computer risponde, il collegamento riparte da solo."),
                                 domanda: "cavo", attendiCavo: true)
+        }
+    }
+
+    /// Collaudo 5: dopo il cavo staccato senza rete si aspetta quanto si aspetterebbe il cavo (`attesaCavo`, dal
+    /// distacco), poi «Cavo scollegato» come senza strada Wi-Fi: fotocamera spenta, ascolto sul cavo acceso
+    /// (`accettaCavo`). Se intanto torna la rete, `reteCambiata` riprova il Wi-Fi e la scadenza non vale più.
+    private func programmaFineCavoSenzaRete() {
+        compitoAttesaCavo?.cancel()
+        let trascorsi = Date().timeIntervalSince(inizioRiconnessione ?? Date())
+        let attesa = max(0, Double(Self.attesaCavo.components.seconds) - trascorsi)
+        let secondi = Int(attesa.rounded())
+        registro.aggiungi(String(localized: "Cavo staccato senza rete: aspetto il cavo o la rete per \(secondi) secondi"))
+        compitoAttesaCavo = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(attesa))
+            guard !Task.isCancelled, let self, self.daCavoAlWiFi, !self.reteDisponibile, self.collegamento == nil,
+                  !self.chiusaDallUtente, case .riconnessione = self.stato else { return }
+            self.compitoRiprova?.cancel()
+            self.fermaConErrore(titolo: String(localized: "Cavo scollegato"),
+                                descrizione: String(localized: "Ricollega il cavo: il collegamento riparte da solo. Oppure controlla che iPhone e computer siano sulla stessa rete Wi-Fi e tocca «Riprova»."),
+                                domanda: "cavo")
         }
     }
 

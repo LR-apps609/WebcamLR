@@ -1327,6 +1327,23 @@
         }
       }
     },
+    "Cavo staccato senza rete: aspetto il cavo o la rete per %lld secondi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cable unplugged with no network: waiting for the cable or the network for %lld seconds"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cavo staccato senza rete: aspetto il cavo o la rete per %lld secondi"
+          }
+        }
+      }
+    },
     "Cavo staccato: provo il Wi-Fi" : {
       "extractionState" : "manual",
       "localizations" : {

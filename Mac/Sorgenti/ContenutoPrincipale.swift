@@ -973,7 +973,7 @@ private struct PulsanteRegistraInCorso: View {
                 Label("Registra", systemImage: "stop.circle.fill")
             }
             .buttonStyle(ComandoRegia(larghezza: larghezza, soloIcona: soloIcona,
-                                      registrazione: String(format: "%02d:%02d", secondi / 60, secondi % 60)))
+                                      registrazione: Riprese.testoDurata(secondi)))
         }
         .help("Ferma la registrazione e la salva in Filmati › WebcamLR (⌘R). Finora: \(dimensione)")
         .accessibilityLabel("Ferma la registrazione")

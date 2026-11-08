@@ -356,7 +356,7 @@ final class DelegatoApp: NSObject, NSApplicationDelegate {
         }
         if let inizio = riprese?.inizioRegistrazione {
             let secondi = max(0, Int(Date.now.timeIntervalSince(inizio)))
-            let tempo = String(format: "%02d:%02d", secondi / 60, secondi % 60)
+            let tempo = Riprese.testoDurata(secondi)
             righe.append(String(localized: "Registrazione \(tempo)"))
         }
         return righe

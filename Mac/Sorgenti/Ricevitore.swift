@@ -1178,6 +1178,9 @@ final class Ricevitore {
 
     /// L'obiettivo frontale nel protocollo (`stato.obiettivo`).
     static let obiettivoFrontale = "frontale"
+    /// Quanto il motore tiene lo sfondo dopo il passaggio dalla frontale a un obiettivo posteriore: la riconfigurazione
+    /// della fotocamera sul telefono dura qualche centinaio di millisecondi.
+    static let tenutaSfondoCambioObiettivo: Duration = .milliseconds(1500)
 
     /// Effetti sul computer: specchio e sfondo del motore solo con la fotocamera frontale (o finché il telefono non
     /// ha detto l'obiettivo, per non mostrare lo sfondo vero all'inizio della sessione).
@@ -1553,14 +1556,16 @@ final class Ricevitore {
         }
         let scelti = effettiComputer
         let pro = attivo == nil || attivo?.capacita?.pro == true
-        // Con la fotocamera posteriore niente specchio né sfondo (si riprendono tornando alla frontale).
+        // Con la fotocamera posteriore niente specchio né sfondo (si riprendono tornando alla frontale). Lo sfondo
+        // resta ancora un attimo dopo lo `stato` che dice posteriore (`sfondoTenutoFino`).
         let frontale = Self.conFrontale(attivo)
+        let sfondoTenuto = attivo?.sfondoTenutoFino.map { ContinuousClock.now < $0 } ?? false
         var motore = ImpostazioniMotore()
         motore.calore = scelti.calore
         motore.specchia = scelti.specchia && frontale
         // Con «Luce da studio» o «Ritratto» del telefono accesi, le nostre restano spente: mai due.
         motore.luceVolto = scelti.luceVolto && !luceSistema
-        if frontale, (scelti.sfondo == ModiSfondo.sfocato && !sfocaturaSistema) || (scelti.sfondo == ModiSfondo.sostituito && pro) {
+        if frontale || sfondoTenuto, (scelti.sfondo == ModiSfondo.sfocato && !sfocaturaSistema) || (scelti.sfondo == ModiSfondo.sostituito && pro) {
             motore.sfondo = scelti.sfondo
             motore.intensitaSfondo = scelti.intensitaSfondo
             motore.immagineSfondo = scelti.sfondo == ModiSfondo.sostituito ? immagineSfondoAttuale : nil
@@ -2293,6 +2298,18 @@ final class Ricevitore {
             if telefono.controlli.obiettivo == stato.obiettivo { telefono.controlli.obiettivo = nil }
             telefono.allineaEffetti(stato)
             telefono.allineaControlli(stato, obiettivoPrima: obiettivoPrima)
+            // Dalla frontale alla posteriore lo `stato` può precedere gli ultimi fotogrammi della frontale: lo sfondo
+            // del motore resta ancora un attimo, poi si spegne (una posteriore sfocata per un attimo non fa danni).
+            if obiettivoPrima == Self.obiettivoFrontale, stato.obiettivo != Self.obiettivoFrontale {
+                telefono.sfondoTenutoFino = .now + Self.tenutaSfondoCambioObiettivo
+                Task { [weak self, weak telefono] in
+                    try? await Task.sleep(for: Self.tenutaSfondoCambioObiettivo)
+                    guard let self, let telefono, telefono === self.attivo else { return }
+                    self.aggiornaMotore()
+                }
+            } else if stato.obiettivo == Self.obiettivoFrontale {
+                telefono.sfondoTenutoFino = nil
+            }
             // La sfocatura e la luce del sistema del telefono (Ritratto, Luce da studio) spengono le nostre: mai due.
             if scelto { aggiornaMotore() }
             mandaStatoEffetti(a: telefono)

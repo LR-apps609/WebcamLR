@@ -101,6 +101,9 @@ final class TelefonoCollegato: Identifiable {
     /// Quando la strada è cambiata l'ultima volta (cavo al posto del Wi-Fi o il contrario): in «Automatico» per
     /// `Ricevitore.pausaCambioStrada` non si cambia di nuovo da soli (Protocollo.md, «Scelta del collegamento»).
     @ObservationIgnored var ultimoCambioStrada: ContinuousClock.Instant?
+    /// Dalla frontale a un obiettivo posteriore: fino a qui il motore del Mac tiene lo sfondo, perché lo `stato`
+    /// può arrivare prima degli ultimi fotogrammi della frontale (mai la stanza vera, collaudo 6).
+    @ObservationIgnored var sfondoTenutoFino: ContinuousClock.Instant?
 
     init(impronta: String, telefono: Ciao, schermo: Schermo) {
         self.impronta = impronta

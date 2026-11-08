@@ -3044,6 +3044,23 @@
         }
       }
     },
+    "Il computer ha chiuso la strada appena presa: riprovo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The computer closed the connection just taken: trying again"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il computer ha chiuso la strada appena presa: riprovo"
+          }
+        }
+      }
+    },
     "Il computer ha mandato dati non validi: tocca «Riprova», e se succede ancora riapri WebcamLR sul computer." : {
       "extractionState" : "manual",
       "localizations" : {

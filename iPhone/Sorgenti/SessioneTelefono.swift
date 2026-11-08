@@ -274,6 +274,11 @@ final class SessioneTelefono {
     @ObservationIgnored private var computerWiFi: ComputerTrovato?
     /// 1.9: il cavo si è staccato e si prova il Wi-Fi, mentre il cavo può ancora tornare (per il banner).
     private(set) var daCavoAlWiFi = false
+    /// Collaudo 1 (parte del telefono): quando si è passati di strada (dal Wi-Fi al cavo o dal cavo al Wi-Fi) con il
+    /// `benvenuto`. Il computer può mandarlo e poi chiudere quella strada perché ha deciso di restare sull'altra:
+    /// una chiusura «dal computer» subito dopo non è un «Scollega», e si riprova invece di fermarsi.
+    @ObservationIgnored private var cambioStradaRecente: Date?
+    private static let secondiCambioStradaRifiutato: TimeInterval = 5
 
     /// Interfaccia finale: la strada preferita (Impostazioni › Collegamento, o `comando.collegamento` dal computer).
     private(set) var preferenzaCollegamento = PreferenzaCollegamento.salvata
@@ -1045,6 +1050,7 @@ final class SessioneTelefono {
             }
             codiceConferma = nil
             giaCollegato = true
+            cambioStradaRecente = daCavoAlWiFi ? Date() : nil
             daCavoAlWiFi = false
             if versoIlWiFi {
                 versoIlWiFi = false
@@ -1170,6 +1176,16 @@ final class SessioneTelefono {
         // 1.9: cavo appena staccato. Se il computer non se n'è ancora accorto, rifiuta il Wi-Fi perché il telefono
         // «è sul cavo»: non è una chiusura voluta, si riprova.
         if daCavoAlWiFi && motivo == .dalComputer { motivo = .rete }
+        // Collaudo 1: strada appena presa e chiusa subito dal computer, che ha scelto l'altra (precedenza del cavo,
+        // preferenza, pausa dopo un cambio). Sul cavo si torna al Wi-Fi conosciuto; sul Wi-Fi si riprova, con l'ascolto
+        // sul cavo acceso, come dopo un cavo staccato. Prima si finiva in «Collegamento interrotto» o in un'attesa ferma.
+        if motivo == .dalComputer, let cambio = cambioStradaRecente,
+           Date().timeIntervalSince(cambio) < Self.secondiCambioStradaRifiutato, !viaCavo || computerWiFi != nil {
+            registro.aggiungi(String(localized: "Il computer ha chiuso la strada appena presa: riprovo"))
+            motivo = .rete
+            if !viaCavo { daCavoAlWiFi = true }
+        }
+        cambioStradaRecente = nil
         // Il passaggio voluto al Wi-Fi non è riuscito: il cavo (che il computer riapre da solo) torna buono, e non si
         // riprova da soli finché non cambiano rete o preferenza (niente video a singhiozzo ogni 30 secondi).
         if versoIlWiFi && !ritornoFallito {
@@ -1651,6 +1667,7 @@ final class SessioneTelefono {
         let eraCollegato = stato == .collegato
         let nome = benvenuto.nome.isEmpty ? computer.nome : benvenuto.nome
         if !computer.cavo { computerWiFi = computer }
+        cambioStradaRecente = Date()
         registro.aggiungi(String(localized: "Passo al cavo USB"))
 
         compitoRiprova?.cancel()

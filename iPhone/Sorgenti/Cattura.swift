@@ -448,12 +448,14 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
     // MARK: Effetti video di Apple
 
     /// Inquadratura centrata di Apple (Center Stage) al posto della nostra, solo dove il formato attivo la supporta.
-    /// Con il controllo «cooperativo» la comandano l'app (e quindi il computer) e l'utente dal Centro di Controllo.
+    /// Collaudo 10: con il controllo `.app` la comanda solo l'app (e quindi il computer), con l'interruttore
+    /// «Inquadratura automatica». Con `.cooperative` l'utente poteva cambiarla dal Centro di Controllo senza che
+    /// nessuno se ne accorgesse: interruttore, stato mandato al computer e video non andavano più d'accordo.
     func centerStage(_ acceso: Bool) {
         coda.async {
             guard let dispositivo = self.ingresso?.device, dispositivo.activeFormat.isCenterStageSupported else { return }
-            if AVCaptureDevice.centerStageControlMode != .cooperative {
-                AVCaptureDevice.centerStageControlMode = .cooperative
+            if AVCaptureDevice.centerStageControlMode != .app {
+                AVCaptureDevice.centerStageControlMode = .app
             }
             if AVCaptureDevice.isCenterStageEnabled != acceso {
                 AVCaptureDevice.isCenterStageEnabled = acceso

@@ -187,7 +187,14 @@ public sealed partial class MainWindow
     }
 
     /// <summary>L'elenco si rilegge ogni volta che si apre: un cavo installato o una cuffia collegata compaiono subito.</summary>
-    private void SuApriUsciteAudio(object? sender, object e) => AggiornaUsciteAudio();
+    private void SuApriUsciteAudio(object? sender, object e)
+    {
+        AggiornaUsciteAudio();
+        // L'uscita scelta non si era aperta, o si è interrotta: riaprendo la tendina si riprova (scegliere la stessa voce
+        // non cambia la selezione e non lo farebbe, collaudo 42).
+        if (MicrofonoAcceso && erroreUscitaAudio is not null && uscitaAudio is null && UscitaScelta() is not null)
+            _ = ApriUscitaAudioAsync();
+    }
 
     private void SuUscitaAudio(object sender, SelectionChangedEventArgs e)
     {
@@ -264,9 +271,31 @@ public sealed partial class MainWindow
                 erroreUscitaAudio = motivo;
                 registro.Aggiungi(Testi.T("Registro_UscitaInterrotta", scelta.Nome, motivo));
                 MostraMicrofono();
+                _ = RiprovaUscitaAudioAsync();
             });
         }
         MostraMicrofono();
+    }
+
+    /// <summary>Le attese fra un tentativo e l'altro dopo un'interruzione dell'uscita, in secondi (circa 5 minuti in tutto).</summary>
+    private static readonly int[] AtteseRiaperturaUscita = [2, 4, 8, 15, 30, 60, 60, 60, 60];
+
+    /// <summary>
+    /// L'uscita si è interrotta (VB-CABLE o Voicemeeter riavviati, formato cambiato): si riprova da soli, finché si riapre o
+    /// finché l'utente sceglie un'altra uscita o spegne il microfono (collaudo 42). Sul thread dell'interfaccia.
+    /// </summary>
+    private async Task RiprovaUscitaAudioAsync()
+    {
+        foreach (var secondi in AtteseRiaperturaUscita)
+        {
+            var generazione = generazioneUscita;
+            await Task.Delay(TimeSpan.FromSeconds(secondi));
+            if (generazione != generazioneUscita || !MicrofonoAcceso || erroreUscitaAudio is null || uscitaAudio is not null) return;
+            AggiornaUsciteAudio();
+            if (UscitaScelta() is null) return;
+            await ApriUscitaAudioAsync();
+            if (uscitaAudio is not null) return;
+        }
     }
 
     private void ChiudiUscitaAudio()

@@ -32,7 +32,7 @@ struct Statistiche: Equatable, Sendable {
 /// del QR code o confermato dall'utente. Stesso ordine di Windows/WebcamLR.Ricevitore/SessioneComputer.cs.
 final class SessioneComputer: @unchecked Sendable {
     enum Evento: Sendable {
-        /// Il telefono è stato accettato; il `benvenuto` parte subito dopo. `impronta`: il codice di sicurezza
+        /// Il telefono è stato accettato; il `benvenuto` parte quando il Ricevitore rende attuale la sessione. `impronta`: il codice di sicurezza
         /// del telefono (1.1): è quello che dice se è «lo stesso telefono», non il nome. `via`: come è collegato (1.2).
         case ciao(Ciao, impronta: String, via: TipoCollegamento)
         /// Il telefono non è fidato: bisogna chiedere all'utente, mostrando il codice di conferma.
@@ -120,6 +120,8 @@ final class SessioneComputer: @unchecked Sendable {
     private var provato = false
     private var gettoneProva: String?
     private var accettato = false
+    /// Il `benvenuto` è partito (da `diventaAttuale`). Solo sulla coda della sessione.
+    private var benvenutoInviato = false
     /// Il `ciao` ricevuto, mentre si aspetta la risposta dell'utente.
     private var ciaoInAttesa: Ciao?
     private var inAccettazione = false
@@ -183,14 +185,19 @@ final class SessioneComputer: @unchecked Sendable {
     }
 
     /// Dal Ricevitore, sulla coda principale: è la sessione attuale di quel telefono, il suo video va a `schermo`.
+    /// Il `benvenuto` parte da qui, dopo le regole della strada del Ricevitore (cavo rimandato, «resta sul cavo»,
+    /// preferenza Wi-Fi): un collegamento che il Mac non userà riceve solo l'`arrivederci`, e il telefono
+    /// non lascia la strada che sta usando.
     func diventaAttuale(schermo: Schermo) {
         bloccoVideo.lock()
-        if statoVideo == .inAttesa {
+        let primaVolta = statoVideo == .inAttesa
+        if primaVolta {
             statoVideo = .attuale
             self.schermo = schermo
         }
         bloccoVideo.unlock()
         coda.async {
+            if primaVolta { self.mandaBenvenuto() }
             // Il `formato` può essere arrivato prima di qui: lo schermo deve sapere il codec prima dei fotogrammi.
             if let formato = self.formato, let attuale = self.schermoAttuale() { attuale.imposta(codec: formato.codec) }
             self.mandaVideoInAttesa()
@@ -496,8 +503,16 @@ final class SessioneComputer: @unchecked Sendable {
         ultimoPacchetto = Orologio.adesso()
         // Accettato e annunciato prima del benvenuto (come Windows): l'evento «ciao», che mette questa
         // sessione al posto di quella attuale, è in coda prima di formato, stato e capacità che seguono.
+        // Il `benvenuto` lo manda `diventaAttuale(schermo:)`, quando il Ricevitore ha deciso di usare questo
+        // collegamento: se lo chiude (strada appena cambiata, telefono che resta sul cavo) parte solo l'`arrivederci`.
         accettato = true
         notifica(.ciao(ciao, impronta: sicura.improntaAltro, via: via))
+    }
+
+    /// Sulla coda della sessione, una volta sola: il telefono è accettato e il Mac usa questo collegamento.
+    private func mandaBenvenuto() {
+        guard accettato, !chiusa, !benvenutoInviato else { return }
+        benvenutoInviato = true
         // Il nome già letto all'avvio: Host.current() qui poteva ritardare il benvenuto.
         invia(.benvenuto(Benvenuto(nome: NomeMac.attuale, piattaforma: .mac)))
         avvio.segnaBenvenuto()

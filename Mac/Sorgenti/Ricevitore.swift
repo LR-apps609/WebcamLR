@@ -460,14 +460,18 @@ final class Ricevitore {
         compitoInOnda = Task { [weak self] in
             while !Task.isCancelled {
                 // La lettura passa da CoreMediaIO e può richiedere tempo: fuori dalla coda principale.
-                let letto = await Task.detached(priority: .utility) { () -> (Bool, UscitaWebcam.Formato?, [String], Int?) in
-                    let attivo = UscitaWebcam.leggiInOnda() ?? false
+                let letto = await Task.detached(priority: .utility) { () -> (Bool, UscitaWebcam.Formato?, [String], Int?, Bool) in
+                    let inOnda = UscitaWebcam.leggiInOnda()
+                    let attivo = inOnda ?? false
                     let app = attivo ? (UscitaWebcam.leggiApp() ?? []) : []
                     // L'attesa dentro la webcam virtuale fino alla consegna alle app (da vetro a uscita).
                     let attesa = attivo ? UscitaWebcam.leggiAttesaEstensione() : nil
-                    return (attivo, attivo ? UscitaWebcam.leggiFormato() : nil, app, attesa)
+                    return (attivo, attivo ? UscitaWebcam.leggiFormato() : nil, app, attesa, inOnda != nil)
                 }.value
                 guard let self, !Task.isCancelled else { return }
+                // La webcam virtuale c'è: la schermata di attesa parte subito, anche senza telefono (prima partiva
+                // solo con la prima immagine del telefono e le app vedevano «WebcamLR è chiusa» con l'app aperta).
+                if letto.4 { self.uscitaWebcam.avvia() }
                 self.uscitaWebcam.imposta(inOnda: letto.0, attesaEstensioneMs: letto.3)
                 // Il nome dell'app prima dello stato: la riga «In onda su Zoom» del registro lo usa.
                 if letto.2 != self.appWebcam { self.appWebcam = letto.2 }

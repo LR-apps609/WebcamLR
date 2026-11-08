@@ -14,7 +14,7 @@ import WebcamLRProtocollo
 /// Dalla P12 anche a 3840×2160, ma solo se un'app usa la webcam in 4K
 /// e il telefono manda davvero il 4K: altrimenti l'estensione ingrandisce l'immagine 1920×1080.
 /// Serve l'account sviluppatore a pagamento: senza, la webcam virtuale non c'è e questa classe non trova nulla
-/// (e non disegna nulla: la schermata di attesa parte solo dopo il primo collegamento all'estensione).
+/// (e non disegna nulla: la schermata di attesa parte con `avvia()`, quando il Ricevitore trova la webcam virtuale).
 ///
 /// Schermata di attesa (AttesaWebcam.swift): quando il telefono scelto non manda video, qui si disegna l'attesa
 /// (una volta per stato, stile e misura) e si manda all'estensione come se fosse video: 5 volte al secondo quando è ferma
@@ -110,6 +110,14 @@ final class UscitaWebcam: @unchecked Sendable {
     func scegli(_ nuova: ObjectIdentifier?) {
         bloccoSorgente.lock()
         sorgente = nuova
+        bloccoSorgente.unlock()
+    }
+
+    /// Dal `Ricevitore`, quando la webcam virtuale c'è: fa partire la schermata di attesa (e i tentativi di collegarsi
+    /// all'estensione) anche senza nessuna immagine del telefono. Le chiamate dopo la prima non fanno nulla.
+    func avvia() {
+        bloccoSorgente.lock()
+        avviaAttesa()
         bloccoSorgente.unlock()
     }
 
@@ -451,7 +459,7 @@ final class UscitaWebcam: @unchecked Sendable {
 
     // MARK: - Schermata di attesa
 
-    /// Dal primo collegamento all'estensione (sotto `bloccoSorgente`); poi resta per tutta la vita dell'app:
+    /// Da `avvia()` o dal primo collegamento all'estensione (sotto `bloccoSorgente`); poi resta per tutta la vita dell'app:
     /// è anche quello che ritenta il collegamento quando non arriva video.
     private func avviaAttesa() {
         guard timerAttesa == nil else { return }

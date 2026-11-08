@@ -80,17 +80,27 @@ public sealed class CodaSeriale : IDisposable
 
 /// <summary>
 /// Quando scendere di qualità (come regolaQualita del Mac): se, in media su circa 2 secondi, la maschera o la resa
-/// superano l'85% del tempo di un fotogramma (il più breve degli ultimi 30 intervalli), un gradino più in basso. Non
-/// risale mai da sola: niente sbalzi di qualità (riparte dal pieno con un video o un telefono nuovo).
+/// superano l'85% del tempo di un fotogramma, un gradino più in basso. Il tempo di un fotogramma è la media della metà
+/// centrale degli ultimi 30 intervalli d'arrivo (un intoppo del Wi-Fi, una raffica di due fotogrammi o una pausa non
+/// contano), mai sotto 1/60 di secondo. I primi fotogrammi dopo <see cref="Azzera"/> o una fonte nuova non contano: la
+/// scheda video si scalda alla prima maschera (DirectML compila gli shader, 1–2 s). Non risale mai da sola: niente
+/// sbalzi di qualità (riparte dal pieno con un video o un telefono nuovo).
 /// </summary>
 public sealed class SceltaLivello
 {
     public const int FotogrammiPerDecidere = 60;
     public const double QuotaFotogramma = 0.85;
 
+    /// <summary>I fotogrammi che non contano dopo un azzeramento o una fonte nuova (come il riscaldamento di MisuraVelocita).</summary>
+    public const int FotogrammiDiRiscaldamento = 5;
+
+    /// <summary>Il fotogramma più breve che si considera (ms): oltre i 60 fps non si va.</summary>
+    public const double FotogrammaMinimoMs = 1000.0 / 60;
+
     private readonly Queue<ulong> intervalli = new();
-    private double somma;
+    private double somma, sommaMaschera, sommaResa;
     private int conta;
+    private int daScartare = FotogrammiDiRiscaldamento;
 
     public LivelloResa Livello { get; private set; } = LivelloResa.Pieno;
 
@@ -101,30 +111,54 @@ public sealed class SceltaLivello
         while (intervalli.Count > 30) intervalli.Dequeue();
     }
 
+    /// <summary>La fonte della maschera è nuova (aperta, riaperta, cambiata): i prossimi fotogrammi scaldano la scheda video.</summary>
+    public void FonteNuova() => daScartare = FotogrammiDiRiscaldamento;
+
     /// <summary>I tempi di un fotogramma reso; il livello nuovo quando scende, altrimenti null.</summary>
     public LivelloResa? Aggiungi(double mascheraMs, double resaMs, out double fotogrammaMs)
     {
         fotogrammaMs = 0;
+        if (daScartare > 0)
+        {
+            daScartare--;
+            return null;
+        }
         somma += Math.Max(mascheraMs, resaMs);
+        sommaMaschera += mascheraMs;
+        sommaResa += resaMs;
         conta++;
         if (conta < FotogrammiPerDecidere) return null;
         var media = somma / conta;
-        somma = 0;
+        var maschera = sommaMaschera / conta;
+        var resa = sommaResa / conta;
+        somma = sommaMaschera = sommaResa = 0;
         conta = 0;
         if (intervalli.Count == 0 || Livello == LivelloResa.Veloce) return null;
-        fotogrammaMs = intervalli.Min() / 1000.0;
+        fotogrammaMs = TempoFotogrammaMs();
         if (media <= fotogrammaMs * QuotaFotogramma) return null;
-        // La maschera è il collo di bottiglia: subito al modello leggero; altrimenti prima il bordo leggero.
-        Livello = mascheraMs > resaMs ? LivelloResa.Veloce : Livello + 1;
+        // La maschera è il collo di bottiglia (in media sulla finestra): subito al modello leggero; altrimenti prima il
+        // bordo leggero.
+        Livello = maschera > resa ? LivelloResa.Veloce : Livello + 1;
         return Livello;
+    }
+
+    /// <summary>La media della metà centrale degli intervalli (ms), almeno <see cref="FotogrammaMinimoMs"/>.</summary>
+    private double TempoFotogrammaMs()
+    {
+        var ordinati = intervalli.Order().ToArray();
+        int via = ordinati.Length / 4, quanti = ordinati.Length - 2 * via;
+        double totale = 0;
+        for (var i = via; i < via + quanti; i++) totale += ordinati[i];
+        return Math.Max(totale / quanti / 1000.0, FotogrammaMinimoMs);
     }
 
     public void Azzera()
     {
         Livello = LivelloResa.Pieno;
         intervalli.Clear();
-        somma = 0;
+        somma = sommaMaschera = sommaResa = 0;
         conta = 0;
+        daScartare = FotogrammiDiRiscaldamento;
     }
 }
 
@@ -376,8 +410,9 @@ public sealed class MotoreEffetti : IDisposable
     }
 
     /// <summary>
-    /// Prepara la maschera in anticipo (apre il modello e scalda la scheda video), così il primo fotogramma con lo sfondo
-    /// non aspetta. Da chiamare quando si accende lo sfondo.
+    /// Prepara la maschera in anticipo (apre il modello), così il primo fotogramma con lo sfondo non aspetta l'apertura.
+    /// Da chiamare quando si accende lo sfondo. La scheda video si scalda alla prima maschera: quei tempi non contano per
+    /// la qualità (<see cref="SceltaLivello.FonteNuova"/>).
     /// </summary>
     public void Prepara() => codaAnalisi.Accoda(() => FontePerLivello());
 
@@ -415,6 +450,7 @@ public sealed class MotoreEffetti : IDisposable
             {
                 descrizioneFonte = (fonte.InUso, fonte.Modello);
                 note.Add(new Nota.Fonte(fonte.InUso, fonte.Modello, fonte.MotivoRipiego));
+                scelta.FonteNuova();
             }
         }
         catch (Exception errore)

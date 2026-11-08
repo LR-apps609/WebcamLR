@@ -349,6 +349,7 @@ public class MotoreTest(ITestOutputHelper uscita)
     {
         var scelta = new SceltaLivello();
         for (var i = 0; i < 30; i++) scelta.Intervallo(33_333);
+        for (var i = 0; i < SceltaLivello.FotogrammiDiRiscaldamento; i++) Assert.Null(scelta.Aggiungi(500, 500, out _));
         for (var i = 0; i < SceltaLivello.FotogrammiPerDecidere; i++) Assert.Null(scelta.Aggiungi(10, 12, out _));
         Assert.Equal(LivelloResa.Pieno, scelta.Livello);
         // La resa troppo lenta: prima il bordo leggero.
@@ -361,6 +362,95 @@ public class MotoreTest(ITestOutputHelper uscita)
         Assert.Equal(LivelloResa.Veloce, nuovo);
         scelta.Azzera();
         Assert.Equal(LivelloResa.Pieno, scelta.Livello);
+    }
+
+    /// <summary>Una finestra di decisione intera (dopo il riscaldamento) con gli stessi tempi; il livello nuovo o null.</summary>
+    private static LivelloResa? Finestra(SceltaLivello scelta, double mascheraMs, double resaMs)
+    {
+        LivelloResa? nuovo = null;
+        for (var i = 0; i < SceltaLivello.FotogrammiPerDecidere; i++) nuovo ??= scelta.Aggiungi(mascheraMs, resaMs, out _);
+        return nuovo;
+    }
+
+    private static SceltaLivello Scaldata()
+    {
+        var scelta = new SceltaLivello();
+        for (var i = 0; i < SceltaLivello.FotogrammiDiRiscaldamento; i++) scelta.Aggiungi(0, 0, out _);
+        return scelta;
+    }
+
+    [Fact]
+    public void UnIntervalloAnomaloNonFaScendere()
+    {
+        // Collaudo 20: un solo intervallo da 1 ms (due fotogrammi a raffica dopo un intoppo del Wi-Fi) tra 29 da 33 ms.
+        var scelta = Scaldata();
+        for (var i = 0; i < 29; i++) scelta.Intervallo(33_333);
+        scelta.Intervallo(1_000);
+        Assert.Null(Finestra(scelta, 10, 8));
+        Assert.Equal(LivelloResa.Pieno, scelta.Livello);
+
+        // Fotogrammi che arrivano a coppie (2 ms e 64 ms, in media 33): il fotogramma vale ancora circa 33 ms.
+        scelta = Scaldata();
+        for (var i = 0; i < 30; i++) scelta.Intervallo(i % 2 == 0 ? 2_000UL : 64_000UL);
+        Assert.Null(Finestra(scelta, 10, 8));
+        Assert.Equal(LivelloResa.Pieno, scelta.Livello);
+
+        // Una pausa lunga non fa credere a un fotogramma lento: a 30 fps con 31 ms di resa si scende lo stesso.
+        scelta = Scaldata();
+        for (var i = 0; i < 28; i++) scelta.Intervallo(33_333);
+        scelta.Intervallo(400_000);
+        scelta.Intervallo(300_000);
+        LivelloResa? nuovo = null;
+        var fotogrammaMs = 0.0;
+        for (var i = 0; i < SceltaLivello.FotogrammiPerDecidere && nuovo is null; i++) nuovo = scelta.Aggiungi(10, 31, out fotogrammaMs);
+        Assert.Equal(LivelloResa.BordoLeggero, nuovo);
+        Assert.InRange(fotogrammaMs, 33, 34);
+
+        // Mai sotto 1/60 di secondo, anche se gli intervalli sono tutti brevissimi.
+        scelta = Scaldata();
+        for (var i = 0; i < 30; i++) scelta.Intervallo(1_000);
+        Assert.Null(Finestra(scelta, 10, 12));
+    }
+
+    [Fact]
+    public void IlRiscaldamentoDellaSchedaVideoNonFaScendere()
+    {
+        // Collaudo 21: la prima maschera con DirectML compila gli shader (1,5 s), le altre durano 10 ms.
+        var scelta = new SceltaLivello();
+        for (var i = 0; i < 30; i++) scelta.Intervallo(33_333);
+        Assert.Null(scelta.Aggiungi(1500, 12, out _));
+        for (var i = 0; i < SceltaLivello.FotogrammiPerDecidere * 2; i++) Assert.Null(scelta.Aggiungi(10, 12, out _));
+        Assert.Equal(LivelloResa.Pieno, scelta.Livello);
+        // Una fonte nuova (riaperta o cambiata) scalda di nuovo.
+        scelta.FonteNuova();
+        Assert.Null(scelta.Aggiungi(2000, 12, out _));
+        for (var i = 0; i < SceltaLivello.FotogrammiPerDecidere * 2; i++) Assert.Null(scelta.Aggiungi(10, 12, out _));
+        // E così dopo un azzeramento (telefono girato, sessione nuova).
+        scelta.Azzera();
+        for (var i = 0; i < 30; i++) scelta.Intervallo(33_333);
+        Assert.Null(scelta.Aggiungi(1500, 12, out _));
+        for (var i = 0; i < SceltaLivello.FotogrammiPerDecidere * 2; i++) Assert.Null(scelta.Aggiungi(10, 12, out _));
+        Assert.Equal(LivelloResa.Pieno, scelta.Livello);
+    }
+
+    [Fact]
+    public void LaSceltaTraVeloceEBordoSiFaSulleMedie()
+    {
+        // Collaudo 23: 59 fotogrammi con la maschera lenta e l'ultimo con una maschera breve: il collo è la maschera.
+        var scelta = Scaldata();
+        for (var i = 0; i < 30; i++) scelta.Intervallo(33_333);
+        LivelloResa? nuovo = null;
+        for (var i = 0; i < SceltaLivello.FotogrammiPerDecidere - 1; i++) nuovo ??= scelta.Aggiungi(45, 10, out _);
+        nuovo ??= scelta.Aggiungi(9, 10, out _);
+        Assert.Equal(LivelloResa.Veloce, nuovo);
+
+        // Al contrario: una sola resa lenta alla fine non manda al modello leggero, basta il bordo leggero.
+        scelta = Scaldata();
+        for (var i = 0; i < 30; i++) scelta.Intervallo(33_333);
+        nuovo = null;
+        for (var i = 0; i < SceltaLivello.FotogrammiPerDecidere - 1; i++) nuovo ??= scelta.Aggiungi(10, 40, out _);
+        nuovo ??= scelta.Aggiungi(60, 10, out _);
+        Assert.Equal(LivelloResa.BordoLeggero, nuovo);
     }
 
     // MARK: motore

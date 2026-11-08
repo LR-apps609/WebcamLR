@@ -2432,6 +2432,23 @@
         }
       }
     },
+    "Esposizione automatica dal computer: resta il blocco AE/AF del tocco lungo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auto exposure from the computer: the AE/AF lock from the long press stays"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esposizione automatica dal computer: resta il blocco AE/AF del tocco lungo"
+          }
+        }
+      }
+    },
     "Esposizione e messa a fuoco restano ferme come le hai bloccate. Sblocca per regolarle a mano." : {
       "extractionState" : "manual",
       "localizations" : {

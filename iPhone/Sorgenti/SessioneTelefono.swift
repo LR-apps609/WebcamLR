@@ -1838,10 +1838,19 @@ final class SessioneTelefono {
             puntoFuoco = nil
         }
         if comando.iso != nil || comando.tempo != nil {
+            let eraManuale = iso > 0 || tempo > 0
             iso = max(comando.iso ?? iso, 0)
             // Anche il limite in alto: lo `stato` non rimanda mai al computer valori assurdi.
             tempo = min(max(comando.tempo ?? tempo, 0), 100_000)
-            cattura.esposizioneManuale(iso: Float(iso), tempo: tempo)
+            if iso == 0 && tempo == 0 && !eraManuale && aeafBloccati {
+                // Collaudo 9: al ritorno dopo una riconnessione il computer rimanda iso e tempo a 0 (automatici) anche se
+                // erano già automatici. Con il blocco del tocco lungo l'esposizione automatica continua lo scioglierebbe,
+                // con «AE/AF bloccati» ancora a schermo: il blocco resta finché un tocco non lo toglie. Dal manuale
+                // all'automatico invece si cambia davvero, come prima.
+                registro.aggiungi(String(localized: "Esposizione automatica dal computer: resta il blocco AE/AF del tocco lungo"))
+            } else {
+                cattura.esposizioneManuale(iso: Float(iso), tempo: tempo)
+            }
         }
         funzioni.applica(comando)
         if let attivo = comando.specchia { impostaSpecchio(attivo) }

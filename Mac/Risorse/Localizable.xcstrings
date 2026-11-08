@@ -5972,12 +5972,12 @@
         }
       }
     },
-    "Specchio e sfondo ignorati: il telefono usa la fotocamera posteriore" : {
+    "Specchio o sfondo chiesti dal telefono con la fotocamera posteriore: aspetto la frontale" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mirror and background ignored: the phone is using the rear camera"
+            "value" : "Mirror or background requested by the phone with the rear camera: waiting for the front camera"
           }
         }
       }

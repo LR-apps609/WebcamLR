@@ -1190,6 +1190,8 @@ final class Ricevitore {
     /// Quanto il motore tiene lo sfondo dopo il passaggio dalla frontale a un obiettivo posteriore: la riconfigurazione
     /// della fotocamera sul telefono dura qualche centinaio di millisecondi.
     static let tenutaSfondoCambioObiettivo: Duration = .milliseconds(1500)
+    /// Quanto aspetta un tocco su Specchia o Sfoca arrivato prima dello `stato` con la frontale.
+    static let attesaRichiestaFrontale: Duration = .seconds(3)
 
     /// Effetti sul computer: specchio e sfondo del motore solo con la fotocamera frontale (o finché il telefono non
     /// ha detto l'obiettivo, per non mostrare lo sfondo vero all'inizio della sessione).
@@ -1704,7 +1706,9 @@ final class Ricevitore {
         let stato = telefono.statoTelefono
         let frontale = Self.conFrontale(telefono)
         if !frontale, richiesta.specchia != nil || richiesta.sfondo != nil {
-            registra(String(localized: "Specchio e sfondo ignorati: il telefono usa la fotocamera posteriore"), di: telefono)
+            // Forse il telefono è già sulla frontale e il suo `stato` è in viaggio: la richiesta aspetta un attimo.
+            telefono.richiestaPerLaFrontale = (richiesta, .now)
+            registra(String(localized: "Specchio o sfondo chiesti dal telefono con la fotocamera posteriore: aspetto la frontale"), di: telefono)
         }
         var nuovi = effettiComputer
         if let specchia = richiesta.specchia, frontale { nuovi.specchia = specchia }
@@ -2324,6 +2328,11 @@ final class Ricevitore {
                 }
             } else if stato.obiettivo == Self.obiettivoFrontale {
                 telefono.sfondoTenutoFino = nil
+            }
+            // Tornato alla frontale: il tocco su Specchia o Sfoca arrivato un attimo prima vale adesso.
+            if stato.obiettivo == Self.obiettivoFrontale, let attesa = telefono.richiestaPerLaFrontale {
+                telefono.richiestaPerLaFrontale = nil
+                if ContinuousClock.now - attesa.quando < Self.attesaRichiestaFrontale { applica(attesa.richiesta, da: telefono) }
             }
             // La sfocatura e la luce del sistema del telefono (Ritratto, Luce da studio) spengono le nostre: mai due.
             if scelto { aggiornaMotore() }

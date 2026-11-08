@@ -310,7 +310,8 @@ public sealed class ElencoTelefoni
             inProva.RemoveWhere(t => !telefoni.Contains(t));
             if (inProva.Count == 0) return [];
             RicordaPro();
-            if (!RichiedePro || telefoni.Any(t => conPro.Contains(t.Impronta)))
+            // Rimasto da solo (l'altro è andato via prima delle sue capacità): non è più un secondo telefono.
+            if (!RichiedePro || telefoni.Count <= 1 || telefoni.Any(t => conPro.Contains(t.Impronta)))
             {
                 inProva.Clear();
                 return [];

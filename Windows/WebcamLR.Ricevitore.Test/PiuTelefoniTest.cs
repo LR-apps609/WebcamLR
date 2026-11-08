@@ -310,6 +310,26 @@ public class PiuTelefoniTest
     }
 
     [Fact]
+    public async Task SecondoInProvaRestaSeIlPrimoVaViaPrimaDelleCapacita()
+    {
+        // Collaudo 32: se il primo se ne va prima delle sue capacità, quello in prova è rimasto solo e non va tolto.
+        using var idComputer = IdentitaDispositivo.Nuova();
+        using var idA = IdentitaDispositivo.Nuova();
+        using var idB = IdentitaDispositivo.Nuova();
+        using var pc = new Computer(Fidati(idComputer, idA, idB));
+        pc.Elenco.RichiedePro = true;
+        var (a, arrivoA) = await CollegaAsync(pc, idA, "iPhone");
+        await using var _a = a;
+        var (b, arrivoB) = await CollegaAsync(pc, idB, "Pixel");
+        await using var _b = b;
+        Assert.Equal(EsitoArrivo.Nuovo, arrivoB.Esito);
+        pc.Elenco.Rimuovi(arrivoA.Telefono!);
+        arrivoB.Telefono!.Capacita = new Capacita(["frontale"], 1, false, Pro: false);
+        Assert.Empty(pc.Elenco.DaTogliereSenzaPro());
+        Assert.Equal(1, pc.Elenco.Conteggio);
+    }
+
+    [Fact]
     public async Task DueArriviInsiemeConUnPostoSoloUnoEntra()
     {
         // Senza il controllo prima della fiducia, l'elenco decide da solo all'arrivo: il secondo è «Pieno» e si chiude.

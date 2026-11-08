@@ -521,4 +521,20 @@ public class MicrofonoTest
         Assert.Null(UsciteAudio.Scelta([altoparlanti, cavo], ""));
         Assert.Equal(cavo, UsciteAudio.Scelta([altoparlanti, cavo], "{9}"));
     }
+
+    [Fact]
+    public void LaPausaDelTelefonoNonSpegneLInterruttore()
+    {
+        // Collaudo 40: in pausa l'iPhone manda stato.audio = false, ma nessuno ha spento il microfono.
+        Assert.Null(StatoMicrofono.DalTelefono(true, false, inPausaPrima: false, inPausaAdesso: true));
+        Assert.Null(StatoMicrofono.DalTelefono(false, true, inPausaPrima: true, inPausaAdesso: false));
+        Assert.Null(StatoMicrofono.DalTelefono(true, false, inPausaPrima: true, inPausaAdesso: true));
+        // Fuori dalla pausa il telefono decide davvero.
+        Assert.False(StatoMicrofono.DalTelefono(true, false, false, false));
+        Assert.True(StatoMicrofono.DalTelefono(false, true, false, false));
+        // Niente cambio, o un telefono che non lo manda: niente da fare.
+        Assert.Null(StatoMicrofono.DalTelefono(true, true, false, false));
+        Assert.Null(StatoMicrofono.DalTelefono(null, false, false, false));
+        Assert.Null(StatoMicrofono.DalTelefono(true, null, false, false));
+    }
 }

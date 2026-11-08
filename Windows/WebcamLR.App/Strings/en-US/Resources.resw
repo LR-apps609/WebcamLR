@@ -1442,6 +1442,9 @@ The details are in {1}: send them with “Report a bug”.</value>
   <data name="Registro_MicrofonoAccesoDalTelefono" xml:space="preserve">
     <value>Microphone turned on from the phone</value>
   </data>
+  <data name="Registro_MicrofonoInPausa" xml:space="preserve">
+    <value>Phone paused: audio stops, the microphone stays on</value>
+  </data>
   <data name="Registro_MicrofonoSpentoDalTelefono" xml:space="preserve">
     <value>Microphone turned off from the phone</value>
   </data>

@@ -196,7 +196,7 @@ public sealed partial class MainWindow
                 // Frontale ↔ posteriore: «Specchia» e «Sfondo» grigi o di nuovo usabili, anche se gli effetti non cambiano.
                 if (obiettivoPrima != stato.Obiettivo) MostraPulsantiVideo();
                 MostraAvviso(stato, avviso);
-                MicrofonoDalTelefono(collegato, audioPrima, stato.Audio);
+                MicrofonoDalTelefono(collegato, audioPrima, stato.Audio, eraInPausa, collegato.InPausa);
                 // In pausa o ripreso (o un altro motivo), o un'altra strada (Wi-Fi ↔ USB): la pillola in alto e il velo sopra il video.
                 if (eraInPausa != collegato.InPausa || !cambioPausa.Nessuno || viaCavoPrima != ContrattoCollegamento.ViaCavo(stato, collegato.Collegamento)) MostraScelto();
                 else AggiornaTelefono();

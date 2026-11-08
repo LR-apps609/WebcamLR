@@ -14,6 +14,18 @@ public sealed record VistaMicrofono(string Stato, string? Nota, bool Attivo, boo
 /// </summary>
 public static class StatoMicrofono
 {
+    /// <summary>
+    /// <c>stato.audio</c> del telefono scelto è cambiato: il nuovo valore dell'interruttore, o null se non va toccato.
+    /// In pausa (o appena entrato o uscito dalla pausa) il telefono smette di mandare l'audio senza che nessuno abbia
+    /// spento il microfono: l'interruttore resta com'è, e non si salva spento (collaudo 40).
+    /// </summary>
+    public static bool? DalTelefono(bool? prima, bool? adesso, bool inPausaPrima, bool inPausaAdesso)
+    {
+        if (adesso is not bool acceso || prima is not bool primaAcceso || acceso == primaAcceso) return null;
+        if (inPausaPrima || inPausaAdesso) return null;
+        return acceso;
+    }
+
     /// <param name="telefonoCollegato">C'è un telefono nella webcam.</param>
     /// <param name="mandaAudio"><c>capacita.audio</c> del telefono; null finché le capacità non arrivano.</param>
     /// <param name="acceso">L'interruttore.</param>

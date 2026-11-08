@@ -1444,6 +1444,9 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
   <data name="Registro_MicrofonoAccesoDalTelefono" xml:space="preserve">
     <value>Microfono acceso dal telefono</value>
   </data>
+  <data name="Registro_MicrofonoInPausa" xml:space="preserve">
+    <value>Telefono in pausa: l'audio si ferma, il microfono resta acceso</value>
+  </data>
   <data name="Registro_MicrofonoSpentoDalTelefono" xml:space="preserve">
     <value>Microfono spento dal telefono</value>
   </data>

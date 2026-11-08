@@ -129,9 +129,14 @@ public sealed partial class MainWindow
     /// Il microfono è stato acceso o spento sul telefono scelto (<c>stato.audio</c> è cambiato): l'interruttore lo segue,
     /// così l'audio non si scarta qui e non si aspetta un audio che non arriverà.
     /// </summary>
-    private void MicrofonoDalTelefono(TelefonoCollegato collegato, bool? prima, bool? adesso)
+    private void MicrofonoDalTelefono(TelefonoCollegato collegato, bool? prima, bool? adesso, bool inPausaPrima, bool inPausaAdesso)
     {
-        if (adesso is not bool acceso || prima is not bool primaAcceso || acceso == primaAcceso) return;
+        if (StatoMicrofono.DalTelefono(prima, adesso, inPausaPrima, inPausaAdesso) is not bool acceso)
+        {
+            // In pausa l'audio si ferma da solo: l'interruttore resta com'è (collaudo 40).
+            if (prima == true && adesso == false && MicrofonoAcceso) registro.Aggiungi(Testi.T("Registro_MicrofonoInPausa"));
+            return;
+        }
         collegato.AudioComandato = acceso;
         if (acceso != MicrofonoAcceso) ImpostaMicrofono(acceso, dalTelefono: true);
     }

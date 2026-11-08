@@ -358,6 +358,23 @@
         }
       }
     },
+    "Acquisti ripristinati: WebcamLR Pro è attivo." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Purchases restored: WebcamLR Pro is active."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acquisti ripristinati: WebcamLR Pro è attivo."
+          }
+        }
+      }
+    },
     "Acquisto in attesa di approvazione: Pro si sblocca da solo appena è confermato." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5658,6 +5675,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ripristina acquisti"
+          }
+        }
+      }
+    },
+    "Ripristino acquisti non riuscito: %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restoring purchases failed: %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ripristino acquisti non riuscito: %@"
           }
         }
       }

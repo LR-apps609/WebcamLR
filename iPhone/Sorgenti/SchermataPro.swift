@@ -34,6 +34,18 @@ struct SchermataPro: View {
                 .foregroundStyle(Tema.testoSecondario)
                 .fixedSize(horizontal: false, vertical: true)
             pulsanteRipristina
+            // Collaudo 62: anche con Pro attivo l'esito del ripristino si vede.
+            if let avviso = negozio.avviso {
+                Text(avviso)
+                    .font(.stile(.nota))
+                    .foregroundStyle(Tema.ambraTesto)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else if negozio.ripristinoConfermato {
+                Text("Acquisti ripristinati: WebcamLR Pro è attivo.")
+                    .font(.stile(.nota))
+                    .foregroundStyle(Tema.testoSecondario)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 

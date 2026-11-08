@@ -71,6 +71,13 @@ public sealed class AnteprimaVideo : IDisposable
     /// </summary>
     public event Action? PrimaImmagine;
 
+    /// <summary>
+    /// Qualità 13: il decodificatore non ha un fotogramma chiave da cui andare avanti (lettore nuovo a metà del flusso, o
+    /// fotogrammi buttati perché il PC era indietro): chi ascolta manda «chiedi-chiave» alla sessione, che tiene il limite
+    /// di uno al secondo. Dal thread di rete, a ogni fotogramma scartato.
+    /// </summary>
+    public event Action? ChiaveMancante;
+
     // Per PrimaImmagine, del lettore attuale (sotto blocco).
     private bool campioneDato;
     private bool inRiproduzione;
@@ -133,24 +140,34 @@ public sealed class AnteprimaVideo : IDisposable
     public void Accoda(FotogrammaVideo fotogramma, long? scartoOrologi = null)
     {
         Channel<FotogrammaVideo>? coda;
+        var manca = false;
         lock (blocco)
         {
             if (scartoOrologi is not null) scarto = scartoOrologi;
             coda = attesa;
             if (sorgente is null || coda is null) return;
-            if (attendiChiave)
+            if (attendiChiave && !fotogramma.Chiave)
             {
-                if (!fotogramma.Chiave) return;
+                manca = true;
+            }
+            else
+            {
                 attendiChiave = false;
+                // Oltre il triplo si scartano anche i fotogrammi chiave: se il lettore non chiede più campioni
+                // (decodificatore HEVC mancante, MediaFailed) la coda crescerebbe di un fotogramma chiave alla volta, senza fine.
+                if (inAttesa >= MassimoInAttesa && (!fotogramma.Chiave || inAttesa >= MassimoInAttesa * 3))
+                {
+                    attendiChiave = true;
+                    manca = true;
+                }
+                else inAttesa++;
             }
-            // Oltre il triplo si scartano anche i fotogrammi chiave: se il lettore non chiede più campioni
-            // (decodificatore HEVC mancante, MediaFailed) la coda crescerebbe di un fotogramma chiave alla volta, senza fine.
-            if (inAttesa >= MassimoInAttesa && (!fotogramma.Chiave || inAttesa >= MassimoInAttesa * 3))
-            {
-                attendiChiave = true;
-                return;
-            }
-            inAttesa++;
+        }
+        if (manca)
+        {
+            // Fuori dal blocco: chi ascolta manda un messaggio in rete.
+            try { ChiaveMancante?.Invoke(); } catch (Exception) { }
+            return;
         }
         coda.Writer.TryWrite(fotogramma);
     }

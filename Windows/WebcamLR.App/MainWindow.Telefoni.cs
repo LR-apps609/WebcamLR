@@ -368,6 +368,9 @@ public sealed partial class MainWindow
     private VideoTelefono CreaVideo(TelefonoCollegato collegato)
     {
         var nuovo = new VideoTelefono();
+        // Qualità 13: l'anteprima di questo telefono non ha un fotogramma chiave da cui partire: lo si chiede alla sua
+        // sessione attuale (al massimo uno al secondo, lo tiene la sessione).
+        nuovo.Anteprima.ChiaveMancante += () => _ = collegato.Sessione?.ChiediChiaveAsync();
         // Il primo fotogramma a schermo chiude la misura dell'avvio (1.11) della sessione attuale di quel telefono.
         nuovo.Anteprima.PrimaImmagine += () =>
         {

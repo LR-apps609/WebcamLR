@@ -120,6 +120,16 @@ public sealed class UscitaWebcam : IDisposable
     /// <summary>Una riga per il registro del collegamento.</summary>
     public event Action<string>? Evento;
 
+    /// <summary>
+    /// Qualità 13: il decodificatore della webcam aspetta un fotogramma chiave (partito a metà del flusso quando un'app ha
+    /// aperto la webcam, o PC indietro): vedi <see cref="AnteprimaVideo.ChiaveMancante"/>.
+    /// </summary>
+    public event Action? ChiaveMancante
+    {
+        add => decodificatore.ChiaveMancante += value;
+        remove => decodificatore.ChiaveMancante -= value;
+    }
+
     /// <summary>L'app che usa la webcam ha scelto un'altra frequenza (30 o 60 fps). Arriva su un thread qualsiasi.</summary>
     public event Action<int>? FpsChiestiCambiato;
 

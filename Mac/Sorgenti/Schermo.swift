@@ -72,7 +72,7 @@ final class Schermo: @unchecked Sendable {
         case codecCambiato(Codec)
         /// Il fotogramma chiave atteso dopo `decodificaRifatta` o `codecCambiato` è arrivato, dopo questi ms.
         case chiaveArrivata(dopoMs: Int)
-        /// Qualità 13: il decodificatore ha dato errore (es. -12911) o ha scartato un fotogramma (codice 0): si aspetta
+        /// Qualità 13: il decodificatore ha dato errore (es. -12911) (uno scarto senza errore non arriva più qui, codice 0 resta per compatibilità): si aspetta
         /// un fotogramma chiave e lo si chiede al telefono.
         case erroreDecodifica(codice: Int)
     }
@@ -501,17 +501,21 @@ final class Schermo: @unchecked Sendable {
             return
         }
         // Qualità 13: qualsiasi altro errore (es. kVTVideoDecoderMalfunctionErr, -12911, o dati non validi) o un
-        // fotogramma scartato. I fotogrammi dopo dipendono da questo (il telefono non usa fotogrammi B): si aspetta un
-        // fotogramma chiave e lo si chiede subito al telefono. Con un errore vero si rifà anche la sessione (dopo un
-        // -12911 il decodificatore non è affidabile); per uno scarto senza errore no.
+        // fotogramma scartato. I fotogrammi dopo dipendono da questo (il telefono non usa fotogrammi B): con un errore
+        // vero si rifà la sessione (dopo un -12911 il decodificatore non è affidabile), si aspetta un fotogramma chiave
+        // e lo si chiede subito al telefono. Uno scarto senza errore non ferma il video (il decodificatore può scartare
+        // da solo sotto carico e i fotogrammi dopo di solito si leggono): si chiede la chiave e si va avanti.
         let errore = esito != noErr ? esito : esitoRichiamo
-        if errore != noErr {
+        if errore == Self.fotogrammaScartato {
             esitoRichiamo = noErr
-            if errore != Self.fotogrammaScartato { chiudiDecodifica() }
+            chiediChiaveAlTelefono()
+        } else if errore != noErr {
+            esitoRichiamo = noErr
+            chiudiDecodifica()
             if !attendiChiave {
                 attendiChiave = true
                 chiaveAttesaDa = Orologio.adesso()
-                avvisa(.erroreDecodifica(codice: errore == Self.fotogrammaScartato ? 0 : Int(errore)))
+                avvisa(.erroreDecodifica(codice: Int(errore)))
             }
             chiediChiaveAlTelefono()
         }

@@ -280,7 +280,7 @@ struct PaginaSchermataAttesa: View {
                 rigaImmagine
             }
             if pro {
-                Nota(testo: String(localized: "Quello che vedono Zoom e le altre app quando il video del telefono non c'è: telefono non collegato, collegamento interrotto, pausa. Con WebcamLR per Mac chiusa le app vedono sempre la schermata di WebcamLR."))
+                Nota(testo: String(localized: "Quello che vedono Zoom e le altre app quando il video del telefono non c'è: collegamento interrotto, pausa. Vale con il telefono collegato (che dice se Pro è sbloccato): senza telefono, o con WebcamLR per Mac chiusa, le app vedono la schermata di WebcamLR."))
             } else {
                 Label("Sblocca WebcamLR Pro sull'iPhone", systemImage: "lock")
                     .font(.stile(.nota))

@@ -88,10 +88,10 @@ final class Riprese {
     /// Foto dal computer: salva in Immagini › WebcamLR e lo dice, con «Mostra nel Finder» (punto 18).
     func scattaFoto() {
         guard proPresente() else { return }
-        schermoScelto().fotografa { immagine in
+        schermoScelto().fotografa { immagine, fermo in
             Task { @MainActor in
                 guard let immagine else {
-                    self.mostra(Fotografia.Errore.nessunVideo.localizedDescription)
+                    self.mostra((fermo ? Fotografia.Errore.videoFermo : Fotografia.Errore.nessunVideo).localizedDescription)
                     return
                 }
                 // Lampo e suono subito; il PNG si scrive fuori dalla coda principale, così i clic restano pronti.
@@ -112,10 +112,10 @@ final class Riprese {
     /// Copia il fotogramma attuale negli appunti (⌘C, funzione 26), da incollare in qualsiasi app.
     func copiaFotogramma() {
         guard proPresente() else { return }
-        schermoScelto().fotografa { immagine in
+        schermoScelto().fotografa { immagine, fermo in
             Task { @MainActor in
                 guard let immagine else {
-                    self.mostra(Fotografia.Errore.nessunVideo.localizedDescription)
+                    self.mostra((fermo ? Fotografia.Errore.videoFermo : Fotografia.Errore.nessunVideo).localizedDescription)
                     return
                 }
                 let foto = NSImage(cgImage: immagine, size: NSSize(width: immagine.width, height: immagine.height))
@@ -155,7 +155,7 @@ final class Riprese {
     /// Senza WebcamLR Pro lo dice al posto della foto o della registrazione.
     private func proPresente() -> Bool {
         guard consentite() else {
-            mostra(String(localized: "Foto e registrazione sono di WebcamLR Pro: si sblocca dall'iPhone, in WebcamLR › App › WebcamLR Pro."))
+            mostra(String(localized: "Foto e registrazione sono di WebcamLR Pro: si sblocca dall'iPhone, in WebcamLR › Impostazioni › WebcamLR Pro."))
             return false
         }
         return true

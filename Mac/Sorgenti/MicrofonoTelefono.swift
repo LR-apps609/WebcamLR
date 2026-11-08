@@ -49,6 +49,9 @@ final class MicrofonoTelefono: @unchecked Sendable {
     private let coda = DispatchQueue(label: "it.lrapps.webcamlr.microfono", qos: .userInteractive)
     private let registro = Logger(subsystem: "it.lrapps.webcamlr.mac", category: "microfono")
     private var convertitore: AudioConverterRef?
+    /// L'interruttore «Microfono del telefono» del Mac: spento, l'audio che arriva si scarta (non va al driver).
+    /// Solo sulla coda.
+    private var acceso = true
     private var formato = FormatoAudio()
     /// Dove andrà il prossimo frame se arriva puntuale (indice della linea del tempo comune); nil dopo un salto.
     private var cursore: UInt64?
@@ -90,7 +93,16 @@ final class MicrofonoTelefono: @unchecked Sendable {
     /// Un pacchetto di tipo 3. `scarto`: la differenza tra gli orologi del video (nil se non c'è ancora un `pong`);
     /// `latenzaVideoMs`: la latenza del video dell'ultimo secondo.
     func ricevi(_ pacchetto: PacchettoAudio, scarto: Int64?, latenzaVideoMs: Int?) {
-        coda.async { self.elabora(pacchetto, scarto: scarto, latenzaVideoMs: latenzaVideoMs) }
+        coda.async {
+            guard self.acceso else { return }
+            self.elabora(pacchetto, scarto: scarto, latenzaVideoMs: latenzaVideoMs)
+        }
+    }
+
+    /// Dal Ricevitore: l'interruttore «Microfono del telefono». Con l'interruttore spento la voce non arriva alle
+    /// app, anche se il telefono continua a mandarla (per esempio dopo una pausa in sottofondo).
+    func imposta(acceso nuovo: Bool) {
+        coda.async { self.acceso = nuovo }
     }
 
     /// Sessione chiusa o microfono spento: si ricomincia da capo al prossimo frame.

@@ -4,6 +4,7 @@ import CoreMedia
 import QuartzCore
 import VideoToolbox
 import WebcamLRProtocollo
+import os.log
 
 /// Decodifica i fotogrammi H.264 o HEVC (Annex B) con VideoToolbox, sul decodificatore hardware del Mac, in tempo reale
 /// (funzione 4). Una decodifica sola per tutto: la stessa immagine va a `livello` (la finestra), alle foto (funzione 35),
@@ -40,6 +41,13 @@ final class Schermo: @unchecked Sendable {
     private var codec: Codec = .h264
     private var sessioneDecodifica: VTDecompressionSession?
     private var formatoDecodifica: CMVideoFormatDescription?
+    /// Errori del decodificatore di fila nella risposta (non dati rovinati): oltre `erroriPerGuasto` la sessione si rifà.
+    private var erroriDecodificaDiFila = 0
+    private static let erroriPerGuasto = 3
+    /// Errori dei dati, non del decodificatore: dati rovinati e riferimento mancante (-17694,
+    /// kVTVideoDecoderReferenceMissingErr). Passano con il prossimo fotogramma chiave, senza rifare la sessione.
+    private static let erroriDeiDati: Set<Int> = [Int(kVTVideoDecoderBadDataErr), -17694]
+    private let registro = Logger(subsystem: "it.lrapps.webcamlr.mac", category: "schermo")
     /// La descrizione delle immagini decodificate per `livello`, rifatta solo quando cambiano misura o formato.
     private var formatoImmagini: CMVideoFormatDescription?
     private var ultimaImmagine: CVPixelBuffer?
@@ -90,6 +98,10 @@ final class Schermo: @unchecked Sendable {
     private var riservaAttuale: Int64 = 0
     private var uscitePiuTardi = 0
     private var registratore: Registratore?
+    /// Un file chiuso da solo (`interrompiRegistrazione`) non ha ancora finito di scriversi. Solo sulla coda.
+    private var chiusureInterrotteInCorso = 0
+    /// Chi ha chiesto di fermare mentre quel file si chiudeva (⌘Q): risponde a file chiuso. Solo sulla coda.
+    private var attesaChiusuraInterrotta: [@Sendable (URL?) -> Void] = []
     /// In attesa della prima immagine a schermo di una sessione (1.11): si chiama una volta e si toglie.
     private var avvisoMostrato: (@Sendable () -> Void)?
     /// Creato una volta: un CIContext nuovo a ogni foto costava decine di millisecondi.
@@ -209,12 +221,14 @@ final class Schermo: @unchecked Sendable {
         }
     }
 
-    /// L'ultima immagine ricevuta, per una foto; nil se non c'è ancora video.
-    func fotografa(_ completamento: @escaping @Sendable (CGImage?) -> Void) {
+    /// L'ultima immagine ricevuta, per una foto; nil se non c'è ancora video, o se a schermo c'è l'attesa (pausa,
+    /// collegamento interrotto: l'ultima immagine sarebbe vecchia e ferma). `fermo` dice quale dei due.
+    func fotografa(_ completamento: @escaping @Sendable (_ immagine: CGImage?, _ fermo: Bool) -> Void) {
         coda.async {
-            guard let immagine = self.ultimaImmagine else { return completamento(nil) }
+            guard self.mostrata == nil else { return completamento(nil, true) }
+            guard let immagine = self.ultimaImmagine else { return completamento(nil, false) }
             let ci = CIImage(cvPixelBuffer: immagine)
-            completamento(self.contestoFoto.createCGImage(ci, from: ci.extent))
+            completamento(self.contestoFoto.createCGImage(ci, from: ci.extent), false)
         }
     }
 
@@ -317,7 +331,12 @@ final class Schermo: @unchecked Sendable {
     /// Chiude il file; `completamento` riceve il file, oppure nil se non è stato registrato nulla.
     func fermaRegistrazione(_ completamento: @escaping @Sendable (URL?) -> Void) {
         coda.async {
-            guard let registratore = self.registratore else { return completamento(nil) }
+            guard let registratore = self.registratore else {
+                // Il file si è chiuso da solo un attimo fa e sta finendo di scriversi: si risponde dopo, così ⌘Q non
+                // esce con il .mov a metà.
+                if self.chiusureInterrotteInCorso > 0 { return self.attesaChiusuraInterrotta.append(completamento) }
+                return completamento(nil)
+            }
             self.registratore = nil
             registratore.chiudi(completamento)
         }
@@ -345,7 +364,18 @@ final class Schermo: @unchecked Sendable {
         self.registratore = nil
         let file = registratore.file
         let avviso = suRegistrazioneInterrotta
-        registratore.chiudi(causa: causa) { esito in avviso?(file, esito) }
+        chiusureInterrotteInCorso += 1
+        registratore.chiudi(causa: causa) { [weak self] esito in
+            avviso?(file, esito)
+            self?.coda.async {
+                guard let self else { return }
+                self.chiusureInterrotteInCorso = max(0, self.chiusureInterrotteInCorso - 1)
+                guard self.chiusureInterrotteInCorso == 0 else { return }
+                let attese = self.attesaChiusuraInterrotta
+                self.attesaChiusuraInterrotta = []
+                attese.forEach { $0(nil) }
+            }
+        }
     }
 
     // MARK: - Schermata di attesa
@@ -430,7 +460,13 @@ final class Schermo: @unchecked Sendable {
         // asincrona né riordino (il telefono non usa fotogrammi B), ogni fotogramma esce appena decodificato.
         let esito = VTDecompressionSessionDecodeFrame(sessione, sampleBuffer: campione, flags: [], infoFlagsOut: nil) {
             [weak self] stato, _, immagine, _, _ in
-            guard stato == noErr, let immagine, let self else { return }
+            guard let self else { return }
+            guard stato == noErr, let immagine else {
+                // Dati rovinati: tocca al prossimo fotogramma chiave. Altro (decodificatore guasto): si contano.
+                if !Schermo.erroriDeiDati.contains(Int(stato)) { self.erroriDecodificaDiFila += 1 }
+                return
+            }
+            self.erroriDecodificaDiFila = 0
             Schermo.completaColore(immagine)
             // Gli effetti del Mac: il motore elabora e consegna dalla sua coda; si torna qui per le uscite, se lo
             // schermo non è stato svuotato nel frattempo (telefono andato, sessione nuova).
@@ -444,10 +480,15 @@ final class Schermo: @unchecked Sendable {
             }
             if !elaborata { self.accodaAlRitmo(immagine, cattura: cattura, timestamp: timestamp) }
         }
-        // Dopo lo stop del Mac la sessione può non valere più: senza rifarla finestra, foto, finestra mini
-        // e webcam virtuale resterebbero ferme sull'ultima immagine. Si rifà dal prossimo fotogramma chiave
-        // (una sessione nuova non sa decodificare quelli che dipendono dai precedenti).
-        if Int(esito) == Int(kVTInvalidSessionErr) {
+        // Dopo lo stop del Mac la sessione può non valere più, e il decodificatore hardware si può guastare
+        // (kVTVideoDecoderMalfunctionErr, kVTVideoDecoderNotAvailableNowErr: cambio di scheda video sui Mac Intel):
+        // senza rifarla finestra, foto, finestra mini e webcam virtuale resterebbero ferme sull'ultima immagine.
+        // Ogni esito che non sia «fatto» o un errore dei dati la rifà, come pure tre errori di fila nella risposta.
+        // Si riparte dal prossimo fotogramma chiave (una sessione nuova non sa decodificare quelli che dipendono
+        // dai precedenti).
+        let guastoDellaChiamata = esito != noErr && !Self.erroriDeiDati.contains(Int(esito))
+        if guastoDellaChiamata || erroriDecodificaDiFila >= Self.erroriPerGuasto {
+            registro.error("Decodificatore guasto (esito \(esito, privacy: .public), \(self.erroriDecodificaDiFila, privacy: .public) errori di fila): rifaccio la sessione e aspetto un fotogramma chiave")
             chiudiDecodifica()
             attendiChiave = true
             chiaveAttesaDa = Orologio.adesso()
@@ -593,6 +634,7 @@ final class Schermo: @unchecked Sendable {
         if let sessioneDecodifica { VTDecompressionSessionInvalidate(sessioneDecodifica) }
         sessioneDecodifica = nil
         formatoDecodifica = nil
+        erroriDecodificaDiFila = 0
     }
 
     private static func descrizione(sps: Data, pps: Data) -> CMVideoFormatDescription? {

@@ -460,14 +460,18 @@ final class Ricevitore {
         compitoInOnda = Task { [weak self] in
             while !Task.isCancelled {
                 // La lettura passa da CoreMediaIO e può richiedere tempo: fuori dalla coda principale.
-                let letto = await Task.detached(priority: .utility) { () -> (Bool, UscitaWebcam.Formato?, [String], Int?) in
-                    let attivo = UscitaWebcam.leggiInOnda() ?? false
+                let letto = await Task.detached(priority: .utility) { () -> (Bool, UscitaWebcam.Formato?, [String], Int?, Bool) in
+                    let inOnda = UscitaWebcam.leggiInOnda()
+                    let attivo = inOnda ?? false
                     let app = attivo ? (UscitaWebcam.leggiApp() ?? []) : []
                     // L'attesa dentro la webcam virtuale fino alla consegna alle app (da vetro a uscita).
                     let attesa = attivo ? UscitaWebcam.leggiAttesaEstensione() : nil
-                    return (attivo, attivo ? UscitaWebcam.leggiFormato() : nil, app, attesa)
+                    return (attivo, attivo ? UscitaWebcam.leggiFormato() : nil, app, attesa, inOnda != nil)
                 }.value
                 guard let self, !Task.isCancelled else { return }
+                // La webcam virtuale c'è: la schermata di attesa parte subito, anche senza telefono (prima partiva
+                // solo con la prima immagine del telefono e le app vedevano «WebcamLR è chiusa» con l'app aperta).
+                if letto.4 { self.uscitaWebcam.avvia() }
                 self.uscitaWebcam.imposta(inOnda: letto.0, attesaEstensioneMs: letto.3)
                 // Il nome dell'app prima dello stato: la riga «In onda su Zoom» del registro lo usa.
                 if letto.2 != self.appWebcam { self.appWebcam = letto.2 }
@@ -521,6 +525,7 @@ final class Ricevitore {
 
     /// All'avvio dell'app: il livello dal microfono e, ogni 2 secondi, lo stato del driver nel sistema.
     func avviaMicrofono() {
+        microfono.imposta(acceso: microfonoAcceso)
         microfono.suLivello = { [weak self] livello in
             // Spento da qui: un livello rimasto in coda non riaccende l'indicatore.
             guard let self, self.microfonoAcceso || livello == 0 else { return }
@@ -573,6 +578,7 @@ final class Ricevitore {
     private func cambiaMicrofono(_ acceso: Bool) {
         microfonoAcceso = acceso
         UserDefaults.standard.set(acceso, forKey: Preferenze.microfonoTelefono)
+        microfono.imposta(acceso: acceso)
         if !acceso {
             microfono.ferma()
             audioInArrivo = false
@@ -669,6 +675,9 @@ final class Ricevitore {
     private func aggiornaInOnda(_ inUso: Bool) {
         guard inUso != webcamInUso else { return }
         webcamInUso = inUso
+        // Un'app usa la webcam anche senza telefono: il timer della schermata di attesa non deve finire in App Nap,
+        // altrimenti l'estensione resta oltre 2 secondi senza immagini e mostra «WebcamLR è chiusa».
+        tieniSveglia(inUso || !telefoni.isEmpty)
         // Nel registro e per VoiceOver solo con un telefono: senza, le app vedono la schermata d'attesa.
         if attivo != nil {
             let testo: String
@@ -1021,8 +1030,9 @@ final class Ricevitore {
             }
             inConferma = identita
             registra(String(localized: "Telefono nuovo, «\(nome)»: chiedo conferma con il codice"))
-            // Un telefono del cavo non consentito (o senza risposta) non deve ripresentarsi ogni 2 secondi.
-            if canaliCavo[identita] != nil { pausaCavo.insert(identita) }
+            // Il cavo va in pausa solo con «Non consentire» (`rispondiConferma`). Senza risposta entro 60 secondi
+            // il client del cavo riprova con l'attesa che cresce dei rifiuti: così «Riprova» sull'iPhone fa
+            // ricomparire la domanda, invece di aspettare un cavo in pausa.
             // Prima la notifica (solo se WebcamLR è in secondo piano), poi l'app davanti con la domanda.
             Notifiche.condivise.richiestaConsenso(nome)
             finestraConferma.mostra(nome: nome, codice: codice) { [weak self] consentito in
@@ -1177,6 +1187,11 @@ final class Ricevitore {
 
     /// L'obiettivo frontale nel protocollo (`stato.obiettivo`).
     static let obiettivoFrontale = "frontale"
+    /// Quanto il motore tiene lo sfondo dopo il passaggio dalla frontale a un obiettivo posteriore: la riconfigurazione
+    /// della fotocamera sul telefono dura qualche centinaio di millisecondi.
+    static let tenutaSfondoCambioObiettivo: Duration = .milliseconds(1500)
+    /// Quanto aspetta un tocco su Specchia o Sfoca arrivato prima dello `stato` con la frontale.
+    static let attesaRichiestaFrontale: Duration = .seconds(3)
 
     /// Effetti sul computer: specchio e sfondo del motore solo con la fotocamera frontale (o finché il telefono non
     /// ha detto l'obiettivo, per non mostrare lo sfondo vero all'inizio della sessione).
@@ -1222,8 +1237,14 @@ final class Ricevitore {
         sfondoSfocato ? LivelloSfocatura.vicino(a: effetti.intensitaSfondo) : livelloSfocatura
     }
 
+    /// Lo sfondo come lo applica il motore: «sostituito» salvato con un telefono senza Pro non c'è (`aggiornaMotore`),
+    /// e i pulsanti non devono dirlo acceso mentre la chiamata vede la stanza.
+    private var sfondoInUso: String {
+        effetti.sfondo == ModiSfondo.sostituito && bloccoPro ? ModiSfondo.nessuno : effetti.sfondo
+    }
+
     /// Sfocato o sostituito: il pulsante «Sfondo» sotto il video è acceso.
-    var sfondoAcceso: Bool { effetti.sfondo != ModiSfondo.nessuno }
+    var sfondoAcceso: Bool { sfondoInUso != ModiSfondo.nessuno }
 
     /// Sul telefono è accesa la sfocatura del sistema (`stato.sfocaturaSistema`: su iPhone «Ritratto» negli Effetti video
     /// di Apple). La accende e la regola solo il telefono: «Sfondo» la mostra accesa come «Sfocatura del telefono» e i
@@ -1235,7 +1256,7 @@ final class Ricevitore {
     var luceSistema: Bool { telefonoAttivo && statoTelefono?.luceSistema == true }
 
     /// La sfocatura del sistema conta per «Sfondo» solo se lo sfondo non è sostituito: allora vale lo sfondo scelto.
-    var sfocaturaDelTelefono: Bool { sfocaturaSistema && effetti.sfondo != ModiSfondo.sostituito }
+    var sfocaturaDelTelefono: Bool { sfocaturaSistema && sfondoInUso != ModiSfondo.sostituito }
 
     /// Ogni 10 secondi, mentre sul telefono c'è uno sfondo o un effetto del sistema (come il telefono con le sue
     /// «Prestazioni»): i numeri ricevuti dal Mac nel registro, fotogrammi reali e Mbit/s in arrivo.
@@ -1346,7 +1367,7 @@ final class Ricevitore {
     /// Per VoiceOver e l'aiuto del pulsante: «Nessuno», «Sfocatura: Medio», «Libreria».
     var descrizioneSfondo: String {
         if sfocaturaDelTelefono { return String(localized: "Sfocatura del telefono") }
-        return switch effetti.sfondo {
+        return switch sfondoInUso {
         case ModiSfondo.sfocato: String(localized: "Sfocatura: \(livelloSfocaturaAttuale.nome)")
         case ModiSfondo.sostituito: immagineSfondoAttuale.map { SfondiComputer.nome($0) } ?? String(localized: "Sostituito")
         default: String(localized: "Nessuno")
@@ -1552,14 +1573,16 @@ final class Ricevitore {
         }
         let scelti = effettiComputer
         let pro = attivo == nil || attivo?.capacita?.pro == true
-        // Con la fotocamera posteriore niente specchio né sfondo (si riprendono tornando alla frontale).
+        // Con la fotocamera posteriore niente specchio né sfondo (si riprendono tornando alla frontale). Lo sfondo
+        // resta ancora un attimo dopo lo `stato` che dice posteriore (`sfondoTenutoFino`).
         let frontale = Self.conFrontale(attivo)
+        let sfondoTenuto = attivo?.sfondoTenutoFino.map { ContinuousClock.now < $0 } ?? false
         var motore = ImpostazioniMotore()
         motore.calore = scelti.calore
         motore.specchia = scelti.specchia && frontale
         // Con «Luce da studio» o «Ritratto» del telefono accesi, le nostre restano spente: mai due.
         motore.luceVolto = scelti.luceVolto && !luceSistema
-        if frontale, (scelti.sfondo == ModiSfondo.sfocato && !sfocaturaSistema) || (scelti.sfondo == ModiSfondo.sostituito && pro) {
+        if frontale || sfondoTenuto, (scelti.sfondo == ModiSfondo.sfocato && !sfocaturaSistema) || (scelti.sfondo == ModiSfondo.sostituito && pro) {
             motore.sfondo = scelti.sfondo
             motore.intensitaSfondo = scelti.intensitaSfondo
             motore.immagineSfondo = scelti.sfondo == ModiSfondo.sostituito ? immagineSfondoAttuale : nil
@@ -1683,7 +1706,9 @@ final class Ricevitore {
         let stato = telefono.statoTelefono
         let frontale = Self.conFrontale(telefono)
         if !frontale, richiesta.specchia != nil || richiesta.sfondo != nil {
-            registra(String(localized: "Specchio e sfondo ignorati: il telefono usa la fotocamera posteriore"), di: telefono)
+            // Forse il telefono è già sulla frontale e il suo `stato` è in viaggio: la richiesta aspetta un attimo.
+            telefono.richiestaPerLaFrontale = (richiesta, .now)
+            registra(String(localized: "Specchio o sfondo chiesti dal telefono con la fotocamera posteriore: aspetto la frontale"), di: telefono)
         }
         var nuovi = effettiComputer
         if let specchia = richiesta.specchia, frontale { nuovi.specchia = specchia }
@@ -2218,17 +2243,10 @@ final class Ricevitore {
                 Notifiche.condivise.telefonoCollegato(ciao.nome)
             } else if let sessione = telefono.sessione {
                 // Lo stesso telefono torna: forse con una sessione nuova, ripartita in automatico.
-                // Gli si rimanda quello che il Mac mostra, così i due restano d'accordo.
-                let attuali = telefono.controlli
-                let comando = Comando(obiettivo: attuali.obiettivo, zoom: attuali.zoom, torcia: attuali.torcia, esposizione: attuali.esposizione,
-                                      bianco: attuali.biancoAutomatico ? 0 : Int(attuali.bianco),
-                                      iso: attuali.esposizioneManuale ? attuali.iso : 0,
-                                      tempo: attuali.esposizioneManuale ? attuali.tempo : 0)
-                // Come per i comandi dal pannello: il primo `stato` della sessione nuova, partito prima di questo
-                // comando, non riporta indietro per un attimo i valori che il Mac mostra (1.14).
-                telefono.segnaComando(comando)
-                sessione.comanda(comando)
-                // Gli effetti no: restano salvati sul telefono e tornano col primo `stato`. Il gobbo invece vive
+                // I controlli della fotocamera non si rimandano: durante la caduta sul Mac sono grigi, mentre sul
+                // telefono si possono cambiare (torcia, pizzico, obiettivo), e un iso/tempo a 0 toglierebbe il blocco
+                // AE/AF del tocco lungo. Il Mac si allinea al primo `stato` della sessione nuova.
+                // Gli effetti nemmeno: restano salvati sul telefono e tornano col primo `stato`. Il gobbo invece vive
                 // sul telefono solo per la sessione: si rimanda completo, dalla posizione dell'ultimo `stato`.
                 if let testo = telefono.testoGobboInviato {
                     sessione.mandaGobbo(Gobbo(testo: testo, velocita: gobbo.velocita, attivo: telefono.gobboAttivo,
@@ -2299,6 +2317,23 @@ final class Ricevitore {
             if telefono.controlli.obiettivo == stato.obiettivo { telefono.controlli.obiettivo = nil }
             telefono.allineaEffetti(stato)
             telefono.allineaControlli(stato, obiettivoPrima: obiettivoPrima)
+            // Dalla frontale alla posteriore lo `stato` può precedere gli ultimi fotogrammi della frontale: lo sfondo
+            // del motore resta ancora un attimo, poi si spegne (una posteriore sfocata per un attimo non fa danni).
+            if obiettivoPrima == Self.obiettivoFrontale, stato.obiettivo != Self.obiettivoFrontale {
+                telefono.sfondoTenutoFino = .now + Self.tenutaSfondoCambioObiettivo
+                Task { [weak self, weak telefono] in
+                    try? await Task.sleep(for: Self.tenutaSfondoCambioObiettivo)
+                    guard let self, let telefono, telefono === self.attivo else { return }
+                    self.aggiornaMotore()
+                }
+            } else if stato.obiettivo == Self.obiettivoFrontale {
+                telefono.sfondoTenutoFino = nil
+            }
+            // Tornato alla frontale: il tocco su Specchia o Sfoca arrivato un attimo prima vale adesso.
+            if stato.obiettivo == Self.obiettivoFrontale, let attesa = telefono.richiestaPerLaFrontale {
+                telefono.richiestaPerLaFrontale = nil
+                if ContinuousClock.now - attesa.quando < Self.attesaRichiestaFrontale { applica(attesa.richiesta, da: telefono) }
+            }
             // La sfocatura e la luce del sistema del telefono (Ritratto, Luce da studio) spengono le nostre: mai due.
             if scelto { aggiornaMotore() }
             mandaStatoEffetti(a: telefono)
@@ -2308,6 +2343,12 @@ final class Ricevitore {
             telefono.audioDalTelefono = stato.audio
             if scelto, let audio = stato.audio, let audioPrima, audio != audioPrima {
                 microfonoDalTelefono(audio, telefono: telefono)
+            } else if scelto, audioPrima == nil, stato.audio == true, !microfonoAcceso, telefonoMandaAudio {
+                // Sessione nuova con il microfono che va (era rimasto chiesto sul telefono) e l'interruttore spento
+                // qui: vale l'interruttore, il telefono smette di mandare la voce.
+                registra(String(localized: "Il telefono manda la voce con il microfono spento sul Mac: lo spengo anche lì"), di: telefono)
+                telefono.sessione?.comanda(Comando(audio: false))
+                telefono.audioComandato = false
             }
             if gobboAppenaComandato(telefono) {
                 // Il comando appena partito può non essere ancora arrivato: si aspetta il prossimo `stato`.
@@ -2432,6 +2473,8 @@ final class Ricevitore {
         guard inConferma == identita else { return }
         inConferma = nil
         registra(consentito ? String(localized: "Telefono consentito") : String(localized: "Telefono non consentito"))
+        // Un telefono del cavo non consentito non deve ripresentarsi ogni 2 secondi: il cavo va in pausa.
+        if !consentito, canaliCavo[identita] != nil { pausaCavo.insert(identita) }
         candidati[identita]?.rispondi(consentito: consentito)
     }
 
@@ -2485,11 +2528,12 @@ final class Ricevitore {
     }
 
     /// Niente App Nap né timer rallentati mentre arriva il video: la latenza resta costante (funzione 20).
-    /// Si tiene anche durante la riconnessione, fino a quando l'ultimo telefono viene dimenticato.
+    /// Si tiene anche durante la riconnessione, fino a quando l'ultimo telefono viene dimenticato, e mentre un'app
+    /// usa la webcam virtuale (la schermata di attesa arriva dal timer di UscitaWebcam).
     private func tieniSveglia(_ sveglia: Bool) {
         if sveglia, attivitaCollegamento == nil {
             attivitaCollegamento = ProcessInfo.processInfo.beginActivity(
-                options: [.userInitiated, .latencyCritical], reason: "Video dal telefono in tempo reale")
+                options: [.userInitiated, .latencyCritical], reason: "Video dal telefono o schermata di attesa in tempo reale")
         } else if !sveglia, let attivita = attivitaCollegamento {
             ProcessInfo.processInfo.endActivity(attivita)
             attivitaCollegamento = nil
@@ -2515,7 +2559,8 @@ final class Ricevitore {
             aggiornaUscite()
         }
         if telefoni.isEmpty {
-            tieniSveglia(false)
+            // Con un'app sulla webcam si resta svegli per la schermata di attesa (`aggiornaInOnda`).
+            tieniSveglia(webcamInUso)
             miniaturaVisibile = false
         }
     }

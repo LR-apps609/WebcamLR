@@ -2009,12 +2009,12 @@
         }
       }
     },
-    "Foto e registrazione sono di WebcamLR Pro: si sblocca dall'iPhone, in WebcamLR › App › WebcamLR Pro." : {
+    "Foto e registrazione sono di WebcamLR Pro: si sblocca dall'iPhone, in WebcamLR › Impostazioni › WebcamLR Pro." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Photos and recording are part of WebcamLR Pro: unlock it from the iPhone, in WebcamLR › App › WebcamLR Pro."
+            "value" : "Photos and recording are part of WebcamLR Pro: unlock it from the iPhone, in WebcamLR › Settings › WebcamLR Pro."
           }
         }
       }
@@ -2470,6 +2470,16 @@
         }
       }
     },
+    "Il telefono manda la voce con il microfono spento sul Mac: lo spengo anche lì" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The phone is sending its voice with the microphone off on the Mac: turning it off there too"
+          }
+        }
+      }
+    },
     "Il telefono non manda l'audio." : {
       "localizations" : {
         "en" : {
@@ -2656,6 +2666,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The video covers the whole window, cropping the edges. Only here: other apps get the whole video"
+          }
+        }
+      }
+    },
+    "Il video del telefono è fermo (in pausa o in attesa): riprova quando torna." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The phone's video is stopped (paused or waiting): try again when it's back."
           }
         }
       }
@@ -4705,12 +4725,12 @@
         }
       }
     },
-    "Quello che vedono Zoom e le altre app quando il video del telefono non c'è: telefono non collegato, collegamento interrotto, pausa. Con WebcamLR per Mac chiusa le app vedono sempre la schermata di WebcamLR." : {
+    "Quello che vedono Zoom e le altre app quando il video del telefono non c'è: collegamento interrotto, pausa. Vale con il telefono collegato (che dice se Pro è sbloccato): senza telefono, o con WebcamLR per Mac chiusa, le app vedono la schermata di WebcamLR." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "What Zoom and other apps see when there's no video from the phone: phone not connected, connection lost, paused. When WebcamLR for Mac is closed, apps always see the WebcamLR screen."
+            "value" : "What Zoom and other apps see when there's no video from the phone: connection lost, paused. It applies while the phone is connected (it's the phone that says Pro is unlocked): with no phone, or with WebcamLR for Mac closed, apps see the WebcamLR screen."
           }
         }
       }
@@ -5767,12 +5787,12 @@
         }
       }
     },
-    "Si sblocca dall'iPhone: apri WebcamLR › App › WebcamLR Pro." : {
+    "Si sblocca dall'iPhone: apri WebcamLR › Impostazioni › WebcamLR Pro." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Unlock it from the iPhone: open WebcamLR › App › WebcamLR Pro."
+            "value" : "Unlock it from the iPhone: open WebcamLR › Settings › WebcamLR Pro."
           }
         }
       }
@@ -5952,12 +5972,12 @@
         }
       }
     },
-    "Specchio e sfondo ignorati: il telefono usa la fotocamera posteriore" : {
+    "Specchio o sfondo chiesti dal telefono con la fotocamera posteriore: aspetto la frontale" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mirror and background ignored: the phone is using the rear camera"
+            "value" : "Mirror or background requested by the phone with the rear camera: waiting for the front camera"
           }
         }
       }
@@ -6219,6 +6239,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Phone not allowed"
+          }
+        }
+      }
+    },
+    "Telefono non più collegato: foto con il timer annullata" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phone no longer connected: timed photo cancelled"
           }
         }
       }

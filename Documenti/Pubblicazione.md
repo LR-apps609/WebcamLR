@@ -163,7 +163,7 @@ scritto da nessuna parte nell'app: si legge sempre dall'App Store (`displayPrice
    - EN: nome «WebcamLR Pro», descrizione «1080p, 4K, 60 fps, effects and the whole Mac. Forever.»
 6. **In famiglia**: attiva **Condivisione in famiglia**. Attenzione: una volta attivata non si può più spegnere (va bene così, è
    la scelta di Ledion).
-7. **Informazioni per la revisione** dell'acquisto: uno screenshot della pagina «WebcamLR Pro» sull'iPhone (App › WebcamLR Pro, con
+7. **Informazioni per la revisione** dell'acquisto: uno screenshot della pagina «WebcamLR Pro» sull'iPhone (Impostazioni › WebcamLR Pro, con
    il pulsante «Sblocca Pro») e la nota qui sotto (*Note per la revisione*).
 8. Il **primo** acquisto in-app si invia **insieme a una versione dell'app**: nella pagina della versione, sezione «Acquisti in-app e
    abbonamenti», seleziona WebcamLR Pro prima di «Aggiungi per la revisione». Dalla volta dopo l'acquisto è già approvato.

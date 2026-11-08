@@ -4705,12 +4705,12 @@
         }
       }
     },
-    "Quello che vedono Zoom e le altre app quando il video del telefono non c'è: telefono non collegato, collegamento interrotto, pausa. Con WebcamLR per Mac chiusa le app vedono sempre la schermata di WebcamLR." : {
+    "Quello che vedono Zoom e le altre app quando il video del telefono non c'è: collegamento interrotto, pausa. Vale con il telefono collegato (che dice se Pro è sbloccato): senza telefono, o con WebcamLR per Mac chiusa, le app vedono la schermata di WebcamLR." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "What Zoom and other apps see when there's no video from the phone: phone not connected, connection lost, paused. When WebcamLR for Mac is closed, apps always see the WebcamLR screen."
+            "value" : "What Zoom and other apps see when there's no video from the phone: connection lost, paused. It applies while the phone is connected (it's the phone that says Pro is unlocked): with no phone, or with WebcamLR for Mac closed, apps see the WebcamLR screen."
           }
         }
       }

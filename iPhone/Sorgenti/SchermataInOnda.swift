@@ -479,7 +479,6 @@ struct SchermataInOnda: View {
 
     // MARK: - Annunci (G2.8)
 
-    /// Questo telefono è nel video di un'app (con più telefoni, quello scelto).
     /// Un'app sul computer usa il video di questo telefono (anche fuori da `.collegato`).
     private var videoPreso: Bool {
         sessione.inOnda != nil && !sessione.prontaCam2
@@ -493,6 +492,7 @@ struct SchermataInOnda: View {
         annuncia(titolo + ". " + testo)
     }
 
+    /// Questo telefono è nel video di un'app (con più telefoni, quello scelto).
     private var inOndaQui: Bool {
         sessione.stato == .collegato && sessione.inOnda != nil && !sessione.prontaCam2
     }

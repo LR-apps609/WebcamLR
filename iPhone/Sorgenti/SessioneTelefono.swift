@@ -915,7 +915,9 @@ final class SessioneTelefono {
         guard !cambiatiInRiconnessione.isEmpty else { return }
         Task { [weak self] in
             try? await Task.sleep(for: .seconds(3))
-            self?.cambiatiInRiconnessione = []
+            // Caduto di nuovo nel frattempo: i cambi segnati ora sono della riconnessione nuova e restano.
+            guard let self, self.stato == .collegato else { return }
+            self.cambiatiInRiconnessione = []
         }
     }
 

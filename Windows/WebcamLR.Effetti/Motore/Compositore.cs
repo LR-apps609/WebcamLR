@@ -236,9 +236,10 @@ public sealed class Compositore
         if (alfa.Length != lw * aw) alfa = new byte[lw * aw];
         var sostituito = imp.Sfondo == ModiSfondo.Sostituito;
         var intensita = Math.Clamp(imp.IntensitaSfondo, 0, 1);
-        // Con «sostituito» e intensità alta il bordo è più netto (larghezza della soglia da 0,8 a 0,2), come sul Mac.
-        var morbidezza = sostituito ? 0.8 - 0.6 * intensita : 0.5;
-        Elaborazione.SogliaMorbida(rifinita, alfa, (float)morbidezza);
+        // Con «sostituito» e intensità alta il bordo è più netto (larghezza della soglia da 0,8 a 0,2), come sul Mac; con lo
+        // sfocato la soglia 0,3–0,7 del banco di qualità (variante D*).
+        if (sostituito) Elaborazione.SogliaMorbida(rifinita, alfa, (float)(0.8 - 0.6 * intensita));
+        else Elaborazione.SogliaMorbida(rifinita, alfa, Elaborazione.LarghezzaSogliaSfocato, Elaborazione.CentroSogliaSfocato);
 
         // Il fondo: l'immagine scelta alla misura del video, o lo sfondo sfocato senza alone (piccolo).
         ImmagineBgra? fondoPieno = null;

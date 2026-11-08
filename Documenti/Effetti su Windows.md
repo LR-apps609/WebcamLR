@@ -79,8 +79,9 @@ telefono ──H.264/HEVC──▶ MotoreVideo (WebcamLR.App)
 ### Ricette (portate dal Mac e dall'iPhone)
 
 - **Bordo**: maschera dal quarto della misura, filtro guidato «veloce» (coefficienti al quarto, resa a metà risoluzione,
-  guida = luminosità del video) = bordo guidato dal colore; soglia morbida smoothstep centrata a **0,42**, larga 0,5
-  (sfocato) o da 0,8 a 0,2 con l'intensità (sostituito).
+  guida = luminosità del video) = bordo guidato dal colore; soglia morbida smoothstep **0,3–0,7** (centro 0,5, larga
+  0,4: variante «D\*» del banco di qualità, `Documenti/Qualità sfondo - banco.md`) con lo sfocato, centrata a 0,42 e
+  larga da 0,8 a 0,2 con l'intensità con il sostituito.
 - **Sfocatura senza alone**: persona allargata (2m − 0,3) tolta come alfa, sfocatura gaussiana di sfondo × alfa e
   dell'alfa, poi divisione: ogni punto prende colore solo dallo sfondo vicino. Sigma a 1080p 32 × intensità^1,6 (Poco
   3,5 px, Medio 12 px, Tanto 32 px), calcolata sul gradino della piramide (1/4…1/32) dove resta sotto i 3 px.
@@ -237,6 +238,11 @@ var maschera = ritaglio.Calcola(bgra, 1920, 1080, passo); // bloccante: fuori da
 - **Post-elaborazione** (`Preparazione.Persona`): persona = 1 − sfondo col multiclasse, il canale unico col leggero.
 - **Filtro nel tempo senza ritardo** (`FiltroTemporale`): lo stesso di Android, peso della nuova 0,7 + 3 × |differenza|
   (al massimo 1): il tremolio del bordo si smorza, il movimento passa subito. Nessun fotogramma di attesa.
+- **Media dal movimento** (`MediaNelMovimento`, dopo il filtro nel tempo; variante «D\*» del banco di qualità): media
+  della maschera con peso della nuova 0,35 + 12 × |ΔY| (ΔY = differenza di luminanza tra due fotogrammi alla misura della
+  maschera, media 5×5), tra 0,35 e 1: dove l'immagine è ferma il bordo trema un terzo in meno, dove si muove vale subito
+  la nuova. Stessi conti di `Strumenti/banco_sfondo/varianti.py` (classe C): `verifica_cs.py` dà 0 punti diversi sul
+  modello pieno.
 - **Ripiego** (`MisuraVelocita`): senza DirectML si parte dal leggero; col pieno, dopo 5 maschere di riscaldamento e
   20 di prova, se la media supera 25 ms si passa al leggero per il resto della sessione (sulla stessa scheda video). Il
   motivo è in `MotivoRipiego`, per il registro.

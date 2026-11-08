@@ -168,6 +168,17 @@ public class MotoreTest(ITestOutputHelper uscita)
         Assert.Equal(255, uscita[2]);
     }
 
+    [Fact]
+    public void ConLoSfocatoLaSogliaVaDa03A07()
+    {
+        var uscita = new byte[4];
+        Elaborazione.SogliaMorbida([0.5f, 0.3f, 0.7f, 0.42f], uscita, Elaborazione.LarghezzaSogliaSfocato, Elaborazione.CentroSogliaSfocato);
+        Assert.InRange((int)uscita[0], 126, 129);
+        Assert.Equal(0, uscita[1]);
+        Assert.Equal(255, uscita[2]);
+        Assert.InRange((int)uscita[3], 40, 70);
+    }
+
     [Theory]
     [InlineData(0.25, 0)]
     [InlineData(0.55, 1)]

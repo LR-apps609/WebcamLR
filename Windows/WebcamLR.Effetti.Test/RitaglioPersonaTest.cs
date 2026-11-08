@@ -147,4 +147,66 @@ public class RitaglioPersonaTest(ITestOutputHelper uscita)
             }
         }
     }
+
+    // MARK: media dal movimento (variante D* del banco di qualità)
+
+    private static float[] Grigio(int n, float valore)
+    {
+        var rgb = new float[n * 3];
+        Array.Fill(rgb, valore);
+        return rgb;
+    }
+
+    [Fact]
+    public void DoveLImmagineEFermaLaMascheraNuovaPesaPoco()
+    {
+        const int l = 16, a = 8, n = l * a;
+        var media = new MediaNelMovimento();
+        var rgb = Grigio(n, 0.5f);
+        var maschera = new float[n];
+        media.Applica(maschera, rgb, l, a);
+        Assert.All(maschera, v => Assert.Equal(0f, v));
+        // Immagine ferma, maschera che salta a 1: si muove solo del peso da fermo.
+        Array.Fill(maschera, 1f);
+        media.Applica(maschera, rgb, l, a);
+        Assert.All(maschera, v => Assert.Equal(MediaNelMovimento.PesoFermo, v, 1e-6f));
+    }
+
+    [Fact]
+    public void DoveLImmagineSiMuoveValeSubitoLaNuova()
+    {
+        const int l = 16, a = 8, n = l * a;
+        var media = new MediaNelMovimento();
+        var maschera = new float[n];
+        media.Applica(maschera, Grigio(n, 0.2f), l, a);
+        // Luminanza cambiata di 0,3 ovunque: 0,35 + 12 × 0,3 > 1, la maschera nuova passa intera.
+        Array.Fill(maschera, 1f);
+        media.Applica(maschera, Grigio(n, 0.5f), l, a);
+        Assert.All(maschera, v => Assert.Equal(1f, v, 1e-6f));
+        // Dimentica: il fotogramma dopo riparte dalla maschera com'è.
+        media.Dimentica();
+        Array.Fill(maschera, 0.25f);
+        media.Applica(maschera, Grigio(n, 0.5f), l, a);
+        Assert.All(maschera, v => Assert.Equal(0.25f, v));
+    }
+
+    [Fact]
+    public void IlMovimentoSiMediaSuCinquePerCinque()
+    {
+        // Un solo punto cambia: il peso sale attorno a lui (finestra 5×5, bordi ristretti) e resta da fermo più in là.
+        const int l = 12, a = 12, n = l * a;
+        var media = new MediaNelMovimento();
+        var maschera = new float[n];
+        media.Applica(maschera, Grigio(n, 0.5f), l, a);
+        var rgb = Grigio(n, 0.5f);
+        var centro = 6 * l + 6;
+        for (var c = 0; c < 3; c++) rgb[centro * 3 + c] = 1f;
+        Array.Fill(maschera, 1f);
+        media.Applica(maschera, rgb, l, a);
+        var atteso = Math.Clamp(MediaNelMovimento.PesoFermo + MediaNelMovimento.Pendenza * 0.5f / 25f, MediaNelMovimento.PesoFermo, 1f);
+        Assert.Equal(atteso, maschera[centro], 1e-5f);
+        Assert.Equal(atteso, maschera[8 * l + 8], 1e-5f);
+        Assert.Equal(MediaNelMovimento.PesoFermo, maschera[9 * l + 9], 1e-6f);
+        Assert.Equal(MediaNelMovimento.PesoFermo, maschera[0], 1e-6f);
+    }
 }

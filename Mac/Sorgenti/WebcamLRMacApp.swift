@@ -36,7 +36,12 @@ struct WebcamLRMacApp: App {
         // Punto 8: «Scollega» chiede prima anche mentre registri.
         ricevitore.staRegistrando = { [weak riprese] in riprese?.registra ?? false }
         // Il telefono che si registrava se n'è andato (non tornato in 15 secondi, o scollegato): si chiude e si salva.
+        // Anche il timer della foto: la foto sarebbe dell'altro telefono, che va nella webcam al suo posto.
         ricevitore.primaDiDimenticareLoScelto = { [weak riprese] in
+            if riprese?.contoAllaRovescia != nil {
+                riprese?.annullaTimer()
+                riprese?.annota(String(localized: "Telefono non più collegato: foto con il timer annullata"))
+            }
             riprese?.fermaRegistrazione(avvisoSalvata: String(localized: "Telefono non più collegato: registrazione salvata in Filmati › WebcamLR"))
         }
         // Il telefono che si registrava è in sottofondo: può restare via fino a 10 minuti, si chiude e si salva subito.

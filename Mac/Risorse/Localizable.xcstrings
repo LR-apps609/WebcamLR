@@ -6223,6 +6223,16 @@
         }
       }
     },
+    "Telefono non più collegato: foto con il timer annullata" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phone no longer connected: timed photo cancelled"
+          }
+        }
+      }
+    },
     "Telefono non più collegato: registrazione salvata in Filmati › WebcamLR" : {
       "localizations" : {
         "en" : {

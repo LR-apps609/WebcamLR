@@ -601,6 +601,89 @@ public class MotoreTest(ITestOutputHelper uscita)
     }
 
     [Fact]
+    public void SchedaVideoPersaLaFonteSiRiapre()
+    {
+        // Collaudo 22: la prima fonte funziona due volte, poi lancia sempre (DXGI_ERROR_DEVICE_REMOVED); la seconda va.
+        var stato = new StatoEffettiComputer();
+        stato.Imposta(new ImpostazioniMotore { Sfondo = ModiSfondo.Sostituito, IntensitaSfondo = 1 });
+        var create = new List<Acceleratore>();
+        var chiamatePrima = 0;
+        using var motore = new MotoreEffetti(stato, (_, acceleratore) =>
+        {
+            lock (create) create.Add(acceleratore);
+            return create.Count == 1
+                ? new FonteFinta(() => ++chiamatePrima <= 2 ? MascheraScena() : throw new InvalidOperationException("scheda video persa"))
+                : new FonteFinta();
+        });
+        motore.Abilita(true);
+        var consegnate = 0;
+        for (var i = 0; i < 10; i++)
+        {
+            using var fatto = new SemaphoreSlim(0);
+            motore.Elabora(Riempita(motore), _ =>
+            {
+                Interlocked.Increment(ref consegnate);
+                fatto.Release();
+            });
+            fatto.Wait(1000);
+        }
+        Assert.Equal([Acceleratore.Automatico, Acceleratore.Automatico], create);
+        Assert.Equal(10, consegnate);
+        var note = motore.PrendiNote();
+        Assert.Contains(note, n => n is MotoreEffetti.Nota.FonteRiaperta { ErroriDiFila: MotoreEffetti.ErroriPerRiaprire, SulProcessore: false });
+        Assert.Equal(MotoreEffetti.ErroriPerRiaprire, motore.PrendiMisure().ErroriMaschera);
+    }
+
+    [Fact]
+    public void SeLaSchedaVideoNonTornaSiPassaAlProcessore()
+    {
+        // Ogni fonte nuova sulla scheda video fallisce: la seconda riapertura è sul processore, poi niente giri senza fine.
+        var stato = new StatoEffettiComputer();
+        stato.Imposta(new ImpostazioniMotore { Sfondo = ModiSfondo.Sfocato });
+        var create = new List<Acceleratore>();
+        using var motore = new MotoreEffetti(stato, (_, acceleratore) =>
+        {
+            lock (create) create.Add(acceleratore);
+            return new FonteFinta(() => throw new InvalidOperationException("ancora persa"));
+        });
+        motore.Abilita(true);
+        for (var i = 0; i < 20; i++)
+        {
+            motore.Elabora(Riempita(motore), _ => { });
+            Thread.Sleep(20);
+        }
+        Thread.Sleep(200);
+        Assert.Equal(
+            [Acceleratore.Automatico, Acceleratore.Automatico, Acceleratore.Processore, Acceleratore.Processore],
+            create);
+        Assert.Contains(motore.PrendiNote(), n => n is MotoreEffetti.Nota.FonteRiaperta { SulProcessore: true });
+    }
+
+    [Fact]
+    public void UnaMascheraVecchiaNonSiUsa()
+    {
+        // Riservatezza: una sagoma ferma da più di mezzo secondo lascerebbe vedere la stanza dove la persona si sposta.
+        var stato = new StatoEffettiComputer();
+        stato.Imposta(new ImpostazioniMotore { Sfondo = ModiSfondo.Sostituito, IntensitaSfondo = 1 });
+        var chiamate = 0;
+        using var motore = new MotoreEffetti(stato, _ => new FonteFinta(() => ++chiamate == 1 ? MascheraScena() : throw new InvalidOperationException("prova")));
+        motore.Abilita(true);
+        var consegnate = 0;
+        using var fatto = new SemaphoreSlim(0);
+        motore.Elabora(Riempita(motore), _ =>
+        {
+            Interlocked.Increment(ref consegnate);
+            fatto.Release();
+        });
+        Assert.True(fatto.Wait(5000));
+        Thread.Sleep((int)(MotoreEffetti.EtaMassimaMaschera / 1000) + 100);
+        motore.Elabora(Riempita(motore), _ => Interlocked.Increment(ref consegnate));
+        Thread.Sleep(300);
+        Assert.Equal(1, consegnate);
+        Assert.True(motore.PrendiMisure().SenzaMaschera >= 1);
+    }
+
+    [Fact]
     public void ConIlRitaglioVeroSulProcessore()
     {
         // Il motore con il modello leggero della libreria (sul processore, anche su Linux) sulla persona disegnata.

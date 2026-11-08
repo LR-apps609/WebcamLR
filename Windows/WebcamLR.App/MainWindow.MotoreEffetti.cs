@@ -356,6 +356,9 @@ public sealed partial class MainWindow
             {
                 MotoreEffetti.Nota.Livello l => Testi.T("Registro_EffettiLivello", l.FotogrammaMs, l.MascheraMs, l.ResaMs, NomeLivello(l.Nuovo)),
                 MotoreEffetti.Nota.ErroreMaschera e => Testi.T("Registro_EffettiErrore", e.Totale, e.Errore),
+                MotoreEffetti.Nota.FonteRiaperta r => r.SulProcessore
+                    ? Testi.T("Registro_EffettiFonteRiapertaProcessore", r.ErroriDiFila)
+                    : Testi.T("Registro_EffettiFonteRiaperta", r.ErroriDiFila),
                 MotoreEffetti.Nota.Fonte f => f.Motivo is { } motivo
                     ? Testi.T("Registro_EffettiFonteMotivo", NomeFonte(f.InUso, f.Modello), motivo)
                     : Testi.T("Registro_EffettiFonte", NomeFonte(f.InUso, f.Modello)),

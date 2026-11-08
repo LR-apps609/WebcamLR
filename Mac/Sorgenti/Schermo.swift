@@ -72,12 +72,25 @@ final class Schermo: @unchecked Sendable {
         case codecCambiato(Codec)
         /// Il fotogramma chiave atteso dopo `decodificaRifatta` o `codecCambiato` è arrivato, dopo questi ms.
         case chiaveArrivata(dopoMs: Int)
+        /// Qualità 13: il decodificatore ha dato errore (es. -12911) o ha scartato un fotogramma (codice 0): si aspetta
+        /// un fotogramma chiave e lo si chiede al telefono.
+        case erroreDecodifica(codice: Int)
     }
     /// Sotto `bloccoPause`.
     private var avvisi: [Avviso] = []
     /// Da quando (`Orologio`, µs) si aspetta un fotogramma chiave per un codec cambiato o una decodifica rifatta;
     /// 0 se no. Solo sulla coda.
     private var chiaveAttesaDa: UInt64 = 0
+    /// Qualità 13: chi manda `chiedi-chiave` al telefono (la sessione attuale, con `chiediChiave(con:)`). Solo sulla coda.
+    private var suChiediChiave: (@Sendable () -> Void)?
+    /// L'ultima richiesta (`Orologio`, µs; 0 = nessuna): al massimo una al secondo (Protocollo.md, «Fotogramma chiave su
+    /// richiesta»). Solo sulla coda.
+    private var ultimaChiaveChiesta: UInt64 = 0
+    private static let intervalloChiaveChiesta: UInt64 = 1_000_000
+    /// L'esito dell'ultima decodifica, scritto dal suo richiamo (sincrono, sulla coda): noErr, l'errore, oppure
+    /// `Self.fotogrammaScartato` se il decodificatore non ha dato un'immagine.
+    private var esitoRichiamo: OSStatus = noErr
+    private static let fotogrammaScartato: OSStatus = 1
     /// Da quando (`DispatchTime`, ns) la finestra mostra «interrotta»; 0 se no. Solo sulla coda.
     private var interrottaDa: UInt64 = 0
     /// La riserva di riproduzione (`RiservaRiproduzione`) e le immagini che vi aspettano, in ordine, con l'istante in
@@ -156,6 +169,26 @@ final class Schermo: @unchecked Sendable {
     /// Dove mandare ogni immagine decodificata (webcam virtuale e finestra mini); nil per nessuno.
     func inviaImmagini(a destinatario: ((CVPixelBuffer, Int64?) -> Void)?) {
         coda.async { self.suImmagine = destinatario }
+    }
+
+    /// Qualità 13: chi manda `chiedi-chiave` al telefono di questo schermo (nil: nessuno). Lo imposta la sessione quando
+    /// diventa quella attuale; le richieste hanno il limite di una al secondo.
+    func chiediChiave(con richiesta: (@Sendable () -> Void)?) {
+        coda.async {
+            self.suChiediChiave = richiesta
+            self.ultimaChiaveChiesta = 0
+        }
+    }
+
+    /// Sulla coda: il decodificatore non può andare avanti senza un fotogramma chiave. Al massimo una richiesta al
+    /// secondo; se la chiave non arriva, la richiesta si ripete al prossimo fotogramma dopo il secondo.
+    private func chiediChiaveAlTelefono() {
+        guard let suChiediChiave else { return }
+        let adesso = Orologio.adesso()
+        if ultimaChiaveChiesta != 0, adesso >= ultimaChiaveChiesta,
+           adesso - ultimaChiaveChiesta < Self.intervalloChiaveChiesta { return }
+        ultimaChiaveChiesta = adesso
+        suChiediChiave()
     }
 
     /// Il telefono ha annunciato un formato: se il codec cambia, si riparte dal prossimo fotogramma chiave.
@@ -284,7 +317,12 @@ final class Schermo: @unchecked Sendable {
         }
 
         if attendiChiave {
-            guard fotogramma.chiave else { return }
+            // Qualità 13: video senza un fotogramma chiave da cui partire (collegamento a metà, codec cambiato,
+            // errore di decodifica): lo si chiede al telefono invece di aspettare quello fisso ogni 10 secondi.
+            guard fotogramma.chiave else {
+                chiediChiaveAlTelefono()
+                return
+            }
             attendiChiave = false
             if chiaveAttesaDa != 0 {
                 avvisa(.chiaveArrivata(dopoMs: Int((arrivo > chiaveAttesaDa ? arrivo - chiaveAttesaDa : 0) / 1000)))
@@ -428,9 +466,16 @@ final class Schermo: @unchecked Sendable {
         guard let sessione = sessioneDecodifica else { return }
         // Sincrona: l'immagine arriva prima che la chiamata finisca, sulla stessa coda. Senza flag: niente decodifica
         // asincrona né riordino (il telefono non usa fotogrammi B), ogni fotogramma esce appena decodificato.
+        esitoRichiamo = noErr
         let esito = VTDecompressionSessionDecodeFrame(sessione, sampleBuffer: campione, flags: [], infoFlagsOut: nil) {
-            [weak self] stato, _, immagine, _, _ in
-            guard stato == noErr, let immagine, let self else { return }
+            [weak self] stato, informazioni, immagine, _, _ in
+            guard let self else { return }
+            // Qualità 13: errore o fotogramma scartato si guardano dopo la chiamata, fuori dal richiamo (qui la
+            // sessione non si può chiudere).
+            guard stato == noErr, let immagine, !informazioni.contains(.frameDropped) else {
+                self.esitoRichiamo = stato != noErr ? stato : Self.fotogrammaScartato
+                return
+            }
             Schermo.completaColore(immagine)
             // Gli effetti del Mac: il motore elabora e consegna dalla sua coda; si torna qui per le uscite, se lo
             // schermo non è stato svuotato nel frattempo (telefono andato, sessione nuova).
@@ -452,6 +497,23 @@ final class Schermo: @unchecked Sendable {
             attendiChiave = true
             chiaveAttesaDa = Orologio.adesso()
             avvisa(.decodificaRifatta)
+            chiediChiaveAlTelefono()
+            return
+        }
+        // Qualità 13: qualsiasi altro errore (es. kVTVideoDecoderMalfunctionErr, -12911, o dati non validi) o un
+        // fotogramma scartato. I fotogrammi dopo dipendono da questo (il telefono non usa fotogrammi B): si aspetta un
+        // fotogramma chiave e lo si chiede subito al telefono. Con un errore vero si rifà anche la sessione (dopo un
+        // -12911 il decodificatore non è affidabile); per uno scarto senza errore no.
+        let errore = esito != noErr ? esito : esitoRichiamo
+        if errore != noErr {
+            esitoRichiamo = noErr
+            if errore != Self.fotogrammaScartato { chiudiDecodifica() }
+            if !attendiChiave {
+                attendiChiave = true
+                chiaveAttesaDa = Orologio.adesso()
+                avvisa(.erroreDecodifica(codice: errore == Self.fotogrammaScartato ? 0 : Int(errore)))
+            }
+            chiediChiaveAlTelefono()
         }
     }
 

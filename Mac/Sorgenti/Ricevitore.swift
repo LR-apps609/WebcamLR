@@ -1283,6 +1283,14 @@ final class Ricevitore {
             case .chiaveArrivata(let dopoMs):
                 let dopo = Lingua.decimali(String(format: "%.1f s", Double(dopoMs) / 1000))
                 registra(String(localized: "Fotogramma chiave arrivato dopo \(dopo)"), di: telefono)
+            case .erroreDecodifica(let codice):
+                if codice == 0 {
+                    registra(String(localized: "Fotogramma scartato dalla decodifica: chiedo un fotogramma chiave al telefono"),
+                             di: telefono)
+                } else {
+                    registra(String(localized: "Errore di decodifica \(codice): chiedo un fotogramma chiave al telefono"),
+                             di: telefono)
+                }
             }
         }
     }

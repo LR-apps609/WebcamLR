@@ -1715,6 +1715,16 @@
         }
       }
     },
+    "Errore di decodifica %lld: chiedo un fotogramma chiave al telefono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Decoding error %lld: asking the phone for a keyframe"
+          }
+        }
+      }
+    },
     "Errore di scrittura sul disco: registrazione fermata, niente da salvare. Controlla il disco e riprova." : {
       "localizations" : {
         "en" : {
@@ -2095,6 +2105,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Frame copied: paste it anywhere"
+          }
+        }
+      }
+    },
+    "Fotogramma scartato dalla decodifica: chiedo un fotogramma chiave al telefono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Frame dropped by the decoder: asking the phone for a keyframe"
           }
         }
       }

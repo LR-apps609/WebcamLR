@@ -163,7 +163,7 @@ public class RegolaFirewallTest
     {
         const string exe = @"C:\Users\Ledion Rama\AppData\Local\Programs\WebcamLR\WebcamLR.exe";
         Assert.Equal("advfirewall firewall add rule name=\"WebcamLR\" dir=in action=allow program=\"" + exe
-                     + "\" enable=yes profile=private description=\"" + RegolaFirewall.Descrizione + "\"",
+                     + "\" enable=yes profile=private,domain description=\"" + RegolaFirewall.Descrizione + "\"",
             RegolaFirewall.ArgomentiAggiungi(exe));
         Assert.Equal("advfirewall firewall delete rule name=\"WebcamLR\" program=\"" + exe + "\"", RegolaFirewall.ArgomentiTogli(exe));
         Assert.DoesNotContain('"', RegolaFirewall.Descrizione);

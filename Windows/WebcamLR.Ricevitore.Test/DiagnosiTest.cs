@@ -233,6 +233,16 @@ public class RegoleFirewallTest
     }
 
     [Fact]
+    public void RegolaDiSistemaCopreLaReteDiDominio()
+    {
+        // Collaudo 19: come la scrive netsh con «profile=private,domain» (il pulsante «Sistema»).
+        const string sistema = @"v2.33|Action=Allow|Active=TRUE|Dir=In|Profile=Domain|Profile=Private|App=C:\Programmi\WebcamLR\WebcamLR.exe|Name=WebcamLR|";
+        Assert.Equal(StatoFirewall.Consentito, RegoleFirewall.Valuta([sistema], Programma, 52740, ProfiloRete.Dominio, true));
+        Assert.Equal(StatoFirewall.Consentito, RegoleFirewall.Valuta([sistema], Programma, 52740, ProfiloRete.Privata, true));
+        Assert.Equal(StatoFirewall.RegolaMancante, RegoleFirewall.Valuta([sistema], Programma, 52740, ProfiloRete.Pubblica, true));
+    }
+
+    [Fact]
     public void RegolaSenzaProfiloValePerTutte()
     {
         var tutte = ConsentitaPrivataTcp.Replace("Profile=Private|", "");

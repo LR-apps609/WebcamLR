@@ -340,6 +340,20 @@ public class SpecchioEStatoTest
     }
 
     [Fact]
+    public void IlComandoDiRicollegamentoSegnatoNonTornaIndietro()
+    {
+        // Collaudo 44: lo stesso telefono torna ripartito coi valori di serie; il PC gli rimanda i suoi comandi,
+        // segnati come quelli della finestra, e il primo stato della sessione nuova non li riporta indietro.
+        var allineamento = new AllineamentoFotocamera();
+        var capacita = new Capacita(["principale"], 5, true, 25, 3200);
+        var comandi = new ComandiFotocamera(2.5, true, -0.5, true, 5000, true, 400, 50);
+        var ricollegamento = comandi.PerRicollegamento();
+        allineamento.Segna(ricollegamento, 10_000);
+        var diSerie = Stato("principale") with { Zoom = 1, Torcia = false, Esposizione = 0, Bianco = 0, Iso = 0, Tempo = 0 };
+        Assert.Equal(comandi, allineamento.Allinea(comandi, diSerie, "principale", capacita, 10_300));
+    }
+
+    [Fact]
     public void TelefonoVecchioCambioDiObiettivo()
     {
         var allineamento = new AllineamentoFotocamera();

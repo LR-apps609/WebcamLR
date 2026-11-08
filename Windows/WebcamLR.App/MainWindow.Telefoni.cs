@@ -410,7 +410,11 @@ public sealed partial class MainWindow
             // Lo stesso telefono torna, forse con una sessione nuova ripartita in automatico: gli si rimandano i comandi
             // che la finestra ricorda per lui, così i due restano d'accordo. Gli effetti restano salvati sul telefono e
             // arrivano con il primo stato; il gobbo invece vive solo nella sessione: si rimanda completo.
-            _ = ComandaAsync(nuova, collegato.Comandi.PerRicollegamento());
+            // Segnato come i comandi della finestra: il primo stato della sessione nuova, partito prima che il telefono
+            // applicasse questo comando, non riporta indietro zoom, torcia ed esposizione (collaudo 44).
+            var ricollegamento = collegato.Comandi.PerRicollegamento();
+            collegato.Allineamento.Segna(ricollegamento, AdessoMs);
+            _ = ComandaAsync(nuova, ricollegamento);
             RimandaGobbo(collegato, nuova);
         }
         else if (telefoni.Conteggio > 1)

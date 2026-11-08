@@ -1226,8 +1226,14 @@ final class Ricevitore {
         sfondoSfocato ? LivelloSfocatura.vicino(a: effetti.intensitaSfondo) : livelloSfocatura
     }
 
+    /// Lo sfondo come lo applica il motore: «sostituito» salvato con un telefono senza Pro non c'è (`aggiornaMotore`),
+    /// e i pulsanti non devono dirlo acceso mentre la chiamata vede la stanza.
+    private var sfondoInUso: String {
+        effetti.sfondo == ModiSfondo.sostituito && bloccoPro ? ModiSfondo.nessuno : effetti.sfondo
+    }
+
     /// Sfocato o sostituito: il pulsante «Sfondo» sotto il video è acceso.
-    var sfondoAcceso: Bool { effetti.sfondo != ModiSfondo.nessuno }
+    var sfondoAcceso: Bool { sfondoInUso != ModiSfondo.nessuno }
 
     /// Sul telefono è accesa la sfocatura del sistema (`stato.sfocaturaSistema`: su iPhone «Ritratto» negli Effetti video
     /// di Apple). La accende e la regola solo il telefono: «Sfondo» la mostra accesa come «Sfocatura del telefono» e i
@@ -1239,7 +1245,7 @@ final class Ricevitore {
     var luceSistema: Bool { telefonoAttivo && statoTelefono?.luceSistema == true }
 
     /// La sfocatura del sistema conta per «Sfondo» solo se lo sfondo non è sostituito: allora vale lo sfondo scelto.
-    var sfocaturaDelTelefono: Bool { sfocaturaSistema && effetti.sfondo != ModiSfondo.sostituito }
+    var sfocaturaDelTelefono: Bool { sfocaturaSistema && sfondoInUso != ModiSfondo.sostituito }
 
     /// Ogni 10 secondi, mentre sul telefono c'è uno sfondo o un effetto del sistema (come il telefono con le sue
     /// «Prestazioni»): i numeri ricevuti dal Mac nel registro, fotogrammi reali e Mbit/s in arrivo.
@@ -1350,7 +1356,7 @@ final class Ricevitore {
     /// Per VoiceOver e l'aiuto del pulsante: «Nessuno», «Sfocatura: Medio», «Libreria».
     var descrizioneSfondo: String {
         if sfocaturaDelTelefono { return String(localized: "Sfocatura del telefono") }
-        return switch effetti.sfondo {
+        return switch sfondoInUso {
         case ModiSfondo.sfocato: String(localized: "Sfocatura: \(livelloSfocaturaAttuale.nome)")
         case ModiSfondo.sostituito: immagineSfondoAttuale.map { SfondiComputer.nome($0) } ?? String(localized: "Sostituito")
         default: String(localized: "Nessuno")

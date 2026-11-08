@@ -421,6 +421,27 @@ public class ValoriSicuriTest
     }
 
     [Fact]
+    public void VociNulleNegliElenchi()
+    {
+        // Collaudo 59: «strade»:[null], «formatiPro»:[null], «sfondiPronti»:[null] dalla rete.
+        var json = "{\"tipo\":\"stato\",\"batteria\":50,\"inCarica\":false,\"temperatura\":\"normale\",\"obiettivo\":\"frontale\","
+            + "\"collegamento\":{\"attivo\":\"wifi\",\"preferenza\":null,\"strade\":[null,{\"tipo\":\"cavo\",\"ms\":4},{\"tipo\":null}]}}";
+        var stato = (StatoTelefono)CodificaMessaggi.Decodifica(System.Text.Encoding.UTF8.GetBytes(json));
+        var sano = ValoriSicuri.Sanifica(stato);
+        Assert.Equal([new StradaCollegamento("cavo", 4)], sano.Collegamento!.Strade);
+        Assert.Equal("", sano.Collegamento.Preferenza);
+        Assert.Equal("cavo", sano.Collegamento.PiuVeloce);
+        Assert.NotNull(ContrattoCollegamento.Strade(sano));
+        // Anche senza pulizia ContrattoCollegamento non cade.
+        Assert.Single(ContrattoCollegamento.Strade(stato)!.Strade);
+
+        var capacita = ValoriSicuri.Sanifica(new Capacita(["frontale"], 1, false,
+            FormatiPro: [null!, new(3840, 2160, 30)], SfondiPronti: [null!, "ufficio"]));
+        Assert.Equal([new FormatoSupportato(3840, 2160, 30)], capacita.FormatiPro);
+        Assert.Equal(["ufficio"], capacita.SfondiPronti);
+    }
+
+    [Fact]
     public void NomeEFormato()
     {
         var ciao = ValoriSicuri.Sanifica(new Ciao(2, null!, Piattaforma.Android, null!));

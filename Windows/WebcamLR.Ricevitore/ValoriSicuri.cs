@@ -55,6 +55,12 @@ public static class ValoriSicuri
                 && f.Altezza is >= LatoMinimo and <= LatoMassimo && f.FpsMassimo is >= 1 and <= FpsMassimi)
             .Take(VociMassime)
             .ToList();
+        // Le voci nulle (["formatiPro":[null]]) farebbero cadere chi legge Larghezza (collaudo 59).
+        var formatiPro = capacita.FormatiPro?
+            .Where(f => f is not null && f.Larghezza is >= LatoMinimo and <= LatoMassimo
+                && f.Altezza is >= LatoMinimo and <= LatoMassimo && f.FpsMassimo is >= 1 and <= FpsMassimi)
+            .Take(VociMassime)
+            .ToList();
         return capacita with
         {
             Obiettivi = obiettivi,
@@ -63,6 +69,8 @@ public static class ValoriSicuri
             IsoMassimo = isoMassimo,
             Filtri = capacita.Filtri is null ? null : Elenco(capacita.Filtri, VociMassime),
             Formati = formati,
+            FormatiPro = formatiPro,
+            SfondiPronti = capacita.SfondiPronti is null ? null : Elenco(capacita.SfondiPronti, VociMassime),
         };
     }
 
@@ -87,6 +95,16 @@ public static class ValoriSicuri
         Bianco = stato.Bianco is int b ? (b <= 0 ? 0 : Math.Clamp(b, 2500, 7500)) : null,
         Iso = stato.Iso is double i && double.IsFinite(i) ? Math.Clamp(i, 0, 1_000_000) : null,
         Tempo = stato.Tempo is int t ? Math.Clamp(t, 0, 100_000) : null,
+        // Un «null» dentro le strade lanciava a ogni stato e lo stato non arrivava più alla finestra (collaudo 59).
+        Collegamento = stato.Collegamento is { } c
+            ? c with
+            {
+                Attivo = Testo(c.Attivo, VoceMassima),
+                Preferenza = Testo(c.Preferenza, VoceMassima),
+                Strade = (c.Strade ?? []).Where(st => st is not null && !string.IsNullOrEmpty(st.Tipo))
+                    .Select(st => st with { Tipo = Testo(st.Tipo, VoceMassima) }).Take(VociMassime).ToList(),
+            }
+            : null,
     };
 
     /// <summary>Un testo dalla rete: nullo diventa vuoto, i caratteri di controllo spariscono, al massimo <paramref name="massimo"/> caratteri.</summary>

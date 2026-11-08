@@ -224,7 +224,7 @@ public sealed record StatoCollegamento(string Attivo, string Preferenza, IReadOn
 
     /// <summary>La strada con la latenza più bassa tra quelle misurate: solo un'informazione («più veloce ora»).</summary>
     [JsonIgnore]
-    public string? PiuVeloce => Strade.Where(s => s.Ms is not null).MinBy(s => s.Ms)?.Tipo;
+    public string? PiuVeloce => Strade.Where(s => s?.Ms is not null).MinBy(s => s.Ms)?.Tipo;
 
     public bool Equals(StatoCollegamento? altro) =>
         altro is not null && Attivo == altro.Attivo && Preferenza == altro.Preferenza && Strade.SequenceEqual(altro.Strade);

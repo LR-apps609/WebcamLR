@@ -673,6 +673,9 @@ final class Ricevitore {
     private func aggiornaInOnda(_ inUso: Bool) {
         guard inUso != webcamInUso else { return }
         webcamInUso = inUso
+        // Un'app usa la webcam anche senza telefono: il timer della schermata di attesa non deve finire in App Nap,
+        // altrimenti l'estensione resta oltre 2 secondi senza immagini e mostra «WebcamLR è chiusa».
+        tieniSveglia(inUso || !telefoni.isEmpty)
         // Nel registro e per VoiceOver solo con un telefono: senza, le app vedono la schermata d'attesa.
         if attivo != nil {
             let testo: String
@@ -2508,11 +2511,12 @@ final class Ricevitore {
     }
 
     /// Niente App Nap né timer rallentati mentre arriva il video: la latenza resta costante (funzione 20).
-    /// Si tiene anche durante la riconnessione, fino a quando l'ultimo telefono viene dimenticato.
+    /// Si tiene anche durante la riconnessione, fino a quando l'ultimo telefono viene dimenticato, e mentre un'app
+    /// usa la webcam virtuale (la schermata di attesa arriva dal timer di UscitaWebcam).
     private func tieniSveglia(_ sveglia: Bool) {
         if sveglia, attivitaCollegamento == nil {
             attivitaCollegamento = ProcessInfo.processInfo.beginActivity(
-                options: [.userInitiated, .latencyCritical], reason: "Video dal telefono in tempo reale")
+                options: [.userInitiated, .latencyCritical], reason: "Video dal telefono o schermata di attesa in tempo reale")
         } else if !sveglia, let attivita = attivitaCollegamento {
             ProcessInfo.processInfo.endActivity(attivita)
             attivitaCollegamento = nil
@@ -2538,7 +2542,8 @@ final class Ricevitore {
             aggiornaUscite()
         }
         if telefoni.isEmpty {
-            tieniSveglia(false)
+            // Con un'app sulla webcam si resta svegli per la schermata di attesa (`aggiornaInOnda`).
+            tieniSveglia(webcamInUso)
             miniaturaVisibile = false
         }
     }

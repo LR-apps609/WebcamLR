@@ -1847,6 +1847,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         } catch (e: Exception) {
             // Per esempio il codificatore hardware tolto dal sistema mentre l'app era in sottofondo: si riprova al
             // ritorno in primo piano (o con «Riprova») senza ricollegarsi.
+            android.util.Log.e("WebcamLR", "Codifica non avviata: ${voluto.larghezza}×${voluto.altezza}, ${voluto.fps} fps, ${voluto.codec}", e)
             fermaCodifica()
             fermaConErrore(Testi.testo(R.string.errore_video_titolo), Testi.testo(R.string.errore_video))
             erroreLocale = true

@@ -35,6 +35,8 @@ class Codificatore(
 ) {
     private var codec: MediaCodec? = null
     private var thread: HandlerThread? = null
+    /** La Surface d'ingresso di [codec]: si rilascia in [ferma], dopo che il Renderizzatore ha tolto la sua EGLSurface. */
+    private var superficieIngresso: Surface? = null
     @Volatile private var parametri: ByteArray? = null
     @Volatile private var primoFotogramma = true
 
@@ -131,11 +133,11 @@ class Codificatore(
             setInteger(MediaFormat.KEY_BIT_RATE, bitrateIniziale(base))
             setInteger(MediaFormat.KEY_FRAME_RATE, fps)
             setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 2)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                setInteger(MediaFormat.KEY_MAX_B_FRAMES, 0)
-                setInteger(MediaFormat.KEY_PREPEND_HEADER_TO_SYNC_FRAMES, 1)
-            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) setInteger(MediaFormat.KEY_MAX_B_FRAMES, 0)
             if (minimo) return@apply
+            // Facoltativa: i codificatori OMX senza l'estensione prependSPSPPSToIDRFrames fanno fallire configure.
+            // Nel formato minimo non c'è: SPS/PPS davanti ai fotogrammi chiave li rimette comunque consegna().
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) setInteger(MediaFormat.KEY_PREPEND_HEADER_TO_SYNC_FRAMES, 1)
             // Tempo reale: il codificatore non deve mai restare indietro.
             setInteger(MediaFormat.KEY_PRIORITY, 0)
             // Un fotogramma esce appena è pronto, senza aspettarne altri (la chiave esiste da Android 11).
@@ -152,21 +154,43 @@ class Codificatore(
         }
 
         val nuovoThread = HandlerThread("webcamlr-codifica").apply { start() }
-        val nuovo = if (info != null) MediaCodec.createByCodecName(info.name) else MediaCodec.createEncoderByType(tipo)
-        nuovo.setCallback(Richiamo(nuovo), Handler(nuovoThread.looper))
-        try {
-            nuovo.configure(formatoCodec(minimo = false), null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
+        // Collaudo 26/56: se qualcosa fallisce si rilasciano codificatore hardware, Surface e thread prima di rilanciare;
+        // prima ogni tentativo fallito ne lasciava aperti uno di ciascuno.
+        val nuovo = try {
+            if (info != null) MediaCodec.createByCodecName(info.name) else MediaCodec.createEncoderByType(tipo)
         } catch (e: Exception) {
-            // Qualche codificatore rifiuta le chiavi facoltative: si riprova con il minimo indispensabile.
-            Log.w(TAG, "Formato rifiutato, riprovo senza latenza, priorità, modo del bitrate e profilo", e)
-            nuovo.reset()
-            nuovo.setCallback(Richiamo(nuovo), Handler(nuovoThread.looper))
-            nuovo.configure(formatoCodec(minimo = true), null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
+            Log.e(TAG, "Codificatore ${info?.name ?: tipo} non creato", e)
+            nuovoThread.quitSafely()
+            throw e
         }
-        val superficie = nuovo.createInputSurface()
-        nuovo.start()
+        val superficie = try {
+            nuovo.setCallback(Richiamo(nuovo), Handler(nuovoThread.looper))
+            try {
+                nuovo.configure(formatoCodec(minimo = false), null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
+            } catch (e: Exception) {
+                // Qualche codificatore rifiuta le chiavi facoltative: si riprova con il minimo indispensabile.
+                Log.w(TAG, "Formato rifiutato, riprovo senza latenza, priorità, modo del bitrate, profilo e SPS/PPS davanti", e)
+                nuovo.reset()
+                nuovo.setCallback(Richiamo(nuovo), Handler(nuovoThread.looper))
+                nuovo.configure(formatoCodec(minimo = true), null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
+            }
+            nuovo.createInputSurface().also { ingresso ->
+                try {
+                    nuovo.start()
+                } catch (e: Exception) {
+                    ingresso.release()
+                    throw e
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Codificatore ${nuovo.name} non avviato (${larghezza}×$altezza, $fps fps): rilasciato", e)
+            runCatching { nuovo.release() }
+            nuovoThread.quitSafely()
+            throw e
+        }
         codec = nuovo
         thread = nuovoThread
+        superficieIngresso = superficie
         parametri = null
         primoFotogramma = true
         fotogrammiUsciti.set(0)
@@ -206,9 +230,15 @@ class Codificatore(
             // già fermo o in errore
         }
         vecchio.release()
+        superficieIngresso?.release()
+        superficieIngresso = null
         thread?.quitSafely()
         thread = null
     }
+
+    /** Il codec che [avvia] userebbe davvero per [voluto]: senza HEVC hardware si ripiega su H.264. */
+    fun codecEffettivo(voluto: Codec): Codec =
+        if (voluto == Codec.HEVC && cercaHardware(MediaFormat.MIMETYPE_VIDEO_HEVC) == null) Codec.H264 else voluto
 
     @Volatile private var ultimaRichiestaChiave = 0L
 

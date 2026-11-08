@@ -105,6 +105,7 @@ public sealed partial class MainWindow
         catch (Exception) { provenienza = tipo; }
         registro.Aggiungi(Testi.T("Registro_NuovaConnessione", provenienza));
         nuova.ConfermaInCorso += (nome, _) => registro.Aggiungi(Testi.T("Registro_ChiestaConferma", nome));
+        nuova.RifiutatoDaPoco += ciao => registro.Aggiungi(Testi.T("Registro_RifiutatoDaPoco", ciao.Nome));
         nuova.NonAmmesso += ciao =>
         {
             // WebcamLR Pro: con il telefono nella webcam gratis il secondo non entra; altrimenti i posti sono pieni.
@@ -195,7 +196,7 @@ public sealed partial class MainWindow
                 // Frontale ↔ posteriore: «Specchia» e «Sfondo» grigi o di nuovo usabili, anche se gli effetti non cambiano.
                 if (obiettivoPrima != stato.Obiettivo) MostraPulsantiVideo();
                 MostraAvviso(stato, avviso);
-                MicrofonoDalTelefono(collegato, audioPrima, stato.Audio);
+                MicrofonoDalTelefono(collegato, audioPrima, stato.Audio, eraInPausa, collegato.InPausa);
                 // In pausa o ripreso (o un altro motivo), o un'altra strada (Wi-Fi ↔ USB): la pillola in alto e il velo sopra il video.
                 if (eraInPausa != collegato.InPausa || !cambioPausa.Nessuno || viaCavoPrima != ContrattoCollegamento.ViaCavo(stato, collegato.Collegamento)) MostraScelto();
                 else AggiornaTelefono();
@@ -303,6 +304,14 @@ public sealed partial class MainWindow
         nuova.CapacitaRicevute += capacita => SuInterfaccia(collegato =>
         {
             collegato.Capacita = capacita;
+            // Un telefono entrato prima che arrivassero le capacità degli altri: se nessuno ha Pro, ora esce con l'avviso.
+            foreach (var fuori in telefoni.DaTogliereSenzaPro())
+            {
+                registro.Aggiungi(Testi.T("Registro_NonEntraPro", fuori.Nome));
+                if (Dimentica(fuori) is { } chiusa) _ = ChiudiSessioneAsync(chiusa);
+                AvvisaPieno(fuori.Nome, perPro: true);
+            }
+            if (!telefoni.Contiene(collegato)) return;
             CapacitaEffetti(collegato, capacita);
             // Effetti sul computer: alla prima della sessione telecomando o spegnimento; poi `effetti` se Pro è cambiato.
             DecidiEffetti(collegato, capacita);
@@ -351,11 +360,14 @@ public sealed partial class MainWindow
             // La strada in uso si è staccata: il cavo lasciato per il Wi-Fi torna, così il video non si perde.
             cavo.RiprendiScelti();
             var perdita = collegato.Perdite;
+            // L'arrivederci del telefono è voluto (Scollega sul telefono, un altro computer): si toglie come «Scollega»,
+            // dopo una breve attesa per l'altra strada (l'iPhone lascia il cavo per il Wi-Fi con un arrivederci).
+            var voluta = nuova.ChiusaDalTelefono;
             coda.TryEnqueue(() =>
             {
                 if (!telefoni.Contiene(collegato)) return;
                 MostraScelto();
-                _ = DimenticaSeNonTornaAsync(collegato, perdita);
+                _ = voluta ? TogliSeNonArrivaAltraStradaAsync(collegato, perdita) : DimenticaSeNonTornaAsync(collegato, perdita);
             });
         };
 
@@ -398,7 +410,11 @@ public sealed partial class MainWindow
             // Lo stesso telefono torna, forse con una sessione nuova ripartita in automatico: gli si rimandano i comandi
             // che la finestra ricorda per lui, così i due restano d'accordo. Gli effetti restano salvati sul telefono e
             // arrivano con il primo stato; il gobbo invece vive solo nella sessione: si rimanda completo.
-            _ = ComandaAsync(nuova, collegato.Comandi.PerRicollegamento());
+            // Segnato come i comandi della finestra: il primo stato della sessione nuova, partito prima che il telefono
+            // applicasse questo comando, non riporta indietro zoom, torcia ed esposizione (collaudo 44).
+            var ricollegamento = collegato.Comandi.PerRicollegamento();
+            collegato.Allineamento.Segna(ricollegamento, AdessoMs);
+            _ = ComandaAsync(nuova, ricollegamento);
             RimandaGobbo(collegato, nuova);
         }
         else if (telefoni.Conteggio > 1)
@@ -619,6 +635,22 @@ public sealed partial class MainWindow
         Notifica(Testi.T("Notifica_TelefonoPerso"), Testi.T("Notifica_TelefonoPersoTesto", collegato.Nome));
         // Anche con la finestra davanti, dove la notifica non arriva: un banner fisso sopra il video (come il Mac nel passo 2).
         MostraTelefonoPerso(collegato.Nome);
+    }
+
+    /// <summary>Dopo l'arrivederci del telefono: l'attesa dell'altra strada (cavo → Wi-Fi dello stesso telefono).</summary>
+    private static readonly TimeSpan AttesaAltraStrada = TimeSpan.FromSeconds(2);
+
+    /// <summary>
+    /// Il telefono si è scollegato da sé (collaudo 34): se entro <see cref="AttesaAltraStrada"/> non torna su un'altra
+    /// strada, si toglie come con «Scollega», senza «Riconnessione» né «Telefono perso»; con due telefoni l'altro va
+    /// subito nella webcam.
+    /// </summary>
+    private async Task TogliSeNonArrivaAltraStradaAsync(TelefonoCollegato collegato, int perdita)
+    {
+        await Task.Delay(AttesaAltraStrada);
+        if (!telefoni.Contiene(collegato) || collegato.Perdite != perdita || collegato.Sessione is not null) return;
+        registro.Aggiungi(Testi.T("Registro_ScollegatoDalTelefono", collegato.Nome));
+        Dimentica(collegato);
     }
 
     /// <summary>All'uscita: tutte le sessioni e tutti i decodificatori.</summary>

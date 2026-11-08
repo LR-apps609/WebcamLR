@@ -959,6 +959,9 @@ The details are in {1}: send them with “Report a bug”.</value>
   <data name="Registro_ChiestaConferma" xml:space="preserve">
     <value>“{0}” is new: asked for confirmation with the code</value>
   </data>
+  <data name="Registro_RifiutatoDaPoco" xml:space="preserve">
+    <value>“{0}” was declined a moment ago: not asking again for two minutes</value>
+  </data>
   <data name="Registro_NonEntraPro" xml:space="preserve">
     <value>“{0}” not connected: two phones at once are part of WebcamLR Pro</value>
   </data>
@@ -1024,6 +1027,9 @@ The details are in {1}: send them with “Report a bug”.</value>
   </data>
   <data name="Registro_ScollegatoDalPC" xml:space="preserve">
     <value>“{0}” disconnected by the PC</value>
+  </data>
+  <data name="Registro_ScollegatoDalTelefono" xml:space="preserve">
+    <value>“{0}” disconnected on the phone</value>
   </data>
   <data name="Registro_NonTornato" xml:space="preserve">
     <value>“{0}” didn’t come back within {1:0} seconds</value>
@@ -1435,6 +1441,9 @@ The details are in {1}: send them with “Report a bug”.</value>
   </data>
   <data name="Registro_MicrofonoAccesoDalTelefono" xml:space="preserve">
     <value>Microphone turned on from the phone</value>
+  </data>
+  <data name="Registro_MicrofonoInPausa" xml:space="preserve">
+    <value>Phone paused: audio stops, the microphone stays on</value>
   </data>
   <data name="Registro_MicrofonoSpentoDalTelefono" xml:space="preserve">
     <value>Microphone turned off from the phone</value>

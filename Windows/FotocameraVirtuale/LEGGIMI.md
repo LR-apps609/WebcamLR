@@ -41,7 +41,7 @@ Perché C# e non C++: si compila con il solo .NET 8 SDK (lo script `Strumenti/Co
 - Windows 10: lo stesso pulsante installa il filtro DirectShow (sotto, «Windows 10»).
 - L'installatore di WebcamLR (`Windows/WebcamLR.Setup`, W1) installa l'app per l'utente e chiama, con un solo permesso
   dell'amministratore, `WebcamLR.Webcam.Installa.exe configura "<WebcamLR.exe>" [webcam]`: regola del firewall
-  «WebcamLR» (in ingresso, solo reti private, solo quel programma) più la webcam, se chiesta o se c'era già.
+  «WebcamLR» (in ingresso, reti private e di dominio, solo quel programma) più la webcam, se chiesta o se c'era già.
   Il disinstallatore chiama `… disinstalla "<WebcamLR.exe>"` (webcam e regola). A mano ci sono anche `firewall` e
   `rimuovi-firewall` con lo stesso argomento. Guida: `Documenti/Windows - installazione e prova.md`.
 

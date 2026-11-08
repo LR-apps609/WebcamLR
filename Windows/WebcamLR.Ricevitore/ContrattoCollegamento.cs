@@ -17,7 +17,7 @@ public static class ContrattoCollegamento
     {
         if (stato?.Collegamento is not { } collegamento) return null;
         var strade = collegamento.Strade
-            .Where(s => !string.IsNullOrEmpty(s.Tipo))
+            .Where(s => s is not null && !string.IsNullOrEmpty(s.Tipo))
             .Select(s => new StradaNota(s.Tipo, s.Ms is > 0 ? s.Ms : null))
             .ToList();
         return new StradeTelefono(collegamento.Attivo ?? "", PreferenzaCollegamento.Normalizza(collegamento.Preferenza), strade);

@@ -129,11 +129,20 @@ public class RitardoUscitaTest
     }
 
     [Fact]
-    public void IlRecuperoHaUnLimite()
+    public void IlRecuperoSegueUnaDerivaLentaPerDueOre()
     {
+        // Collaudo 38: l'orologio del telefono corre lo 0,1% più del lettore (1 ms ogni secondo, 7,2 s in due ore).
+        // Prima il recupero si fermava a 500 ms totali e l'attesa tornava a crescere; ora resta vicino alla soglia.
         var recupero = new RecuperoRitardo();
-        for (var i = 0; i < 1_000; i++) recupero.Aggiungi(1_500_000);
-        Assert.Equal(RecuperoRitardo.LimiteTotale, recupero.Spostamento);
+        const int fotogrammi = 2 * 60 * 60 * 30;
+        long anticipo = 0;
+        for (var i = 1; i <= fotogrammi; i++)
+        {
+            anticipo = i * 1_000L / 30 - recupero.Spostamento;
+            Assert.InRange(recupero.Aggiungi(anticipo), 0, RecuperoRitardo.PassoMassimo);
+        }
+        Assert.True(recupero.Spostamento > 7_100_000, $"Spostamento {recupero.Spostamento}");
+        Assert.InRange(anticipo, 0, RecuperoRitardo.Soglia + 2 * RecuperoRitardo.PassoMassimo);
         recupero.Azzera();
         Assert.Equal(0, recupero.Spostamento);
     }

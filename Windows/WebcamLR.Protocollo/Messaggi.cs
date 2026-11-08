@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace WebcamLR.Protocollo;
 
@@ -223,7 +224,7 @@ public sealed record StatoCollegamento(string Attivo, string Preferenza, IReadOn
 
     /// <summary>La strada con la latenza più bassa tra quelle misurate: solo un'informazione («più veloce ora»).</summary>
     [JsonIgnore]
-    public string? PiuVeloce => Strade.Where(s => s.Ms is not null).MinBy(s => s.Ms)?.Tipo;
+    public string? PiuVeloce => Strade.Where(s => s?.Ms is not null).MinBy(s => s.Ms)?.Tipo;
 
     public bool Equals(StatoCollegamento? altro) =>
         altro is not null && Attivo == altro.Attivo && Preferenza == altro.Preferenza && Strade.SequenceEqual(altro.Strade);
@@ -334,7 +335,28 @@ public static class CodificaMessaggi
         },
         // Nei comandi i campi assenti non si scrivono: il telefono applica solo quelli presenti.
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        // Un campo obbligatorio mancante fa saltare il messaggio, come in Swift e Kotlin (Protocollo.md, «Valori
+        // sconosciuti»): senza, System.Text.Json lo riempirebbe con 0, false o null (collaudo 35).
+        TypeInfoResolver = new DefaultJsonTypeInfoResolver { Modifiers = { ObbligatoriDalCostruttore } },
     };
+
+    /// <summary>
+    /// Obbligatori = i parametri del costruttore senza valore predefinito (Versione, Nome… di <see cref="Ciao"/>;
+    /// Batteria, InCarica, Temperatura, Obiettivo di <see cref="StatoTelefono"/>), anche negli oggetti dentro i messaggi.
+    /// </summary>
+    private static void ObbligatoriDalCostruttore(JsonTypeInfo tipo)
+    {
+        if (tipo.Kind != JsonTypeInfoKind.Object || tipo.Properties.Count == 0) return;
+        var costruttore = tipo.Type.GetConstructors().MaxBy(c => c.GetParameters().Length);
+        if (costruttore is null) return;
+        var obbligatori = costruttore.GetParameters().Where(p => !p.HasDefaultValue && p.Name is not null)
+            .Select(p => p.Name!).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var proprieta in tipo.Properties)
+        {
+            if (proprieta.AttributeProvider is System.Reflection.MemberInfo membro && obbligatori.Contains(membro.Name))
+                proprieta.IsRequired = true;
+        }
+    }
 
     public static string Tipo(Messaggio messaggio) => messaggio switch
     {

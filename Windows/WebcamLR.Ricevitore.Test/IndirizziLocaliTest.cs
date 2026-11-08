@@ -151,4 +151,19 @@ public class IndirizziLocaliTest
         Assert.NotNull(png);
         Assert.Equal(new byte[] { 0x89, (byte)'P', (byte)'N', (byte)'G' }, png![..4]);
     }
+
+    [Fact]
+    public void SwitchEsternoDiHyperVContaComeCavoDiRete()
+    {
+        // Collaudo 18: con lo switch «Esterno» la rete vera sta sulla vEthernet, la scheda fisica resta senza IPv4.
+        var fisica = new SchedaPerQR("Ethernet", "Intel(R) Ethernet Connection I219-V", NetworkInterfaceType.Ethernet, []);
+        var esterno = Scheda("vEthernet (Rete esterna)", "Hyper-V Virtual Ethernet Adapter", NetworkInterfaceType.Ethernet, "192.168.1.20", gateway: true);
+        var interno = Scheda("vEthernet (Default Switch)", "Hyper-V Virtual Ethernet Adapter #2", NetworkInterfaceType.Ethernet, "172.28.16.1");
+        Assert.True(IndirizziLocali.SwitchEsterno(esterno));
+        Assert.False(IndirizziLocali.SwitchEsterno(interno));
+        Assert.Equal(["192.168.1.20"], IndirizziLocali.Scegli([fisica, esterno, interno]));
+        Assert.Equal(1, IndirizziLocali.Priorita(esterno, IPAddress.Parse("192.168.1.20")));
+        // Con il Wi-Fi acceso il Wi-Fi resta primo.
+        Assert.Equal(["192.168.1.20", "10.0.0.5"], IndirizziLocali.Scegli([Scheda("vEthernet (Esterna)", "Hyper-V Virtual Ethernet Adapter", NetworkInterfaceType.Ethernet, "10.0.0.5", gateway: true), WiFi]));
+    }
 }

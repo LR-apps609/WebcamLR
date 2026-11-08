@@ -177,12 +177,14 @@ public sealed class TracciaFotogrammi
 /// campione meno posizione del lettore): se per 30 campioni di fila resta sopra i 20 ms, la linea del tempo si accorcia di
 /// al massimo 2 ms per fotogramma (circa il 6% a 30 fps, invisibile), finché l'attesa inutile non è sparita. I tempi
 /// restano sempre crescenti. Una posizione non credibile (oltre 2 secondi di differenza) ferma il recupero.
+/// Nessun tetto al totale: la deriva lenta tra l'orologio del telefono e quello del lettore si accumula per tutta la
+/// chiamata, e con un tetto (era 500 ms) dopo circa un'ora la latenza tornava a crescere senza fine (collaudo 38).
+/// Il limite resta sul passo per fotogramma.
 /// </summary>
 public sealed class RecuperoRitardo
 {
     public const long Soglia = 20_000;
     public const long PassoMassimo = 2_000;
-    public const long LimiteTotale = 500_000;
     public const long AnticipoAssurdo = 2_000_000;
     public const int Finestra = 30;
 
@@ -204,10 +206,10 @@ public sealed class RecuperoRitardo
         }
         anticipi.Enqueue(anticipo);
         if (anticipi.Count > Finestra) anticipi.Dequeue();
-        if (anticipi.Count < Finestra || Spostamento >= LimiteTotale) return 0;
+        if (anticipi.Count < Finestra) return 0;
         var minimo = anticipi.Min();
         if (minimo <= Soglia) return 0;
-        var passo = Math.Min(PassoMassimo, Math.Min(minimo - Soglia, LimiteTotale - Spostamento));
+        var passo = Math.Min(PassoMassimo, minimo - Soglia);
         Spostamento += passo;
         // Le misure già in fila valevano per la linea del tempo di prima: ora sono più corte dello stesso passo.
         var vecchi = anticipi.ToArray();

@@ -52,6 +52,8 @@ public sealed class SessioneComputer : IAsyncDisposable
     public event Action<string, string>? ConfermaInCorso;
     /// <summary>Il telefono non è stato ammesso (<see cref="Ammetti"/>): la sessione si chiude con «arrivederci».</summary>
     public event Action<Ciao>? NonAmmesso;
+    /// <summary>Il telefono è stato rifiutato da poco (<see cref="Abbinamento.PausaDopoRifiuto"/>): si chiude senza chiedere.</summary>
+    public event Action<Ciao>? RifiutatoDaPoco;
 
     /// <summary>Tempo per la stretta di mano e la prova; per la conferma dell'utente vale <see cref="AttesaConferma"/>.</summary>
     public static readonly TimeSpan AttesaStretta = TimeSpan.FromSeconds(10);
@@ -123,6 +125,13 @@ public sealed class SessioneComputer : IAsyncDisposable
     /// </summary>
     public bool ChiusaDalComputer => Volatile.Read(ref chiusaDalComputer) == 1;
     private int chiusaDalComputer;
+
+    /// <summary>
+    /// Vero se l'ha chiusa il telefono con «arrivederci» (Scollega sul telefono, un altro computer, o il passaggio
+    /// dal cavo al Wi-Fi): non è una caduta di rete, e il telefono non va aspettato 15 secondi (collaudo 34).
+    /// </summary>
+    public bool ChiusaDalTelefono => Volatile.Read(ref chiusaDalTelefono) == 1;
+    private int chiusaDalTelefono;
 
     /// <summary>
     /// Chiusa (o da chiudere) dal computer per la strada scelta, non per «Scollega»: resta l'altra strada dello stesso
@@ -402,6 +411,7 @@ public sealed class SessioneComputer : IAsyncDisposable
                 EffettoChiesto?.Invoke(richiesta);
                 break;
             case Arrivederci:
+                Volatile.Write(ref chiusaDalTelefono, 1);
                 Termina();
                 break;
         }
@@ -422,6 +432,7 @@ public sealed class SessioneComputer : IAsyncDisposable
                 _ = AccettaAsync(ValoriSicuri.Sanifica(ciao));
                 break;
             case Arrivederci:
+                Volatile.Write(ref chiusaDalTelefono, 1);
                 Termina();
                 break;
             case not Prova when !provato:
@@ -444,16 +455,24 @@ public sealed class SessioneComputer : IAsyncDisposable
                 return;
             }
             var consentito = abbinamento.Fidato(impronta) || abbinamento.UsaGettone(gettoneProva);
-            if (!consentito && abbinamento.ChiediConferma is { } chiedi)
+            if (!consentito && abbinamento.ChiediConferma is not null)
             {
+                // Rifiutato da poco: niente domanda, niente codice sul telefono (collaudo 37).
+                if (abbinamento.RifiutatoDaPoco(impronta))
+                {
+                    RifiutatoDaPoco?.Invoke(ciao);
+                    await ChiudiAsync();
+                    return;
+                }
                 Volatile.Write(ref confermaInCorso, 1);
                 Avvio.Conferma();
                 await InviaAsync(new Approvazione(sicura.Codice));
                 ConfermaInCorso?.Invoke(ciao.Nome, sicura.Codice);
+                // Lo stesso tempo che il telefono aspetta dopo l'approvazione, compresa l'attesa di un'altra domanda aperta.
                 using var tempo = CancellationTokenSource.CreateLinkedTokenSource(annulla.Token);
                 tempo.CancelAfter(AttesaConferma);
-                try { consentito = await chiedi(ciao.Nome, sicura.Codice, tempo.Token); }
-                catch (OperationCanceledException) { consentito = false; }
+                // Un no, o il tempo scaduto, si ricorda; non il telefono andato via (può riprovare subito).
+                consentito = await abbinamento.ConfermaAsync(impronta, ciao.Nome, sicura.Codice, tempo.Token, annulla.Token);
             }
             if (!consentito)
             {

@@ -258,19 +258,21 @@ public sealed partial class MainWindow : Window
         _ = risposta.Task.ContinueWith(_ => allaScadenza.Dispose(), TaskScheduler.Default);
         coda.TryEnqueue(async () =>
         {
-            // Già una domanda aperta per un altro telefono: per sicurezza si rifiuta, come sul Mac,
-            // così nessuno può cambiare la domanda sotto il cursore dell'utente.
+            // Già una domanda aperta per un altro telefono: per sicurezza si rifiuta, così nessuno può cambiare la domanda
+            // sotto il cursore dell'utente. Di solito non succede: Abbinamento.ConfermaAsync fa aspettare la seconda.
             if (confermaAperta)
             {
                 risposta.TrySetResult(false);
                 return;
             }
             confermaAperta = true;
+            var chiusa = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            confermaChiusa = chiusa;
             try
             {
                 Notifica(Testi.T("Conferma_NotificaTitolo"), Testi.T("Conferma_Notifica", nomeTelefono));
                 MostraFinestra();
-                await PreparaDialogoAsync();
+                await PreparaDialogoAsync(perConferma: true);
                 if (scaduto.IsCancellationRequested) return;
                 var finestra = new ContentDialog
                 {
@@ -303,6 +305,7 @@ public sealed partial class MainWindow : Window
                     CloseButtonText = Testi.T("Conferma_NonConsentire"),
                     DefaultButton = ContentDialogButton.Close,
                 };
+                finestraConferma = finestra;
                 // Scaduto il tempo, o telefono andato via: la domanda sparisce da sola.
                 using var registrazione = scaduto.Register(() => coda.TryEnqueue(finestra.Hide));
                 var esito = await finestra.ShowAsync();
@@ -319,6 +322,9 @@ public sealed partial class MainWindow : Window
             finally
             {
                 confermaAperta = false;
+                finestraConferma = null;
+                confermaChiusa = null;
+                chiusa.TrySetResult();
                 risposta.TrySetResult(false);
             }
         });
@@ -327,14 +333,20 @@ public sealed partial class MainWindow : Window
 
     /// Vero mentre la domanda «Consentire …?» è aperta.
     private bool confermaAperta;
+    /// La domanda «Consentire …?» aperta, e il suo segnale di chiusura: le altre finestre di dialogo la aspettano.
+    private ContentDialog? finestraConferma;
+    private TaskCompletionSource? confermaChiusa;
 
     /// <summary>
     /// Prepara la domanda. La finestra partita nascosta all'accesso non ha XamlRoot finché non è caricata:
     /// si aspetta. WinUI mostra una sola ContentDialog alla volta: quella aperta (App, nuovo profilo) si chiude,
     /// aspettando che sia chiusa davvero (al massimo un secondo).
     /// </summary>
-    private async Task PreparaDialogoAsync()
+    private async Task PreparaDialogoAsync(bool perConferma = false)
     {
+        // La domanda «Consentire …?» non si chiude per un'altra finestra (Scollega o Esci dall'icona, per esempio):
+        // chiuderla rifiuterebbe il telefono senza che l'utente abbia scelto (collaudo 58). L'altra aspetta.
+        while (!perConferma && confermaChiusa is { } attesa) await attesa.Task;
         if (Content is FrameworkElement radice && radice.XamlRoot is null)
         {
             var caricata = new TaskCompletionSource();
@@ -346,7 +358,7 @@ public sealed partial class MainWindow : Window
         if (Content.XamlRoot is not { } xamlRoot) return;
         foreach (var popup in VisualTreeHelper.GetOpenPopupsForXamlRoot(xamlRoot))
         {
-            if (popup.Child is not ContentDialog aperta) continue;
+            if (popup.Child is not ContentDialog aperta || aperta == finestraConferma) continue;
             var chiusa = new TaskCompletionSource();
             void SuChiusa(ContentDialog origine, ContentDialogClosedEventArgs evento) => chiusa.TrySetResult();
             aperta.Closed += SuChiusa;

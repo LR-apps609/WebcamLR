@@ -281,6 +281,12 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
                 appAttive = [:]
                 timer?.cancel()
                 timer = nil
+                // La prossima uscita non parte dall'ultima immagine di questa (magari di ore prima): senza questo
+                // la dissolvenza verso l'attesa mostrerebbe per mezzo secondo la chiamata vecchia.
+                ultimaInviata = nil
+                ultimaInviataPer = -1
+                dissolvenzaDa = nil
+                mescolata = nil
             }
             return utentiAttivi
         }

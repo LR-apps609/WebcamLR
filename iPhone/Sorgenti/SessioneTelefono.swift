@@ -1713,8 +1713,16 @@ final class SessioneTelefono {
             inUsoCandidato = nil
             improntaCandidato = nil
             tipoCandidato = nil
-            registro.aggiungi(String(localized: "Passaggio al cavo USB non riuscito (\(motivo.perRegistro)): resto sul Wi-Fi"))
-            candidatoNonRiuscito(dopoStretta: dopoStretta)
+            // Collaudo 1: l'`arrivederci` prima del `benvenuto`, a stretta riuscita, è una scelta del computer (resta
+            // sul Wi-Fi, cavo rimandato dopo un cambio di strada, senza Pro), non un cavo che non va: non conta per
+            // «cavo escluso», così il cavo resta buono quando il computer lo riprova.
+            let sceltaDelComputer = dopoStretta && motivo == .dalComputer
+            if sceltaDelComputer {
+                registro.aggiungi(String(localized: "Il computer non usa il cavo USB per ora: resto sul Wi-Fi"))
+            } else {
+                registro.aggiungi(String(localized: "Passaggio al cavo USB non riuscito (\(motivo.perRegistro)): resto sul Wi-Fi"))
+            }
+            candidatoNonRiuscito(dopoStretta: dopoStretta, conta: !sceltaDelComputer)
         }
     }
 
@@ -1734,9 +1742,10 @@ final class SessioneTelefono {
     }
 
     /// Dopo un candidato andato male: troppi tentativi spengono il cavo per questa sessione; se intanto il Wi-Fi
-    /// si era chiuso, ora lo si tratta come sempre.
-    private func candidatoNonRiuscito(dopoStretta: Bool) {
-        candidatiFalliti += 1
+    /// si era chiuso, ora lo si tratta come sempre. `conta` falso: il computer ha rifiutato il cavo di proposito, non
+    /// è un tentativo fallito.
+    private func candidatoNonRiuscito(dopoStretta: Bool, conta: Bool = true) {
+        if conta { candidatiFalliti += 1 }
         if candidatiFalliti >= 3 && !cavoEscluso {
             cavoEscluso = true
             registro.aggiungi(String(localized: "Cavo USB non riuscito più volte: resto sul Wi-Fi"))

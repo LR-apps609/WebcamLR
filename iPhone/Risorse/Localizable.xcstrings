@@ -3231,6 +3231,23 @@
         }
       }
     },
+    "Il computer non usa il cavo USB per ora: resto sul Wi-Fi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The computer isn’t using the USB cable for now: staying on Wi-Fi"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il computer non usa il cavo USB per ora: resto sul Wi-Fi"
+          }
+        }
+      }
+    },
     "Il computer si vede ma non risponde: molte reti di hotel, uffici e scuole non fanno parlare i dispositivi tra loro. Usa il cavo USB, oppure attiva l'Hotspot personale dell'iPhone e collega il computer a quello." : {
       "extractionState" : "manual",
       "localizations" : {

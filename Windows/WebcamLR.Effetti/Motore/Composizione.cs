@@ -36,6 +36,19 @@ public sealed class PianoComposizione
     /// </summary>
     public bool FondoAQuadretti { get; init; }
 
+    /// <summary>
+    /// Qualità 12: filtro di colore e regolazioni (<see cref="RicetteColore.Catena"/>) sull'immagine intera, persona e
+    /// fondo, dopo la miscela: sul pixel finale in byte, con gli stessi interi di <see cref="CatenaColore.Applica"/> (la
+    /// scheda video ha le stesse tabelle). Null = niente; al massimo <see cref="MassimoStadiColore"/> stadi.
+    /// </summary>
+    public CatenaColore? Colore { get; init; }
+
+    /// <summary>
+    /// Quanti stadi della catena di colore porta al massimo la composizione: lo shader ne ha posto per tanti (il
+    /// processore ne farebbe di più). Oggi una catena ne ha al massimo due (filtro e regolazioni).
+    /// </summary>
+    public const int MassimoStadiColore = 3;
+
     /// <summary>Le tabelle del calore per R, G, B (null = niente calore), da applicare alla persona.</summary>
     public byte[][]? Calore { get; init; }
 
@@ -105,7 +118,8 @@ public static class RegoleBordo
 
     /// <summary>
     /// Un canale del pixel finale, con i valori già campionati alla sua posizione (0..255, alfa 0..1). È la stessa
-    /// sequenza del compute shader: bordo pulito, calore (tabella), light wrap, miscela con il fondo.
+    /// sequenza del compute shader: bordo pulito, calore (tabella), light wrap, miscela con il fondo. Il filtro di colore
+    /// (<see cref="PianoComposizione.Colore"/>) viene dopo, sul pixel arrotondato ai byte.
     /// </summary>
     public static float Canale(float sorgente, float alfa, float fondo, float? colorePersona, byte[]? calore, float? sfondoMorbido,
         float alfaMorbido)
@@ -148,6 +162,7 @@ public sealed unsafe class ComposizioneProcessore : IComposizione
         var (ay0, ay1, afy) = Campionamento8(a, aw);
         var calore = piano.Calore;
         byte[] cr = calore?[0] ?? [], cg = calore?[1] ?? [], cb = calore?[2] ?? [];
+        var coloreFinale = piano.Colore;
         var rifinita = piano.ColorePersona is not null || piano.SfondoMorbido is not null;
         var colore = piano.ColorePersona is { } cp ? new Righe(cp, l, a) : null;
         var morbido = piano.SfondoMorbido is { } sm ? new Righe(sm, l, a) : null;
@@ -203,6 +218,7 @@ public sealed unsafe class ComposizioneProcessore : IComposizione
                             Buffer.MemoryCopy(s, d, l * 4, l * 4);
                         }
                         Compositore.Miscela(new Span<byte>(d, l * 4), fondo, alfa4);
+                        coloreFinale?.Applica(new Span<byte>(d, l * 4));
                         continue;
                     }
                     colore?.Riga(y, rigaColore, appoggio3);
@@ -237,6 +253,8 @@ public sealed unsafe class ComposizioneProcessore : IComposizione
                             d[i + k] = a8 == 255 ? (byte)p : (byte)Dividi255(p * a8 + pf[i + k] * (255 - a8));
                         }
                     }
+                    // Qualità 12: il filtro sulla riga finita (persona e fondo), come lo shader dopo la miscela.
+                    coloreFinale?.Applica(new Span<byte>(d, l * 4));
                 }
             }
         });
@@ -342,14 +360,20 @@ public sealed unsafe class ComposizioneProcessore : IComposizione
 public sealed record CambioComposizione(bool SullaSchedaVideo, string Descrizione, string? Motivo);
 
 /// <summary>
-/// Un piano di composizione sintetico (sfumature, bordo morbido, fondo piccolo o pieno, calore): per verificare la scheda
+/// Un piano di composizione sintetico (sfumature, bordo morbido, fondo piccolo o pieno, calore, filtro): per verificare la scheda
 /// video contro il processore all'apertura (ComposizioneSchedaVideo.Verifica) e nei test.
 /// </summary>
 public static class PianoDiProva
 {
     /// <param name="quadretti">Con lo sfocato: il fondo piccolo come un mosaico (11×7 quadretti, «al più vicino»).</param>
-    public static PianoComposizione Crea(int l, int a, bool sostituito, bool quadretti = false)
+    /// <param name="filtro">
+    /// Qualità 12: un filtro del protocollo sull'immagine intera; con <paramref name="regolazioni"/> anche contrasto e
+    /// saturazione (uno stadio in più).
+    /// </param>
+    public static PianoComposizione Crea(int l, int a, bool sostituito, bool quadretti = false, string? filtro = null,
+        bool regolazioni = false)
     {
+        var colore = filtro is null ? null : RicetteColore.Catena(filtro, 0, regolazioni ? 0.3 : 0, regolazioni ? -0.4 : 0);
         var src = Immagine(l, a, (x, y) => ((byte)(40 + x * 180 / l), (byte)(30 + y * 200 / a), (byte)((x * 7 + y * 3) % 256)));
         int lw = Math.Max(1, l / 2), aw = Math.Max(1, a / 2);
         var alfa = new byte[lw * aw];
@@ -373,6 +397,7 @@ public static class PianoDiProva
                     : Immagine(Math.Max(1, l / 8), Math.Max(1, a / 8), (x, y) => ((byte)(200 - x * 9), (byte)(60 + y * 11), 90)),
                 FondoAQuadretti = quadretti,
                 Calore = tabelle,
+                Colore = colore,
             };
         }
         var maschera = new byte[lq * aq];
@@ -386,6 +411,7 @@ public static class PianoDiProva
             ColorePersona = Immagine(lq, aq, (x, y) => ((byte)(60 + x * 3), (byte)(100 + y * 2), 140)),
             SfondoMorbido = Immagine(lq, aq, (x, y) => ((byte)(230 - x), (byte)(200 - y * 2), (byte)(250 - x - y))),
             MascheraMorbida = maschera, LarghezzaMorbida = lq, AltezzaMorbida = aq,
+            Colore = colore,
         };
     }
 

@@ -32,8 +32,9 @@ final class UscitaWebcam: @unchecked Sendable {
         let fps: Int
     }
 
-    /// L'identificativo del dispositivo creato dall'estensione (idDispositivo in Fotocamera.swift).
-    private static let uidDispositivo = "6F1D2C64-1B8E-4C5A-9E0A-57C3B1A4D2E1"
+    /// L'identificativo del dispositivo creato dall'estensione (idDispositivo in Fotocamera.swift): per CoreMediaIO
+    /// è il `DeviceUID`, per AVFoundation lo `uniqueID` (RitrattoSistema).
+    static let uidDispositivo = "6F1D2C64-1B8E-4C5A-9E0A-57C3B1A4D2E1"
     /// La misura quando nessuna app usa la webcam (o con un'estensione che non dice il formato).
     private static let normale = (larghezza: 1920, altezza: 1080)
     /// Le misure dei formati dell'uscita (formatiUscita in Fotocamera.swift): solo queste si mandano già pronte.

@@ -183,6 +183,7 @@ Sull'iPhone: pulsante «Effetti» nella barra di «In onda». Sul Mac: sezione �
 - [ ] F8 · «Scritta e logo»: nome e ruolo in basso a sinistra nel video; «Aggiungi un logo…» lo mette in alto a destra; tutti e due si leggono dritti sul Mac anche con «Specchia l'immagine inviata»
 - [ ] F9 · Dal Mac: «Nome», «Ruolo (facoltativo)», «Mostra la scritta»: la scritta compare nel video dopo meno di un secondo
 - [ ] F10 · Tutti gli effetti accesi insieme per 5 minuti: video fluido, latenza simile a prima, l'iPhone tiepido (annota)
+- [ ] F11 · Qualità 10 (solo con la webcam virtuale, account a pagamento): Zoom o FaceTime con «WebcamLR» e la sfocatura di WebcamLR accesa: sotto il video del Mac compare l'avviso della doppia sfocatura, con «Spegni la sfocatura» e «Non mostrare più»; nel Centro di Controllo › Effetti video annota se c'è «Ritratto» per WebcamLR (dettagli e altre prove: `Effetti su Windows.md`, «Qualità 10 e 12»)
 
 ## G · L'assistente: le 8 idee nuove
 

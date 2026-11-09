@@ -80,19 +80,26 @@ public sealed class Compositore : IDisposable
         var calore = TabelleCalore(imp.Calore);
         ImmagineBgra corrente = src;
 
-        // 1-2. Calore e sfondo: con lo sfondo il calore va su persona e sfondo sfocato (non sull'immagine sostituita).
-        if (imp.SfondoAcceso)
-        {
-            lavoro = Prepara(lavoro, l, a);
-            Sfondo(ingresso, istantanea, livello, calore, lavoro);
-            corrente = lavoro;
-            calore = null;
-        }
-        // 3-4. Pelle e luce sul volto: lavorano sul posto, solo attorno ai volti.
+        // Pelle, luce sul volto e nitidezza: che cosa c'è tra lo sfondo e il filtro.
         var voltiPixel = volti.Select(v => v.InPixel(l, a)).ToList();
         var luce = PassoLuce(voltiPixel, imp.LuceVolto, ingresso.Dt, l, a);
         var pelle = imp.Pelle > 0.001 && voltiPixel.Count > 0;
         var nitidezza = double.IsFinite(imp.Nitidezza) ? Math.Clamp(imp.Nitidezza, -1, 1) : 0;
+        // Qualità 12: con lo sfondo, e senza pelle, luce e nitidezza in mezzo, filtro e regolazioni vanno nella
+        // composizione: sulla scheda video non costano più nulla al processore; sul processore costano come prima.
+        // Con pelle, luce o nitidezza restano dopo, come sul Mac: il ritocco lavora sui colori veri.
+        var coloreNellaComposizione = imp.SfondoAcceso && !pelle && luce is null && Math.Abs(nitidezza) <= 0.005
+            && Catena(imp, false) is { StadiInteri: <= PianoComposizione.MassimoStadiColore };
+
+        // 1-2. Calore e sfondo: con lo sfondo il calore va su persona e sfondo sfocato (non sull'immagine sostituita).
+        if (imp.SfondoAcceso)
+        {
+            lavoro = Prepara(lavoro, l, a);
+            Sfondo(ingresso, istantanea, livello, calore, coloreNellaComposizione ? Catena(imp, false) : null, lavoro);
+            corrente = lavoro;
+            calore = null;
+        }
+        // 3-4. Pelle e luce sul volto: lavorano sul posto, solo attorno ai volti.
         if ((pelle || luce is not null || Math.Abs(nitidezza) > 0.005) && ReferenceEquals(corrente, src))
         {
             lavoro = Prepara(lavoro, l, a);
@@ -108,8 +115,9 @@ public sealed class Compositore : IDisposable
         // 5. Inquadratura automatica: la molla con i volti freschi.
         var zoom = inquadratura.Passo(ingresso.Volti is null ? null : volti, ingresso.QuandoVolti, imp.Inquadratura, ingresso.Dt);
 
-        // 6-8. Ritaglio, specchio, calore (se non già fatto), filtro e regolazioni in un passaggio solo.
-        var catena = Catena(imp, calore is not null);
+        // 6-8. Ritaglio, specchio, calore (se non già fatto), filtro e regolazioni (se non già nella composizione) in un
+        // passaggio solo.
+        var catena = coloreNellaComposizione ? null : Catena(imp, calore is not null);
         var vignetta = imp.Filtro == Filtri.Cinema && !livello.ConBordoBilineare() ? Vignetta(l, a) : null;
         if (zoom is { } z)
         {
@@ -193,8 +201,9 @@ public sealed class Compositore : IDisposable
         return gradino;
     }
 
+    /// <param name="colore">Qualità 12: filtro e regolazioni da fare nella composizione (null = dopo, nella resa).</param>
     private void Sfondo(IngressoResa ingresso, StatoEffettiComputer.Istantanea istantanea, LivelloResa livello, byte[][]? calore,
-        ImmagineBgra destinazione)
+        CatenaColore? colore, ImmagineBgra destinazione)
     {
         var imp = istantanea.Impostazioni;
         var src = ingresso.Immagine;
@@ -260,7 +269,7 @@ public sealed class Compositore : IDisposable
             var fondoVerde = Verde(l, a);
             piano = new PianoComposizione
             {
-                Sorgente = src, Alfa = alfa, LarghezzaAlfa = lw, AltezzaAlfa = aw, Calore = calore,
+                Sorgente = src, Alfa = alfa, LarghezzaAlfa = lw, AltezzaAlfa = aw, Calore = calore, Colore = colore,
                 FondoPieno = fondoVerde.Immagine, ChiaveFondo = fondoVerde.Chiave,
                 ColorePersona = livello.ConBordoBilineare() ? null
                     : ColorePersona(quarto, AlfaAlQuarto(alfa, lw, aw, lq, aq), RegoleBordo.SigmaColorePersona * Math.Min(l, a) / 1080.0 * lq / l),
@@ -275,7 +284,7 @@ public sealed class Compositore : IDisposable
             var unita = Math.Min(l, a) / 1080.0 * lq / l;
             piano = new PianoComposizione
             {
-                Sorgente = src, Alfa = alfa, LarghezzaAlfa = lw, AltezzaAlfa = aw, Calore = calore,
+                Sorgente = src, Alfa = alfa, LarghezzaAlfa = lw, AltezzaAlfa = aw, Calore = calore, Colore = colore,
                 FondoPieno = fondoPieno, ChiaveFondo = chiaveFondo,
                 ColorePersona = livello.ConBordoBilineare() ? null : ColorePersona(quarto, alfaQuarto, RegoleBordo.SigmaColorePersona * unita),
                 SfondoMorbido = SfondoMorbido(fondoPieno, chiaveFondo, lq, aq, RegoleBordo.SigmaSfondoMorbido * unita),
@@ -289,7 +298,7 @@ public sealed class Compositore : IDisposable
             var stile = StiliSfocatura.AlLivello(imp.Sfocatura, livello);
             piano = new PianoComposizione
             {
-                Sorgente = src, Alfa = alfa, LarghezzaAlfa = lw, AltezzaAlfa = aw, Calore = calore,
+                Sorgente = src, Alfa = alfa, LarghezzaAlfa = lw, AltezzaAlfa = aw, Calore = calore, Colore = colore,
                 FondoPiccolo = stile switch
                 {
                     StiliSfocatura.Bokeh => SfocataBokeh(quarto, maschera, intensita, calore, l, a, StiliSfocatura.GradinoBokeh(livello)),

@@ -41,6 +41,8 @@ enum Preferenze {
     static let vista = "vista"
     /// L'icona di WebcamLR nella barra dei menu (passo 6, M7): accesa di serie, si spegne in Impostazioni › Schermo.
     static let iconaBarraMenu = "iconaBarraMenu"
+    /// Qualità 10: «Non mostrare più» sull'avviso della doppia sfocatura con Ritratto di macOS (RitrattoSistema).
+    static let nonMostrareRitratto = "nonMostrareRitratto"
 
     /// L'icona nella barra dei menu c'è: vero anche se la preferenza non è mai stata scritta (di serie è accesa).
     static var iconaBarraAttiva: Bool {

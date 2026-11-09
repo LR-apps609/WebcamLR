@@ -756,6 +756,11 @@ public class MotoreTest(ITestOutputHelper uscita)
         uscita.WriteLine($"Processori: {Environment.ProcessorCount}, vettori {System.Numerics.Vector<byte>.Count} byte");
         Misura("solo calore", new ImpostazioniMotore { Calore = 0.3 });
         Misura("filtro cinema + regolazioni", new ImpostazioniMotore { Filtro = Filtri.Cinema, Luminosita = 0.2, Saturazione = 0.3 });
+        // Qualità 12: un filtro da solo (tabella per canale o matrice) e con lo sfondo (nella composizione).
+        Misura("filtro luminoso", new ImpostazioniMotore { Filtro = Filtri.Luminoso });
+        Misura("filtro bianco e nero", new ImpostazioniMotore { Filtro = Filtri.BiancoNero });
+        Misura("sfocatura Medio + filtro caldo", new ImpostazioniMotore { Sfondo = ModiSfondo.Sfocato, IntensitaSfondo = 0.55, Filtro = Filtri.Caldo });
+        Misura("sfocatura Medio + filtro caldo, veloce", new ImpostazioniMotore { Sfondo = ModiSfondo.Sfocato, IntensitaSfondo = 0.55, Filtro = Filtri.Caldo }, LivelloResa.Veloce);
         Misura("sfocatura Poco", new ImpostazioniMotore { Sfondo = ModiSfondo.Sfocato, IntensitaSfondo = 0.25 });
         Misura("sfocatura Medio", new ImpostazioniMotore { Sfondo = ModiSfondo.Sfocato, IntensitaSfondo = 0.55 });
         Misura("sfocatura Tanto + calore", new ImpostazioniMotore { Sfondo = ModiSfondo.Sfocato, IntensitaSfondo = 1, Calore = 0.3 });

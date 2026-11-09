@@ -3445,6 +3445,16 @@
         }
       }
     },
+    "Lo sfondo viene sfocato due volte" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The background is blurred twice"
+          }
+        }
+      }
+    },
     "Lo stato di WebcamLR anche a finestra chiusa: in onda, registrazione, telefono collegato" : {
       "localizations" : {
         "en" : {
@@ -4210,6 +4220,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No app yet? Download it"
+          }
+        }
+      }
+    },
+    "Non mostrare più" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Don’t show again"
           }
         }
       }
@@ -5396,6 +5416,16 @@
         }
       }
     },
+    "Ritratto di macOS acceso?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Is macOS Portrait on?"
+          }
+        }
+      }
+    },
     "Riunione" : {
       "localizations" : {
         "en" : {
@@ -5759,6 +5789,16 @@
         }
       }
     },
+    "Se nell'app di videochiamata hai acceso anche Ritratto (Centro di Controllo › Effetti video), lo sfondo viene sfocato due volte. Spegni Ritratto lì, oppure la sfocatura qui." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If you also turned on Portrait in your video call app (Control Center › Video Effects), the background is blurred twice. Turn off Portrait there, or the blur here."
+          }
+        }
+      }
+    },
     "Secondo telefono collegato: «%@» resta nella webcam" : {
       "localizations" : {
         "en" : {
@@ -6104,6 +6144,16 @@
         }
       }
     },
+    "Sono accesi Ritratto di macOS e la sfocatura di WebcamLR. Spegni Ritratto in Centro di Controllo › Effetti video, oppure la sfocatura qui." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Both macOS Portrait and the WebcamLR blur are on. Turn off Portrait in Control Center › Video Effects, or the blur here."
+          }
+        }
+      }
+    },
     "Sostituisci" : {
       "localizations" : {
         "en" : {
@@ -6200,6 +6250,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mirror or background requested by the phone with the rear camera: waiting for the front camera"
+          }
+        }
+      }
+    },
+    "Spegni la sfocatura" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn off blur"
           }
         }
       }

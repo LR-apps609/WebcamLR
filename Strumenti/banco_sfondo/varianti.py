@@ -14,6 +14,10 @@ Ogni variante è un oggetto con stato (i filtri nel tempo) che riceve, fotogramm
   Cm  B con il filtro nel tempo del Mac (media 0,3 con isteresi 0,3/0,7 e spinta 0,15) al posto di quello di Windows
   D   C più soglia smoothstep 0,3–0,7 e sfocatura normalizzata dalla maschera rifinita (allargata di 12 px, niente alone)
   E   MODNet (Apache-2.0) al posto di MediaPipe, con la rifinitura di D
+  Q   come oggi su Windows (ramo prestazioni): D* più l'isteresi della maschera (Qualità 4, IsteresiMaschera). Vale
+      per ogni modello, anche MODNet (la sua alfa entra nel bordo e nella soglia di oggi)
+  M   matting diretto per MODNet: filtro nel tempo e media dal movimento di oggi, poi l'alfa ingrandita bilineare
+      senza filtro guidato né soglia (l'alfa morbida dei capelli resta), sfocatura di oggi
 
 Parametri (banco.py, «modello/Nome:parametro=valore»): B raggio, eps, fine=0 (filtro guidato di A invece di quello
 fine); C peso_fermo, pendenza; D soglia_alfa, allarga_px, fondo_modello=1 (la sfocatura di A invece di quella del Mac).
@@ -131,6 +135,7 @@ class C(B):
         self.peso_fermo, self.pendenza = F(peso_fermo), F(pendenza)
         self.media = None
         self.y_prec = None
+        self.pesi = None  # il peso della nuova per punto nell'ultima maschera (None alla prima): serve all'isteresi
 
     def nel_tempo(self, grezza, ingresso_modello):
         m = self.filtro.applica(grezza.copy())
@@ -138,10 +143,12 @@ class C(B):
         self.y_prec = y
         if self.media is None or mov is None:
             self.media = m.copy()
+            self.pesi = None
             return m
         peso = np.clip(self.peso_fermo + self.pendenza * mov, self.peso_fermo, F(1))
+        self.pesi = peso.astype(F)
         self.media = (self.media + (m - self.media) * peso).astype(F)
-        return self.media
+        return self.media.copy()
 
 
 class CMac(B):
@@ -204,4 +211,29 @@ class E0(A0):
     descrizione = "MODNet grezzo (ingrandimento bilineare)"
 
 
-VARIANTI = {"A0": A0, "A": AWindows, "B": B, "C": C, "Cm": CMac, "D": D, "E": E, "E0": E0}
+class Q(D):
+    nome = "Q"
+    descrizione = "come oggi su Windows: D* (bordo e sfocatura di A, EMA dal movimento, soglia 0,3–0,7) + isteresi"
+
+    def __init__(self, isteresi=1, **altri):
+        altri.setdefault("fondo_modello", 1)
+        altri.setdefault("fine", 0)
+        super().__init__(**altri)
+        self.parametri.update(isteresi=isteresi)
+        self.isteresi = rw.IsteresiMaschera() if isteresi else None
+
+    def nel_tempo(self, grezza, ingresso_modello):
+        m = super().nel_tempo(grezza, ingresso_modello)
+        return self.isteresi.applica(m, self.pesi) if self.isteresi else m
+
+
+class M(C):
+    nome = "M"
+    descrizione = "matting diretto: filtro nel tempo e media dal movimento, alfa bilineare senza soglia, sfocatura di oggi"
+
+    def bordo(self, src, meta, quarto, maschera_byte):
+        m = rw.campiona(maschera_byte, L, A)
+        return np.floor(m * F(255) + F(0.5)).astype(np.uint8), None
+
+
+VARIANTI = {"A0": A0, "A": AWindows, "B": B, "C": C, "Cm": CMac, "D": D, "E": E, "E0": E0, "Q": Q, "M": M}

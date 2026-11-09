@@ -10,6 +10,9 @@
   dalla persona. Ideale = persona vera sopra lo sfondo sfocato con la sfocatura normalizzata dalla persona vera (stessa
   piramide di Windows): ci arriva una maschera perfetta, e il colore della persona che sbava fuori pesa qui.
 - Errore immagine bordo: lo stesso nella fascia ±10 px dal contorno.
+- Capelli (prova MODNet): i punti dove l'alfa vera è sfumata (tra 0,02 e 0,98, allargati di 3 px) nella parte alta
+  della persona (il 35% più in alto della sua altezza nel fotogramma: testa e capelli, non mani e vestiti). Lì MAD,
+  gradiente (×1000) ed errore dell'immagine sfocata (0..255).
 """
 
 import cv2
@@ -33,6 +36,14 @@ class Verita:
         self.fascia20 = distanza <= 20
         self.anello = (~self.dentro) & (vera < 0.01) & (d_fuori <= 40)
         self.grad = gradiente(vera)
+        righe = np.nonzero(self.dentro.any(axis=1))[0]
+        sfumata = ((vera > 0.02) & (vera < 0.98)).astype(np.uint8)
+        sfumata = cv2.dilate(sfumata, np.ones((7, 7), np.uint8)) > 0
+        testa = np.zeros_like(self.dentro)
+        if len(righe):
+            alto, basso = int(righe.min()), int(righe.max())
+            testa[: alto + int(0.35 * (basso - alto + 1)) + 1] = True
+        self.capelli = sfumata & testa
 
 
 def gradiente(a: np.ndarray) -> np.ndarray:
@@ -49,8 +60,12 @@ def per_fotogramma(alfa, verita: Verita, uscita=None, ideale=None, alfa_prec=Non
     r = {
         "iou": np.count_nonzero(p & verita.dentro) / unione if unione else 1.0,
         "mad_bordo": float(np.abs(alfa - v)[verita.fascia10].mean() * 1000),
-        "grad_bordo": float(np.abs(gradiente(alfa) - verita.grad)[verita.fascia10].mean() * 1000),
     }
+    g = np.abs(gradiente(alfa) - verita.grad)
+    r["grad_bordo"] = float(g[verita.fascia10].mean() * 1000)
+    if verita.capelli.any():
+        r["mad_capelli"] = float(np.abs(alfa - v)[verita.capelli].mean() * 1000)
+        r["grad_capelli"] = float(g[verita.capelli].mean() * 1000)
     if alfa_prec is not None:
         da, dv = alfa - alfa_prec, v - vera_prec
         r["dtssd"] = float(np.sqrt(np.mean((da - dv) ** 2)) * 100)
@@ -60,4 +75,6 @@ def per_fotogramma(alfa, verita: Verita, uscita=None, ideale=None, alfa_prec=Non
         diff = np.abs(uscita.astype(F) - ideale.astype(F)).mean(axis=2)
         r["alone"] = float(diff[verita.anello].mean()) if verita.anello.any() else 0.0
         r["errore_immagine"] = float(diff[verita.fascia10].mean())
+        if verita.capelli.any():
+            r["immagine_capelli"] = float(diff[verita.capelli].mean())
     return r

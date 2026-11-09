@@ -1,11 +1,12 @@
-"""Controlla che la versione numpy (varianti.py, D* = D:fondo_modello=1:fine=0) faccia gli stessi conti della libreria C# vera.
+"""Controlla che la versione numpy (varianti.py, Q = D* + isteresi, cioè come oggi) faccia gli stessi conti della libreria C# vera.
 
     python -I verifica_cs.py --dati <cartella VM240K> --lavoro <cartella di appoggio> [--fotogrammi 30]
                              [--effetti <cartella di WebcamLR.Effetti>]
 
 Scrive i fotogrammi di una clip in BGRA, li passa a VerificaCs (RitaglioPersona pieno e leggero con il filtro nel
 tempo e la media dal movimento, poi Compositore.Rendi con la sfocatura «Medio»), e confronta:
-1. le maschere (byte) di C# con quelle di Python (stessa preparazione, FiltroTemporale + media dal movimento: varianti.C);
+1. le maschere (byte) di C# con quelle di Python (stessa preparazione, FiltroTemporale + media dal movimento + isteresi:
+   varianti.Q; con --senza-isteresi solo varianti.C, per una libreria di prima della Qualità 4);
 2. l'immagine sfocata di C# con quella di D* in Python, data la stessa maschera.
 Stampa anche le mediane dei tempi di C# (Release): sono i tempi veri di D* sul processore.
 --effetti prova la libreria di un'altra copia (per esempio del ramo prestazioni) invece di quella accanto.
@@ -35,6 +36,7 @@ def main():
     p.add_argument("--fotogrammi", type=int, default=30)
     p.add_argument("--clip", default="vm0003_studio")
     p.add_argument("--effetti", help="cartella di WebcamLR.Effetti da provare (di base quella di questa copia)")
+    p.add_argument("--senza-isteresi", action="store_true", help="libreria di prima della Qualità 4 (senza IsteresiMaschera)")
     a = p.parse_args()
     lavoro = Path(a.lavoro)
     lavoro.mkdir(parents=True, exist_ok=True)
@@ -52,7 +54,7 @@ def main():
 
     modelli = {m: banco.Modello(m, None, 0) for m in ("pieno", "leggero")}
     # D*: FiltroTemporale + media dal movimento (classe C) nella maschera, soglia 0,3–0,7 con bordo e sfocatura di oggi.
-    filtri = {m: varianti.C() for m in modelli}
+    filtri = {m: varianti.C() if a.senza_isteresi else varianti.Q() for m in modelli}
     variante_d = varianti.D(fondo_modello=1, fine=0)
     variante_d.nel_tempo = lambda grezza, _: grezza  # la maschera arriva già filtrata (quella di C#)
     diff_maschere = {m: [] for m in modelli}

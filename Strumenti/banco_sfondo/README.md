@@ -21,7 +21,9 @@ Conclusioni e numeri commentati: `Documenti/Qualità sfondo - banco.md`.
    | vm0004_cemento | mezzo busto | cemento grigio |
 
 2. **Modelli** (gli stessi file di `Windows/WebcamLR.Effetti/Modelli`): pieno (Selfie Multiclass 256×256) e leggero
-   (Selfie Segmenter landscape 144×256, anche su Android), più MODNet per la variante E. Preparazione e filtro nel tempo
+   (Selfie Segmenter landscape 144×256, anche su Android), più MODNet: `modnet` (fotografico, export ONNX ufficiale)
+   e `modnetw` (webcam, convertito qui con `converti_modnet_webcam.py`), alla misura scritta dopo «@»
+   (`modnetw@896x512`; di base 512×288, lati multipli di 32). Preparazione e filtro nel tempo
    sono quelli di `Preparazione.cs` e `FiltroTemporale.cs`, riscritti in numpy in `ricette_windows.py` insieme al bordo
    e alla sfocatura del `Compositore` (stessi conti, stessi arrotondamenti).
 3. **Varianti** (`varianti.py`), tutte con la sfocatura «Medio» (0,55):
@@ -36,19 +38,25 @@ Conclusioni e numeri commentati: `Documenti/Qualità sfondo - banco.md`.
    | D | C + soglia smoothstep 0,3–0,7 + sfocatura normalizzata dalla maschera rifinita, allargata 12 px, come il Mac (2,5m − 0,25) |
    | **D\*** | **consigliata**: A + EMA dal movimento + soglia 0,3–0,7 (bordo e sfocatura di oggi). Nel banco: `pieno/D:fondo_modello=1:fine=0` |
    | E0 / E / E\* | MODNet fotografico 512×288: grezzo / con la rifinitura di D / con quella di D\* |
+   | **Q** | **come oggi su Windows** (ramo `prestazioni`): D\* + isteresi della maschera (Qualità 4, `IsteresiMaschera`). Vale per ogni modello |
+   | M | matting diretto (per MODNet): filtro nel tempo e media dal movimento di oggi, alfa ingrandita senza filtro guidato né soglia |
 
 4. **Misure** (`misure.py`), per fotogramma a 1920×1080 e poi in media (ogni clip pesa uguale):
    IoU (alfa ≥ 0,5); **MAD bordo** = errore medio |alfa − vera| nella fascia ±10 px dal contorno vero (×10⁻³);
    **Grad bordo** = errore sul gradiente nella stessa fascia (×10⁻³); **dtSSD** come Robust Video Matting (×10⁻²);
    **tremolio bordo** = variazione media dell'alfa dove la verità non cambia, entro 20 px dal contorno (×10⁻³);
    **alone** = errore di colore (0–255) dell'immagine sfocata, nell'anello 0–40 px fuori dalla persona, rispetto
-   all'ideale (sfocatura normalizzata con la persona vera); **errore immagine bordo** = lo stesso nella fascia ±10 px.
+   all'ideale (sfocatura normalizzata con la persona vera); **errore immagine bordo** = lo stesso nella fascia ±10 px;
+   **capelli** (prova MODNet) = MAD, Grad ed errore immagine dove l'alfa vera è sfumata (0,02–0,98, allargata di 3 px)
+   nel 35% più alto della persona: testa e capelli (in libreria e ufficio anche la mano alzata).
 5. **Immagini di confronto** (fotogramma 60 di ogni clip, per ogni variante): originale | maschera (verde = persona
    persa, rosso = sfondo preso per persona) | sfocatura, e sotto l'ingrandimento del bordo della testa.
 
 `verifica_cs.py` + `VerificaCs/` passano gli stessi fotogrammi nella libreria C# vera (`RitaglioPersona`,
-`Compositore.Rendi`) e la confrontano con D* (`D:fondo_modello=1:fine=0`, maschere con il filtro nel tempo e la media
-dal movimento di `varianti.C`). Con la libreria del ramo prestazioni (30 fotogrammi di vm0003_studio): maschere del
+`Compositore.Rendi`) e la confrontano con Q (D\* con l'isteresi; `--senza-isteresi` per una libreria di prima della
+Qualità 4). Con la libreria del ramo `prestazioni` del 9 novembre (30 fotogrammi di vm0003_studio): maschere del pieno
+identiche, leggero al massimo 1/255 su 0,0002% dei punti, immagine al massimo 1/255. Il primo giro, qui sotto, era
+con D\* (`D:fondo_modello=1:fine=0`, maschere con il filtro nel tempo e la media dal movimento di `varianti.C`). Con la libreria del ramo prestazioni (30 fotogrammi di vm0003_studio): maschere del
 pieno identiche (0 punti diversi), leggero al massimo 1/255 su 0,0002% dei punti, immagine di D* al massimo 1/255
 (nessun punto oltre 2). Danno anche i tempi veri di C#. Con una libreria di prima di D* le maschere differiscono
 (fino a 93/255 sul 13% dei punti): la verifica se ne accorge. `--effetti <cartella di WebcamLR.Effetti>` prova la
@@ -70,8 +78,14 @@ cd Strumenti/banco_sfondo
 ~/banco-venv/bin/python -I banco.py ... --varianti pieno/A pieno/B:raggio=4:eps=0.01 --clip vm0003_studio --fotogrammi 30
 # 3. Tempi per fotogramma (la rete; la rifinitura in numpy vale solo come rapporto tra varianti)
 ~/banco-venv/bin/python -I banco.py ... --tempi
-# 4. Stessi conti della libreria C# (D*) e tempi veri di C#
+# 4. Stessi conti della libreria C# (Q) e tempi veri di C#
 ~/banco-venv/bin/python -I verifica_cs.py --dati ~/banco-dati/vm240k --lavoro /tmp/banco-cs [--effetti <altra copia>/Windows/WebcamLR.Effetti]
+# 5. Prova MODNet (Documenti/Prova MODNet.md): il modello webcam in ONNX senza PyTorch (serve il pacchetto onnx) dai
+#    checkpoint ufficiali (copia DavG25/modnet-pretrained-models su Hugging Face), poi il confronto
+~/banco-venv/bin/python -I converti_modnet_webcam.py <ckpt fotografico> <onnx fotografico> <ckpt webcam> ~/banco-dati/modnet/modnet_webcam.onnx
+~/banco-venv/bin/python -I banco.py ... --varianti pieno/Q leggero/Q modnetw/Q modnetw@896x512/M ...
+# 6. Solo la rete in C#, con DirectML su Windows (sulla scheda video di chi lo esegue): pieno, leggero e MODNet a 3 misure
+dotnet run -c Release --project VerificaCs -- --tempi-modelli ~/banco-dati/modnet [processore]
 ```
 
 `banco.py` scrive in `--uscita`: `risultati.json` (si aggiorna a ogni esecuzione, variante per variante),
@@ -97,8 +111,9 @@ non vanno nella repository.
 - **MODNet** (ZHKKKe/MODNet): codice, modelli e demo Apache-2.0 per dichiarazione esplicita del README ufficiale.
   Usiamo `modnet_photographic_portrait_matting.onnx` (export ufficiale; SHA-256 07c308cf…584df9, uguale a
   Xenova/modnet e alla copia DavG25/modnet-pretrained-models da cui si scarica). Il modello «webcam» esiste solo come
-  checkpoint PyTorch: per convertirlo serve PyTorch, che qui non si installa (download.pytorch.org bloccato).
-  Restano da verificare le licenze dei dati con cui sono stati addestrati i pesi.
+  checkpoint PyTorch (SHA-256 913b82b6…52108b): `converti_modnet_webcam.py` ne mette i pesi nel grafo dell'export
+  ufficiale, senza PyTorch (la corrispondenza dei pesi è controllata sul fotografico: scarto 0). Restano da verificare
+  le licenze dei dati con cui sono stati addestrati i pesi (Documenti/Prova MODNet.md).
 - **Modelli MediaPipe**: quelli della repository (Apache-2.0, `Windows/WebcamLR.Effetti/Licenze`).
 
 ## Risultati (7 novembre 2026, 5 clip × 120 fotogrammi)

@@ -4,7 +4,9 @@
     python -I banco.py --dati ... --uscita ... --tempi            # solo i tempi per fotogramma
 
 Una variante si scrive modello/Nome[:parametro=valore...], per esempio pieno/A, leggero/D, pieno/B:raggio=4:eps=0.01,
-modnet/E. Modelli: pieno (Selfie Multiclass 256×256), leggero (Selfie Segmenter landscape 144×256), modnet.
+modnet/E. Modelli: pieno (Selfie Multiclass 256×256), leggero (Selfie Segmenter landscape 144×256), modnet (MODNet
+fotografico, export ONNX ufficiale) e modnetw (MODNet webcam, Strumenti/banco_sfondo/converti_modnet_webcam.py), con
+la misura d'ingresso dopo «@», per esempio modnetw@896x512/M (di base 512×288; lati multipli di 32).
 """
 
 import argparse
@@ -47,9 +49,12 @@ class Modello:
             file, (self.l, self.a), self.scala, self.sposta = MODELLI_WINDOWS / "ritaglio_persona.onnx", (256, 256), 1 / 127.5, -1.0
         elif nome == "leggero":
             file, (self.l, self.a), self.scala, self.sposta = MODELLI_WINDOWS / "ritaglio_persona_leggero.onnx", (256, 144), 1 / 255, 0.0
-        elif nome == "modnet":
-            # MODNet: RGB in [-1, 1], NCHW, lati multipli di 32 (512×288 per il 16:9).
-            file, (self.l, self.a), self.scala, self.sposta = Path(cartella_modnet) / "modnet_photographic.onnx", (512, 288), 1 / 127.5, -1.0
+        elif nome.split("@")[0] in ("modnet", "modnetw"):
+            # MODNet: RGB in [-1, 1], NCHW, lati multipli di 32 (512×288 per il 16:9, se non si dice altro).
+            base, _, misura = nome.partition("@")
+            self.l, self.a = (int(x) for x in misura.split("x")) if misura else (512, 288)
+            file = Path(cartella_modnet) / ("modnet_photographic.onnx" if base == "modnet" else "modnet_webcam.onnx")
+            self.scala, self.sposta = 1 / 127.5, -1.0
         else:
             raise ValueError(nome)
         self.sessione = ort.InferenceSession(str(file), so, providers=["CPUExecutionProvider"])
@@ -57,12 +62,12 @@ class Modello:
 
     def calcola(self, src):
         x = rw.bgra_in_rgb(src, self.l, self.a, self.scala, self.sposta)
-        if self.nome == "modnet":
+        if self.nome.startswith("modnet"):
             x = np.ascontiguousarray(x.transpose(0, 3, 1, 2))
         t0 = time.perf_counter()
         u = self.sessione.run(None, {self.ingresso: x})[0]
         self.ms = (time.perf_counter() - t0) * 1000  # solo la rete (la preparazione in numpy non conta)
-        if self.nome == "modnet":
+        if self.nome.startswith("modnet"):
             return np.clip(u[0, 0], 0, 1).astype(np.float32)
         return rw.persona(u)
 
@@ -165,7 +170,9 @@ def tempi(specs, cartella_dati, cartella_modnet, quanti, fili):
 
 COLONNE = [("iou", "IoU", "{:.4f}"), ("mad_bordo", "MAD bordo ×10⁻³", "{:.1f}"), ("grad_bordo", "Grad bordo ×10⁻³", "{:.1f}"),
            ("dtssd", "dtSSD ×10⁻²", "{:.3f}"), ("tremolio", "Tremolio bordo ×10⁻³", "{:.2f}"),
-           ("alone", "Alone (0–255)", "{:.2f}"), ("errore_immagine", "Errore immagine bordo (0–255)", "{:.2f}")]
+           ("alone", "Alone (0–255)", "{:.2f}"), ("errore_immagine", "Errore immagine bordo (0–255)", "{:.2f}"),
+           ("mad_capelli", "MAD capelli ×10⁻³", "{:.1f}"), ("grad_capelli", "Grad capelli ×10⁻³", "{:.1f}"),
+           ("immagine_capelli", "Errore immagine capelli (0–255)", "{:.2f}")]
 
 
 def tabella(medie, righe):
@@ -179,7 +186,7 @@ def tabella(medie, righe):
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--dati", required=True, help="cartella con VideoMatte240K_JPEG_HD/test (scarica_dati.py)")
-    p.add_argument("--modnet", help="cartella con modnet_photographic.onnx (scarica_dati.py)")
+    p.add_argument("--modnet", help="cartella con modnet_photographic.onnx (scarica_dati.py) e modnet_webcam.onnx")
     p.add_argument("--uscita", required=True)
     p.add_argument("--varianti", nargs="*", default=PREDEFINITE)
     p.add_argument("--clip", nargs="*", help="solo queste clip (nomi in clip.py)")

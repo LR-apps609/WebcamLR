@@ -6,6 +6,14 @@ using WebcamLR.Protocollo;
 // Per ogni fotogramma scrive accanto: pieno_00000.bin e leggero_00000.bin (maschere di RitaglioPersona, filtro nel tempo
 // acceso) e uscita_00000.bgra (Compositore.Rendi: sfocatura «Medio» 0,55, livello Pieno, maschera del modello pieno).
 // Alla fine le mediane dei millisecondi.
+// Oppure: dotnet run -c Release -- --tempi-modelli <cartella con modnet_photographic(_portrait_matting).onnx> [processore]
+// (Documenti/Prova MODNet.md): solo la rete, pieno e leggero di MediaPipe contro MODNet a 256×160, 512×288 e 896×512,
+// sulla scheda video con DirectML (Windows) o sul processore; mediana di 50 esecuzioni dopo 10 di riscaldamento.
+if (args.Length > 0 && args[0] == "--tempi-modelli")
+{
+    TempiModelli.Esegui(args[1], args.Length > 2 && args[2] == "processore");
+    return;
+}
 var cartella = args[0];
 var quanti = int.Parse(args[1]);
 int l = int.Parse(args[2]), a = int.Parse(args[3]);
@@ -73,3 +81,66 @@ for (var r = 0; r < 35; r++)
 static double Mediana(List<double> v) => v.Count == 0 ? double.NaN : v.Order().ElementAt(v.Count / 2);
 Console.WriteLine(string.Create(System.Globalization.CultureInfo.InvariantCulture,
     $"{{\"pieno_ms\": {Mediana(tPieno):0.00}, \"leggero_ms\": {Mediana(tLeggero):0.00}, \"resa_A_ms\": {Mediana(tResa):0.00}, \"bordo_A_ms\": {Mediana(tBordoA):0.00}, \"bordo_B_ms\": {Mediana(tBordoB):0.00}}}"));
+
+/// <summary>I millisecondi della sola rete per i modelli della prova MODNet, con DirectML se c'è.</summary>
+static class TempiModelli
+{
+    public static void Esegui(string cartellaModnet, bool soloProcessore)
+    {
+        var mediapipe = Path.Combine(AppContext.BaseDirectory, "Modelli");
+        // Il nome del banco o quello del file scaricato (è lo stesso modello).
+        var modnet = new[] { "modnet_photographic.onnx", "modnet_photographic_portrait_matting.onnx" }
+            .Select(n => Path.Combine(cartellaModnet, n)).FirstOrDefault(File.Exists) ?? Path.Combine(cartellaModnet, "modnet_photographic.onnx");
+        var prove = new (string Nome, string File, long[] Forma)[]
+        {
+            ("pieno 256×256", Path.Combine(mediapipe, "ritaglio_persona.onnx"), [1, 256, 256, 3]),
+            ("leggero 256×144", Path.Combine(mediapipe, "ritaglio_persona_leggero.onnx"), [1, 144, 256, 3]),
+            ("MODNet 256×160", modnet, [1, 3, 160, 256]),
+            ("MODNet 512×288", modnet, [1, 3, 288, 512]),
+            ("MODNet 896×512", modnet, [1, 3, 512, 896]),
+        };
+        var dml = !soloProcessore && OperatingSystem.IsWindows();
+        Console.WriteLine(dml ? "Scheda video (DirectML, scheda 0)" : $"Processore ({Environment.ProcessorCount} processori logici)");
+        foreach (var (nome, file, forma) in prove)
+        {
+            try
+            {
+                Console.WriteLine($"{nome}: {Misura(file, forma, dml):0.0} ms");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"{nome}: non misurato ({e.Message})");
+            }
+        }
+    }
+
+    private static double Misura(string file, long[] forma, bool dml)
+    {
+        using var so = new Microsoft.ML.OnnxRuntime.SessionOptions
+        {
+            GraphOptimizationLevel = Microsoft.ML.OnnxRuntime.GraphOptimizationLevel.ORT_ENABLE_ALL,
+        };
+        if (dml)
+        {
+            // Come RitaglioPersona: DirectML vuole l'esecuzione in sequenza e niente schema di memoria.
+            so.EnableMemoryPattern = false;
+            so.ExecutionMode = Microsoft.ML.OnnxRuntime.ExecutionMode.ORT_SEQUENTIAL;
+            so.AppendExecutionProvider_DML(0);
+        }
+        using var sessione = new Microsoft.ML.OnnxRuntime.InferenceSession(file, so);
+        var nomeIngresso = sessione.InputMetadata.Keys.First();
+        var dati = new float[forma.Aggregate(1L, (x, y) => x * y)];
+        for (var i = 0; i < dati.Length; i++) dati[i] = (i % 97) / 97f - 0.5f;
+        using var ingresso = Microsoft.ML.OnnxRuntime.OrtValue.CreateTensorValueFromMemory(dati, forma);
+        using var esecuzione = new Microsoft.ML.OnnxRuntime.RunOptions();
+        var tempi = new List<double>();
+        for (var i = 0; i < 60; i++)
+        {
+            var o = Stopwatch.StartNew();
+            using var uscite = sessione.Run(esecuzione, [nomeIngresso], [ingresso], sessione.OutputNames);
+            if (i >= 10) tempi.Add(o.Elapsed.TotalMilliseconds);
+        }
+        tempi.Sort();
+        return tempi[tempi.Count / 2];
+    }
+}

@@ -3,6 +3,7 @@
 Ogni funzione ha lo stesso nome (in minuscolo) e gli stessi conti del C#:
 - Preparazione.BgraInRgb, Preparazione.Persona            -> bgra_in_rgb, persona
 - FiltroTemporale.Applica                                   -> FiltroTemporale.applica
+- IsteresiMaschera.Applica (Qualità 4)                      -> IsteresiMaschera.applica
 - Elaborazione.Dimezza, Luminosita, Campiona, MediaQuadrata,
   FiltroGuidato, FiltroGuidatoVeloce, SogliaMorbida, Gaussiana -> stessi nomi
 - Compositore.SfocataSenzaAlone, Componi (parte «sfocato») -> sfocata_senza_alone, componi
@@ -71,6 +72,29 @@ class FiltroTemporale:
         v = (maschera * peso + self.precedente * (F(1) - peso)).astype(F)
         self.precedente = v.copy()
         return v
+
+
+class IsteresiMaschera:
+    """Dopo la media dal movimento: ogni punto ricorda se è persona (sopra 0,6 diventa persona, sotto 0,4 torna
+    sfondo) e si sposta di 0,1 dalla sua parte dove l'immagine è ferma (peso della media vicino a 0,35)."""
+
+    SOGLIA_SU, SOGLIA_GIU, SPINTA, CENTRO = F(0.6), F(0.4), F(0.1), F(0.5)
+    PESO_FERMO = F(0.35)
+
+    def __init__(self):
+        self.persona = None
+
+    def applica(self, maschera: np.ndarray, pesi) -> np.ndarray:
+        da_capo = self.persona is None or self.persona.shape != maschera.shape
+        p = maschera >= self.CENTRO if da_capo else self.persona.copy()
+        p = np.where(p & (maschera < self.SOGLIA_GIU), False, np.where(~p & (maschera > self.SOGLIA_SU), True, p))
+        self.persona = p
+        scala = F(1) / (F(1) - self.PESO_FERMO)
+        if da_capo or pesi is None:
+            fermo = F(1)
+        else:
+            fermo = (F(1) - (pesi - self.PESO_FERMO) * scala).astype(F)
+        return np.clip(maschera + np.where(p, self.SPINTA, -self.SPINTA).astype(F) * fermo, 0, 1).astype(F)
 
 
 # --- Elaborazione.cs ------------------------------------------------------------------------------------------------

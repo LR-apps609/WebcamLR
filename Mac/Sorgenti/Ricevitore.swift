@@ -2224,13 +2224,17 @@ final class Ricevitore {
         var obiettivo = profilo.obiettivo
         if let scelto = obiettivo, capacita?.obiettivi.contains(scelto) != true { obiettivo = nil }
         let manuale = profilo.esposizioneManuale && capacita?.isoMinimo != nil
-        // Stesso obiettivo: il massimo è noto. Se cambia, ci pensa il telefono con i limiti del nuovo.
+        // Le capacità sono dell'obiettivo attuale (Protocollo.md, «capacita»). Stesso obiettivo: il massimo dello zoom
+        // è noto. Se cambia, zoom e torcia del profilo vanno come sono e il telefono li porta ai limiti del nuovo: dalla
+        // frontale, senza torcia, la torcia del profilo si accende sul principale (collaudo 43, come Windows).
+        let cambiaObiettivo = obiettivo != nil && obiettivo != statoTelefono?.obiettivo
         var zoom = profilo.zoom
-        if obiettivo == nil || obiettivo == statoTelefono?.obiettivo, let massimo = capacita?.zoomMassimo {
+        if !cambiaObiettivo, let massimo = capacita?.zoomMassimo {
             zoom = min(max(zoom, 1), max(massimo, 1))
         }
+        let mandaTorcia = cambiaObiettivo || capacita?.torcia == true
         comanda(Comando(obiettivo: obiettivo, zoom: zoom,
-                        torcia: capacita?.torcia == true ? profilo.torcia : nil,
+                        torcia: mandaTorcia ? profilo.torcia : nil,
                         esposizione: profilo.esposizione,
                         bianco: profilo.biancoAutomatico ? 0 : Int(profilo.bianco),
                         iso: manuale ? profilo.iso : 0, tempo: manuale ? profilo.tempo : 0))
@@ -2239,7 +2243,7 @@ final class Ricevitore {
         nuovi.obiettivo = obiettivo
         nuovi.zoom = zoom
         // Se la torcia non è stata mandata, resta com'era.
-        if capacita?.torcia != true { nuovi.torcia = torcia }
+        if !mandaTorcia { nuovi.torcia = torcia }
         nuovi.esposizioneManuale = manuale
         controlli = nuovi
     }

@@ -321,7 +321,7 @@ public sealed class CatenaColore
     }
 }
 
-/// <summary>Le ricette: filtri, regolazioni, calore, luce sul volto. Valori dell'iPhone e del Mac.</summary>
+/// <summary>Le ricette: filtri, regolazioni, calore. Valori dell'iPhone e del Mac (la luce sul volto: RegolePelle).</summary>
 public static class RicetteColore
 {
     /// <summary>
@@ -424,14 +424,5 @@ public static class RicetteColore
         var stadi = new List<StadioColore>(Filtro(filtro));
         if (Regolazioni(luminosita, contrasto, saturazione) is { } r) stadi.Add(r);
         return CatenaColore.Da(stadi);
-    }
-
-    /// <summary>La curva della luce sul volto (circa +0,4 EV su ombre e mezzitoni, il bianco al suo posto), in sRGB.</summary>
-    public static byte[] TabellaLuceVolto()
-    {
-        var curva = Colore.Curva([(0, 0), (0.25, 0.29), (0.5, 0.565), (0.75, 0.81), (1, 1)]);
-        var tabella = new byte[256];
-        for (var v = 0; v < 256; v++) tabella[v] = (byte)Math.Clamp((int)Math.Round(curva(v / 255.0) * 255), 0, 255);
-        return tabella;
     }
 }

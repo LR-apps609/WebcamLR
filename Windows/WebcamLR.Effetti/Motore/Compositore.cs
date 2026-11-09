@@ -31,7 +31,6 @@ public sealed class Compositore : IDisposable
     private (string Chiave, CatenaColore? Catena)? catenaPronta;
     private (double Forza, byte[][]? Tabelle)? calorePronto;
     private (int L, int A, ushort[] Guadagni)? vignettaPronta;
-    private readonly byte[] tabellaLuce = RicetteColore.TabellaLuceVolto();
 
     // Buffer riusati.
     private ImmagineBgra? lavoro;
@@ -109,7 +108,7 @@ public sealed class Compositore : IDisposable
             corrente = lavoro;
         }
         if (pelle) RicettePersona.Pelle(corrente, imp.Pelle, voltiPixel, !livello.ConBordoAMeta());
-        if (luce is { } volto) RicettePersona.LuceVolto(corrente, volto, presenzaLuce, tabellaLuce);
+        if (luce is { } volto) RicettePersona.LuceVolto(corrente, volto, presenzaLuce);
         if (Math.Abs(nitidezza) > 0.005) RicettePersona.Nitidezza(corrente, nitidezza, ref copiaNitidezza);
 
         // 5. Inquadratura automatica: la molla con i volti freschi.

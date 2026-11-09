@@ -1137,7 +1137,11 @@ struct SchermataInOnda: View {
         return sessione.effettoInAttesa?.specchia ?? (sessione.effettiComputer?.specchia == true)
     }
     /// Specchio e sfondo solo con la frontale, anche quelli del computer (con la posteriore non li fa).
-    private var specchioESfondoDisponibili: Bool { sessione.conFrontale }
+    /// Collaudo 51: con gli effetti sul computer, solo a frontale già accesa: prima il computer non la conosce ancora
+    /// (lo `stato` con la frontale parte con la fotocamera nuova) e ignorerebbe il tocco senza dire nulla.
+    private var specchioESfondoDisponibili: Bool { telecomando ? sessione.frontalePronta : sessione.conFrontale }
+    /// La frontale è scelta ma si sta ancora accendendo: un tocco non fa nulla e non serve dire «solo con la frontale».
+    private var frontaleInArrivo: Bool { sessione.conFrontale && !specchioESfondoDisponibili }
 
     private var pulsantiColonna: some View {
         VStack(spacing: Spazi.stretto) {
@@ -1146,7 +1150,7 @@ struct SchermataInOnda: View {
             // G2.6: con la posteriore resta toccabile e un tocco dice perché non fa nulla.
             PulsanteTondo(String(localized: "Specchia"), icona: "flip.horizontal", attivo: specchioAcceso) {
                 if !specchioESfondoDisponibili {
-                    avvisaSoloFrontale()
+                    if !frontaleInArrivo { avvisaSoloFrontale() }
                 } else if telecomando {
                     sessione.chiediEffetto(RichiestaEffetto(specchia: !specchioAcceso))
                 } else {
@@ -1161,7 +1165,10 @@ struct SchermataInOnda: View {
             // scelto dal computer, il pulsante è acceso e un tocco spegne lo sfondo.
             // Telecomando: «sfocato» accende la sfocatura con l'ultimo livello scelto sul computer.
             PulsanteTondo(String(localized: "Sfoca sfondo"), icona: "person.and.background.dotted", attivo: sfondoAcceso) {
-                guard specchioESfondoDisponibili else { avvisaSoloFrontale(); return }
+                guard specchioESfondoDisponibili else {
+                    if !frontaleInArrivo { avvisaSoloFrontale() }
+                    return
+                }
                 let nuovo = sfondoAcceso ? ModiSfondo.nessuno : ModiSfondo.sfocato
                 if telecomando {
                     sessione.chiediEffetto(RichiestaEffetto(sfondo: nuovo))

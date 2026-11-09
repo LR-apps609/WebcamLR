@@ -67,6 +67,12 @@ final class SessioneTelefono {
     /// Come si è collegati (1.2): Wi-Fi, cavo USB, Wi-Fi diretto…; `nil` finché non si sa.
     private(set) var tipoCollegamento: TipoCollegamento?
     private(set) var obiettivo: Obiettivo = .principale
+    /// Collaudo 6: l'obiettivo che va in `stato.obiettivo`, cioè quello dei fotogrammi che possono uscire adesso, non
+    /// quello appena scelto. Verso la frontale cambia prima dei suoi fotogrammi (lo `stato` parte prima che la
+    /// fotocamera si riconfiguri); via dalla frontale cambia solo dopo, a fotocamera nuova accesa. Così il computer non
+    /// vede mai fotogrammi della frontale con uno `stato` posteriore (lo sfondo resterebbe spento). `nil` prima della
+    /// prima accensione: vale `obiettivo`.
+    @ObservationIgnored private var obiettivoInStato: Obiettivo?
     let obiettiviDisponibili = Obiettivo.disponibili
     /// 1.14: «Specchia l'immagine inviata», uno stato solo per video inviato e anteprima, cambiato dal vivo
     /// (`impostaSpecchio`, anche dal computer con `comando.specchia`). Salvato in `UserDefaults` («specchia»).
@@ -97,6 +103,9 @@ final class SessioneTelefono {
     @ObservationIgnored private var confermaEffettiDaCapacita = false
     /// Specchio e sfondo si possono cambiare solo con la frontale (punti E ed F).
     var conFrontale: Bool { obiettivo == .frontale }
+    /// Collaudo 51: la frontale scelta è anche accesa (`fotocameraPronta` dopo `cattura.configura`). Con gli effetti sul
+    /// computer specchio e sfondo si chiedono solo da qui: prima il computer potrebbe non conoscerla ancora.
+    private(set) var frontalePronta = false
     /// Qualità ed efficienza: gli effetti video di Apple usati (solo l'Inquadratura centrata) per l'obiettivo e il
     /// formato attuali.
     private(set) var effettiSistema = EffettiSistema()
@@ -240,7 +249,10 @@ final class SessioneTelefono {
     private var tentativi = 0
     private var chiusaDallUtente = false
     /// La fotocamera è configurata e in funzione con le impostazioni attuali.
-    @ObservationIgnored private var fotocameraPronta = false
+    @ObservationIgnored private var fotocameraPronta = false {
+        // Collaudo 51: a fotocamera spenta o da riaccendere la frontale non è più «pronta».
+        didSet { if !fotocameraPronta && frontalePronta { frontalePronta = false } }
+    }
     /// P03: le impostazioni video con cui la fotocamera è partita l'ultima volta, per capire alla chiusura
     /// delle Impostazioni aperte da «In onda» se serve riconfigurarla.
     @ObservationIgnored private var impostazioniApplicate: ImpostazioniVideo?
@@ -695,6 +707,8 @@ final class SessioneTelefono {
             funzioni.sospendiInquadratura(false)
         }
         obiettivo = nuovo
+        // Collaudo 51: la frontale (se è lei la nuova) torna pronta solo a fotocamera riaccesa.
+        if frontalePronta { frontalePronta = false }
         // Punti E ed F: con la posteriore niente specchio (lo toglie la cattura con l'obiettivo nuovo) e niente
         // sfondo. Lo sfondo si spegne subito; si riaccende con la frontale solo quando la fotocamera è pronta
         // (`avviaFotocamera`), così non si sfoca qualche fotogramma della posteriore.
@@ -1289,11 +1303,20 @@ final class SessioneTelefono {
         if inAttesaDiConferma && (motivo == .rete || motivo == .dalComputer) {
             // Il computer aspetta 60 secondi: chiuso dopo quasi un minuto vuol dire che nessuno ha risposto.
             let senzaRisposta = secondiInAttesa >= 55
-            fermaConErrore(titolo: String(localized: "Collegamento non confermato"),
-                           descrizione: senzaRisposta
-                               ? String(localized: "Nessuna risposta da «\(nome)»: tocca «Riprova» e conferma sul computer.")
-                               : String(localized: "Il collegamento non è stato consentito su \(nome). Tocca «Riprova» e conferma sul computer."),
-                           domanda: "codice")
+            // Collaudo 4: sul cavo, dopo «Non consentire», il computer mette il cavo in pausa e non lo riapre da solo:
+            // «Riprova» qui aspetterebbe a vuoto. Serve ricollegare il cavo (o «Collega via cavo» sul Mac); l'ascolto
+            // resta acceso, così la domanda ricompare subito, ma solo dopo quel gesto dell'utente.
+            let rifiutatoSulCavo = viaCavo && !senzaRisposta
+            let descrizione: String
+            if senzaRisposta {
+                descrizione = String(localized: "Nessuna risposta da «\(nome)»: tocca «Riprova» e conferma sul computer.")
+            } else if rifiutatoSulCavo {
+                descrizione = String(localized: "Il collegamento non è stato consentito su \(nome). Stacca e ricollega il cavo (sul Mac puoi anche scegliere «Collega via cavo»), poi conferma sul computer.")
+            } else {
+                descrizione = String(localized: "Il collegamento non è stato consentito su \(nome). Tocca «Riprova» e conferma sul computer.")
+            }
+            fermaConErrore(titolo: String(localized: "Collegamento non confermato"), descrizione: descrizione,
+                           domanda: "codice", attendiCavo: rifiutatoSulCavo)
             return
         }
         switch motivo {
@@ -1697,8 +1720,16 @@ final class SessioneTelefono {
             inUsoCandidato = nil
             improntaCandidato = nil
             tipoCandidato = nil
-            registro.aggiungi(String(localized: "Passaggio al cavo USB non riuscito (\(motivo.perRegistro)): resto sul Wi-Fi"))
-            candidatoNonRiuscito(dopoStretta: dopoStretta)
+            // Collaudo 1: l'`arrivederci` prima del `benvenuto`, a stretta riuscita, è una scelta del computer (resta
+            // sul Wi-Fi, cavo rimandato dopo un cambio di strada, senza Pro), non un cavo che non va: non conta per
+            // «cavo escluso», così il cavo resta buono quando il computer lo riprova.
+            let sceltaDelComputer = dopoStretta && motivo == .dalComputer
+            if sceltaDelComputer {
+                registro.aggiungi(String(localized: "Il computer non usa il cavo USB per ora: resto sul Wi-Fi"))
+            } else {
+                registro.aggiungi(String(localized: "Passaggio al cavo USB non riuscito (\(motivo.perRegistro)): resto sul Wi-Fi"))
+            }
+            candidatoNonRiuscito(dopoStretta: dopoStretta, conta: !sceltaDelComputer)
         }
     }
 
@@ -1718,9 +1749,10 @@ final class SessioneTelefono {
     }
 
     /// Dopo un candidato andato male: troppi tentativi spengono il cavo per questa sessione; se intanto il Wi-Fi
-    /// si era chiuso, ora lo si tratta come sempre.
-    private func candidatoNonRiuscito(dopoStretta: Bool) {
-        candidatiFalliti += 1
+    /// si era chiuso, ora lo si tratta come sempre. `conta` falso: il computer ha rifiutato il cavo di proposito, non
+    /// è un tentativo fallito.
+    private func candidatoNonRiuscito(dopoStretta: Bool, conta: Bool = true) {
+        if conta { candidatiFalliti += 1 }
         if candidatiFalliti >= 3 && !cavoEscluso {
             cavoEscluso = true
             registro.aggiungi(String(localized: "Cavo USB non riuscito più volte: resto sul Wi-Fi"))
@@ -1856,8 +1888,16 @@ final class SessioneTelefono {
         // Un fotogramma chiave comunque: la scena cambia di colpo (altro obiettivo) e il computer riparte pulito.
         codificatore.richiediFotogrammaChiave()
         formatoApplicato = (formato.larghezza, formato.altezza, formato.fps, formato.codec)
+        let daAccendere = obiettivo
+        // Collaudo 6: verso la frontale lo `stato` parte prima dei suoi fotogrammi, che escono appena la cattura si
+        // riconfigura (sulla sua coda, prima che questa funzione riprenda). Gli ultimi fotogrammi della posteriore
+        // arrivano al computer con uno `stato` frontale: al più sfocati, mai la frontale con la stanza vera.
+        if daAccendere == .frontale && (obiettivoInStato ?? .principale) != .frontale {
+            obiettivoInStato = .frontale
+            aggiornaStato(conQualita: false)
+        }
         do {
-            try await cattura.configura(obiettivo: obiettivo, larghezza: larghezzaRichiesta,
+            try await cattura.configura(obiettivo: daAccendere, larghezza: larghezzaRichiesta,
                                         altezza: altezzaRichiesta, fps: fpsRichiesti,
                                         stabilizzazione: UserDefaults.standard.bool(forKey: "stabilizzazione"))
             // Chiusa mentre la fotocamera si accendeva: si spegne, altrimenti resterebbe accesa.
@@ -1865,10 +1905,17 @@ final class SessioneTelefono {
             if chiusaDallUtente || (inAttesaDelComputer && collegamento == nil) || pausa.fotocameraSpenta {
                 cattura.ferma()
                 formatoApplicato = nil
+                // Collaudo 6: i fotogrammi che sono usciti erano di questo obiettivo.
+                obiettivoInStato = daAccendere
                 return
             }
             fotocameraPronta = true
             impostazioniApplicate = impostazioni
+            // Collaudo 6: da qui escono i fotogrammi di `daAccendere`. Se intanto se n'è scelto un altro, la sua
+            // accensione è già in coda e lo dirà lei.
+            obiettivoInStato = daAccendere
+            let frontaleAccesa = daAccendere == .frontale && obiettivo == .frontale
+            if frontaleAccesa != frontalePronta { frontalePronta = frontaleAccesa }
             // Punto F: lo sfondo segue l'obiettivo davvero acceso.
             visivi.impostaPosteriore(obiettivo != .frontale)
             // La riconfigurazione riparte con messa a fuoco ed esposizione automatiche: niente più «AE/AF bloccati».
@@ -2425,10 +2472,12 @@ final class SessioneTelefono {
         }
     }
 
-    private func aggiornaStato() {
+    /// `conQualita` falso: si manda solo lo `stato`, senza decidere qui se il calore chiede un formato più basso (serve
+    /// prima di riconfigurare la fotocamera, che non deve partire due volte).
+    private func aggiornaStato(conQualita: Bool = true) {
         misuraStato()
         var statoTelefono = StatoTelefono(batteria: batteria, inCarica: inCarica,
-                                          temperatura: temperatura, obiettivo: obiettivo.rawValue)
+                                          temperatura: temperatura, obiettivo: (obiettivoInStato ?? obiettivo).rawValue)
         visivi.completa(&statoTelefono)
         funzioni.completa(&statoTelefono)
         gobbo.completa(&statoTelefono)
@@ -2447,7 +2496,7 @@ final class SessioneTelefono {
         statoTelefono.collegamento = statoCollegamento
         // Quarta prova: `sfocaturaSistema` e `luceSistema` non si mandano più (niente Ritratto né Luce da studio).
         collegamento?.invia(.stato(statoTelefono))
-        if regolaQualita() { riconfiguraSeCambiaFormato(perche: String(localized: "calore o batteria")) }
+        if conQualita && regolaQualita() { riconfiguraSeCambiaFormato(perche: String(localized: "calore o batteria")) }
     }
 
     // MARK: - Misuratore

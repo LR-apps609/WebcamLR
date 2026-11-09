@@ -3061,6 +3061,23 @@
         }
       }
     },
+    "Il collegamento non è stato consentito su %@. Stacca e ricollega il cavo (sul Mac puoi anche scegliere «Collega via cavo»), poi conferma sul computer." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The connection wasn’t allowed on %@. Unplug the cable and plug it back in (on a Mac you can also choose “Connect via cable”), then confirm on the computer."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il collegamento non è stato consentito su %@. Stacca e ricollega il cavo (sul Mac puoi anche scegliere «Collega via cavo»), poi conferma sul computer."
+          }
+        }
+      }
+    },
     "Il collegamento non è stato consentito su %@. Tocca «Riprova» e conferma sul computer." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3261,6 +3278,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Il computer non risponde: controlla che WebcamLR sia aperto sul computer, poi tocca «Riprova»."
+          }
+        }
+      }
+    },
+    "Il computer non usa il cavo USB per ora: resto sul Wi-Fi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The computer isn’t using the USB cable for now: staying on Wi-Fi"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il computer non usa il cavo USB per ora: resto sul Wi-Fi"
           }
         }
       }

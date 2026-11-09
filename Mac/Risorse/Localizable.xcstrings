@@ -7124,12 +7124,12 @@
         }
       }
     },
-    "iPhone sul cavo: WebcamLR non risponde, riprovo ogni 2 secondi" : {
+    "iPhone sul cavo: WebcamLR non risponde, riprovo ogni secondo" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "iPhone on the cable: WebcamLR isn’t answering, retrying every 2 seconds"
+            "value" : "iPhone on the cable: WebcamLR isn’t answering, retrying every second"
           }
         }
       }

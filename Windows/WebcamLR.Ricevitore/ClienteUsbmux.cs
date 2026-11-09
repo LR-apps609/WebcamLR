@@ -90,10 +90,11 @@ public sealed record MessaggioUsbmux(uint Etichetta, Dictionary<string, object> 
 /// e chiede «Connect» verso la porta 52741 dell'iPhone. Con Result 0 quella connessione è un canale TCP verso
 /// WebcamLR sull'iPhone: arriva con <see cref="TelefonoViaCavo"/> e si usa come una connessione Wi-Fi
 /// (il telefono manda per primo la «stretta»). Finché l'iPhone resta collegato, se l'app non risponde
-/// si riprova ogni 2 secondi; quando la connessione si chiude, anche. Se invece il telefono accetta la
+/// si riprova ogni secondo (Qualità 19: erano 2, l'app aperta sull'iPhone si collega prima); quando la connessione
+/// si chiude, anche. Se invece il telefono accetta la
 /// connessione ma la chiude prima di essere accettato (rifiuta il cavo: altro computer, conferma in sospeso,
 /// cavo escluso per questa sessione), l'attesa raddoppia a ogni volta: 2, 4, 8 … fino a 30 secondi.
-/// Si torna a 2 secondi con un collegamento accettato (<see cref="StrettaRiuscita"/>) o ricollegando il cavo.
+/// Si torna al ritmo normale (ogni secondo) con un collegamento accettato (<see cref="StrettaRiuscita"/>) o ricollegando il cavo.
 /// Gli eventi arrivano su thread di sistema.
 /// </summary>
 public sealed class ClienteUsbmux : IAsyncDisposable
@@ -103,6 +104,12 @@ public sealed class ClienteUsbmux : IAsyncDisposable
     public const ushort PortaTelefono = 52741;
     public const string NomeProgramma = "WebcamLR";
 
+    /// <summary>
+    /// Qualità 19 («avvio zero passi»): con l'iPhone già sul cavo, aprendo l'app si aspetta al massimo un secondo (erano
+    /// 2) prima che il PC la raggiunga. Un Connect verso usbmux è locale e costa pochissimo.
+    /// </summary>
+    public static readonly TimeSpan IntervalloConnectPredefinito = TimeSpan.FromSeconds(1);
+
     /// <summary>Una connessione verso WebcamLR sull'iPhone, attraverso il cavo: da dare a una SessioneComputer.</summary>
     public event Action<Socket>? TelefonoViaCavo;
     public event Action<StatoCavo>? StatoCambiato;
@@ -111,6 +118,7 @@ public sealed class ClienteUsbmux : IAsyncDisposable
 
     private readonly IPEndPoint servizio;
     private readonly TimeSpan intervalloRiprova;
+    private readonly TimeSpan intervalloConnect;
     private readonly TimeSpan attesaMassima;
     private readonly TimeSpan attesaServizio;
     private readonly TimeSpan attesaRisposta;
@@ -145,14 +153,20 @@ public sealed class ClienteUsbmux : IAsyncDisposable
     }
 
     /// <param name="servizio">Dove risponde usbmux: 127.0.0.1:27015, un'altra porta solo nei test.</param>
-    /// <param name="intervalloRiprova">Ogni quanto riprovare il Connect mentre l'iPhone è collegato: 2 secondi.</param>
+    /// <param name="intervalloRiprova">La base dell'attesa dopo un rifiuto (<see cref="AttesaDopoRifiuti"/>): 2 secondi.</param>
     /// <param name="attesaServizio">Ogni quanto riprovare a raggiungere il servizio se manca: 5 secondi.</param>
     /// <param name="attesaMassima">Il limite dell'attesa che raddoppia quando il telefono rifiuta il cavo: 30 secondi.</param>
+    /// <param name="intervalloConnect">
+    /// Ogni quanto riprovare il Connect mentre l'iPhone è collegato ma l'app non risponde, e ogni quanto guardare se la
+    /// connessione è ancora aperta: di serie 1 secondo (<see cref="IntervalloConnectPredefinito"/>); con un
+    /// <paramref name="intervalloRiprova"/> scelto (nei test) lo stesso valore, come prima.
+    /// </param>
     public ClienteUsbmux(IPEndPoint? servizio = null, TimeSpan? intervalloRiprova = null, TimeSpan? attesaServizio = null,
-        TimeSpan? attesaMassima = null)
+        TimeSpan? attesaMassima = null, TimeSpan? intervalloConnect = null)
     {
         this.servizio = servizio ?? new IPEndPoint(IPAddress.Loopback, PortaServizio);
         this.intervalloRiprova = intervalloRiprova ?? TimeSpan.FromSeconds(2);
+        this.intervalloConnect = intervalloConnect ?? intervalloRiprova ?? IntervalloConnectPredefinito;
         this.attesaMassima = attesaMassima ?? TimeSpan.FromSeconds(30);
         this.attesaServizio = attesaServizio ?? TimeSpan.FromSeconds(5);
         attesaRisposta = TimeSpan.FromSeconds(5);
@@ -228,7 +242,7 @@ public sealed class ClienteUsbmux : IAsyncDisposable
 
     /// <summary>
     /// La sessione su quella connessione è stata accettata (il telefono ha mandato il suo «ciao»): il cavo
-    /// funziona, e se più avanti la connessione si chiude si riprova di nuovo ogni 2 secondi.
+    /// funziona, e se più avanti la connessione si chiude si riprova di nuovo ogni secondo.
     /// </summary>
     public void StrettaRiuscita(Socket presa)
     {
@@ -406,7 +420,7 @@ public sealed class ClienteUsbmux : IAsyncDisposable
                     if (rifiuti == 1 || attesa != AttesaDopoRifiuti(rifiuti - 1))
                         Evento?.Invoke(TestiRicevitore.T("Cavo_Rifiutato", Secondi(attesa)));
                     // Il controllo che ha visto la chiusura vale già un intervallo: si aspetta solo il resto.
-                    var resto = attesa - intervalloRiprova;
+                    var resto = attesa - intervalloConnect;
                     if (resto > TimeSpan.Zero)
                     {
                         await AttendiAsync(resto, annullato);
@@ -429,7 +443,7 @@ public sealed class ClienteUsbmux : IAsyncDisposable
                         catch (Exception) { presa.Dispose(); }
                     }
                 }
-                await AttendiAsync(intervalloRiprova, annullato);
+                await AttendiAsync(intervalloConnect, annullato);
             }
         }
         catch (OperationCanceledException) { }

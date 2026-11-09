@@ -157,11 +157,11 @@ enum Usbmux {
 }
 
 /// Il cavo USB sul Mac (1.8): tiene una connessione `Listen` con usbmuxd, e per ogni iPhone collegato via USB
-/// prova `Connect` verso la porta 52741 ogni 2 secondi, finché l'app sull'iPhone risponde. Il socket riuscito
+/// prova `Connect` verso la porta 52741 ogni secondo (Qualità 19: erano 2), finché l'app sull'iPhone risponde. Il socket riuscito
 /// va al Ricevitore, che ne fa una sessione come quelle della rete (stretta di mano, fiducia, candidati).
 /// Se il telefono apre il canale ma lo chiude prima di essere accettato (rifiuta il cavo: altro computer,
 /// conferma in sospeso, cavo escluso per questa sessione), l'attesa raddoppia a ogni volta: 2, 4, 8 … fino
-/// a 30 secondi. Si torna a 2 secondi con un collegamento accettato, ricollegando il cavo o con «Collega via cavo».
+/// a 30 secondi. Si torna a riprovare ogni secondo con un collegamento accettato, ricollegando il cavo o con «Collega via cavo».
 @MainActor
 final class ClienteUSB {
     enum Stato: Equatable {
@@ -183,8 +183,12 @@ final class ClienteUSB {
         fileprivate let generazione: Int
     }
 
-    /// Ogni quanto si riprova `Connect` mentre l'iPhone è collegato ma l'app non ascolta.
+    /// La base dell'attesa che raddoppia quando il telefono rifiuta il cavo (`attesaDopoRifiuti`): 2 secondi.
     static let intervallo: Duration = .seconds(2)
+    /// Qualità 19 («avvio zero passi»): ogni quanto si riprova `Connect` mentre l'iPhone è collegato ma l'app non
+    /// ascolta, e dopo una sessione accettata che finisce. Erano 2 secondi: aprendo l'app sull'iPhone si aspetta al
+    /// massimo un secondo. Un `Connect` verso usbmuxd è locale e costa pochissimo.
+    static let intervalloConnect: Duration = .seconds(1)
     /// Il limite dell'attesa che raddoppia quando il telefono rifiuta il cavo.
     static let attesaMassima: Duration = .seconds(30)
 
@@ -292,7 +296,7 @@ final class ClienteUSB {
     }
 
     /// La sessione su quel canale è stata accettata (il telefono ha mandato il suo «ciao»): il cavo funziona,
-    /// e se più avanti la sessione finisce si riprova di nuovo ogni 2 secondi.
+    /// e se più avanti la sessione finisce si riprova di nuovo ogni secondo.
     func strettaRiuscita(_ canale: Canale) {
         guard var dispositivo = dispositivi[canale.dispositivo], dispositivo.generazione == canale.generazione else { return }
         dispositivo.accettata = true
@@ -326,12 +330,12 @@ final class ClienteUSB {
         dispositivo.accettata = false
         dispositivo.tentativiFalliti = 0
         if pausa { dispositivo.inPausa = true }
-        var attesa = Self.intervallo
+        var attesa = Self.intervalloConnect
         if !pausa {
             if accettata {
                 dispositivo.rifiuti = 0
             } else {
-                // Chiuso prima del «ciao»: il telefono rifiuta il cavo. Riprovare ogni 2 secondi riempirebbe
+                // Chiuso prima del «ciao»: il telefono rifiuta il cavo. Riprovare ogni secondo riempirebbe
                 // il registro e ripeterebbe la diagnosi per sempre: l'attesa raddoppia.
                 dispositivo.rifiuti += 1
                 attesa = Self.attesaDopoRifiuti(dispositivo.rifiuti)
@@ -450,18 +454,18 @@ final class ClienteUSB {
         } else {
             dispositivo.tentativiFalliti += 1
             dispositivi[id] = dispositivo
-            // Una riga sola, non una ogni 2 secondi.
+            // Una riga sola, non una ogni secondo.
             if dispositivo.tentativiFalliti == 1 {
-                suRegistro?(String(localized: "iPhone sul cavo: WebcamLR non risponde, riprovo ogni 2 secondi"))
+                suRegistro?(String(localized: "iPhone sul cavo: WebcamLR non risponde, riprovo ogni secondo"))
             }
-            // App che non ascolta: sempre 2 secondi, anche dopo dei rifiuti (aprire WebcamLR deve bastare).
-            riprovaTra(id, dopo: Self.intervallo)
+            // App che non ascolta: sempre ogni secondo, anche dopo dei rifiuti (aprire WebcamLR deve bastare).
+            riprovaTra(id, dopo: Self.intervalloConnect)
             aggiornaStato()
         }
     }
 
     /// Un solo tentativo in attesa per iPhone, anche se più eventi chiedono di riprovare.
-    /// `dopo`: 2 secondi, di più quando il telefono ha rifiutato il cavo (vedi `sessioneFinita`).
+    /// `dopo`: 1 secondo, di più quando il telefono ha rifiutato il cavo (vedi `sessioneFinita`).
     private func riprovaTra(_ id: Int, dopo attesa: Duration) {
         guard var dispositivo = dispositivi[id], !dispositivo.riprovaInAttesa else { return }
         dispositivo.riprovaInAttesa = true

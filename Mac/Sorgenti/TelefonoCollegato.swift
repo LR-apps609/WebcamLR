@@ -102,6 +102,8 @@ final class TelefonoCollegato: Identifiable {
     /// Gli ultimi `anteprima` e `in-onda` mandati, per mandarli solo quando cambiano (pausa intelligente).
     @ObservationIgnored var anteprimaSegnalata: Bool?
     @ObservationIgnored var inOndaSegnalato: Bool?
+    /// L'ultimo `pausa-automatica` mandato in questa sessione (Qualità 18); nil = ancora nessuno.
+    @ObservationIgnored var pausaAutomaticaSegnalata: Bool?
     /// L'ultimo `in-onda.selezionato` mandato: è il telefono nella webcam (CAM 1)?
     @ObservationIgnored var selezioneSegnalata: Bool?
     /// Quando la strada è cambiata l'ultima volta (cavo al posto del Wi-Fi o il contrario): in «Automatico» per

@@ -44,6 +44,15 @@ enum Preferenze {
     /// Qualità 10: «Non mostrare più» sull'avviso della doppia sfocatura con Ritratto di macOS (RitrattoSistema).
     static let nonMostrareRitratto = "nonMostrareRitratto"
 
+    /// Qualità 18: «Pausa quando nessuna app usa la webcam» (Impostazioni › Uscite), acceso di serie. Lavora solo con la
+    /// webcam virtuale (account a pagamento): senza, il Mac non sa se un'app la usa.
+    static let pausaAutomatica = "pausaAutomatica"
+
+    /// La pausa automatica è accesa: vero anche se la preferenza non è mai stata scritta.
+    static var pausaAutomaticaAccesa: Bool {
+        UserDefaults.standard.object(forKey: pausaAutomatica) as? Bool ?? true
+    }
+
     /// L'icona nella barra dei menu c'è: vero anche se la preferenza non è mai stata scritta (di serie è accesa).
     static var iconaBarraAttiva: Bool {
         UserDefaults.standard.object(forKey: iconaBarraMenu) as? Bool ?? true

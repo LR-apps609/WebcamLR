@@ -2369,6 +2369,12 @@ final class Ricevitore {
             break
         case .formato(let formato):
             telefono.formatoTelefono = formato
+            // La risposta a una richiesta HEVC arriva in H.264: il telefono non sa fare HEVC (collaudo 57).
+            if !telefono.senzaHEVC, let chiesto = telefono.formatoChiesto, chiesto.codec == .hevc, formato.codec == .h264,
+               chiesto.larghezza == formato.larghezza, chiesto.altezza == formato.altezza {
+                telefono.senzaHEVC = true
+                registra(String(localized: "Il telefono non ha l'HEVC: da qui si chiede H.264"), di: telefono)
+            }
             registra(String(localized: "Formato: \(formato.codec == .hevc ? "HEVC" : "H.264") \(formato.larghezza)×\(formato.altezza) a \(formato.fps) fps"), di: telefono)
         case .stato(let stato):
             if stato.pausa != telefono.statoTelefono?.pausa {

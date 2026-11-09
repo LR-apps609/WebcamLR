@@ -2500,6 +2500,16 @@
         }
       }
     },
+    "Il telefono non ha l'HEVC: da qui si chiede H.264" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The phone has no HEVC: asking for H.264 from now on"
+          }
+        }
+      }
+    },
     "Il telefono non manda l'audio." : {
       "localizations" : {
         "en" : {

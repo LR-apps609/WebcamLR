@@ -259,7 +259,9 @@ extension Ricevitore {
         let possibili = Self.fpsPossibili(voluti, larghezza: lati.larghezza, altezza: lati.altezza, formati: capacita?.formati)
         // 0: il telefono non elenca questa risoluzione, non ci arriva.
         guard possibili > 0 else { return }
-        let codec = OpzioneQualita.codec(altezza: corto, attuale: attuale?.codec)
+        // Un telefono che ha già risposto H.264 a una richiesta HEVC non ha l'HEVC: si chiede il codec che usa davvero,
+        // e la stessa qualità di adesso non riparte a ogni scelta (collaudo 57).
+        let codec: Codec = telefono.senzaHEVC ? .h264 : OpzioneQualita.codec(altezza: corto, attuale: attuale?.codec)
         if let attuale, attuale.larghezza == lati.larghezza, attuale.altezza == lati.altezza, attuale.fps == possibili,
            attuale.codec == codec { return }
         registra(String(localized: "Chiesti al telefono \(lati.larghezza)×\(lati.altezza) a \(possibili) fps"), di: telefono)

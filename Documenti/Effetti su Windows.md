@@ -4,7 +4,8 @@ Studio di fattibilità e base del «motore effetti» sul PC (decisione del 27 ot
 computer, come iVCam; il telefono fa solo fotocamera e codifica). Questo documento copre **Windows**: il modello che
 ritaglia la persona, le licenze, i tempi, la libreria (`Windows/WebcamLR.Effetti`) e il **motore effetti collegato alla
 finestra** (ramo `effetti-windows`, sezione «Motore effetti» qui sotto). Dalla lista qualità 1.0: la rifinitura del
-bordo come il Mac (Qualità 4) e la composizione dello sfondo sulla scheda video (Qualità 5), sezione «Qualità 4 e 5».
+bordo come il Mac (Qualità 4) e la composizione dello sfondo sulla scheda video (Qualità 5), sezione «Qualità 4 e 5»;
+bokeh, mosaico e schermo verde, su Mac e Windows (Qualità 7 e 8), sezione «Qualità 7 e 8».
 
 ## In breve
 
@@ -255,6 +256,78 @@ MediaPipe. Mancavano l'isteresi, il bordo pulito e il light wrap.
   di Direct3D 11 compila (Vortice è codice .NET) ma gira solo su Windows. I conti dello shader sono la copia di `RegoleBordo.Canale`, che i test provano contro il processore
   (differenza ≤ 2). La CI su Windows (rami ci, prestazioni, round-2) compila tutto ed esegue
   `SchedaVideoVeraComeIlProcessore` con WARP: è la prima prova vera dello shader.
+
+## Qualità 7 e 8: bokeh, mosaico e schermo verde (Mac e Windows)
+
+Ramo `bokeh-mosaico` (da `prestazioni`), novembre 2026. Tre sfondi nuovi, sul Mac e sul PC, con gli stessi identificativi
+e gli stessi numeri (Windows: `Motore/StiliSfondo.cs`, `Motore/RicetteSfondo.cs`; Mac: `StiliSfocatura` e `SfondoVerde`
+in `MotoreEffetti.swift`, ricette in `RicetteEffetti.swift`).
+
+| | Che cos'è | Dove si sceglie | Pro |
+|---|---|---|---|
+| **Obiettivo (bokeh)** | sfocatura come un obiettivo: le luci forti diventano dischi | «Stile» nel menu di «Sfondo» (anche pagina «Sfondo» e colonna «Effetti») | gratis, come la sfocatura |
+| **Mosaico** | lo sfondo a quadretti; Poco / Medio / Tanto = 21 / 32 / 48 px a 1080p | come sopra | gratis |
+| **Schermo verde** | verde pieno #00B140, bordo netto, niente light wrap: per il chroma key di OBS | voce sotto «Sfondi ›» | Pro, come gli sfondi sostituiti |
+
+Bokeh e mosaico sono uno **stile** dello sfondo sfocato (`ValoriEffetti.Sfocatura` / `Effetti.sfocatura`, salvato con
+le scelte; una preferenza di prima o sconosciuta vale «normale»): i livelli Poco, Medio, Tanto restano, e un clic su
+«Sfondo» riaccende l'ultimo stile. Lo schermo verde è uno sfondo **sostituito** con un'immagine fissa
+(`immagineSfondo` = `verde`, che non si legge da file): segue le regole Pro degli sfondi e si riaccende con il clic come
+l'ultimo sfondo scelto.
+
+**Protocollo: non cambia.** Sono scelte del computer: il telefono, con gli effetti sul computer, manda il video com'è e
+fa solo da telecomando con un pulsante «Sfoca» acceso/spento. Al telecomando `effetti.sfondo` dice `sfocato` per bokeh
+e mosaico e `sostituito` per il verde, e `chiedi-effetto` con `sfocato` riaccende l'ultimo stile scelto sul computer
+(Protocollo.md, «Effetti sul computer»). Un campo nuovo servirebbe solo a un telefono che sceglie lo stile da sé, e
+nessuna app del telefono ha (o deve avere) quella scelta: le app del telefono non cambiano.
+
+### Come sono fatti
+
+- **Bokeh, Windows** (sul processore, `RicetteSfondo.Bokeh`): in luce lineare (tabella 2,2), luci espanse
+  Y / (1 − 0,9·Y) sulla luminanza (il bianco vale 10), persona allargata tolta come peso (come lo sfocato senza alone),
+  **disco pieno** di raggio 2σ della sfocatura normale (stessa deviazione standard: lo sfondo è sfocato «quanto» con la
+  normale) con le somme cumulate di ogni riga, cioè (2r + 1) letture per punto invece di π r²; poi diviso per il peso e
+  compresso con l'inversa esatta Y / (1 + 0,9·Y), così una parete uniforme torna identica e una lampadina diventa un
+  disco chiaro e piatto. Il fondo piccolo va alla stessa composizione a piena risoluzione dello sfocato (scheda video o
+  processore): lo shader non cambia.
+- **Bokeh, Mac**: lo stesso disegno con i filtri di sistema: `CIBokehBlur` (disco morbido con un filo di anello,
+  `ringAmount` 0,15) in piccolo perché il disco resti 12 px (al massimo un quarto della misura), luci espanse
+  v + 20·(v − 0,6) canale per canale e compresse con l'inversa (matrice, limiti e `somma` del guided filter: nessun
+  kernel Metal proprio).
+- **Mosaico, Windows**: un pixel per quadretto, media dei colori del quadretto pesata dallo sfondo (un quadretto
+  sull'orlo prende il colore dello sfondo, non quello della persona); la composizione lo ingrandisce «al più vicino»
+  (`PianoComposizione.FondoAQuadretti`, opzione `QUADRETTI` dello shader con gli stessi interi del processore: quadretto
+  ⌊x · colonne / L⌋). La verifica della scheda video all'apertura prova anche il mosaico.
+- **Mosaico, Mac**: sfondo senza alone sfocato di un terzo del quadretto (il centro vale la media) e poi `CIPixellate`,
+  griglia dall'angolo in alto a sinistra.
+- **Schermo verde** (tutti e due): soglia del bordo stretta (0,12 invece di 0,2–0,8), **bordo pulito sì** (toglie il
+  vecchio sfondo dai capelli, che il chroma key vedrebbe come un alone), **light wrap no**, intensità nascosta.
+
+### Costo e livelli (Qualità 6)
+
+Il bokeh costa più della sfocatura normale, il mosaico meno; il tempo vero entra nella misura della scala dei livelli,
+che scende da sola se serve.
+
+| Livello | Windows | Mac |
+|---|---|---|
+| pieno | bokeh a un quarto della misura (a un ottavo se il disco supera 10 px: «Tanto» a 1080p) | bokeh |
+| bordo leggero, maschera alterna | bokeh a un ottavo | — (`.bordoLeggero`: sfocatura normale) |
+| veloce, minimo / `.veloce` | **sfocatura normale** | **sfocatura normale** |
+| mosaico, schermo verde | a tutti i livelli | a tutti i livelli |
+
+Tempi del fondo piccolo misurati qui (Windows, Xeon 4 processori virtuali, Release, test
+`QuantoCostanoBokehEMosaicoA1080p`): bokeh Medio al quarto **4 ms**, Tanto a un ottavo **1,5 ms** (al quarto sarebbe
+8 ms), mosaico **0,3 ms**. Prendono il posto del fondo sfocato normale (che è meno di 1 ms): con la resa dello sfocato a
+10–14 ms in tutto, il bokeh aggiunge circa 1–4 ms, il mosaico niente. Sul Mac
+`CIBokehBlur` su circa 130 000 pixel con raggio 12 dovrebbe stare sotto i 2 ms su Apple Silicon (stima, **da misurare**:
+la riga «Effetti sul Mac» del registro).
+
+### Non verificato qui
+
+- Swift (Mac), WinUI e lo shader non si compilano su Linux: riletti a mano. Il motore di Windows (bokeh, mosaico, verde,
+  composizione sul processore) è provato dai test (`SfondiNuoviTest`, `IlProcessoreFaIContiDelloShader` con il mosaico).
+- `CIBokehBlur` su un'immagine con l'alfa premoltiplicato (come `CIDiscBlur` nello sfocato di sempre) e la resa esatta
+  del verde nel buffer YCbCr di uscita (range e matrice del decodificatore): da vedere sul Mac vero.
 
 ## Modello scelto
 
@@ -510,6 +583,25 @@ decodificatore.
    si ferma e non mostra mai la stanza; nel registro, se succede, «sul processore (scheda video persa…)».
 7. PC senza scheda video adatta (Desktop remoto o macchina virtuale): «sul processore (solo il driver di base…)» e lo
    sfondo funziona come prima.
+
+### Qualità 7 e 8: bokeh, mosaico e schermo verde (ramo `bokeh-mosaico`, Mac e Windows)
+
+1. Sfondo › Stile › **Obiettivo (bokeh)**, livello Medio, con una lampada o una finestra luminosa dietro di te (meglio
+   delle lucine): dietro devono comparire dischi chiari e tondi, non macchie grigie. Poi Tanto. **Screenshot.**
+2. Una parete chiara uniforme con il bokeh: deve restare dello stesso chiaro della sfocatura normale (niente bianco
+   bruciato). Confronta Normale e Obiettivo con lo stesso livello.
+3. **Mosaico**, Poco / Medio / Tanto: quadretti netti, sempre più grandi; sul bordo della persona i quadretti hanno il
+   colore della stanza, non della felpa. Muoviti: la persona resta nitida, i quadretti non «ballano» da fermo.
+4. Un clic su «Sfondo» spegne; un altro riaccende **lo stesso stile**. Riavvia l'app: lo stile resta.
+5. Dal telefono, il pulsante «Sfoca»: spegne il bokeh e lo riaccende come bokeh (non come sfocatura normale).
+6. **Schermo verde** (con Pro): in OBS aggiungi il filtro «Chiave cromatica» (verde) alla webcam WebcamLR: il verde
+   sparisce tutto, senza bordo verde sulle spalle né alone della stanza sui capelli. **Screenshot** prima e dopo il filtro.
+   Con un telefono gratis la voce ha «PRO» e apre la pagina di Pro.
+7. Costo: dopo 30 s con il bokeh Tanto, la riga «Effetti sul PC: … ms» (o «sul Mac»): **mandala**, con quella della
+   sfocatura normale. Su un PC lento il registro deve dire «il PC non regge …» e, ai livelli veloci, il bokeh diventa una
+   sfocatura normale (senza dischi) senza che il video si fermi.
+8. Windows: `dotnet test Windows\WebcamLR.Effetti.Test`: `SchedaVideoVeraComeIlProcessore` ora scrive anche la riga
+   «mosaico»: **mandala**.
 
 ## Fonti
 

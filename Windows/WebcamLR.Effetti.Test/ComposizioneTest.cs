@@ -389,21 +389,21 @@ public class ComposizioneTest(ITestOutputHelper uscita)
             uscita.WriteLine($"niente scheda video qui: {errore.Message}");
             return;
         }
-        // Su Windows (anche la CI, con WARP): Crea compila lo shader e si verifica; poi tre fotogrammi a 1080p contro il
-        // processore, con i tempi.
+        // Su Windows (anche la CI, con WARP): Crea compila lo shader e si verifica; poi tre fotogrammi a 1080p (sfocato,
+        // sostituito, mosaico) contro il processore, con i tempi.
         using var gpu = ComposizioneSchedaVideo.Crea(ancheSoftware: true);
         uscita.WriteLine(gpu.Descrizione);
         var cpu = new ComposizioneProcessore();
-        foreach (var sostituito in new[] { false, true })
+        foreach (var (sostituito, quadretti) in new[] { (false, false), (true, false), (false, true) })
         {
-            var piano = PianoDiProva.Crea(1920, 1080, sostituito);
+            var piano = PianoDiProva.Crea(1920, 1080, sostituito, quadretti);
             var attesa = new ImmagineBgra(1920, 1080);
             var ottenuta = new ImmagineBgra(1920, 1080);
             cpu.Componi(piano, attesa);
             var orologio = System.Diagnostics.Stopwatch.StartNew();
             for (var i = 0; i < 3; i++) gpu.Componi(piano, ottenuta);
             var (massima, media) = PianoDiProva.Differenza(attesa, ottenuta);
-            uscita.WriteLine($"{(sostituito ? "sostituito" : "sfocato")}: {orologio.Elapsed.TotalMilliseconds / 3:0.0} ms per fotogramma, " +
+            uscita.WriteLine($"{(sostituito ? "sostituito" : quadretti ? "mosaico" : "sfocato")}: {orologio.Elapsed.TotalMilliseconds / 3:0.0} ms per fotogramma, " +
                              $"differenza massima {massima}, media {media:0.000}");
             Assert.InRange(massima, 0, ComposizioneSchedaVideo.DifferenzaMassima);
             Assert.InRange(media, 0, ComposizioneSchedaVideo.DifferenzaMediaMassima);

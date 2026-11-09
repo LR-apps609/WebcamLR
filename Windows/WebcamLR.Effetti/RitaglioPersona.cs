@@ -26,6 +26,12 @@ public sealed record OpzioniRitaglio
     /// </summary>
     public bool RipiegoAutomatico { get; init; } = true;
 
+    /// <summary>
+    /// Con <see cref="RipiegoAutomatico"/>: anche il passaggio al leggero se il pieno risulta lento. Falso nel motore
+    /// effetti, dove il modello lo sceglie la scala dei livelli (<see cref="SceltaLivello"/>), che può anche risalire.
+    /// </summary>
+    public bool RipiegoSeLento { get; init; } = true;
+
     /// <summary>Filtro nel tempo senza ritardo (<see cref="FiltroTemporale"/>).</summary>
     public bool FiltroNelTempo { get; init; } = true;
 
@@ -170,7 +176,7 @@ public sealed class RitaglioPersona : IDisposable
             }
             var ms = orologio.Elapsed.TotalMilliseconds;
 
-            if (d.Modello == ModelloRitaglio.Pieno && opzioni.RipiegoAutomatico && !ripiegoTentato && misura.Aggiungi(ms))
+            if (d.Modello == ModelloRitaglio.Pieno && opzioni.RipiegoAutomatico && opzioni.RipiegoSeLento && !ripiegoTentato && misura.Aggiungi(ms))
             {
                 ripiegoTentato = true;
                 MotivoRipiego = $"modello pieno troppo lento: {misura.MediaMs:0} ms per maschera";

@@ -60,6 +60,8 @@ UGUALI = {
     # Le chiavi dei messaggi di usbmux (ClienteUSB.swift).
     "MessageType", "ClientVersionString", "ProgName", "DeviceID", "PortNumber", "Result", "Number", "Attached",
     "Detached", "Properties", "ConnectionType", "USB", "Listen", "Connect",
+    # Le risposte del server di adb (Adb.swift, Qualità 17).
+    "OKAY", "FAIL",
     # Firme di app (AppCompatibili.swift).
     "Cisco-Systems.Spark",
     # Variabile d'ambiente del sandbox (ClienteUSB.swift, b03).

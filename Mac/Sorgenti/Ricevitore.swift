@@ -243,6 +243,8 @@ final class Ricevitore {
     private let cavo = ClienteUSB()
     /// Per la diagnosi: un iPhone sul cavo senza l'app aperta, il cavo in pausa…
     private(set) var statoCavo: ClienteUSB.Stato = .nessunIPhone
+    /// Qualità 17: il telefono che aspetta l'app sul cavo è un Android (debug USB): la diagnosi lo dice a modo suo.
+    private(set) var cavoAndroidInAttesa = false
     /// Le sessioni (candidate o attuale) arrivate dal cavo, con il canale da restituire al client quando finiscono.
     @ObservationIgnored private var canaliCavo: [ObjectIdentifier: ClienteUSB.Canale] = [:]
     /// Sessioni del cavo che, finendo, mettono il cavo in pausa: «Scollega» sul Mac o un telefono non consentito.
@@ -322,7 +324,11 @@ final class Ricevitore {
                 self?.risvegliato()
             }
         }
-        cavo.suStato = { [weak self] stato in self?.statoCavo = stato }
+        cavo.suStato = { [weak self] stato in
+            guard let self else { return }
+            self.statoCavo = stato
+            self.cavoAndroidInAttesa = self.cavo.androidInAttesa
+        }
         cavo.suRegistro = { [weak self] testo in self?.registra(testo) }
         cavo.suCanale = { [weak self] descrittore, canale in
             guard let self else {

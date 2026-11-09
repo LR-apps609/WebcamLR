@@ -162,13 +162,20 @@ enum Usbmux {
 /// Se il telefono apre il canale ma lo chiude prima di essere accettato (rifiuta il cavo: altro computer,
 /// conferma in sospeso, cavo escluso per questa sessione), l'attesa raddoppia a ogni volta: 2, 4, 8 … fino
 /// a 30 secondi. Si torna a riprovare ogni secondo con un collegamento accettato, ricollegando il cavo o con «Collega via cavo».
+///
+/// Qualità 17: anche i telefoni Android con il debug USB, attraverso il server di adb (`Adb`). Un secondo filo segue
+/// «host:track-devices»; ogni telefono Android «device» diventa un dispositivo come gli iPhone (stesse attese, pausa e
+/// rifiuti), con un numero suo lontano da quelli di usbmux e il numero di serie per aprire il canale.
 @MainActor
 final class ClienteUSB {
     enum Stato: Equatable {
-        /// Nessun iPhone sul cavo.
+        /// Nessun telefono sul cavo.
         case nessunIPhone
-        /// usbmuxd non si raggiunge: di solito il sandbox, senza l'eccezione per /private/var/run/usbmuxd.
+        /// Né usbmuxd né il server di adb si raggiungono: per usbmuxd di solito il sandbox, senza l'eccezione per
+        /// /private/var/run/usbmuxd; adb di solito non è acceso.
         case servizioAssente
+        /// Qualità 17: un telefono Android sul cavo aspetta «Consenti» alla domanda «Consentire il debug USB?».
+        case androidDaAutorizzare
         /// Un iPhone è collegato con il cavo, ma WebcamLR sull'iPhone non risponde (chiusa, o iPhone da sbloccare).
         case inAttesaApp
         /// Collegamento via cavo sospeso: dopo «Scollega» sul Mac o un telefono non consentito.
@@ -202,6 +209,8 @@ final class ClienteUSB {
 
     private struct Dispositivo {
         let generazione: Int
+        /// Qualità 17: il numero di serie di adb per un telefono Android; nil per un iPhone (usbmux).
+        var seriale: String? = nil
         var tentativoInCorso = false
         var sessioneAperta = false
         var inPausa = false
@@ -225,15 +234,36 @@ final class ClienteUSB {
         case staccato(Int)
         /// La connessione con usbmuxd è caduta: si riparte da zero (usbmuxd rimanda gli iPhone collegati).
         case ricomincia
+        /// Qualità 17: il server di adb risponde (e ha accettato «host:track-devices») o no.
+        case servizioAndroid(raggiungibile: Bool)
+        /// L'elenco completo di adb, a ogni cambiamento.
+        case elencoAndroid([Adb.Telefono])
+        /// La connessione con il server di adb è caduta: i telefoni Android si dimenticano (tornano con l'elenco).
+        case ricominciaAndroid
     }
 
     private var dispositivi: [Int: Dispositivo] = [:]
     private var servizioRaggiungibile = true
+    /// Qualità 17: il server di adb risponde. Falso finché non si sa: chi non usa Android non vede righe nel registro.
+    private var adbRaggiungibile = false
+    /// Numero di serie di adb → numero del dispositivo qui, da `primoIdAndroid` in su (usbmux usa numeri piccoli).
+    private var idPerSeriale: [String: Int] = [:]
+    private var prossimoIdAndroid = ClienteUSB.primoIdAndroid
+    private static let primoIdAndroid = 1 << 40
+    /// Telefoni Android sul cavo che aspettano «Consenti» (debug USB).
+    private(set) var androidDaAutorizzare = 0
     private var avviato = false
     private var prossimaGenerazione = 1
     private var prossimaEtichetta: UInt32 = 10
     /// Sveglia il filo di `Listen` mentre aspetta di riprovare a raggiungere usbmuxd (vedi `risveglio`).
     private let svegliaAscolto = DispatchSemaphore(value: 0)
+    /// Lo stesso per il filo di adb.
+    private let svegliaAdb = DispatchSemaphore(value: 0)
+
+    /// Vero se il telefono che aspetta l'app (stato `inAttesaApp`) è un Android: per la diagnosi.
+    var androidInAttesa: Bool {
+        dispositivi.values.contains { $0.seriale != nil && $0.tentativiFalliti > 0 && !$0.sessioneAperta && !$0.inPausa }
+    }
 
     /// Da chiamare una volta: le chiamate successive non fanno nulla.
     func avvia() {
@@ -253,6 +283,11 @@ final class ClienteUSB {
         filo.name = "it.lrapps.webcamlr.usbmux"
         filo.qualityOfService = .utility
         filo.start()
+        let semaforoAdb = svegliaAdb
+        let filoAdb = Thread { Self.ascoltaAdb(avvisa: avvisa, sveglia: semaforoAdb) }
+        filoAdb.name = "it.lrapps.webcamlr.adb"
+        filoAdb.qualityOfService = .utility
+        filoAdb.start()
     }
 
     /// Dopo «Scollega» o un telefono non consentito, il cavo resta fermo finché l'iPhone non viene staccato
@@ -279,8 +314,9 @@ final class ClienteUSB {
     /// Risveglio dallo stop (1.12): si riprova subito, senza aspettare le attese in corso (fino a 30 secondi dopo
     /// dei rifiuti), e l'attesa crescente riparte da capo. Un cavo in pausa resta in pausa: lo ha deciso l'utente.
     func risveglio() {
-        // Se il filo di `Listen` aspetta di ritrovare usbmuxd, riprova adesso.
+        // Se il filo di `Listen` aspetta di ritrovare usbmuxd, riprova adesso (e quello di adb il suo server).
         svegliaAscolto.signal()
+        svegliaAdb.signal()
         for (id, var dispositivo) in dispositivi where !dispositivo.inPausa && !dispositivo.sessioneAperta {
             dispositivo.rifiuti = 0
             dispositivo.tentativiFalliti = 0
@@ -341,7 +377,11 @@ final class ClienteUSB {
                 attesa = Self.attesaDopoRifiuti(dispositivo.rifiuti)
                 // Una riga per gradino, non una a ogni tentativo.
                 if dispositivo.rifiuti == 1 || attesa != Self.attesaDopoRifiuti(dispositivo.rifiuti - 1) {
-                    suRegistro?(String(localized: "L'iPhone ha chiuso il cavo prima di accettare il collegamento: riprovo tra \(Int(attesa.components.seconds)) secondi"))
+                    if dispositivo.seriale != nil {
+                        suRegistro?(String(localized: "Il telefono Android ha chiuso il cavo prima di accettare il collegamento: riprovo tra \(Int(attesa.components.seconds)) secondi"))
+                    } else {
+                        suRegistro?(String(localized: "L'iPhone ha chiuso il cavo prima di accettare il collegamento: riprovo tra \(Int(attesa.components.seconds)) secondi"))
+                    }
                 }
             }
         }
@@ -397,13 +437,64 @@ final class ClienteUSB {
             }
         case .ricomincia:
             // Le sessioni aperte restano (se usbmuxd è ripartito, si chiudono da sole); il resto si dimentica.
-            dispositivi = dispositivi.filter { $0.value.sessioneAperta }.mapValues { dispositivo in
+            // Qualità 17: solo gli iPhone; i telefoni Android sono di adb.
+            dispositivi = dispositivi.filter { $0.value.seriale != nil || $0.value.sessioneAperta }.mapValues { dispositivo in
+                guard dispositivo.seriale == nil else { return dispositivo }
                 var orfano = dispositivo
                 orfano.orfano = true
                 return orfano
             }
+        case .servizioAndroid(let raggiungibile):
+            if raggiungibile != adbRaggiungibile {
+                suRegistro?(raggiungibile ? String(localized: "Server di adb trovato (cavo USB di Android)")
+                    : String(localized: "Il server di adb si è fermato"))
+            }
+            adbRaggiungibile = raggiungibile
+        case .elencoAndroid(let elenco):
+            aggiornaAndroid(elenco)
+        case .ricominciaAndroid:
+            androidDaAutorizzare = 0
+            for (id, dispositivo) in dispositivi where dispositivo.seriale != nil {
+                if dispositivo.sessioneAperta {
+                    var orfano = dispositivo
+                    orfano.orfano = true
+                    dispositivi[id] = orfano
+                } else {
+                    dispositivi.removeValue(forKey: id)
+                }
+            }
+            idPerSeriale = idPerSeriale.filter { dispositivi[$0.value] != nil }
         }
         aggiornaStato()
+    }
+
+    /// Qualità 17: un elenco nuovo di adb. I telefoni sul cavo con «device» si collegano, gli altri si staccano.
+    private func aggiornaAndroid(_ elenco: [Adb.Telefono]) {
+        let sulCavo = elenco.filter { Adb.viaUSB($0.seriale) }
+        androidDaAutorizzare = sulCavo.filter { $0.stato == .nonAutorizzato }.count
+        let pronti = Set(sulCavo.filter { $0.stato == .pronto }.map(\.seriale))
+        for (seriale, id) in idPerSeriale where !pronti.contains(seriale) {
+            idPerSeriale.removeValue(forKey: seriale)
+            // La sessione su quel cavo si chiude da sola: adb chiude il canale quando il telefono si stacca.
+            if dispositivi.removeValue(forKey: id) != nil {
+                suRegistro?(String(localized: "Telefono Android staccato dal cavo USB"))
+            }
+        }
+        for seriale in pronti.sorted() {
+            if let id = idPerSeriale[seriale], var noto = dispositivi[id] {
+                noto.orfano = false
+                dispositivi[id] = noto
+                prova(id)
+                continue
+            }
+            let id = prossimoIdAndroid
+            prossimoIdAndroid += 1
+            idPerSeriale[seriale] = id
+            dispositivi[id] = Dispositivo(generazione: prossimaGenerazione, seriale: seriale)
+            prossimaGenerazione += 1
+            suRegistro?(String(localized: "Telefono Android collegato con il cavo USB (debug USB)"))
+            prova(id)
+        }
     }
 
     // MARK: - Connect
@@ -414,11 +505,18 @@ final class ClienteUSB {
         dispositivo.tentativoInCorso = true
         dispositivi[id] = dispositivo
         let generazione = dispositivo.generazione
+        let seriale = dispositivo.seriale
         let etichetta = prossimaEtichetta
         prossimaEtichetta &+= 1
         let porta = Usbmux.portaTelefono
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            let descrittore = Usbmux.collega(dispositivo: id, porta: porta, etichetta: etichetta)
+            // Qualità 17: stessa porta 52741 sul telefono, attraverso adb per Android e usbmux per l'iPhone.
+            let descrittore: Int32?
+            if let seriale {
+                descrittore = Adb.collega(seriale: seriale, porta: porta)
+            } else {
+                descrittore = Usbmux.collega(dispositivo: id, porta: porta, etichetta: etichetta)
+            }
             DispatchQueue.main.async {
                 MainActor.assumeIsolated {
                     guard let self else {
@@ -449,14 +547,22 @@ final class ClienteUSB {
             dispositivo.tentativiFalliti = 0
             dispositivi[id] = dispositivo
             aggiornaStato()
-            suRegistro?(String(localized: "Canale aperto sul cavo USB: aspetto WebcamLR sull'iPhone"))
+            if dispositivo.seriale != nil {
+                suRegistro?(String(localized: "Canale aperto sul cavo USB: aspetto WebcamLR sul telefono Android"))
+            } else {
+                suRegistro?(String(localized: "Canale aperto sul cavo USB: aspetto WebcamLR sull'iPhone"))
+            }
             suCanale?(descrittore, Canale(dispositivo: id, generazione: generazione))
         } else {
             dispositivo.tentativiFalliti += 1
             dispositivi[id] = dispositivo
             // Una riga sola, non una ogni secondo.
             if dispositivo.tentativiFalliti == 1 {
-                suRegistro?(String(localized: "iPhone sul cavo: WebcamLR non risponde, riprovo ogni secondo"))
+                if dispositivo.seriale != nil {
+                    suRegistro?(String(localized: "Telefono Android sul cavo: WebcamLR non risponde, riprovo ogni secondo"))
+                } else {
+                    suRegistro?(String(localized: "iPhone sul cavo: WebcamLR non risponde, riprovo ogni secondo"))
+                }
             }
             // App che non ascolta: sempre ogni secondo, anche dopo dei rifiuti (aprire WebcamLR deve bastare).
             riprovaTra(id, dopo: Self.intervalloConnect)
@@ -490,9 +596,11 @@ final class ClienteUSB {
             nuovo = .collegato
         } else if tutti.contains(where: \.inPausa) {
             nuovo = .inPausa
+        } else if androidDaAutorizzare > 0 {
+            nuovo = .androidDaAutorizzare
         } else if tutti.contains(where: { $0.tentativiFalliti > 0 }) {
             nuovo = .inAttesaApp
-        } else if !servizioRaggiungibile {
+        } else if !servizioRaggiungibile && !adbRaggiungibile {
             nuovo = .servizioAssente
         } else {
             // Anche un iPhone appena collegato, con il primo tentativo in corso: tra un attimo si saprà.
@@ -544,6 +652,31 @@ final class ClienteUSB {
             }
             close(descrittore)
             avvisa(.ricomincia)
+            _ = sveglia.wait(timeout: .now() + 2)
+        }
+    }
+
+    /// Qualità 17, per sempre: apre la connessione con il server di adb, chiede «host:track-devices» e legge gli
+    /// elenchi. Se il server non c'è (adb spento, mai avviato) riprova ogni 5 secondi: su loopback costa niente.
+    nonisolated private static func ascoltaAdb(avvisa: @escaping @Sendable (EventoAscolto) -> Void, sveglia: DispatchSemaphore) {
+        while true {
+            guard let descrittore = Adb.apri() else {
+                avvisa(.servizioAndroid(raggiungibile: false))
+                _ = sveglia.wait(timeout: .now() + 5)
+                continue
+            }
+            guard Usbmux.scrivi(Adb.richiesta("host:track-devices"), su: descrittore), Adb.esito(da: descrittore) else {
+                close(descrittore)
+                avvisa(.servizioAndroid(raggiungibile: false))
+                _ = sveglia.wait(timeout: .now() + 5)
+                continue
+            }
+            avvisa(.servizioAndroid(raggiungibile: true))
+            while let testo = Adb.blocco(da: descrittore) {
+                avvisa(.elencoAndroid(Adb.leggiElenco(testo)))
+            }
+            close(descrittore)
+            avvisa(.ricominciaAndroid)
             _ = sveglia.wait(timeout: .now() + 2)
         }
     }

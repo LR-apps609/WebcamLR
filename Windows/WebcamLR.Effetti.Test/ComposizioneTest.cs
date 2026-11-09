@@ -28,7 +28,7 @@ public class ComposizioneTest(ITestOutputHelper uscita)
     /// Il pixel atteso con i valori campionati in virgola mobile alla posizione del pixel, come lo shader:
     /// <see cref="RegoleBordo.Canale"/> con il bilineare di <see cref="Elaborazione.Campionamento"/>.
     /// </summary>
-    private static ImmagineBgra Riferimento(PianoComposizione piano)
+    internal static ImmagineBgra Riferimento(PianoComposizione piano)
     {
         var src = piano.Sorgente;
         int l = src.Larghezza, a = src.Altezza;
@@ -392,12 +392,13 @@ public class ComposizioneTest(ITestOutputHelper uscita)
             uscita.WriteLine($"niente scheda video qui: {errore.Message}");
             return;
         }
-        // Su Windows (anche la CI, con WARP): Crea compila lo shader e si verifica; poi tre fotogrammi a 1080p (sfocato,
-        // sostituito, mosaico) contro il processore, con i tempi.
+        // Su Windows (anche la CI, con WARP): Crea compila lo shader e si verifica; poi i fotogrammi della verifica a 1080p
+        // (sfocato, sostituito, mosaico; Qualità 12: con «Cinema», con «Caldo» e le regolazioni) contro il processore,
+        // con i tempi.
         using var gpu = ComposizioneSchedaVideo.Crea(ancheSoftware: true);
         uscita.WriteLine(gpu.Descrizione);
         var cpu = new ComposizioneProcessore();
-        foreach (var (sostituito, quadretti) in new[] { (false, false), (true, false), (false, true) })
+        foreach (var (sostituito, quadretti) in ComposizioneSchedaVideo.Prove)
         {
             var piano = PianoDiProva.Crea(1920, 1080, sostituito, quadretti);
             var attesa = new ImmagineBgra(1920, 1080);
@@ -410,6 +411,13 @@ public class ComposizioneTest(ITestOutputHelper uscita)
                              $"differenza massima {massima}, media {media:0.000}");
             Assert.InRange(massima, 0, ComposizioneSchedaVideo.DifferenzaMassima);
             Assert.InRange(media, 0, ComposizioneSchedaVideo.DifferenzaMediaMassima);
+        }
+        // Qualità 12: il colore della scheda video uguale a quello del processore sullo stesso fotogramma composto.
+        foreach (var (sostituito, quadretti, filtro, regolazioni) in ComposizioneSchedaVideo.ProveColore)
+        {
+            var massima = ComposizioneSchedaVideo.ConfrontaColore(gpu, 1920, 1080, sostituito, quadretti, filtro, regolazioni);
+            uscita.WriteLine($"{filtro}{(regolazioni ? " e regolazioni" : "")}: differenza massima del colore {massima}");
+            Assert.InRange(massima, 0, ComposizioneSchedaVideo.DifferenzaMassimaColore);
         }
     }
 }

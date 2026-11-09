@@ -197,6 +197,38 @@ public sealed class CatenaColore
     /// <summary>Le tabelle per canale (B, G, R come i byte del pixel: indice 2 = rosso), se la catena è solo per canale.</summary>
     internal byte[][]? TabellePerCanale => perCanale;
 
+    /// <summary>
+    /// Quanti stadi con la matrice fa la scheda video (Qualità 12, Composizione.hlsl): una catena solo per canale ne vale
+    /// uno, con la matrice identità.
+    /// </summary>
+    public int StadiInteri => perCanale is not null ? 1 : stadi.Length;
+
+    /// <summary>
+    /// Gli stadi in interi, come li usa <see cref="Applica"/>, per la scheda video: per canale (0 = rosso, 1 = verde,
+    /// 2 = blu) la tabella d'ingresso (8 → 12 bit) e quella d'uscita (12 → 8 bit), la matrice in 4096esimi e lo
+    /// scostamento già pronto da sommare prima dello spostamento di 12 bit (con il mezzo per arrotondare). Una catena
+    /// solo per canale diventa uno stadio esatto: ingresso v → 16·v, matrice identità ((4096 · 16v + 2048) » 12 = 16v),
+    /// uscita 16v → la tabella per canale.
+    /// </summary>
+    public IReadOnlyList<(ushort[][] Ingresso, int[] Matrice, int[] Somma, byte[][] Uscita)> StadiPerSchedaVideo()
+    {
+        if (perCanale is { } t)
+        {
+            var ingresso = new ushort[3][];
+            var uscita = new byte[3][];
+            for (var c = 0; c < 3; c++)
+            {
+                ingresso[c] = new ushort[256];
+                uscita[c] = new byte[Uno];
+                for (var v = 0; v < 256; v++) ingresso[c][v] = (ushort)(v * 16);
+                // Solo i multipli di 16 si leggono; gli altri valori prendono il più vicino, per sicurezza.
+                for (var i = 0; i < Uno; i++) uscita[c][i] = t[c][Math.Min(255, (i + 8) / 16)];
+            }
+            return [(ingresso, [Uno, 0, 0, 0, Uno, 0, 0, 0, Uno], [Uno / 2, Uno / 2, Uno / 2], uscita)];
+        }
+        return stadi.Select(s => (s.Ingresso, s.Matrice, s.Scostamento.Select(v => (v << Bit) + Uno / 2).ToArray(), s.Uscita)).ToArray();
+    }
+
     /// <summary>Applica la catena a una riga di pixel BGRA, sul posto. L'alfa non cambia.</summary>
     public unsafe void Applica(Span<byte> bgra)
     {

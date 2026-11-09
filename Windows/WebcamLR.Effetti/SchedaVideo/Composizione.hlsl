@@ -4,8 +4,10 @@
 // È il passo a piena risoluzione di ComposizioneProcessore (Motore/Composizione.cs), con gli stessi conti di
 // RegoleBordo.Canale: bordo pulito dal vecchio sfondo, calore, light wrap, miscela con il fondo. Le cose piccole (alfa,
 // fondo sfocato, colore dell'interno della persona, sfondo nuovo sfocato, maschera morbida) arrivano già pronte dal
-// processore. Se cambia un numero qui, va cambiato anche in RegoleBordo (e viceversa): ComposizioneSchedaVideo.Verifica
-// confronta le due all'apertura e, se differiscono, resta il processore.
+// processore. Qualità 12: dopo la miscela, il filtro di colore e le regolazioni sull'immagine intera, con le tabelle e
+// le matrici intere di CatenaColore (Motore/RicetteColore.cs), quindi lo stesso risultato al bit sullo stesso pixel.
+// Se cambia un numero qui, va cambiato anche in RegoleBordo (e viceversa): ComposizioneSchedaVideo.Verifica confronta le
+// due all'apertura (il colore a parte, al bit) e, se differiscono, resta il processore.
 //
 // Le texture a colori sono R8G8B8A8_UNORM con dentro i byte BGRA del motore: .r = B, .g = G, .b = R. I conti valgono
 // canale per canale, quindi l'ordine non conta; si scrive nello stesso ordine.
@@ -17,6 +19,8 @@ Texture2D<float4> ColorePersona : register(t3);   // bordo pulito: colore dell'i
 Texture2D<float4> SfondoMorbido : register(t4);   // light wrap: sfondo nuovo sfocato, piccolo
 Texture2D<float> MascheraMorbida : register(t5);  // light wrap: maschera sfocata, piccola
 Texture2D<float4> Calore : register(t6);          // 256×1: tabelle del calore (.r per B, .g per G, .b per R)
+Texture2D<uint> ColoreIngresso : register(t7);    // 256 × 3·stadi, R16_UINT: per stadio le righe rosso, verde, blu (8 → 12 bit)
+Texture2D<uint> ColoreUscita : register(t8);      // 4096 × 3·stadi, R8_UINT: le stesse righe (12 → 8 bit)
 RWTexture2D<unorm float4> Uscita : register(u0);  // piena misura
 SamplerState Lineare : register(s0);              // bilineare, bordi ripetuti (come Elaborazione.Campionamento)
 
@@ -25,13 +29,18 @@ cbuffer Parametri : register(b0)
     uint Larghezza;
     uint Altezza;
     uint Opzioni;
-    uint Riservato;
+    uint Stadi;                                   // stadi del colore (0 = nessuno), al massimo MASSIMO_STADI
+    // Per stadio, tre righe della matrice (rosso, verde, blu): .xyz in 4096esimi, .w lo scostamento già spostato di 12
+    // bit con il mezzo per arrotondare (CatenaColore.StadiPerSchedaVideo).
+    int4 Righe[9];
 };
 
 static const uint PULITO = 1u;
 static const uint LUCE = 2u;
 static const uint CALORE = 4u;
 static const uint QUADRETTI = 8u;                 // mosaico: il fondo «al più vicino», come Righe(vicino) sul processore
+static const uint COLORE = 16u;                   // Qualità 12: filtro e regolazioni dopo la miscela
+static const uint MASSIMO_STADI = 3u;             // PianoComposizione.MassimoStadiColore
 
 // RegoleBordo.Fiducia
 float Fiducia(float alfa) { return saturate(2.5 * alfa - 1.5); }
@@ -41,6 +50,27 @@ float PesoLuce(float alfa, float alfaMorbido) { return min(0.3 * alfa * (1.0 - a
 
 // RegoleBordo.Schermo, per tre canali (valori 0..255)
 float3 Schermo(float3 a, float3 b) { return 255.0 - (255.0 - a) * (255.0 - b) / 255.0; }
+
+// CatenaColore.Applica per un pixel: rgb = rosso, verde, blu in byte. Per stadio: tabella d'ingresso, matrice con lo
+// scostamento, spostamento aritmetico di 12 bit, limite 0..4095, tabella d'uscita. Tutto intero, come il processore.
+uint3 Colore(uint3 rgb)
+{
+    [loop]
+    for (uint s = 0; s < min(Stadi, MASSIMO_STADI); s++)
+    {
+        uint riga = s * 3;
+        int r = (int)ColoreIngresso.Load(int3(rgb.x, riga, 0));
+        int g = (int)ColoreIngresso.Load(int3(rgb.y, riga + 1, 0));
+        int b = (int)ColoreIngresso.Load(int3(rgb.z, riga + 2, 0));
+        int4 mr = Righe[riga], mg = Righe[riga + 1], mb = Righe[riga + 2];
+        int nr = clamp((mr.x * r + mr.y * g + mr.z * b + mr.w) >> 12, 0, 4095);
+        int ng = clamp((mg.x * r + mg.y * g + mg.z * b + mg.w) >> 12, 0, 4095);
+        int nb = clamp((mb.x * r + mb.y * g + mb.z * b + mb.w) >> 12, 0, 4095);
+        rgb = uint3(ColoreUscita.Load(int3(nr, riga, 0)), ColoreUscita.Load(int3(ng, riga + 1, 0)),
+                    ColoreUscita.Load(int3(nb, riga + 2, 0)));
+    }
+    return rgb;
+}
 
 [numthreads(16, 16, 1)]
 void Componi(uint3 id : SV_DispatchThreadID)
@@ -82,6 +112,11 @@ void Componi(uint3 id : SV_DispatchThreadID)
         float3 s = SfondoMorbido.SampleLevel(Lineare, uv, 0).rgb * 255.0;
         p += (Schermo(s, p) - p) * w;
     }
-    float3 r = p * alfa + fondo * (1.0 - alfa);
-    Uscita[id.xy] = float4(floor(clamp(r, 0.0, 255.0) + 0.5) / 255.0, 1.0);
+    float3 r = floor(clamp(p * alfa + fondo * (1.0 - alfa), 0.0, 255.0) + 0.5);
+    if (Opzioni & COLORE)
+    {
+        // I byte sono B, G, R (vedi sopra): il colore lavora in rosso, verde, blu.
+        r = (float3)Colore((uint3)r.zyx).zyx;
+    }
+    Uscita[id.xy] = float4(r / 255.0, 1.0);
 }

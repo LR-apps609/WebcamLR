@@ -439,6 +439,12 @@ final class Ricevitore {
     private var candidati: [ObjectIdentifier: SessioneComputer] = [:]
     /// Il candidato che aspetta la risposta dell'utente: una domanda alla volta.
     private var inConferma: ObjectIdentifier?
+    /// L'impronta del telefono di `inConferma`, per ricordare un no (`Abbinamento.segnaRifiuto`, collaudo 37).
+    private var improntaInConferma: String?
+    /// Le domande arrivate mentre un'altra era aperta (collaudo 33): aspettano il loro turno, una alla volta, invece
+    /// di essere rifiutate. Ognuna ha i suoi 60 secondi dall'`approvazione` (`SessioneComputer.attesaConferma`): se
+    /// finiscono in coda la sessione chiude da sé, senza ricordare un no che l'utente non ha mai visto.
+    private var confermeInCoda: [(identita: ObjectIdentifier, nome: String, codice: String, impronta: String)] = []
     private var compitoInOnda: Task<Void, Never>?
     /// Un'app sta usando la webcam virtuale.
     private(set) var webcamInUso = false
@@ -941,7 +947,11 @@ final class Ricevitore {
         switch evento {
         case .ciao(let ciao, let impronta, _):
             candidati[identita] = nil
-            if inConferma == identita { inConferma = nil }
+            if inConferma == identita {
+                inConferma = nil
+                improntaInConferma = nil
+            }
+            confermeInCoda.removeAll { $0.identita == identita }
             // Consentito: il cavo non va più in pausa se questa sessione finisce.
             pausaCavo.remove(identita)
             if let esistente = telefoni.first(where: { $0.impronta == impronta }) {
@@ -1031,25 +1041,27 @@ final class Ricevitore {
                 aggiornaUscite()
             }
             return false
-        case .conferma(let nome, let codice):
-            // C'è già una domanda aperta per un altro telefono: per sicurezza si rifiuta,
-            // così nessuno può cambiare la domanda sotto il cursore dell'utente.
+        case .conferma(let nome, let codice, let impronta):
+            // C'è già una domanda aperta per un altro telefono: questa aspetta il suo turno (collaudo 33, come
+            // Windows). Non si cambia la domanda sotto il cursore dell'utente, e il telefono, che ha già il codice,
+            // non riceve un rifiuto che nessuno ha dato.
             guard inConferma == nil else {
-                candidato.rispondi(consentito: false)
+                confermeInCoda.append((identita: identita, nome: nome, codice: codice, impronta: impronta))
+                registra(String(localized: "Telefono nuovo, «\(nome)»: aspetta che finisca la domanda per l'altro telefono"))
                 return true
             }
-            inConferma = identita
-            registra(String(localized: "Telefono nuovo, «\(nome)»: chiedo conferma con il codice"))
-            // Il cavo va in pausa solo con «Non consentire» (`rispondiConferma`). Senza risposta entro 60 secondi
-            // il client del cavo riprova con l'attesa che cresce dei rifiuti: così «Riprova» sull'iPhone fa
-            // ricomparire la domanda, invece di aspettare un cavo in pausa.
-            // Prima la notifica (solo se WebcamLR è in secondo piano), poi l'app davanti con la domanda.
-            Notifiche.condivise.richiestaConsenso(nome)
-            finestraConferma.mostra(nome: nome, codice: codice) { [weak self] consentito in
-                self?.rispondiConferma(consentito, da: identita)
-            }
+            chiediConferma(identita, nome: nome, codice: codice, impronta: impronta)
+        case .rifiutatoDaPoco(let nome):
+            registra(String(localized: "«\(nome)» è stato rifiutato da poco: per due minuti non si chiede di nuovo"))
         case .confermaFinita:
-            if inConferma == identita { chiudiConferma() }
+            if inConferma == identita {
+                // Tempo scaduto con la domanda davanti: conta come un no (collaudo 37).
+                if let impronta = improntaInConferma { abbinamento.segnaRifiuto(impronta) }
+                chiudiConferma()
+            } else {
+                // Tempo finito in coda: l'utente non l'ha mai vista, non è un rifiuto.
+                confermeInCoda.removeAll { $0.identita == identita }
+            }
         case .rifiutata(let nome):
             // Posti pieni (P21): la sessione ha già mandato l'`arrivederci` e si chiude da sola. Sul cavo
             // il client riprova con l'attesa che cresce (2, 4… 30 secondi): appena un posto si libera, entra.
@@ -1058,7 +1070,9 @@ final class Ricevitore {
             candidati[identita] = nil
             registra(String(localized: "Collegamento chiuso prima di essere accettato"))
             chiusaSessione(identita)
-            // Il telefono se n'è andato mentre si aspettava la conferma: la domanda sparisce.
+            // Il telefono se n'è andato mentre si aspettava la conferma: la domanda sparisce (e non conta come un no:
+            // può riprovare subito). Se era in coda, esce dalla coda.
+            confermeInCoda.removeAll { $0.identita == identita }
             if inConferma == identita { chiudiConferma() }
         default:
             break
@@ -2343,7 +2357,7 @@ final class Ricevitore {
             segnalaInOnda(telefono, sempre: true)
             segnalaAnteprima(telefono, sempre: true)
             chiediAudioSeServe()
-        case .conferma, .confermaFinita, .rifiutata:
+        case .conferma, .confermaFinita, .rifiutata, .rifiutatoDaPoco:
             // Solo i candidati chiedono conferma o vengono rifiutati (sopra).
             break
         case .formato(let formato):
@@ -2531,21 +2545,53 @@ final class Ricevitore {
         }
     }
 
+    /// La domanda «Consentire …?» per un candidato: la notifica e il pannello davanti.
+    private func chiediConferma(_ identita: ObjectIdentifier, nome: String, codice: String, impronta: String) {
+        inConferma = identita
+        improntaInConferma = impronta
+        registra(String(localized: "Telefono nuovo, «\(nome)»: chiedo conferma con il codice"))
+        // Il cavo va in pausa solo con «Non consentire» (`rispondiConferma`). Senza risposta entro 60 secondi
+        // il client del cavo riprova con l'attesa che cresce dei rifiuti: così «Riprova» sull'iPhone fa
+        // ricomparire la domanda (dopo i due minuti del no ricordato), invece di aspettare un cavo in pausa.
+        // Prima la notifica (solo se WebcamLR è in secondo piano), poi l'app davanti con la domanda.
+        Notifiche.condivise.richiestaConsenso(nome)
+        finestraConferma.mostra(nome: nome, codice: codice) { [weak self] consentito in
+            self?.rispondiConferma(consentito, da: identita)
+        }
+    }
+
+    /// La domanda di prima è chiusa: tocca alla prima in coda il cui telefono aspetta ancora (collaudo 33).
+    private func prossimaConferma() {
+        guard inConferma == nil else { return }
+        while !confermeInCoda.isEmpty {
+            let prossima = confermeInCoda.removeFirst()
+            guard candidati[prossima.identita] != nil else { continue }
+            chiediConferma(prossima.identita, nome: prossima.nome, codice: prossima.codice, impronta: prossima.impronta)
+            return
+        }
+    }
+
     /// «Consenti» o «Non consentire»: vale solo per la sessione che l'ha chiesto.
     private func rispondiConferma(_ consentito: Bool, da identita: ObjectIdentifier) {
         Notifiche.condivise.ritiraRichiestaConsenso()
         guard inConferma == identita else { return }
         inConferma = nil
         registra(consentito ? String(localized: "Telefono consentito") : String(localized: "Telefono non consentito"))
+        // Un no si ricorda per due minuti: la stessa chiave non fa ricomparire la domanda (collaudo 37).
+        if !consentito, let impronta = improntaInConferma { abbinamento.segnaRifiuto(impronta) }
+        improntaInConferma = nil
         // Un telefono del cavo non consentito non deve ripresentarsi ogni 2 secondi: il cavo va in pausa.
         if !consentito, canaliCavo[identita] != nil { pausaCavo.insert(identita) }
         candidati[identita]?.rispondi(consentito: consentito)
+        prossimaConferma()
     }
 
     private func chiudiConferma() {
         inConferma = nil
+        improntaInConferma = nil
         finestraConferma.chiudi()
         Notifiche.condivise.ritiraRichiestaConsenso()
+        prossimaConferma()
     }
 
     /// Una riga nel registro a ogni inizio (o cambio di motivo) e fine di pausa: il motivo e, alla fine, quanto è durata.

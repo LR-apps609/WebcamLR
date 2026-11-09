@@ -6283,6 +6283,16 @@
         }
       }
     },
+    "Telefono nuovo, «%@»: aspetta che finisca la domanda per l'altro telefono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New phone, “%@”: waiting for the question about the other phone to finish"
+          }
+        }
+      }
+    },
     "Telefono nuovo, «%@»: chiedo conferma con il codice" : {
       "localizations" : {
         "en" : {
@@ -7750,6 +7760,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "“%@” uses the free version."
+          }
+        }
+      }
+    },
+    "«%@» è stato rifiutato da poco: per due minuti non si chiede di nuovo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” was declined a moment ago: not asking again for two minutes"
           }
         }
       }

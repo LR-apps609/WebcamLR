@@ -35,8 +35,12 @@ final class SessioneComputer: @unchecked Sendable {
         /// Il telefono è stato accettato; il `benvenuto` parte quando il Ricevitore rende attuale la sessione. `impronta`: il codice di sicurezza
         /// del telefono (1.1): è quello che dice se è «lo stesso telefono», non il nome. `via`: come è collegato (1.2).
         case ciao(Ciao, impronta: String, via: TipoCollegamento)
-        /// Il telefono non è fidato: bisogna chiedere all'utente, mostrando il codice di conferma.
-        case conferma(nome: String, codice: String)
+        /// Il telefono non è fidato: bisogna chiedere all'utente, mostrando il codice di conferma. `impronta`: per
+        /// ricordare un no (`Abbinamento.segnaRifiuto`, collaudo 37).
+        case conferma(nome: String, codice: String, impronta: String)
+        /// Rifiutato dall'utente da meno di `Abbinamento.pausaDopoRifiuto`: chiuso con l'`arrivederci` senza domanda
+        /// né codice sul telefono (collaudo 37). Solo per il registro.
+        case rifiutatoDaPoco(nome: String)
         /// La domanda non serve più (tempo scaduto): la finestra si chiude da sola.
         case confermaFinita
         /// Già collegati tutti i telefoni che il Mac tiene insieme (P21): questo riceve l'`arrivederci`
@@ -519,14 +523,22 @@ final class SessioneComputer: @unchecked Sendable {
             completaAccettazione(ciao, sicura: sicura)
             return
         }
-        // Telefono nuovo senza il QR code: lo stesso codice sui due schermi, e decide l'utente.
+        // Rifiutato da poco: niente domanda, niente codice sul telefono (collaudo 37, come Windows).
+        if abbinamento.rifiutatoDaPoco(sicura.improntaAltro) {
+            notifica(.rifiutatoDaPoco(nome: ciao.nome))
+            chiudiConArrivederci()
+            return
+        }
+        // Telefono nuovo senza il QR code: lo stesso codice sui due schermi, e decide l'utente. Se c'è già una domanda
+        // aperta per un altro telefono, il Ricevitore la mette in coda (collaudo 33): i 60 secondi contano da qui,
+        // come sul telefono, che aspetta da quando riceve l'`approvazione`.
         avvio.segnaConferma()
         invia(.approvazione(Approvazione(codice: sicura.codice)))
         ciaoInAttesa = ciao
         let scadenza = DispatchWorkItem { [weak self] in self?.concludiConferma(false) }
         scadenzaConferma = scadenza
         coda.asyncAfter(deadline: .now() + Self.attesaConferma, execute: scadenza)
-        notifica(.conferma(nome: ciao.nome, codice: sicura.codice))
+        notifica(.conferma(nome: ciao.nome, codice: sicura.codice, impronta: sicura.improntaAltro))
     }
 
     /// Sì → fidato e `benvenuto`; no, o 60 secondi senza risposta → `arrivederci` e chiusura.

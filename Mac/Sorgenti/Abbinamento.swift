@@ -89,6 +89,30 @@ final class Abbinamento: @unchecked Sendable {
         suCambio?()
     }
 
+    /// Dopo «Non consentire» (o il tempo scaduto con la domanda aperta) la stessa impronta non fa ricomparire la domanda
+    /// per questo tempo (collaudo 37, come `Abbinamento.PausaDopoRifiuto` su Windows): chi è in rete non può riaprirla
+    /// senza fine né portare WebcamLR davanti durante la chiamata.
+    static let pausaDopoRifiuto: Duration = .seconds(120)
+
+    /// Impronta → quando l'utente l'ha rifiutata. Sotto `blocco`; solo per questa esecuzione.
+    private var rifiutati: [String: ContinuousClock.Instant] = [:]
+
+    /// La domanda per questa impronta è stata rifiutata da meno di `pausaDopoRifiuto`. Da qualsiasi coda.
+    func rifiutatoDaPoco(_ impronta: String) -> Bool {
+        blocco.lock()
+        defer { blocco.unlock() }
+        let adesso = ContinuousClock.now
+        rifiutati = rifiutati.filter { adesso - $0.value < Self.pausaDopoRifiuto }
+        return rifiutati[impronta] != nil
+    }
+
+    /// L'utente ha detto no a questa impronta, o non ha risposto in tempo alla domanda che vedeva.
+    func segnaRifiuto(_ impronta: String) {
+        blocco.lock()
+        rifiutati[impronta] = .now
+        blocco.unlock()
+    }
+
     /// Vero se il gettone è quello del QR code attuale; in quel caso il QR cambia.
     func usaGettone(_ proposto: String?) -> Bool {
         guard let proposto, !proposto.isEmpty else { return false }

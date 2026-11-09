@@ -38,6 +38,7 @@ public sealed record FormatoVideo(Codec Codec, int Larghezza, int Altezza, int F
 /// <param name="SfocaturaSistema">Vero = sul telefono è accesa la sfocatura del sistema (Effetti video di Apple, «Ritratto»).</param>
 /// <param name="LuceSistema">Vero = sul telefono è accesa la luce del sistema (Effetti video di Apple, «Luce da studio»).</param>
 /// <param name="Calore">Calore del viso attuale, da 0 (colori della fotocamera) a 1.</param>
+/// <param name="Qualita">La qualità del flusso in uso (<see cref="LivelliQualita"/>), dopo <see cref="Comando.Qualita"/>.</param>
 public sealed record StatoTelefono(int Batteria, bool InCarica, Temperatura Temperatura, string Obiettivo,
     string? Filtro = null, Regolazioni? Regolazioni = null, string? Sfondo = null, double? IntensitaSfondo = null,
     double? Pelle = null, bool? Inquadratura = null, bool? LuceVolto = null, Scritta? Scritta = null,
@@ -45,7 +46,8 @@ public sealed record StatoTelefono(int Batteria, bool InCarica, Temperatura Temp
     StatoGobbo? Gobbo = null, bool? Specchia = null, double? Zoom = null, bool? Torcia = null,
     double? Esposizione = null, int? Bianco = null, double? Iso = null, int? Tempo = null,
     StatoCollegamento? Collegamento = null, string? ImmagineSfondo = null, string? ImmaginePersonale = null,
-    string? Logo = null, bool? SfocaturaSistema = null, bool? LuceSistema = null, double? Calore = null) : Messaggio;
+    string? Logo = null, bool? SfocaturaSistema = null, bool? LuceSistema = null, double? Calore = null,
+    string? Qualita = null) : Messaggio;
 
 /// <param name="T">Orologio del computer, in microsecondi.</param>
 public sealed record Ping(ulong T) : Messaggio;
@@ -72,6 +74,7 @@ public sealed record Latenza(int Ms) : Messaggio;
 /// <param name="Calore">Il telefono sa fare il calore del viso e accetta <see cref="Comando.Calore"/>.</param>
 /// <param name="EffettiSulComputer">Il telefono sa lavorare con gli effetti sul computer: accetta
 /// <see cref="Comando.EffettiSulComputer"/> ed <see cref="EffettiComputer"/>, e manda <see cref="ChiediEffetto"/>.</param>
+/// <param name="SceltaQualita">Il telefono accetta <see cref="Comando.Qualita"/> e la conferma in <see cref="StatoTelefono.Qualita"/>.</param>
 public sealed record Capacita(IReadOnlyList<string> Obiettivi, double ZoomMassimo, bool Torcia,
     double? IsoMinimo = null, double? IsoMassimo = null,
     IReadOnlyList<string>? Filtri = null, bool? Sfondo = null, bool? Pelle = null, bool? Inquadratura = null,
@@ -79,7 +82,7 @@ public sealed record Capacita(IReadOnlyList<string> Obiettivi, double ZoomMassim
     bool? Gobbo = null, bool? Audio = null, IReadOnlyList<FormatoSupportato>? Formati = null,
     bool? Specchia = null, bool? Pro = null, bool? SceltaCollegamento = null,
     IReadOnlyList<FormatoSupportato>? FormatiPro = null, IReadOnlyList<string>? SfondiPronti = null,
-    bool? Immagini = null, bool? Calore = null, bool? EffettiSulComputer = null) : Messaggio
+    bool? Immagini = null, bool? Calore = null, bool? EffettiSulComputer = null, bool? SceltaQualita = null) : Messaggio
 {
     public bool Equals(Capacita? altra) =>
         altra is not null && Obiettivi.SequenceEqual(altra.Obiettivi) && ZoomMassimo == altra.ZoomMassimo && Torcia == altra.Torcia
@@ -90,7 +93,7 @@ public sealed record Capacita(IReadOnlyList<string> Obiettivi, double ZoomMassim
         && Audio == altra.Audio && Uguali(Formati, altra.Formati) && Specchia == altra.Specchia
         && Pro == altra.Pro && SceltaCollegamento == altra.SceltaCollegamento && Uguali(FormatiPro, altra.FormatiPro)
         && Uguali(SfondiPronti, altra.SfondiPronti) && Immagini == altra.Immagini && Calore == altra.Calore
-        && EffettiSulComputer == altra.EffettiSulComputer;
+        && EffettiSulComputer == altra.EffettiSulComputer && SceltaQualita == altra.SceltaQualita;
 
     private static bool Uguali<T>(IReadOnlyList<T>? a, IReadOnlyList<T>? b) =>
         a is null ? b is null : b is not null && a.SequenceEqual(b);
@@ -120,13 +123,14 @@ public sealed record Capacita(IReadOnlyList<string> Obiettivi, double ZoomMassim
 /// <param name="Calore">Calore del viso, da 0 (colori della fotocamera) a 1; fuori dai limiti si porta al limite. Gratis.</param>
 /// <param name="EffettiSulComputer">Vero = il computer fa tutti gli effetti di immagine: il telefono spegne la sua
 /// pipeline effetti e manda il video della fotocamera così com'è (Protocollo.md, «Effetti sul computer»).</param>
+/// <param name="Qualita">La qualità del flusso (<see cref="LivelliQualita"/>); una sconosciuta vale "auto".</param>
 public sealed record Comando(string? Obiettivo = null, double? Zoom = null, bool? Torcia = null,
     double? Esposizione = null, int? Bianco = null, string? Fuoco = null, double? Iso = null, int? Tempo = null,
     string? Filtro = null, Regolazioni? Regolazioni = null, string? Sfondo = null, double? IntensitaSfondo = null,
     double? Pelle = null, bool? Inquadratura = null, bool? LuceVolto = null, Scritta? Scritta = null,
     bool? DoppiaVista = null, bool? Postura = null, bool? Audio = null, bool? Specchia = null,
     string? Collegamento = null, string? ImmagineSfondo = null, bool? TogliLogo = null, double? Calore = null,
-    bool? EffettiSulComputer = null) : Messaggio;
+    bool? EffettiSulComputer = null, string? Qualita = null) : Messaggio;
 
 /// <summary>Dal computer: lo stato degli effetti che fa lui, per i pulsanti del telefono (Protocollo.md, «Effetti sul computer»).</summary>
 /// <param name="Sfondo">Uno dei <see cref="ModiSfondo"/>; uno sconosciuto vale "nessuno".</param>
@@ -255,6 +259,24 @@ public static class PreferenzeCollegamento
     public const string Wifi = "wifi";
     public const string Cavo = "cavo";
     public static IReadOnlyList<string> Tutte { get; } = [Automatico, Wifi, Cavo];
+}
+
+/// <summary>
+/// La qualità del flusso video (<see cref="Comando.Qualita"/>, <see cref="StatoTelefono.Qualita"/>; Protocollo.md,
+/// «Qualità a scelta»). Una sconosciuta vale come "auto".
+/// </summary>
+public static class LivelliQualita
+{
+    /// <summary>Il bitrate segue la rete (come prima della scelta).</summary>
+    public const string Auto = "auto";
+    /// <summary>Bitrate più alto, che non scende sotto quello di Auto finché la rete regge.</summary>
+    public const string Alta = "alta";
+    /// <summary>Risoluzione e fps più alti dell'obiettivo, bitrate al massimo ragionevole.</summary>
+    public const string Massima = "massima";
+    public static IReadOnlyList<string> Tutti { get; } = [Auto, Alta, Massima];
+
+    /// <summary>Il livello da usare per un valore ricevuto: uno sconosciuto (o assente) vale "auto".</summary>
+    public static string Normalizza(string? valore) => valore is not null && Tutti.Contains(valore) ? valore : Auto;
 }
 
 /// <summary>Filtri del telefono. Un filtro sconosciuto si tratta come "naturale".</summary>

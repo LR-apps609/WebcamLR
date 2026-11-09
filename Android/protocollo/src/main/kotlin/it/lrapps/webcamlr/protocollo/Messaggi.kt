@@ -102,6 +102,8 @@ data class StatoTelefono(
     val luceSistema: Boolean? = null,
     /** Calore del viso attuale, da 0 (colori della fotocamera) a 1. */
     val calore: Double? = null,
+    /** La qualità del flusso in uso ([LivelliQualita]), dopo `comando.qualita` (Protocollo.md, «Qualità a scelta»). */
+    val qualita: String? = null,
 ) : Messaggio {
     override val tipo get() = "stato"
 }
@@ -163,6 +165,8 @@ data class Capacita(
      * e manda [ChiediEffetto] (Protocollo.md, «Effetti sul computer»).
      */
     val effettiSulComputer: Boolean? = null,
+    /** Il telefono accetta `comando.qualita` (Auto, Alta, Massima) e la conferma in `stato.qualita`. */
+    val sceltaQualita: Boolean? = null,
 ) : Messaggio {
     override val tipo get() = "capacita"
 }
@@ -217,6 +221,8 @@ data class Comando(
      * video della fotocamera così com'è (Protocollo.md, «Effetti sul computer»).
      */
     val effettiSulComputer: Boolean? = null,
+    /** La qualità del flusso ([LivelliQualita]); una sconosciuta vale "auto". Il telefono conferma in `stato.qualita`. */
+    val qualita: String? = null,
 ) : Messaggio {
     override val tipo get() = "comando"
 }
@@ -389,6 +395,23 @@ object PreferenzeCollegamento {
     val TUTTE = listOf(AUTOMATICO, WIFI, CAVO)
 }
 
+/**
+ * La qualità del flusso video (`comando.qualita`, `stato.qualita`; Protocollo.md, «Qualità a scelta»).
+ * Una sconosciuta vale come "auto".
+ */
+object LivelliQualita {
+    /** Il bitrate segue la rete (come prima della scelta). */
+    const val AUTO = "auto"
+    /** Bitrate più alto, che non scende sotto quello di Auto finché la rete regge. */
+    const val ALTA = "alta"
+    /** Risoluzione e fps più alti dell'obiettivo, bitrate al massimo ragionevole. */
+    const val MASSIMA = "massima"
+    val TUTTI = listOf(AUTO, ALTA, MASSIMA)
+
+    /** Il livello da usare per un valore ricevuto: uno sconosciuto (o assente) vale "auto". */
+    fun normalizza(valore: String?): String = if (valore != null && valore in TUTTI) valore else AUTO
+}
+
 /** Filtri del telefono. Un filtro sconosciuto si tratta come "naturale". */
 object Filtri {
     const val NATURALE = "naturale"
@@ -492,7 +515,7 @@ object CodificaMessaggi {
                 "immagineSfondo" to messaggio.immagineSfondo, "immaginePersonale" to messaggio.immaginePersonale,
                 "logo" to messaggio.logo,
                 "sfocaturaSistema" to messaggio.sfocaturaSistema, "luceSistema" to messaggio.luceSistema,
-                "calore" to messaggio.calore,
+                "calore" to messaggio.calore, "qualita" to messaggio.qualita,
             )
             is Ping -> mapOf("t" to messaggio.t)
             is Pong -> mapOf("t" to messaggio.t, "telefono" to messaggio.telefono)
@@ -514,6 +537,7 @@ object CodificaMessaggi {
                 },
                 "sfondiPronti" to messaggio.sfondiPronti, "immagini" to messaggio.immagini,
                 "calore" to messaggio.calore, "effettiSulComputer" to messaggio.effettiSulComputer,
+                "sceltaQualita" to messaggio.sceltaQualita,
             )
             is Comando -> mapOf(
                 "obiettivo" to messaggio.obiettivo, "zoom" to messaggio.zoom, "torcia" to messaggio.torcia,
@@ -527,6 +551,7 @@ object CodificaMessaggi {
                 "specchia" to messaggio.specchia, "collegamento" to messaggio.collegamento,
                 "immagineSfondo" to messaggio.immagineSfondo, "togliLogo" to messaggio.togliLogo,
                 "calore" to messaggio.calore, "effettiSulComputer" to messaggio.effettiSulComputer,
+                "qualita" to messaggio.qualita,
             )
             is InOnda -> mapOf("attivo" to messaggio.attivo, "app" to messaggio.app, "selezionato" to messaggio.selezionato)
             is Anteprima -> mapOf("visibile" to messaggio.visibile)
@@ -611,6 +636,7 @@ object CodificaMessaggi {
                 sfocaturaSistema = campi.booleanoOpzionale("sfocaturaSistema"),
                 luceSistema = campi.booleanoOpzionale("luceSistema"),
                 calore = campi.decimaleOpzionale("calore"),
+                qualita = campi.testoOpzionale("qualita"),
             )
             "ping" -> Ping(campi.naturale("t"))
             "pong" -> Pong(campi.naturale("t"), campi.naturale("telefono"))
@@ -641,6 +667,7 @@ object CodificaMessaggi {
                 immagini = campi.booleanoOpzionale("immagini"),
                 calore = campi.booleanoOpzionale("calore"),
                 effettiSulComputer = campi.booleanoOpzionale("effettiSulComputer"),
+                sceltaQualita = campi.booleanoOpzionale("sceltaQualita"),
             )
             "comando" -> Comando(
                 obiettivo = campi.testoOpzionale("obiettivo"),
@@ -668,6 +695,7 @@ object CodificaMessaggi {
                 togliLogo = campi.booleanoOpzionale("togliLogo"),
                 calore = campi.decimaleOpzionale("calore"),
                 effettiSulComputer = campi.booleanoOpzionale("effettiSulComputer"),
+                qualita = campi.testoOpzionale("qualita"),
             )
             "in-onda" -> InOnda(campi.booleano("attivo"), campi.testoOpzionale("app"), campi.booleanoOpzionale("selezionato"))
             "anteprima" -> Anteprima(campi.booleano("visibile"))

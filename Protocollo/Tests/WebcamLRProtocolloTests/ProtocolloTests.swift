@@ -289,6 +289,30 @@ final class ProtocolloTests: XCTestCase {
         XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(attesoStato.utf8)).messaggio(), .stato(stato))
     }
 
+    /// Lo stesso JSON di «QualitaComeNelDocumento» (C#) e «qualitaComeNelDocumento» (Kotlin): la qualità a scelta.
+    func testQualitaComeNelDocumento() throws {
+        let capacita = Capacita(obiettivi: ["principale"], zoomMassimo: 5, torcia: true, sceltaQualita: true)
+        let attesoCapacita = #"{"obiettivi":["principale"],"sceltaQualita":true,"tipo":"capacita","torcia":true,"zoomMassimo":5}"#
+        XCTAssertEqual(try json(.capacita(capacita)), attesoCapacita)
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(attesoCapacita.utf8)).messaggio(), .capacita(capacita))
+
+        let comando = Comando(qualita: LivelliQualita.alta)
+        let attesoComando = #"{"qualita":"alta","tipo":"comando"}"#
+        XCTAssertEqual(try json(.comando(comando)), attesoComando)
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(attesoComando.utf8)).messaggio(), .comando(comando))
+
+        let stato = StatoTelefono(batteria: 80, inCarica: true, temperatura: .normale, obiettivo: "principale",
+                                  qualita: LivelliQualita.massima)
+        let attesoStato = #"{"batteria":80,"inCarica":true,"obiettivo":"principale","qualita":"massima","temperatura":"normale","tipo":"stato"}"#
+        XCTAssertEqual(try json(.stato(stato)), attesoStato)
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(attesoStato.utf8)).messaggio(), .stato(stato))
+
+        // Un livello sconosciuto vale "auto"; senza campo, il telefono di prima.
+        XCTAssertEqual(LivelliQualita.normalizza("altissima"), LivelliQualita.auto)
+        XCTAssertEqual(LivelliQualita.normalizza(nil), LivelliQualita.auto)
+        XCTAssertEqual(LivelliQualita.normalizza("massima"), LivelliQualita.massima)
+    }
+
     /// Lo stesso JSON di «EffettiSulComputerComeNelDocumento» (C#) e «effettiSulComputerComeNelDocumento» (Kotlin).
     func testEffettiSulComputerComeNelDocumento() throws {
         let capacita = Capacita(obiettivi: ["frontale"], zoomMassimo: 5, torcia: false, effettiSulComputer: true)

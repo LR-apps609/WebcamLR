@@ -77,15 +77,15 @@ Nomi dei campi in italiano, `camelCase`. I valori enumerati sono stringhe minusc
 | `ciao` | telefono → computer | `versione`, `nome`, `piattaforma`, `versioneApp` | Primo messaggio, subito dopo la connessione |
 | `benvenuto` | computer → telefono | `versione`, `nome`, `piattaforma` | Risposta a `ciao`: il computer accetta |
 | `formato` | entrambe | `codec`, `larghezza`, `altezza`, `fps` | Dal computer: richiesta. Dal telefono: il formato effettivo che sta inviando |
-| `stato` | telefono → computer | `batteria`, `inCarica`, `temperatura`, `obiettivo`; facoltativi: gli effetti attuali (come in `comando`, da `filtro` ad `audio`), `pausa`, `gobbo`, `specchia`, i comandi della fotocamera attuali (`zoom`, `torcia`, `esposizione`, `bianco`, `iso`, `tempo`), `collegamento`, `immagineSfondo`, `immaginePersonale`, `logo`, `sfocaturaSistema`, `luceSistema`, `calore` | Ogni 5 secondi e a ogni cambiamento |
+| `stato` | telefono → computer | `batteria`, `inCarica`, `temperatura`, `obiettivo`; facoltativi: gli effetti attuali (come in `comando`, da `filtro` ad `audio`), `pausa`, `gobbo`, `specchia`, i comandi della fotocamera attuali (`zoom`, `torcia`, `esposizione`, `bianco`, `iso`, `tempo`), `collegamento`, `immagineSfondo`, `immaginePersonale`, `logo`, `sfocaturaSistema`, `luceSistema`, `calore`, `qualita` | Ogni 5 secondi e a ogni cambiamento |
 | `ping` | computer → telefono | `t` | Ogni secondo; `t` = orologio del computer in µs |
 | `pong` | telefono → computer | `t`, `telefono` | Risposta immediata: `t` copiato, `telefono` = orologio del telefono in µs |
 | `latenza` | computer → telefono | `ms` | Ogni secondo: la latenza misurata dal computer, da mostrare anche sul telefono |
-| `capacita` | telefono → computer | `obiettivi`, `zoomMassimo`, `torcia`, `isoMinimo`, `isoMassimo`; facoltativi: `filtri`, `sfondo`, `pelle`, `inquadratura`, `luceVolto`, `scritta`, `doppiaVista`, `postura`, `gobbo`, `audio`, `formati`, `specchia`, `pro`, `sceltaCollegamento`, `formatiPro`, `sfondiPronti`, `immagini`, `calore`, `effettiSulComputer` | Dopo `benvenuto`, a ogni cambio di obiettivo e a ogni cambio di stato dell'acquisto: cosa il computer può comandare |
+| `capacita` | telefono → computer | `obiettivi`, `zoomMassimo`, `torcia`, `isoMinimo`, `isoMassimo`; facoltativi: `filtri`, `sfondo`, `pelle`, `inquadratura`, `luceVolto`, `scritta`, `doppiaVista`, `postura`, `gobbo`, `audio`, `formati`, `specchia`, `pro`, `sceltaCollegamento`, `formatiPro`, `sfondiPronti`, `immagini`, `calore`, `effettiSulComputer`, `sceltaQualita` | Dopo `benvenuto`, a ogni cambio di obiettivo e a ogni cambio di stato dell'acquisto: cosa il computer può comandare |
 | `in-onda` | computer → telefono | `attivo`, `app` (facoltativo), `selezionato` (facoltativo) | Un'app sta usando la webcam virtuale: il telefono mostra il rosso «IN ONDA» (regola dei colori della bozza). `selezionato`: vedi *Più telefoni: la prospettiva* |
 | `usa-prospettiva` | telefono → computer | — | Il telefono chiede di andare nella webcam (vedi *Più telefoni: la prospettiva*) |
 | `anteprima` | computer → telefono | `visibile` | La finestra del computer mostra il video (vedi *Pausa intelligente*) |
-| `comando` | computer → telefono | tutti facoltativi: `obiettivo`, `zoom`, `torcia`, `esposizione`, `bianco`, `fuoco`, `iso`, `tempo`; effetti: `filtro`, `regolazioni`, `sfondo`, `intensitaSfondo`, `pelle`, `inquadratura`, `luceVolto`, `scritta`, `doppiaVista`, `postura`, `calore`; `audio`; `specchia`; `collegamento`; `immagineSfondo`, `togliLogo`; `effettiSulComputer` | Comandi della fotocamera e degli effetti dal computer; si applicano solo i campi presenti |
+| `comando` | computer → telefono | tutti facoltativi: `obiettivo`, `zoom`, `torcia`, `esposizione`, `bianco`, `fuoco`, `iso`, `tempo`; effetti: `filtro`, `regolazioni`, `sfondo`, `intensitaSfondo`, `pelle`, `inquadratura`, `luceVolto`, `scritta`, `doppiaVista`, `postura`, `calore`; `audio`; `specchia`; `collegamento`; `immagineSfondo`, `togliLogo`; `effettiSulComputer`; `qualita` | Comandi della fotocamera e degli effetti dal computer; si applicano solo i campi presenti |
 | `effetti` | computer → telefono | `specchia`, `sfondo`, `luceVolto` | Lo stato degli effetti fatti dal computer, per i pulsanti del telefono (vedi *Effetti sul computer*) |
 | `chiedi-effetto` | telefono → computer | tutti facoltativi: `specchia`, `sfondo`, `luceVolto` | Un tocco su un pulsante del telefono: il computer applica e risponde con `effetti` (vedi *Effetti sul computer*) |
 | `gobbo` | computer → telefono | tutti facoltativi: `testo`, `velocita`, `attivo`, `dimensione`, `posizione` | Il gobbo sul telefono (vedi *Gobbo*); si applicano solo i campi presenti |
@@ -109,7 +109,7 @@ Valori:
 - `iso`: sensibilità manuale, entro `isoMinimo`–`isoMassimo`; 0 = automatica
 - `tempo`: tempo di posa manuale come denominatore (60 = 1/60 di secondo); 0 = automatico. Con `iso` e `tempo` entrambi a 0 si torna all'esposizione automatica. Il telefono non supera mai la durata di un fotogramma: un tempo più lungo diventa il tempo senza bande più lungo che sta nel fotogramma (luci a 50 Hz: a 30 fps 1/50, a 60 fps 1/100; a 60 Hz: 1/30, 1/60), e i fotogrammi al secondo non cambiano. In `stato.tempo` il telefono manda il valore richiesto. Il computer propone tempi multipli di 1/100 s (1/25, 1/50, 1/100), che con le luci a 50 Hz non fanno bande
 
-Tutti i campi aggiunti dopo la prima versione 2 (effetti, `pausa`, `gobbo`, `formati`, `formatiPro`, `audio`, `specchia`, `pro`, `collegamento`, `sceltaCollegamento`, `in-onda.selezionato`, il messaggio `usa-prospettiva`, i comandi della fotocamera in `stato`, i messaggi `anteprima`, `gobbo`, `formato-audio`, `immagineSfondo`, `togliLogo`, `immaginePersonale`, `logo`, `sfondiPronti`, `immagini`, `sfocaturaSistema`, `luceSistema`, `calore`, `effettiSulComputer`, i messaggi `effetti` e `chiedi-effetto`, il messaggio `chiedi-chiave`) sono **facoltativi**: chi non li conosce li ignora, chi li aspetta e non li riceve fa come se l'altro non li sapesse fare. I campi a `null` non si scrivono mai: per «togliere» qualcosa si manda un valore esplicito (es. la scritta con il nome vuoto). Un valore enumerato sconosciuto non è mai un errore: vedi *Valori sconosciuti*.
+Tutti i campi aggiunti dopo la prima versione 2 (effetti, `pausa`, `gobbo`, `formati`, `formatiPro`, `audio`, `specchia`, `pro`, `collegamento`, `sceltaCollegamento`, `in-onda.selezionato`, il messaggio `usa-prospettiva`, i comandi della fotocamera in `stato`, i messaggi `anteprima`, `gobbo`, `formato-audio`, `immagineSfondo`, `togliLogo`, `immaginePersonale`, `logo`, `sfondiPronti`, `immagini`, `sfocaturaSistema`, `luceSistema`, `calore`, `effettiSulComputer`, i messaggi `effetti` e `chiedi-effetto`, il messaggio `chiedi-chiave`, `qualita` e `sceltaQualita`) sono **facoltativi**: chi non li conosce li ignora, chi li aspetta e non li riceve fa come se l'altro non li sapesse fare. I campi a `null` non si scrivono mai: per «togliere» qualcosa si manda un valore esplicito (es. la scritta con il nome vuoto). Un valore enumerato sconosciuto non è mai un errore: vedi *Valori sconosciuti*.
 
 Quando lo stesso telefono (stesso `nome` nel `ciao`) si ricollega, il computer gli rimanda in un solo `comando` zoom, torcia, esposizione, bianco, `iso` e `tempo` che sta mostrando: la sessione sul telefono può essere nuova e ripartita in automatico. Un telefono diverso parte con i comandi del computer azzerati.
 
@@ -138,6 +138,7 @@ Le versioni nuove possono aggiungere messaggi, campi e valori. Chi non li conosc
   - `immagineSfondo` → il primo degli `sfondiPronti` (anche `personale` quando il telefono non ha un'immagine personale)
   - `uso` di un pacchetto immagine (tipo 4) sconosciuto: il pacchetto si scarta
   - `codec` in `formato-audio` diverso da `aac-lc`: il computer non riproduce quell'audio
+  - `qualita` (in `comando` e in `stato`) → `auto`
   - `comando.collegamento` → `automatico`; in `stato.collegamento`: `attivo` e `tipo` sconosciuti si mostrano come «Collegato» (o la strada si salta nel menu), `preferenza` sconosciuta come `automatico`
 - Messaggio che non si riesce a leggere (JSON non valido, campo obbligatorio mancante o del tipo sbagliato) **dopo** la `prova`: si salta solo quel messaggio. Prima (la `stretta`, la `prova`) qualsiasi errore chiude la connessione, come un pacchetto di tipo sconosciuto o un pacchetto cifrato che non torna.
 
@@ -185,6 +186,42 @@ Il Pro si compra **sull'iPhone** (acquisto in-app, una volta sola, senza account
 - `formatiPro`: stessa forma; solo gratis, i formati in più che servirebbe il Pro per avere (vedi «WebcamLR Pro»)
 - Con il 4K conviene `hevc`. Il bitrate base sale in proporzione ai pixel e agli fps (vedi `AdattamentoRete`).
 - Dalla 1.14 il computer chiede il 4K solo a 30 fps e in `hevc` (se il telefono non lo sa fare risponde con il formato vero); il formato di partenza è 1920×1080 a 30.
+
+## Qualità a scelta (dal 9 novembre)
+
+Oltre alla qualità che segue la rete (**Auto**, quella di sempre) il computer può chiedere al telefono un flusso più ricco: **Alta** o **Massima**. Riguarda solo il video dal telefono al computer: risoluzione, fps e bitrate del codificatore del telefono.
+
+**Dove si sceglie: sul computer**, nel menu della qualità video (l'etichetta sul video), sotto le risoluzioni. È la stessa regola di `formato`: dal 27 ottobre la qualità si sceglie solo sul computer, il telefono la mostra e basta. Così c'è un solo posto per tutte le scelte del video, il computer che riceve è quello che sa quanto può decodificare (HEVC, 4K), e con due telefoni la scelta vale per entrambi senza doverla ripetere su ognuno.
+
+- `capacita.sceltaQualita`: vero = il telefono accetta `comando.qualita`. Assente o falso (telefono vecchio): il computer non mostra la scelta e il telefono resta in Auto.
+- `comando.qualita` (computer → telefono): `auto`, `alta` o `massima` (`LivelliQualita`); un valore sconosciuto vale `auto`. Il telefono la applica **dal vivo**: il bitrate cambia sulla sessione di codifica che va, senza fermare il video. Solo entrare in `massima` o uscirne può cambiare risoluzione e fps: allora, come sempre, nuovo `formato` e fotogramma chiave.
+- `stato.qualita` (telefono → computer): il livello in uso, **l'unica fonte di verità** per la spunta del computer (come `specchia`). Il telefono manda subito uno `stato` quando cambia.
+- Vale per la sessione: il telefono non la salva e a ogni collegamento riparte da `auto`. La salva il computer (una scelta per computer, non per telefono) e la rimanda, se non è `auto`, alla prima `capacita` con `sceltaQualita` di ogni sessione.
+- **WebcamLR Pro**: la scelta è gratis, il bitrate non è tra le cose del Pro. Restano i limiti di sempre sulla risoluzione: con un telefono gratis Massima va a 720p 30 (il più alto dei `formati` gratis), con il bitrate di Massima.
+
+| | Auto | Alta | Massima |
+| --- | --- | --- | --- |
+| Risoluzione e fps | quelli chiesti con `formato` (di serie 1080p 30 con Pro, 720p 30 senza) | come Auto | i più alti dell'obiettivo attuale tra i `formati`: più pixel e, a parità, più fps (4K 30, altrimenti 1080p 60, …) |
+| Bitrate di riferimento, H.264 a 30 fps | 720p 8, 1080p 16, 4K 40 Mbit/s | × 1,5: 720p 12, 1080p 24, 4K 60 Mbit/s | × 2: 720p 16, 1080p 32, 4K 80 Mbit/s |
+| Correzioni (tutti i livelli) | 60 fps × 1,5; HEVC × 0,65; cavo (USB o di rete) × 1,5 | come Auto | come Auto |
+| Tetto | 80 Mbit/s | 80 Mbit/s | 80 Mbit/s |
+| Rete che non regge (scarti o rete satura) | −30% al secondo, fino a un quinto (mai sotto 500 kbit/s) | −30% al secondo fino al bitrate di Auto (2/3); sotto solo dopo 3 secondi di fila che la rete non regge nemmeno quello, poi come Auto | come Alta (soglia: metà, cioè il bitrate di Auto) |
+| Risalita | +10% della qualità scelta ogni 3 secondi puliti | come Auto | come Auto |
+
+Esempi con le correzioni: 1080p 60 in H.264 in Wi-Fi è 24 / 36 / 48 Mbit/s; 4K 30 in HEVC in Wi-Fi 26 / 39 / 52 Mbit/s, sul cavo 39 / 58,5 / 78 Mbit/s. «Rete debole» per il telefono vuol dire bitrate sotto il 60% di quello di Auto, a ogni livello.
+
+**Massima e `formato`:**
+
+- Il telefono rifà la scelta della risoluzione più alta a ogni cambio di obiettivo, di Pro o di `formati`. Calore e batteria valgono come sempre, dopo: Massima non scavalca la protezione dal calore.
+- Il **codec** resta quello dell'ultimo `formato` chiesto dal computer (il computer sa cosa decodifica), H.264 se non ne ha chiesto nessuno. Per questo il computer, scegliendo Massima, chiede **prima** con `formato` la scelta più alta del suo menu (in HEVC per il 4K) e **poi** manda `comando.qualita`: il telefono si riconfigura una volta sola. Lo stesso a ogni sessione nuova, quando rimanda la scelta salvata.
+- Con `massima` un `formato` dal computer si tiene (vale tornando ad Auto o Alta) ma la risoluzione e gli fps non si applicano; il codec sì. Il telefono risponde con il `formato` che invia davvero.
+- Scegliere una risoluzione dal menu mentre è in Massima porta il computer ad Alta: prima `formato`, poi `comando.qualita: "alta"`.
+
+```json
+{"tipo":"capacita","obiettivi":["principale"],"zoomMassimo":5,"torcia":true,"sceltaQualita":true}
+{"tipo":"comando","qualita":"alta"}
+{"tipo":"stato","batteria":80,"inCarica":true,"temperatura":"normale","obiettivo":"principale","qualita":"massima"}
+```
 
 ## Effetti (pacchetto funzioni)
 

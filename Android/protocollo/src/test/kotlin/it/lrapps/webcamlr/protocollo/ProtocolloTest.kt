@@ -362,6 +362,30 @@ class ProtocolloTest {
         assertEquals(stato, decodifica(attesoStato))
     }
 
+    /** Lo stesso JSON di «testQualitaComeNelDocumento» (Swift) e «QualitaComeNelDocumento» (C#): la qualità a scelta. */
+    @Test
+    fun qualitaComeNelDocumento() {
+        val capacita = Capacita(listOf("principale"), 5.0, true, sceltaQualita = true)
+        val attesoCapacita = """{"obiettivi":["principale"],"sceltaQualita":true,"tipo":"capacita","torcia":true,"zoomMassimo":5}"""
+        assertEquals(attesoCapacita, json(capacita))
+        assertEquals(capacita, decodifica(attesoCapacita))
+
+        val comando = Comando(qualita = LivelliQualita.ALTA)
+        val attesoComando = """{"qualita":"alta","tipo":"comando"}"""
+        assertEquals(attesoComando, json(comando))
+        assertEquals(comando, decodifica(attesoComando))
+
+        val stato = StatoTelefono(80, true, Temperatura.NORMALE, "principale", qualita = LivelliQualita.MASSIMA)
+        val attesoStato = """{"batteria":80,"inCarica":true,"obiettivo":"principale","qualita":"massima","temperatura":"normale","tipo":"stato"}"""
+        assertEquals(attesoStato, json(stato))
+        assertEquals(stato, decodifica(attesoStato))
+
+        // Un livello sconosciuto vale "auto"; senza campo, il telefono di prima.
+        assertEquals(LivelliQualita.AUTO, LivelliQualita.normalizza("altissima"))
+        assertEquals(LivelliQualita.AUTO, LivelliQualita.normalizza(null))
+        assertEquals(LivelliQualita.MASSIMA, LivelliQualita.normalizza("massima"))
+    }
+
     /** Lo stesso JSON di «testEffettiSulComputerComeNelDocumento» (Swift) e «EffettiSulComputerComeNelDocumento» (C#). */
     @Test
     fun effettiSulComputerComeNelDocumento() {

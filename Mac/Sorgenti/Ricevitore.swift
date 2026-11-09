@@ -24,6 +24,9 @@ final class Ricevitore {
     /// Con l'ultima pausa «sottofondo» (Protocollo.md, «Pausa intelligente»): quanto si aspetta il telefono, muto
     /// o caduto, prima di dimenticarlo. Lo stesso tempo chiude la sessione muta (`SessioneComputer.silenzioSottofondo`).
     static let attesaSottofondo: Duration = .seconds(600)
+    /// Dopo l'`arrivederci` del telefono: quanto si aspetta l'altra strada dello stesso telefono (dal cavo al Wi-Fi)
+    /// prima di toglierlo come con «Scollega» (collaudo 34, `AttesaAltraStrada` su Windows).
+    static let attesaAltraStrada: Duration = .seconds(2)
 
     /// Quanti telefoni diversi insieme (P21). Il codice regge di più; per ora due.
     nonisolated static let massimoTelefoni = 2
@@ -2501,7 +2504,7 @@ final class Ricevitore {
                         ? String(localized: "\(telefono.telefono.nome) di nuovo collegato") : nil)
             telefono.collegamento = .collegato
             aggiornaStatoInOnda(telefono)
-        case .chiusa:
+        case .chiusa(let dalTelefono):
             telefono.sessione = nil
             telefono.formatoTelefono = nil
             telefono.formatoChiesto = nil
@@ -2513,13 +2516,31 @@ final class Ricevitore {
                 microfono.ferma()
             }
             registra(String(localized: "Collegamento chiuso"), di: telefono,
-                     annuncio: scelto && !telefono.inSottofondo && telefono.collegamento != .riconnessione
+                     annuncio: scelto && !dalTelefono && !telefono.inSottofondo && telefono.collegamento != .riconnessione
                         ? String(localized: "Riconnessione in corso…") : nil)
             chiusaSessione(identita)
             telefono.collegamento = .riconnessione
-            riprendiCavoPerPreferenza(String(localized: "Il Wi-Fi non risponde: provo con il cavo USB"), di: telefono)
+            // Un telefono che se ne va da sé non si riprende dal cavo messo in pausa per la sua preferenza Wi-Fi.
+            if !dalTelefono {
+                riprendiCavoPerPreferenza(String(localized: "Il Wi-Fi non risponde: provo con il cavo USB"), di: telefono)
+            }
             telefono.statistiche.fps = 0
             telefono.statistiche.megabitAlSecondo = 0
+            telefono.compitoAttesa?.cancel()
+            if dalTelefono {
+                // L'`arrivederci` del telefono è voluto (Scollega sul telefono, un altro computer): niente 15 secondi di
+                // «Riconnessione» né «Telefono perso». Si aspetta solo un attimo l'altra strada (l'iPhone lascia il cavo
+                // per il Wi-Fi con un arrivederci), poi si toglie come con «Scollega»: con due telefoni l'altro va
+                // subito nella webcam (collaudo 34, come Windows).
+                telefono.compitoAttesa = Task { [weak self, weak telefono] in
+                    try? await Task.sleep(for: Self.attesaAltraStrada)
+                    guard let self, let telefono, !Task.isCancelled, telefono.sessione == nil,
+                          self.telefoni.contains(where: { $0 === telefono }) else { return }
+                    self.registra(String(localized: "«\(telefono.telefono.nome)» scollegato dal telefono"), di: telefono)
+                    self.dimentica(telefono)
+                }
+                return
+            }
             // In sottofondo la pausa resta a schermo (scheda, finestra, webcam) e il telefono ha 10 minuti dall'inizio
             // della pausa per tornare; altrimenti i soliti 15 secondi.
             let sottofondo = telefono.inSottofondo
@@ -2529,7 +2550,6 @@ final class Ricevitore {
                 attesa = max(Self.attesaSottofondo - passato, Self.attesaRiconnessione)
                 registra(String(localized: "Il telefono è in sottofondo: lo aspetto fino a 10 minuti"), di: telefono)
             }
-            telefono.compitoAttesa?.cancel()
             telefono.compitoAttesa = Task { [weak self, weak telefono] in
                 try? await Task.sleep(for: attesa)
                 guard let self, let telefono, !Task.isCancelled, telefono.sessione == nil else { return }

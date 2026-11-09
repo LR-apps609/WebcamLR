@@ -53,7 +53,10 @@ final class SessioneComputer: @unchecked Sendable {
         /// Nessun dato da 3 secondi.
         case silenzio
         case ripresa
-        case chiusa
+        /// La sessione è finita. `dalTelefono`: l'ha chiusa il telefono con l'`arrivederci` (Scollega sul telefono, un
+        /// altro computer, o il passaggio dal cavo al Wi-Fi): non è una caduta di rete (collaudo 34, come
+        /// `SessioneComputer.ChiusaDalTelefono` su Windows).
+        case chiusa(dalTelefono: Bool)
         /// Il primo fotogramma è a schermo (1.11): «Avvio: 0,9 s» e la riga con le tappe per il registro.
         case avvio(testo: String, riga: String)
         /// Il telefono (CAM 2) chiede di andare nella webcam (`usa-prospettiva`).
@@ -147,6 +150,8 @@ final class SessioneComputer: @unchecked Sendable {
     private var inSilenzio = false
     /// L'ultimo `stato` diceva pausa «sottofondo». Solo sulla coda della sessione.
     private var inSottofondo = false
+    /// È arrivato l'`arrivederci` del telefono (collaudo 34). Solo sulla coda della sessione.
+    private var arrivederciDalTelefono = false
     /// La sessione stessa, dopo `chiudi()`, finché il trasporto non è finito: il `Ricevitore` la lascia subito,
     /// ma l'evento `chiusa` deve arrivare lo stesso (il cavo USB lo aspetta per riprovare o mettersi in pausa).
     /// Solo sulla coda della sessione; si toglie in `termina()`.
@@ -403,6 +408,7 @@ final class SessioneComputer: @unchecked Sendable {
             self.formatoAudio = formatoAudio
             if mandaAlMicrofono() { microfono.imposta(formato: formatoAudio) }
         case .arrivederci:
+            arrivederciDalTelefono = true
             trasporto.annulla()
         default:
             break
@@ -470,6 +476,7 @@ final class SessioneComputer: @unchecked Sendable {
             // fidati: nei limiti prima di tutto, come su Windows (ValoriSicuri.Sanifica).
             accetta(Self.pulito(ciao), sicura: sicura)
         case .arrivederci:
+            arrivederciDalTelefono = true
             trasporto.annulla()
         default:
             // Senza prova non si accetta nient'altro; in attesa della conferma il resto
@@ -700,7 +707,7 @@ final class SessioneComputer: @unchecked Sendable {
         scadenzaConferma?.cancel()
         scadenzaConferma = nil
         ciaoInAttesa = nil
-        notifica(.chiusa)
+        notifica(.chiusa(dalTelefono: arrivederciDalTelefono))
         trattenuta = nil
     }
 

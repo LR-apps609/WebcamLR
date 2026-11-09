@@ -7744,6 +7744,16 @@
         }
       }
     },
+    "«%@» scollegato dal telefono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” disconnected on the phone"
+          }
+        }
+      }
+    },
     "«%@» usa il Grandangolo 0,5× posteriore: gira il telefono con la fotocamera posteriore verso di te." : {
       "localizations" : {
         "en" : {

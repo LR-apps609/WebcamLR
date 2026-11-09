@@ -972,6 +972,12 @@
                                                     <ComboBoxItem x:Uid="VoceSfondoSfocato" Tag="sfocato" />
                                                     <ComboBoxItem x:Name="VoceSfondoSostituito" x:Uid="VoceSfondoSostituito" Tag="sostituito" />
                                                 </ComboBox>
+                                                <!-- Qualità 7 e 8: con lo sfondo sfocato (e gli effetti sul PC) lo stile: Normale, Obiettivo (bokeh), Mosaico. Gratis. -->
+                                                <ComboBox x:Name="SceltaStileSfocatura" x:Uid="SceltaStileSfocatura" HorizontalAlignment="Stretch" SelectionChanged="SuStileSfocatura" Visibility="Collapsed">
+                                                    <ComboBoxItem x:Uid="VoceStileNormale" Tag="normale" />
+                                                    <ComboBoxItem x:Uid="VoceStileBokeh" Tag="bokeh" />
+                                                    <ComboBoxItem x:Uid="VoceStileMosaico" Tag="mosaico" />
+                                                </ComboBox>
                                                 <StackPanel x:Name="NotaSfondoPro" Orientation="Horizontal" Spacing="{StaticResource SpazioFine}" Visibility="Collapsed">
                                                     <local:SegnoPro VerticalAlignment="Top" Margin="{StaticResource MargineSopraMinuscolo}" />
                                                     <TextBlock x:Uid="SostituitoWebcamLRProSi" TextWrapping="Wrap" FontSize="{StaticResource MisuraNota}" MaxWidth="230" Foreground="{ThemeResource TestoSecondario}" />

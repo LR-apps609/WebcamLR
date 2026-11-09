@@ -46,8 +46,11 @@ public class ComposizioneTest(ITestOutputHelper uscita)
                 {
                     float? colore = piano.ColorePersona is { } c ? Bilineare(c.Dati, c.Larghezza, c.Altezza, 4, k, x, y, l, a) : null;
                     float? sfondo = piano.SfondoMorbido is { } s ? Bilineare(s.Dati, s.Larghezza, s.Altezza, 4, k, x, y, l, a) : null;
-                    var v = RegoleBordo.Canale(src.Dati[(y * l + x) * 4 + k], alfa,
-                        Bilineare(fondo.Dati, fondo.Larghezza, fondo.Altezza, 4, k, x, y, l, a), colore, piano.Calore?[2 - k], sfondo, morbida);
+                    // Mosaico: il quadretto ⌊x · colonne / L⌋, ⌊y · righe / A⌋, senza ingrandimento bilineare.
+                    var valoreFondo = piano.FondoAQuadretti
+                        ? fondo.Dati[((y * fondo.Altezza / a) * fondo.Larghezza + x * fondo.Larghezza / l) * 4 + k]
+                        : Bilineare(fondo.Dati, fondo.Larghezza, fondo.Altezza, 4, k, x, y, l, a);
+                    var v = RegoleBordo.Canale(src.Dati[(y * l + x) * 4 + k], alfa, valoreFondo, colore, piano.Calore?[2 - k], sfondo, morbida);
                     uscita.Dati[(y * l + x) * 4 + k] = (byte)Math.Clamp(Math.Floor(v + 0.5), 0, 255);
                 }
                 uscita.Dati[(y * l + x) * 4 + 3] = 255;
@@ -69,17 +72,19 @@ public class ComposizioneTest(ITestOutputHelper uscita)
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void IlProcessoreFaIContiDelloShader(bool sostituito)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public void IlProcessoreFaIContiDelloShader(bool sostituito, bool quadretti)
     {
         // Gli stessi conti di Composizione.hlsl (RegoleBordo.Canale con il bilineare in virgola mobile): il processore
-        // arrotonda i valori ingranditi ai byte, quindi al massimo 2 di differenza.
-        var piano = PianoDiProva.Crea(320, 180, sostituito);
+        // arrotonda i valori ingranditi ai byte, quindi al massimo 2 di differenza. Il mosaico prende il quadretto «al più
+        // vicino» con gli stessi interi dello shader.
+        var piano = PianoDiProva.Crea(320, 180, sostituito, quadretti);
         var cpu = new ImmagineBgra(320, 180);
         new ComposizioneProcessore().Componi(piano, cpu);
         var (massima, media) = PianoDiProva.Differenza(cpu, Riferimento(piano));
-        uscita.WriteLine($"{(sostituito ? "sostituito" : "sfocato")}: differenza massima {massima}, media {media:0.000}");
+        uscita.WriteLine($"{(sostituito ? "sostituito" : quadretti ? "mosaico" : "sfocato")}: differenza massima {massima}, media {media:0.000}");
         Assert.InRange(massima, 0, 2);
         Assert.InRange(media, 0, 0.3);
     }
@@ -387,21 +392,21 @@ public class ComposizioneTest(ITestOutputHelper uscita)
             uscita.WriteLine($"niente scheda video qui: {errore.Message}");
             return;
         }
-        // Su Windows (anche la CI, con WARP): Crea compila lo shader e si verifica; poi tre fotogrammi a 1080p contro il
-        // processore, con i tempi.
+        // Su Windows (anche la CI, con WARP): Crea compila lo shader e si verifica; poi tre fotogrammi a 1080p (sfocato,
+        // sostituito, mosaico) contro il processore, con i tempi.
         using var gpu = ComposizioneSchedaVideo.Crea(ancheSoftware: true);
         uscita.WriteLine(gpu.Descrizione);
         var cpu = new ComposizioneProcessore();
-        foreach (var sostituito in new[] { false, true })
+        foreach (var (sostituito, quadretti) in new[] { (false, false), (true, false), (false, true) })
         {
-            var piano = PianoDiProva.Crea(1920, 1080, sostituito);
+            var piano = PianoDiProva.Crea(1920, 1080, sostituito, quadretti);
             var attesa = new ImmagineBgra(1920, 1080);
             var ottenuta = new ImmagineBgra(1920, 1080);
             cpu.Componi(piano, attesa);
             var orologio = System.Diagnostics.Stopwatch.StartNew();
             for (var i = 0; i < 3; i++) gpu.Componi(piano, ottenuta);
             var (massima, media) = PianoDiProva.Differenza(attesa, ottenuta);
-            uscita.WriteLine($"{(sostituito ? "sostituito" : "sfocato")}: {orologio.Elapsed.TotalMilliseconds / 3:0.0} ms per fotogramma, " +
+            uscita.WriteLine($"{(sostituito ? "sostituito" : quadretti ? "mosaico" : "sfocato")}: {orologio.Elapsed.TotalMilliseconds / 3:0.0} ms per fotogramma, " +
                              $"differenza massima {massima}, media {media:0.000}");
             Assert.InRange(massima, 0, ComposizioneSchedaVideo.DifferenzaMassima);
             Assert.InRange(media, 0, ComposizioneSchedaVideo.DifferenzaMediaMassima);

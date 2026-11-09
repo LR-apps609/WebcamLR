@@ -9,6 +9,7 @@ using Windows.Graphics.Imaging;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using Windows.Storage.Streams;
+using WebcamLR.Effetti;
 using WebcamLR.Protocollo;
 using WebcamLR.Ricevitore;
 
@@ -21,6 +22,8 @@ namespace WebcamLR;
 /// Poi «Carica logo…» e «Togli logo» accanto alla scritta. Il telefono fa il lavoro: il PC riduce l'immagine, ne tiene una
 /// copia (MemoriaImmagini) e la manda con il pacchetto tipo 4, solo a un telefono con <c>capacita.immagini</c>.
 /// Sfondi, immagine e logo sono di WebcamLR Pro; la sfocatura resta gratis. La logica è in Ricevitore/Sfondi.cs.
+/// Con gli effetti sul PC (Qualità 7 e 8) il menu ha anche lo stile della sfocatura (Normale, Obiettivo, Mosaico: gratis
+/// come la sfocatura) e «Schermo verde» per il chroma key (uno sfondo sostituito: di Pro come gli sfondi).
 /// </summary>
 public sealed partial class MainWindow
 {
@@ -80,11 +83,34 @@ public sealed partial class MainWindow
             menu.Items.Add(voce);
             livelli.Add((voce, livello));
         }
+        // Qualità 7 e 8: lo stile della sfocatura, solo con gli effetti sul PC (il telefono sa fare solo la normale).
+        var stili = new List<(ToggleMenuFlyoutItem Voce, string Stile)>();
+        if (SulComputer)
+        {
+            menu.Items.Add(new MenuFlyoutSeparator());
+            menu.Items.Add(new MenuFlyoutItem { Text = Testi.T("Sfondo_Stile"), IsEnabled = false });
+            foreach (var stile in StiliSfocatura.Tutti)
+            {
+                var voce = new ToggleMenuFlyoutItem { Text = NomiEffetti.StileSfocatura(stile) };
+                voce.Click += (_, _) => ScegliStileSfocatura(stile);
+                menu.Items.Add(voce);
+                stili.Add((voce, stile));
+            }
+        }
         menu.Items.Add(new MenuFlyoutSeparator());
         var sfondi = new MenuFlyoutItem { Icon = new FontIcon { Glyph = "" }, KeyboardAcceleratorTextOverride = "›" };
         // Il menu si chiude con il clic: le miniature si aprono subito dopo, accanto al pulsante.
         sfondi.Click += (_, _) => coda.TryEnqueue(() => flyoutSfondi?.ShowAt(PulsanteSfondoVideo));
         menu.Items.Add(sfondi);
+        // «Schermo verde»: il verde pieno per il chroma key di OBS e simili. Senza Pro apre la spiegazione di Pro.
+        var verde = new ToggleMenuFlyoutItem { Visibility = Visibile(SulComputer) };
+        ToolTipService.SetToolTip(verde, Testi.T("Sfondo_SchermoVerdeAiuto"));
+        verde.Click += (_, _) =>
+        {
+            if (BloccoPro) _ = ApriProAsync();
+            else ScegliImmagineSfondo(SfondoVerde.Id);
+        };
+        menu.Items.Add(verde);
         menu.Opening += (_, _) =>
         {
             var valori = effetti.Valori;
@@ -99,7 +125,14 @@ public sealed partial class MainWindow
                 voce.IsEnabled = !sistema;
                 ToolTipService.SetToolTip(voce, sistema ? Testi.T("Effetti_SiRegolaSulTelefono") : null);
             }
+            foreach (var (voce, stile) in stili)
+            {
+                voce.IsChecked = valori.SfondoSfocato && StiliSfocatura.Valido(valori.Sfocatura) == stile;
+                voce.IsEnabled = !sistema;
+            }
             sfondi.Text = BloccoPro ? Testi.T("Sfondo_SfondiPro") : Testi.T("Sfondo_Sfondi");
+            verde.Text = BloccoPro ? Testi.T("Sfondo_SchermoVerdePro") : RegoleSfondo.Nome(SfondoVerde.Id);
+            verde.IsChecked = !BloccoPro && RegoleSfondo.ImmagineAttuale(valori, ProntiDelTelefono) == SfondoVerde.Id;
         };
         return menu;
     }

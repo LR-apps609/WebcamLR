@@ -1013,4 +1013,16 @@
   <data name="QualitaScelta_NotaMassima" xml:space="preserve">
     <value>il massimo del telefono</value>
   </data>
+  <data name="Sfocatura_Normale" xml:space="preserve">
+    <value>Normale</value>
+  </data>
+  <data name="Sfocatura_Bokeh" xml:space="preserve">
+    <value>Obiettivo (bokeh)</value>
+  </data>
+  <data name="Sfocatura_Mosaico" xml:space="preserve">
+    <value>Mosaico</value>
+  </data>
+  <data name="SfondoPronto_SchermoVerde" xml:space="preserve">
+    <value>Schermo verde</value>
+  </data>
 </root>

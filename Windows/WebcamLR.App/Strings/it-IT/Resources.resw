@@ -2078,4 +2078,34 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
   <data name="Registro_QualitaChiesta" xml:space="preserve">
     <value>Qualità chiesta a «{0}»: {1}</value>
   </data>
+  <data name="SceltaStileSfocatura.Header" xml:space="preserve">
+    <value>Stile della sfocatura</value>
+  </data>
+  <data name="VoceStileNormale.Content" xml:space="preserve">
+    <value>Normale</value>
+  </data>
+  <data name="VoceStileBokeh.Content" xml:space="preserve">
+    <value>Obiettivo (bokeh)</value>
+  </data>
+  <data name="VoceStileMosaico.Content" xml:space="preserve">
+    <value>Mosaico</value>
+  </data>
+  <data name="Sfondo_Stile" xml:space="preserve">
+    <value>Stile</value>
+  </data>
+  <data name="Sfondo_StileLivello" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
+  <data name="Sfondo_SchermoVerdeTitolo" xml:space="preserve">
+    <value>Chroma key</value>
+  </data>
+  <data name="Sfondo_SchermoVerdePro" xml:space="preserve">
+    <value>Schermo verde (WebcamLR Pro)</value>
+  </data>
+  <data name="Sfondo_SchermoVerdeAiuto" xml:space="preserve">
+    <value>Sfondo verde pieno (#00B140) con il bordo netto, per il chroma key di OBS e di altri programmi</value>
+  </data>
+  <data name="Effetti_IntensitaMosaico" xml:space="preserve">
+    <value>Quanto sono grandi i quadretti</value>
+  </data>
 </root>

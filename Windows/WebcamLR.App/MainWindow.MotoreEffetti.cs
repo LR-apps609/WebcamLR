@@ -102,7 +102,8 @@ public sealed partial class MainWindow
     /// <summary>Legge in sottofondo l'immagine dello sfondo (le grandi in Assets\Sfondi\grandi, o la tua) e il logo.</summary>
     private void AggiornaImmaginiMotore(ImpostazioniMotore impostazioni)
     {
-        if (impostazioni.Sfondo == ModiSfondo.Sostituito && impostazioni.ImmagineSfondo is { } id)
+        // Il verde per il chroma key non è un'immagine da leggere: lo disegna il motore.
+        if (impostazioni.Sfondo == ModiSfondo.Sostituito && impostazioni.ImmagineSfondo is { } id && id != SfondoVerde.Id)
         {
             var personale = id == SfondiPronti.Personale;
             var chiave = personale ? $"{id}-{memoriaImmagini.Impronta(UsoImmagine.Sfondo)}" : id;

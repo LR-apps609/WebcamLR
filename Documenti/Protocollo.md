@@ -360,6 +360,7 @@ Campi di `chiedi-effetto` (tutti facoltativi; si applicano solo quelli presenti)
 - Specchio sul telefono: l'anteprima del telefono è specchiata se `effetti.specchia` è vero **e** la fotocamera è la frontale (solo l'anteprima, come uno specchio), senza altri effetti di immagine.
 - Specchio e sfondo solo con la fotocamera frontale: con un altro `stato.obiettivo` il computer non specchia e non applica sfondi (li riprende tornando alla frontale), `effetti` lo dice (`specchia` falso, `sfondo` `nessuno`) e in `chiedi-effetto` i campi `specchia` e `sfondo` si ignorano.
 - Regole Pro (vedi *WebcamLR Pro*): le applica il computer in base a `capacita.pro`. Specchio, sfocatura e luce sul volto sono gratis; uno sfondo `sostituito` scelto sul computer resta solo con il Pro.
+- Sfondi che ci sono solo sul computer (Qualità 7 e 8, novembre 2026: sfocatura «obiettivo» con il bokeh, mosaico, schermo verde per il chroma key) **non cambiano il protocollo**: in `effetti` bokeh e mosaico valgono `sfocato`, lo schermo verde `sostituito` (con le sue regole Pro); un `chiedi-effetto` con `sfondo` `sfocato` riaccende l'ultima sfocatura scelta sul computer, con il suo stile. Il telefono non li vede e non li sceglie.
 
 ```json
 {"tipo":"capacita","obiettivi":["frontale"],"zoomMassimo":5,"torcia":false,"effettiSulComputer":true}

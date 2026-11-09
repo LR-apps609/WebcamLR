@@ -2072,4 +2072,34 @@ The details are in {1}: send them with “Report a bug”.</value>
   <data name="Registro_QualitaChiesta" xml:space="preserve">
     <value>Quality requested from “{0}”: {1}</value>
   </data>
+  <data name="SceltaStileSfocatura.Header" xml:space="preserve">
+    <value>Blur style</value>
+  </data>
+  <data name="VoceStileNormale.Content" xml:space="preserve">
+    <value>Normal</value>
+  </data>
+  <data name="VoceStileBokeh.Content" xml:space="preserve">
+    <value>Lens (bokeh)</value>
+  </data>
+  <data name="VoceStileMosaico.Content" xml:space="preserve">
+    <value>Mosaic</value>
+  </data>
+  <data name="Sfondo_Stile" xml:space="preserve">
+    <value>Style</value>
+  </data>
+  <data name="Sfondo_StileLivello" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
+  <data name="Sfondo_SchermoVerdeTitolo" xml:space="preserve">
+    <value>Chroma key</value>
+  </data>
+  <data name="Sfondo_SchermoVerdePro" xml:space="preserve">
+    <value>Green screen (WebcamLR Pro)</value>
+  </data>
+  <data name="Sfondo_SchermoVerdeAiuto" xml:space="preserve">
+    <value>Solid green background (#00B140) with a sharp edge, for chroma key in OBS and other apps</value>
+  </data>
+  <data name="Effetti_IntensitaMosaico" xml:space="preserve">
+    <value>How big the squares are</value>
+  </data>
 </root>

@@ -20,6 +20,10 @@ struct Statistiche: Equatable, Sendable {
     var anteprimaMs: Int?
     /// Da vetro alla webcam virtuale, compresa l'attesa nell'estensione quando la dice; solo con un'app che la usa.
     var webcamMs: Int?
+    /// Qualità 14: le parti dopo l'arrivo, per la finestra. Decodifica: dall'arrivo all'immagine pronta (compresi gli
+    /// effetti del Mac). Coda: da pronta a mostrata (`CodaAdattiva`). Con `arrivoMs` (la rete) fanno `anteprimaMs`.
+    var decodificaMs: Int?
+    var codaMs: Int?
     /// Dentro il motore effetti del Mac (MotoreEffetti.swift), dalla decodifica all'immagine elaborata; nil se non
     /// lavora. È già compreso in `anteprimaMs` e `webcamMs`. Lo aggiunge il `Ricevitore`.
     var effettiMs: Int?
@@ -614,7 +618,8 @@ final class SessioneComputer: @unchecked Sendable {
         }
         // Da vetro a uscita (Protocollo.md, «Latenza»): la finestra di questo telefono e, se è quello nella webcam
         // e un'app la usa, la webcam virtuale. Al telefono va quella più lontana che c'è.
-        let anteprima = schermoAttuale()?.ritardo.valore(adesso: adesso)
+        let schermoOra = schermoAttuale()
+        let anteprima = schermoOra?.ritardo.valore(adesso: adesso)
         bloccoVideo.lock()
         let scelto = statoVideo == .attuale && microfonoScelto
         bloccoVideo.unlock()
@@ -634,7 +639,9 @@ final class SessioneComputer: @unchecked Sendable {
                                           pacchettiAudio: pacchettiAudioUltimoSecondo,
                                           arrivoMs: ultimaLatenza,
                                           anteprimaMs: anteprima,
-                                          webcamMs: webcam)))
+                                          webcamMs: webcam,
+                                          decodificaMs: schermoOra?.decodifica.valore(adesso: adesso),
+                                          codaMs: schermoOra?.attesa.valore(adesso: adesso))))
         fotogrammiUltimoSecondo = 0
         pacchettiAudioUltimoSecondo = 0
         byteUltimoSecondo = 0

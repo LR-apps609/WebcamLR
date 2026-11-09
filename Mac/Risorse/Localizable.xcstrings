@@ -4370,6 +4370,26 @@
         }
       }
     },
+    "Parti" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Breakdown"
+          }
+        }
+      }
+    },
+    "Parti della latenza: rete %@ · decodifica %@ · coda %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Latency breakdown: network %@ · decoding %@ · queue %@"
+          }
+        }
+      }
+    },
     "Pausa" : {
       "localizations" : {
         "en" : {
@@ -5184,12 +5204,12 @@
         }
       }
     },
-    "Riserva per la fluidità: %lld ms · immagini in ritardo %lld" : {
+    "Riserva per la fluidità: %lld ms · immagini in ritardo %lld · buttate %lld" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Smoothness buffer: %lld ms · late frames %lld"
+            "value" : "Smoothness buffer: %lld ms · late frames %lld · dropped %lld"
           }
         }
       }
@@ -7437,6 +7457,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "first frame %@"
+          }
+        }
+      }
+    },
+    "rete %@ · decodifica %@ · coda %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "network %@ · decoding %@ · queue %@"
           }
         }
       }

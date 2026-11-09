@@ -1333,10 +1333,15 @@ final class Ricevitore {
         let audio = RitardoVetro.testo(scelto && microfonoAcceso && audioInArrivo ? microfono.ritardoMs : nil)
         registra(String(localized: "Da vetro a uscita: arrivo \(arrivo) · finestra \(finestra) · webcam \(webcam) (attesa nella webcam \(estensione)) · audio \(audio)"),
                  di: telefono)
-        // La riserva di riproduzione (Schermo.swift): quanto si trattiene il video per farlo uscire regolare, e quante
-        // immagini sono comunque uscite in ritardo (scatti rimasti) in questi 30 secondi.
+        // La riserva di riproduzione (Schermo.swift, la coda che si adatta): quanto si trattiene il video per farlo uscire
+        // regolare, quante immagini sono comunque uscite in ritardo (scatti rimasti) e quante sono state buttate perché ce
+        // n'era già una più recente (qualità 14), in questi 30 secondi. Con le parti della latenza della finestra.
         let riserva = telefono.schermo.prendiRiserva()
-        registra(String(localized: "Riserva per la fluidità: \(riserva.ms) ms · immagini in ritardo \(riserva.inRitardo)"),
+        registra(String(localized: "Riserva per la fluidità: \(riserva.ms) ms · immagini in ritardo \(riserva.inRitardo) · buttate \(riserva.buttate)"),
+                 di: telefono)
+        let decodifica = RitardoVetro.testo(numeri.decodificaMs)
+        let coda = RitardoVetro.testo(numeri.codaMs)
+        registra(String(localized: "Parti della latenza: rete \(arrivo) · decodifica \(decodifica) · coda \(coda)"),
                  di: telefono)
     }
 

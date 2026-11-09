@@ -36,6 +36,11 @@ differenze scritte nei riquadri «Windows 10».
    e premi **Consenti**. Senza, il telefono via Wi-Fi non trova il PC (l'installatore del punto 4 lo fa da solo).
 5. Per ricompilare dopo un aggiornamento della repository: stesso doppio clic. WebcamLR aperta viene chiusa da sola.
    Da una finestra del Prompt dei comandi, `"Strumenti\Costruisci e avvia.bat" veloce` salta le prove.
+6. Prova di durata del ricevitore (Qualità 20): `ProvaDurataTest` simula 10 minuti di sessione in ~15 s a ogni `dotnet test`.
+   Quella lunga (un'ora, accelerata in ~1,5 minuti): `set WEBCAMLR_PROVA_LUNGA=1` (Linux: `export WEBCAMLR_PROVA_LUNGA=1`), poi
+   `dotnet test Windows\WebcamLR.Ricevitore.Test --filter Categoria=ProvaLunga --logger "console;verbosity=detailed"`;
+   con `WEBCAMLR_PROVA_LUNGA_ACCELERAZIONE=1` dura un'ora vera (`WEBCAMLR_PROVA_LUNGA_MINUTI` cambia la durata). Il rapporto
+   (memoria, fotogrammi, cadute, latenza) è nell'uscita del test.
 
 ## 3. La webcam per le altre app
 

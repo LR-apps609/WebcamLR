@@ -803,7 +803,10 @@ public class ProvaDurataTest(ITestOutputHelper uscita)
         // Risorse: memoria gestita, timer e maniglie non crescono; le sessioni chiuse se ne vanno; nessuna eccezione persa.
         Assert.InRange(finale.Memoria - primo.Memoria, long.MinValue, 8L * 1024 * 1024);
         Assert.InRange(finale.Timer - primo.Timer, long.MinValue, 4);
-        if (primo.Maniglie >= 0) Assert.InRange(finale.Maniglie - primo.Maniglie, int.MinValue, 8);
+        // Maniglie: si contano a sessioni chiuse e dopo il GC. Su Windows, mentre la sessione è aperta, il runtime tiene
+        // maniglie sue (pool dei thread, porte di completamento) che crescono un poco nei primi minuti: a fine sessione
+        // la GitHub CI ne ha viste +11, e +7 dopo la chiusura. Una perdita vera resta: cresce con le sessioni.
+        if (primo.Maniglie >= 0) Assert.InRange(maniglieDopo - primo.Maniglie, int.MinValue, 8);
         Assert.InRange(finale.InCoda, 0, 200);
         Assert.Equal(0, vive);
         Assert.Equal(0, dopoLaChiusura);

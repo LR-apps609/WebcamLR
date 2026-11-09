@@ -55,6 +55,10 @@ public sealed partial class MainWindow
         effettiComputer.ImpostaImmagini(memoriaImmagini.Impronta(UsoImmagine.Sfondo), memoriaImmagini.Impronta(UsoImmagine.Logo));
         uscitaWebcam.DaMotore = true;
         motoreVideo.ServonoFotogrammi = () => uscitaWebcam.InUso || Volatile.Read(ref registrazione) is RegistrazioneElaborata;
+        // Qualità 16: con un'app sulla webcam il motore lavora alla misura del suo formato (fino al 4K), così il video del
+        // telefono si scala una volta sola; durante una registrazione resta la misura del file.
+        motoreVideo.Misura = (larghezza, altezza) => global::WebcamLR.Webcam.ScalaUnaVolta.MisuraLavoro(larghezza, altezza,
+            uscitaWebcam.FormatoInUso, uscitaWebcam.Inquadratura, (Volatile.Read(ref registrazione) as RegistrazioneElaborata)?.Misura);
         motoreVideo.Fotogramma += SuFotogrammaMotore;
         motoreVideo.Evento += registro.Aggiungi;
         // Qualità 13: il decodificatore del motore parte o resta indietro: il fotogramma chiave si chiede subito.

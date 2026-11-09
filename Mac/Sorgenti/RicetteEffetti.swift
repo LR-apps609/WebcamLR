@@ -655,18 +655,48 @@ enum RicetteEffetti {
     /// l'alfa sfocato: ogni punto prende colore solo dallo sfondo vicino. `bassa`: la maschera piccola filtrata.
     static func sfocataSenzaAlone(_ immagine: CIImage, bassa: CIImage, intensita: Double, fine: Bool) -> CIImage {
         let estensione = immagine.extent
+        guard estensione.width > 0, estensione.height > 0 else { return immagine }
+        let riferimento = min(estensione.width, estensione.height) / 1080
+        return sfocataSenzaAlone(immagine, bassa: bassa, sigmaPiena: CGFloat(sigmaSfocatura(intensita)) * riferimento, fine: fine)
+    }
+
+    /// Come sopra, con la sigma in pixel della misura piena (il mosaico la sceglie dal lato dei quadretti).
+    static func sfocataSenzaAlone(_ immagine: CIImage, bassa: CIImage, sigmaPiena sigma: CGFloat, fine: Bool) -> CIImage {
+        let scala = min(1, sigmaPiccola / max(sigma, 0.1))
+        return sfondoSenzaPersona(immagine, bassa: bassa, scala: scala, fine: fine) { aperta, misura in
+            if fine {
+                // Un po' di «bokeh»: un disco (raggio 1,6 σ, le luci diventano cerchi morbidi come in un obiettivo) e una
+                // gaussiana piccola che ne smussa l'orlo; insieme valgono una gaussiana di sigma `sigmaPiccola`. In lineare,
+                // quindi le luci pesano quanto in un obiettivo vero. Costa poco: l'immagine è già ridotta.
+                let disco = CIFilter.discBlur()
+                disco.inputImage = aperta
+                disco.radius = Float(sigmaPiccola * 1.6)
+                return (disco.outputImage ?? aperta)
+                    .applyingGaussianBlur(sigma: Double(sigmaPiccola * 0.6))
+                    .cropped(to: misura)
+            }
+            return aperta.applyingGaussianBlur(sigma: Double(sigmaPiccola)).cropped(to: misura)
+        }
+    }
+
+    /// Il cuore delle sfocature senza alone: riduce l'immagine a `scala`, toglie la persona allargata (alfa), passa
+    /// `prima` sui colori ridotti, sfoca con `sfoca` (immagine aperta ai bordi, misura piccola), divide per l'alfa
+    /// sfocato, passa `dopo` e riporta alla misura piena.
+    private static func sfondoSenzaPersona(_ immagine: CIImage, bassa: CIImage, scala: CGFloat, fine: Bool,
+                                           prima: (CIImage) -> CIImage = { $0 }, dopo: (CIImage) -> CIImage = { $0 },
+                                           sfoca: (CIImage, CGRect) -> CIImage) -> CIImage {
+        let estensione = immagine.extent
         let misuraBassa = bassa.extent
         guard misuraBassa.width > 0, misuraBassa.height > 0, estensione.width > 0, estensione.height > 0 else {
             return immagine
         }
         let riferimento = min(estensione.width, estensione.height) / 1080
-        let sigma = CGFloat(sigmaSfocatura(intensita)) * riferimento
-        let scala = min(1, sigmaPiccola / max(sigma, 0.1))
         let riduzione = CGAffineTransform(scaleX: scala, y: scala)
-        let piccola = fine && scala < 1
+        let ridotta = fine && scala < 1
             ? immagine.transformed(by: riduzione, highQualityDownsample: true)
             : immagine.transformed(by: riduzione)
-        let misura = piccola.extent
+        let misura = ridotta.extent
+        let piccola = prima(ridotta.cropped(to: misura))
         let allaPiccola = CGAffineTransform(scaleX: estensione.width / misuraBassa.width,
                                             y: estensione.height / misuraBassa.height)
             .concatenating(CGAffineTransform(translationX: estensione.minX, y: estensione.minY))
@@ -685,28 +715,93 @@ enum RicetteEffetti {
         let senzaPersona = RicetteFiltriMac.mescola(sopra: CIImage(color: CIColor.clear).cropped(to: misura),
                                                     sotto: piccola, maschera: persona)
         let aperta = senzaPersona.cropped(to: misura).clampedToExtent()
-        let sfocata: CIImage
-        if fine {
-            // Un po' di «bokeh»: un disco (raggio 1,6 σ, le luci diventano cerchi morbidi come in un obiettivo) e una
-            // gaussiana piccola che ne smussa l'orlo; insieme valgono una gaussiana di sigma `sigmaPiccola`. In lineare,
-            // quindi le luci pesano quanto in un obiettivo vero. Costa poco: l'immagine è già ridotta.
-            let disco = CIFilter.discBlur()
-            disco.inputImage = aperta
-            disco.radius = Float(sigmaPiccola * 1.6)
-            sfocata = (disco.outputImage ?? aperta)
-                .applyingGaussianBlur(sigma: Double(sigmaPiccola * 0.6))
-                .cropped(to: misura)
-        } else {
-            sfocata = aperta.applyingGaussianBlur(sigma: Double(sigmaPiccola)).cropped(to: misura)
-        }
-        let normalizzata = sfocata
+        let sfocata = sfoca(aperta, misura)
+        let normalizzata = dopo(sfocata
             .unpremultiplyingAlpha()
             .settingAlphaOne(in: misura)
+            .cropped(to: misura))
         let ritorno = CGAffineTransform(translationX: -misura.minX, y: -misura.minY)
             .concatenating(CGAffineTransform(scaleX: estensione.width / max(misura.width, 1),
                                              y: estensione.height / max(misura.height, 1)))
             .concatenating(CGAffineTransform(translationX: estensione.minX, y: estensione.minY))
         return normalizzata.transformed(by: ritorno).clampedToExtent().cropped(to: estensione)
+    }
+
+    // MARK: Bokeh e mosaico (Qualità 7 e 8; come Windows, WebcamLR.Effetti/Motore/RicetteSfondo.cs)
+
+    /// Raggio del disco (pixel a 1080p) per un'intensità: 2σ della sfocatura normale. Un disco pieno di raggio 2σ ha la
+    /// stessa deviazione standard della gaussiana di sigma σ: lo sfondo è sfocato «quanto» con la sfocatura normale, ma
+    /// le luci diventano dischi.
+    static func raggioBokeh(_ intensita: Double) -> CGFloat { CGFloat(2 * sigmaSfocatura(intensita)) }
+
+    /// Il raggio del disco nell'immagine ridotta: la riduzione si sceglie perché resti questo (al massimo un quarto della
+    /// misura). `CIBokehBlur` costa con il quadrato del raggio: 12 px a un ottavo valgono 96 px a 1080p.
+    static let raggioBokehPiccolo: CGFloat = 12
+
+    /// Da quale valore lineare (0..1) un canale conta come «luce forte»: 0,6 è circa 200/255 in sRGB.
+    static let sogliaLuci: CGFloat = 0.6
+    /// Quanto si espande una luce sopra la soglia: v + 20·(v − 0,6), cioè il bianco vale 9 volte. Dopo il disco si
+    /// comprime con l'inversa esatta (b − 20/21·(b − 0,6) sopra la soglia): una zona uniforme torna identica, una luce
+    /// piccola, sparsa sul disco, resta un disco chiaro. Solo filtri di sistema (matrice, limiti e `somma`).
+    static let guadagnoLuci: CGFloat = 20
+
+    /// v + k·max(v − soglia, 0), canale per canale, alfa 1 (valori sopra 1: il contesto lavora in virgola mobile).
+    static func espandiLuci(_ immagine: CIImage) -> CIImage {
+        let misura = immagine.extent
+        let sopra = lineare(immagine, pendenza: guadagnoLuci, scostamento: -guadagnoLuci * sogliaLuci, massimo: 1000)
+        return somma(immagine, sopra, misura: misura)
+    }
+
+    /// L'inversa di `espandiLuci`: b − k/(1 + k)·max(b − soglia, 0).
+    static func comprimiLuci(_ immagine: CIImage) -> CIImage {
+        let misura = immagine.extent
+        let sopra = lineare(immagine, pendenza: 1, scostamento: -sogliaLuci, massimo: 1000)
+        let meno = -guadagnoLuci / (1 + guadagnoLuci)
+        let togli = canali(sopra, r: CIVector(x: meno, y: 0, z: 0, w: 0), g: CIVector(x: 0, y: meno, z: 0, w: 0),
+                           b: CIVector(x: 0, y: 0, z: meno, w: 0))
+        return somma(immagine, togli, misura: misura)
+    }
+
+    /// Lo sfondo «come un obiettivo», senza la persona: in piccolo (perché il disco resti `raggioBokehPiccolo`), luci
+    /// espanse, `CIBokehBlur` (disco morbido con un filo di anello, come le lenti vere), diviso per l'alfa sfocato, luci
+    /// compresse con l'inversa. In lineare (lo spazio di lavoro del motore).
+    static func sfocataBokeh(_ immagine: CIImage, bassa: CIImage, intensita: Double) -> CIImage {
+        let estensione = immagine.extent
+        guard estensione.width > 0, estensione.height > 0 else { return immagine }
+        let raggio = raggioBokeh(intensita) * min(estensione.width, estensione.height) / 1080
+        let scala = min(0.25, raggioBokehPiccolo / max(raggio, 0.1))
+        return sfondoSenzaPersona(immagine, bassa: bassa, scala: scala, fine: true, prima: espandiLuci, dopo: comprimiLuci) {
+            aperta, misura in
+            let bokeh = CIFilter.bokehBlur()
+            bokeh.inputImage = aperta
+            bokeh.radius = Float(max(1, raggio * scala))
+            bokeh.ringAmount = 0.15
+            bokeh.ringSize = 0.1
+            bokeh.softness = 1
+            return (bokeh.outputImage ?? aperta).cropped(to: misura)
+        }
+    }
+
+    /// Il lato di un quadretto (pixel a 1080p) per un'intensità: 12 + 36 × intensità (Poco 21, Medio 32, Tanto 48),
+    /// come Windows.
+    static func latoQuadretto(_ intensita: Double) -> CGFloat {
+        let limitata = intensita.isFinite ? min(max(intensita, 0), 1) : 0.5
+        return CGFloat(12 + 36 * limitata)
+    }
+
+    /// Lo sfondo a quadretti, senza la persona: lo sfondo senza alone sfocato di un terzo del quadretto (così il colore al
+    /// centro, quello che prende `CIPixellate`, vale la media del quadretto) e poi `CIPixellate`, con la griglia che parte
+    /// dall'angolo in alto a sinistra. I quadretti restano netti: la composizione li mette sotto la persona così come sono.
+    static func mosaico(_ immagine: CIImage, bassa: CIImage, intensita: Double) -> CIImage {
+        let estensione = immagine.extent
+        guard estensione.width > 0, estensione.height > 0 else { return immagine }
+        let lato = max(4, latoQuadretto(intensita) * min(estensione.width, estensione.height) / 1080)
+        let fondo = sfocataSenzaAlone(immagine, bassa: bassa, sigmaPiena: lato / 3, fine: false)
+        let quadretti = CIFilter.pixellate()
+        quadretti.inputImage = fondo.clampedToExtent()
+        quadretti.scale = Float(lato)
+        quadretti.center = CGPoint(x: estensione.minX, y: estensione.maxY)
+        return (quadretti.outputImage ?? fondo).cropped(to: estensione)
     }
 
     /// La persona pronta per uno sfondo sostituito (`maschera`: quella rifinita, alla misura dell'immagine).
@@ -715,7 +810,9 @@ enum RicetteEffetti {
     ///    pixel con maschera ≥ 0,95), così il vecchio sfondo non resta come alone chiaro o scuro sui capelli.
     /// 2. Light wrap: lo sfondo nuovo, sfocato, entra per pochi pixel sul bordo della persona («screen», al massimo il
     ///    35% proprio sull'orlo e niente già a 10-15 px all'interno): la persona sembra illuminata dallo stesso ambiente.
-    static func personaSuSfondoNuovo(_ immagine: CIImage, maschera: CIImage, sfondo: CIImage, leggero: Bool) -> CIImage {
+    /// `luce` falso (schermo verde per il chroma key): solo il bordo pulito, niente light wrap.
+    static func personaSuSfondoNuovo(_ immagine: CIImage, maschera: CIImage, sfondo: CIImage, leggero: Bool,
+                                     luce: Bool = true) -> CIImage {
         let estensione = immagine.extent
         guard estensione.width > 0, estensione.height > 0, !estensione.isInfinite else { return immagine }
         let unita = min(estensione.width, estensione.height) / 1080
@@ -729,6 +826,7 @@ enum RicetteEffetti {
             persona = RicetteFiltriMac.mescola(sopra: immagine, sotto: colorePersona, maschera: fiducia)
                 .cropped(to: estensione)
         }
+        guard luce else { return persona }
         let sfondoMorbido = sfocataRidotta(sfondo.cropped(to: estensione), sigma: 14 * unita, scala: 0.25)
         let mascheraMorbida = sfocataRidotta(maschera, sigma: 3 * unita, scala: 0.25)
         // m · (1 − m sfocata): circa 0,5 sull'orlo interno, 0 dentro la persona e fuori.

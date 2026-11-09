@@ -1441,10 +1441,12 @@ final class Ricevitore {
     }
 
     /// Con lo sfondo sostituito, l'immagine che il telefono mostra: un id sconosciuto (o assente) vale il primo pronto.
+    /// Con gli effetti sul computer anche il verde per il chroma key (`SfondoVerde.id`), che non è un'immagine da avere.
     var immagineSfondoAttuale: String? {
         guard effetti.sfondo == ModiSfondo.sostituito else { return nil }
         let pronti = sfondiPronti
-        if let id = effetti.immagineSfondo, id == SfondiPronti.personale || pronti.contains(id) { return id }
+        if let id = effetti.immagineSfondo, id == SfondiPronti.personale || pronti.contains(id)
+            || (id == SfondoVerde.id && Self.effettiSulComputer) { return id }
         return pronti.first
     }
 
@@ -1452,6 +1454,8 @@ final class Ricevitore {
     var descrizioneSfondo: String {
         if sfocaturaDelTelefono { return String(localized: "Sfocatura del telefono") }
         return switch sfondoInUso {
+        case ModiSfondo.sfocato where Self.effettiSulComputer && effetti.stileSfocatura != StiliSfocatura.normale:
+            "\(StiliSfocatura.nome(effetti.stileSfocatura)): \(livelloSfocaturaAttuale.nome)"
         case ModiSfondo.sfocato: String(localized: "Sfocatura: \(livelloSfocaturaAttuale.nome)")
         case ModiSfondo.sostituito: immagineSfondoAttuale.map { SfondiComputer.nome($0) } ?? String(localized: "Sostituito")
         default: String(localized: "Nessuno")
@@ -1478,7 +1482,8 @@ final class Ricevitore {
         // La sfocatura del telefono si spegne solo sul telefono, e la nostra non si accende sopra (mai due sfocature).
         guard !sfocaturaSistema else { return }
         let ultima = ImmaginiComputer.condivise.ultimaScelta
-        let ancoraDisponibile = ultima == SfondiPronti.personale ? immaginePersonaleDisponibile : sfondiPronti.contains(ultima)
+        let ancoraDisponibile = ultima == SfondiPronti.personale ? immaginePersonaleDisponibile
+            : (ultima == SfondoVerde.id && Self.effettiSulComputer) || sfondiPronti.contains(ultima)
         if ultima != ImmaginiComputer.sceltaSfocatura, !bloccoPro, ancoraDisponibile {
             scegliImmagineSfondo(ultima)
         } else {
@@ -1507,11 +1512,37 @@ final class Ricevitore {
         mandaSfocatura(livello, a: telefono)
     }
 
+    /// Qualità 7 e 8: Normale, Obiettivo (bokeh) o Mosaico, dal menu di «Sfondo» o dal pannello. Lo ricorda e accende la
+    /// sfocatura con quello stile: con lo sfondo già sfocato l'intensità resta quella di adesso, altrimenti quella
+    /// dell'ultimo livello. Gratis come la sfocatura; solo con gli effetti sul computer (il telefono sa fare solo la normale).
+    func scegliStileSfocatura(_ stile: String) {
+        guard Self.effettiSulComputer, !sfocaturaSistema else { return }
+        var nuovi = effettiComputer
+        nuovi.sfocatura = StiliSfocatura.valido(stile)
+        if sfondoDisponibile, attivo != nil {
+            ImmaginiComputer.condivise.ultimaScelta = ImmaginiComputer.sceltaSfocatura
+            if nuovi.sfondo != ModiSfondo.sfocato {
+                nuovi.sfondo = ModiSfondo.sfocato
+                nuovi.intensitaSfondo = livelloSfocatura.intensita
+            }
+        }
+        if nuovi != effettiComputer { effettiComputer = nuovi }
+    }
+
+    /// «Schermo verde» (Qualità 8): il verde pieno per il chroma key, uno sfondo sostituito di WebcamLR Pro. Solo con gli
+    /// effetti sul computer.
+    func scegliSchermoVerde() {
+        guard Self.effettiSulComputer else { return }
+        scegliImmagineSfondo(SfondoVerde.id)
+    }
+
     /// Uno sfondo pronto o «La tua immagine» (`SfondiPronti.personale`), di WebcamLR Pro: con un telefono gratis non
     /// parte (il telefono lo ignorerebbe). La tua immagine, se il telefono ne ha un'altra (impronta diversa in
     /// `stato.immaginePersonale`), si rimanda prima del `comando`.
     func scegliImmagineSfondo(_ id: String) {
         guard sfondoDisponibile, !bloccoPro, let telefono = attivo else { return }
+        // Il verde c'è solo nel motore del Mac: al telefono non si manda mai.
+        guard id != SfondoVerde.id || Self.effettiSulComputer else { return }
         if Self.effettiSulComputer {
             // Lo sfondo lo mette il motore del Mac: niente da mandare al telefono.
             guard id != SfondiPronti.personale || ImmaginiComputer.condivise.improntaSfondo != nil else { return }
@@ -1670,6 +1701,8 @@ final class Ricevitore {
             motore.sfondo = scelti.sfondo
             motore.intensitaSfondo = scelti.intensitaSfondo
             motore.immagineSfondo = scelti.sfondo == ModiSfondo.sostituito ? immagineSfondoAttuale : nil
+            // Qualità 7 e 8: bokeh e mosaico sono gratis come la sfocatura; il verde (un'immagine sostituita) è di Pro.
+            motore.sfocatura = scelti.sfondo == ModiSfondo.sfocato ? scelti.stileSfocatura : StiliSfocatura.normale
         }
         if pro {
             motore.filtro = scelti.filtro
@@ -1685,7 +1718,9 @@ final class Ricevitore {
             motore.logo = ImmaginiComputer.condivise.improntaLogo != nil
         }
         StatoMotoreEffetti.condiviso.imposta(motore)
-        aggiornaImmaginiMotore(sfondo: motore.sfondo == ModiSfondo.sostituito ? motore.immagineSfondo : nil, logo: motore.logo)
+        // Il verde per il chroma key non è un'immagine da leggere: lo disegna il motore.
+        let daLeggere = motore.sfondo == ModiSfondo.sostituito && motore.immagineSfondo != SfondoVerde.id ? motore.immagineSfondo : nil
+        aggiornaImmaginiMotore(sfondo: daLeggere, logo: motore.logo)
         // I pulsanti dei telefoni telecomando seguono specchio, sfondo e luce.
         for telefono in telefoni { mandaStatoEffetti(a: telefono) }
     }

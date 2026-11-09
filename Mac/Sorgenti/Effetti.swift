@@ -31,6 +31,13 @@ struct Effetti: Equatable, Codable {
     var specchia = false
     /// Calore del viso (`stato.calore`), da 0 («Neutro», i colori della fotocamera) a 1. Gratis.
     var calore = 0.0
+    /// Qualità 7 e 8, solo con gli effetti sul computer: con lo sfondo sfocato lo stile (`StiliSfocatura`: normale, bokeh,
+    /// mosaico). Non viaggia nel protocollo. Facoltativo perché le preferenze di prima (senza la chiave) si leggano
+    /// ancora: nil vale «normale».
+    var sfocatura: String?
+
+    /// Lo stile della sfocatura, sempre uno conosciuto.
+    var stileSfocatura: String { StiliSfocatura.valido(sfocatura) }
 
     // Le chiavi per l'attesa dei comandi e la precedenza sullo `stato` (Ricevitore.mandaEffetto).
     static let chiaveFiltro = "filtro"
@@ -368,13 +375,26 @@ struct ControlliEffetti: View {
                 }
                 .help(TestiPro.strada)
             }
-            if ricevitore.effetti.sfondo != ModiSfondo.nessuno {
+            if Ricevitore.effettiSulComputer, ricevitore.effetti.sfondo == ModiSfondo.sfocato {
+                // Qualità 7 e 8: lo stile della sfocatura (gratis come la sfocatura).
+                Picker("Stile della sfocatura", selection: Binding(
+                    get: { ricevitore.effetti.stileSfocatura },
+                    set: { ricevitore.scegliStileSfocatura($0) })) {
+                    ForEach(StiliSfocatura.tutti, id: \.self) { stile in
+                        Text(StiliSfocatura.nome(stile)).tag(stile)
+                    }
+                }
+                .disabled(ricevitore.sfocaturaSistema)
+            }
+            // Lo schermo verde ha il bordo netto fisso (per il chroma key): niente intensità.
+            if ricevitore.effetti.sfondo != ModiSfondo.nessuno, ricevitore.immagineSfondoAttuale != SfondoVerde.id {
                 cursore("Intensità", valore: \.intensitaSfondo, intervallo: 0...1, chiave: Effetti.chiaveIntensitaSfondo,
                         testo: "\(Int((ricevitore.effetti.intensitaSfondo * 100).rounded()))%") {
                     Comando(intensitaSfondo: $0)
                 }
-                .help(ricevitore.effetti.sfondo == ModiSfondo.sfocato ? "Quanto sfocare lo sfondo"
-                      : "Quanto è netto il bordo tra te e lo sfondo")
+                .help(ricevitore.effetti.sfondo == ModiSfondo.sostituito ? "Quanto è netto il bordo tra te e lo sfondo"
+                      : ricevitore.effetti.stileSfocatura == StiliSfocatura.mosaico ? "Quanto sono grandi i quadretti"
+                      : "Quanto sfocare lo sfondo")
                 if ricevitore.effetti.sfondo == ModiSfondo.sostituito {
                     Text("L'immagine si sceglie dal pulsante «Sfondo» sotto il video.")
                         .font(.stile(.nota))

@@ -3817,6 +3817,16 @@
         }
       }
     },
+    "Mosaico" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mosaic"
+          }
+        }
+      }
+    },
     "Mostra WebcamLR" : {
       "localizations" : {
         "en" : {
@@ -4344,6 +4354,16 @@
         }
       }
     },
+    "Normale" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Normal"
+          }
+        }
+      }
+    },
     "Notte" : {
       "localizations" : {
         "en" : {
@@ -4374,6 +4394,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lens"
+          }
+        }
+      }
+    },
+    "Obiettivo (bokeh)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lens (bokeh)"
           }
         }
       }
@@ -4853,6 +4883,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "How much to blur the background"
+          }
+        }
+      }
+    },
+    "Quanto sono grandi i quadretti" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How big the squares are"
           }
         }
       }
@@ -5619,6 +5659,26 @@
         }
       }
     },
+    "Schermo verde" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Green screen"
+          }
+        }
+      }
+    },
+    "Schermo verde (WebcamLR Pro)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Green screen (WebcamLR Pro)"
+          }
+        }
+      }
+    },
     "Scollega" : {
       "localizations" : {
         "en" : {
@@ -5909,6 +5969,16 @@
         }
       }
     },
+    "Sfondo verde pieno (#00B140) con il bordo netto, per il chroma key di OBS e di altri programmi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solid green background (#00B140) with a sharp edge, for chroma key in OBS and other apps"
+          }
+        }
+      }
+    },
     "Sfondo: prima maschera di Vision dopo %lld ms (fino ad allora tutto sfocato)" : {
       "localizations" : {
         "en" : {
@@ -6181,6 +6251,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Same Wi-Fi network as the Mac."
+          }
+        }
+      }
+    },
+    "Stile" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Style"
+          }
+        }
+      }
+    },
+    "Stile della sfocatura" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blur style"
           }
         }
       }

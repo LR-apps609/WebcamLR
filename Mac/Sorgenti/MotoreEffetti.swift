@@ -37,6 +37,53 @@ import WebcamLRProtocollo
 // non tiene il ritmo, e la qualità scende (`regolaQualita`).
 // Senza effetti accesi `elabora` risponde falso e l'immagine decodificata va alle uscite com'è (costo zero).
 
+/// Qualità 7 e 8: come si sfoca lo sfondo «sfocato». Scelte del Mac (e del PC, stessi identificativi:
+/// Windows/WebcamLR.Effetti/Motore/StiliSfondo.cs), non viaggiano nel protocollo: al telefono telecomando lo sfondo resta
+/// «sfocato» (Documenti/Protocollo.md, «Effetti sul computer»). Gratis come la sfocatura.
+enum StiliSfocatura {
+    /// La sfocatura di sempre.
+    static let normale = "normale"
+    /// Come un obiettivo: le luci forti dello sfondo diventano dischi (`CIBokehBlur`).
+    static let bokeh = "bokeh"
+    /// Lo sfondo a quadretti (pixelate): il livello di sfocatura sceglie quanto sono grandi.
+    static let mosaico = "mosaico"
+    /// Tutti, nell'ordine in cui mostrarli.
+    static let tutti = [normale, bokeh, mosaico]
+
+    /// Uno stile conosciuto, o `normale` (preferenze di una versione più nuova, o nessuno).
+    static func valido(_ stile: String?) -> String {
+        guard let stile, stile == bokeh || stile == mosaico else { return normale }
+        return stile
+    }
+
+    /// Lo stile che si rende davvero (Qualità 6): il bokeh costa più della sfocatura normale e ai livelli leggeri
+    /// (`.bordoLeggero`, `.veloce`, o senza i conti del guided filter) torna alla sfocatura normale; il mosaico costa
+    /// meno della sfocatura e resta a tutti i livelli.
+    static func alLivello(_ stile: String?, leggero: Bool) -> String {
+        let scelto = valido(stile)
+        return scelto == bokeh && leggero ? normale : scelto
+    }
+}
+
+/// Qualità 8: lo sfondo verde pieno per il chroma key esterno (OBS e simili). È uno sfondo «sostituito» con un'immagine
+/// fissa (`immagineSfondo` = `id`), quindi segue le regole Pro dello sfondo sostituito; il bordo è netto e senza light
+/// wrap, così il verde resta pulito attorno alla persona. Solo del Mac: al telefono telecomando risulta «sostituito».
+enum SfondoVerde {
+    /// L'id di `immagineSfondo` sul Mac (non è uno degli sfondi pronti del protocollo).
+    static let id = "verde"
+    /// #00B140, il verde «chroma key» delle produzioni video, in sRGB.
+    static let colore: CIColor = {
+        if let srgb = CGColorSpace(name: CGColorSpace.sRGB),
+           let colore = CIColor(red: 0, green: 0xB1 / 255.0, blue: 0x40 / 255.0, colorSpace: srgb) {
+            return colore
+        }
+        return CIColor(red: 0, green: 0xB1 / 255.0, blue: 0x40 / 255.0)
+    }()
+    /// Larghezza della soglia del bordo: più stretta di quella dello sfondo sostituito più netto (0,2), così il passaggio
+    /// persona-verde è di un paio di pixel e il chroma key lo taglia pulito.
+    static let morbidezza: CGFloat = 0.12
+}
+
 /// Le scelte che il motore applica, già con le regole di WebcamLR Pro (le decide il `Ricevitore`).
 struct ImpostazioniMotore: Equatable, Sendable {
     var filtro = Filtri.naturale
@@ -48,8 +95,10 @@ struct ImpostazioniMotore: Equatable, Sendable {
     var sfondo = ModiSfondo.nessuno
     /// Sfocato: quanto sfocare (Poco 0,25, Medio 0,55, Tanto 1). Sostituito: quanto è netto il bordo.
     var intensitaSfondo = 0.5
-    /// Con lo sfondo sostituito: uno degli `SfondiPronti` o `SfondiPronti.personale`.
+    /// Con lo sfondo sostituito: uno degli `SfondiPronti`, `SfondiPronti.personale` o il verde (`SfondoVerde.id`).
     var immagineSfondo: String?
+    /// Con lo sfondo sfocato: uno degli `StiliSfocatura` (normale, bokeh, mosaico). Solo del Mac.
+    var sfocatura = StiliSfocatura.normale
     var pelle = 0.0
     var luceVolto = false
     var inquadratura = false
@@ -786,22 +835,37 @@ final class MotoreEffetti: @unchecked Sendable {
             let bassaPersona = zonaPersona.applica(a: bassa, fotogramma: ingresso, arrivo: lavoro.arrivo)
             let intensita = CGFloat(min(max(impostazioni.intensitaSfondo, 0), 1))
             let sostituito = impostazioni.sfondo == ModiSfondo.sostituito
+            // Qualità 8: il verde per il chroma key è uno sfondo sostituito con il bordo netto e senza light wrap.
+            let verde = sostituito && impostazioni.immagineSfondo == SfondoVerde.id
+            // Qualità 7 e 8: lo stile della sfocatura che regge il livello (il bokeh ai livelli leggeri torna normale).
+            let stile = StiliSfocatura.alLivello(impostazioni.sfocatura, leggero: leggero || !Self.guidedFilterVerificato)
             // Soglia centrata a 0,55 e stretta (il bordo morbido lo dà il guided filter): la zona incerta di Vision va
-            // con lo sfondo. Con «sostituito» e intensità alta il bordo è più netto (larghezza da 0,45 a 0,2).
-            let morbidezza = sostituito ? 0.45 - 0.25 * intensita : 0.2
+            // con lo sfondo. Con «sostituito» e intensità alta il bordo è più netto (larghezza da 0,45 a 0,2); con il
+            // verde la più stretta.
+            let morbidezza = verde ? SfondoVerde.morbidezza : sostituito ? 0.45 - 0.25 * intensita : 0.2
             if !Self.guidedFilterVerificato, !bordoSempliceNotato {
                 bordoSempliceNotato = true
                 blocco.withLock { note.append(.bordoSemplice) }
             }
             let bordo = RicetteEffetti.mascheraRifinita(bassaPersona, immagine: immagine, morbidezza: morbidezza,
                                                         leggero: leggero || !Self.guidedFilterVerificato)
-            let fondo = sostituito
-                ? immagineSfondo(istantanea, voluta: impostazioni.immagineSfondo, estensione: estensione)
-                : RicetteEffetti.sfocataSenzaAlone(immagine, bassa: bassaPersona, intensita: Double(intensita),
-                                                   fine: !leggero)
-            // Con lo sfondo sostituito: bordo pulito dal vecchio sfondo e light wrap del nuovo.
+            let fondo: CIImage
+            if verde {
+                fondo = CIImage(color: SfondoVerde.colore).cropped(to: estensione)
+            } else if sostituito {
+                fondo = immagineSfondo(istantanea, voluta: impostazioni.immagineSfondo, estensione: estensione)
+            } else if stile == StiliSfocatura.bokeh {
+                fondo = RicetteEffetti.sfocataBokeh(immagine, bassa: bassaPersona, intensita: Double(intensita))
+            } else if stile == StiliSfocatura.mosaico {
+                fondo = RicetteEffetti.mosaico(immagine, bassa: bassaPersona, intensita: Double(intensita))
+            } else {
+                fondo = RicetteEffetti.sfocataSenzaAlone(immagine, bassa: bassaPersona, intensita: Double(intensita),
+                                                         fine: !leggero)
+            }
+            // Con lo sfondo sostituito: bordo pulito dal vecchio sfondo e light wrap del nuovo (con il verde solo il bordo
+            // pulito: il chroma key non deve trovare verde sfocato dentro la persona).
             let persona = sostituito
-                ? RicetteEffetti.personaSuSfondoNuovo(immagine, maschera: bordo, sfondo: fondo, leggero: leggero)
+                ? RicetteEffetti.personaSuSfondoNuovo(immagine, maschera: bordo, sfondo: fondo, leggero: leggero, luce: !verde)
                 : immagine
             immagine = RicetteFiltriMac.mescola(sopra: persona, sotto: fondo, maschera: bordo)
             if istantanea.mascheraVisibile {

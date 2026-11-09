@@ -27,6 +27,7 @@ enum SfondiComputer {
         case SfondiPronti.piante: String(localized: "Piante")
         case SfondiPronti.lrapps: String(localized: "Verde WebcamLR")
         case SfondiPronti.personale: String(localized: "La tua immagine")
+        case SfondoVerde.id: String(localized: "Schermo verde")
         default: id.capitalized
         }
     }
@@ -47,6 +48,17 @@ enum SfondiComputer {
         guard let copia = immagine?.copy() as? NSImage else { return nil }
         copia.size = NSSize(width: 48, height: 27)
         return copia
+    }
+}
+
+/// Qualità 7 e 8: i nomi mostrati degli stili della sfocatura (gli identificativi sono quelli del motore).
+extension StiliSfocatura {
+    static func nome(_ stile: String) -> String {
+        switch valido(stile) {
+        case bokeh: String(localized: "Obiettivo (bokeh)")
+        case mosaico: String(localized: "Mosaico")
+        default: String(localized: "Normale")
+        }
     }
 }
 
@@ -209,7 +221,8 @@ enum SceltaFile {
 // MARK: - Il menu di «Sfondo»
 
 /// Il menu di «Sfondo» sotto il video, che si apre verso l'alto come «Schermo»: Nessuno · Sfocatura (Poco, Medio,
-/// Tanto) · Sfondi ▸, che apre di lato le miniature. Spunta sulla scelta attuale, come la conferma il telefono.
+/// Tanto) · Stile (Normale, Obiettivo, Mosaico; con gli effetti sul computer) · Sfondi ▸, che apre di lato le
+/// miniature · Schermo verde (con gli effetti sul computer). Spunta sulla scelta attuale, come la conferma il telefono.
 struct PannelloSfondo: View {
     let ricevitore: Ricevitore
     /// Chiude il pannello dopo una scelta.
@@ -217,6 +230,7 @@ struct PannelloSfondo: View {
     /// Largo 220 punti nel menu sotto il video; nil nella pagina «Sfondo» delle Impostazioni, dove segue la pagina.
     var larghezza: CGFloat? = 220
     @State private var mostraSfondi = false
+    @Environment(\.openWindow) private var apriFinestra
 
     var body: some View {
         // Righe una sotto l'altra senza spazio: ognuna ha già il suo margine (StileRigaMenu).
@@ -248,6 +262,22 @@ struct PannelloSfondo: View {
                 }
                 .spento(ricevitore.sfocaturaSistema)
             }
+            if Ricevitore.effettiSulComputer {
+                // Qualità 7 e 8: lo stile della sfocatura (gratis come la sfocatura). Il bokeh, sui Mac che non reggono,
+                // si rende come la sfocatura normale (MotoreEffetti, `StiliSfocatura.alLivello`).
+                Divider().padding(.vertical, Spazi.minimo)
+                EtichettaSezione(String(localized: "Stile"))
+                    .padding(.horizontal, Spazi.stretto)
+                    .padding(.bottom, Spazi.minimo)
+                ForEach(StiliSfocatura.tutti, id: \.self) { stile in
+                    VoceSfondo(titolo: StiliSfocatura.nome(stile),
+                               scelta: ricevitore.sfondoSfocato && ricevitore.effetti.stileSfocatura == stile) {
+                        ricevitore.scegliStileSfocatura(stile)
+                        chiudi()
+                    }
+                    .spento(ricevitore.sfocaturaSistema)
+                }
+            }
             Divider().padding(.vertical, Spazi.minimo)
             Button {
                 mostraSfondi.toggle()
@@ -273,11 +303,43 @@ struct PannelloSfondo: View {
                     chiudi()
                 }
             }
+            if Ricevitore.effettiSulComputer {
+                schermoVerde
+            }
         }
         .padding(Spazi.stretto)
         .frame(width: larghezza)
         .foregroundStyle(Tema.testo)
         .font(.stile(.corpo))
+    }
+}
+
+extension PannelloSfondo {
+    /// «Schermo verde» (Qualità 8): il verde pieno #00B140 per il chroma key, uno sfondo sostituito di WebcamLR Pro. Con un
+    /// telefono gratis ha il segno «PRO» e apre la pagina di Pro.
+    private var schermoVerde: some View {
+        let scelto = ricevitore.immagineSfondoAttuale == SfondoVerde.id && !ricevitore.bloccoPro
+        return Button {
+            chiudi()
+            if ricevitore.bloccoPro {
+                apriFinestraApp(.pro, apri: apriFinestra)
+            } else {
+                ricevitore.scegliSchermoVerde()
+            }
+        } label: {
+            HStack(spacing: Spazi.stretto) {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 11, weight: .semibold))
+                    .opacity(scelto ? 1 : 0)
+                    .frame(width: 14)
+                Text("Schermo verde")
+                if ricevitore.bloccoPro { SegnoPro() }
+                Spacer(minLength: 0)
+            }
+        }
+        .buttonStyle(StileRigaMenu())
+        .help("Sfondo verde pieno (#00B140) con il bordo netto, per il chroma key di OBS e di altri programmi")
+        .accessibilityAddTraits(scelto ? .isSelected : [])
     }
 }
 
@@ -466,6 +528,16 @@ struct VociMenuSfondo: View {
                 .disabled(ricevitore.sfocaturaSistema)
             }
         }
+        if Ricevitore.effettiSulComputer {
+            Section("Stile") {
+                ForEach(StiliSfocatura.tutti, id: \.self) { stile in
+                    Toggle(StiliSfocatura.nome(stile), isOn: Binding(
+                        get: { ricevitore.sfondoSfocato && ricevitore.effetti.stileSfocatura == stile },
+                        set: { _ in ricevitore.scegliStileSfocatura(stile) }))
+                    .disabled(ricevitore.sfocaturaSistema)
+                }
+            }
+        }
         Menu {
             ForEach(ricevitore.sfondiPronti, id: \.self) { id in
                 voce(id, immagine: SfondiComputer.miniatura(id))
@@ -483,6 +555,15 @@ struct VociMenuSfondo: View {
                 Text("Sfondi (WebcamLR Pro)")
             } else {
                 Text("Sfondi")
+            }
+        }
+        if Ricevitore.effettiSulComputer {
+            if ricevitore.bloccoPro {
+                Button("Schermo verde (WebcamLR Pro)") { apriPro() }
+            } else {
+                Toggle("Schermo verde", isOn: Binding(
+                    get: { ricevitore.immagineSfondoAttuale == SfondoVerde.id },
+                    set: { _ in ricevitore.scegliSchermoVerde() }))
             }
         }
     }

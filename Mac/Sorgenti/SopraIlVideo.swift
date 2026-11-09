@@ -221,6 +221,10 @@ struct PannelloQualita: View {
                     // Mentre registri chiede prima (punto 7). La stessa qualità di adesso non cambia il video.
                     guard opzione == attuale || ricevitore.confermaSeFerma(.qualita) else { return }
                     ricevitore.chiediFormato(larghezza: opzione.larghezza, altezza: opzione.altezza, fps: opzione.fps)
+                    // Qualità 15: con Massima il telefono non seguirebbe la risoluzione scelta: si passa ad Alta.
+                    if ricevitore.sceltaQualitaDisponibile, ricevitore.qualitaInUso == LivelliQualita.massima {
+                        ricevitore.scegliQualita(LivelliQualita.alta)
+                    }
                 }
             }
             ForEach(soloPro) { opzione in
@@ -235,6 +239,9 @@ struct PannelloQualita: View {
             NotaMenuVideo(testo: con4K
                 ? String(localized: "Il telefono può scendere da solo se scalda o se la rete è debole. Con un'app a 60 fps il Mac li chiede da solo, fino al 1080p. Il 4K va a 30 fps, in HEVC.")
                 : String(localized: "Il telefono può scendere da solo se scalda o se la rete è debole. Con un'app a 60 fps il Mac li chiede da solo, fino al 1080p."))
+            if ricevitore.sceltaQualitaDisponibile {
+                SezioneLivelloQualita(ricevitore: ricevitore, chiudi: chiudi)
+            }
             Divider()
                 .overlay(Tema.lineaTenue)
                 .padding(.vertical, Spazi.minimo)
@@ -413,6 +420,36 @@ private struct RigaMenuVideo: View {
         .buttonStyle(StileRigaMenu(evidenziata: inUso))
         .disabled(disattivata)
         .accessibilityAddTraits(scelta ? .isSelected : [])
+    }
+}
+
+/// Qualità 15 (Protocollo.md, «Qualità a scelta»): Auto, Alta, Massima, sotto le risoluzioni. La spunta segue
+/// `stato.qualita` del telefono, come lo specchio.
+private struct SezioneLivelloQualita: View {
+    let ricevitore: Ricevitore
+    let chiudi: () -> Void
+
+    var body: some View {
+        let inUso = ricevitore.qualitaInUso
+        Divider()
+            .overlay(Tema.lineaTenue)
+            .padding(.vertical, Spazi.minimo)
+        EtichettaSezione(String(localized: "Qualità del flusso"))
+            .padding(.horizontal, Spazi.stretto)
+            .padding(.vertical, Spazi.stretto)
+        ForEach(LivelliQualita.tutti, id: \.self) { livello in
+            RigaMenuVideo(testo: Ricevitore.nomeQualita(livello), nota: Ricevitore.notaQualita(livello),
+                          scelta: livello == inUso) {
+                chiudi()
+                guard livello != inUso else { return }
+                // Entrare in Massima o uscirne cambia la risoluzione: mentre registri chiede prima (punto 7).
+                if livello == LivelliQualita.massima || inUso == LivelliQualita.massima {
+                    guard ricevitore.confermaSeFerma(.qualita) else { return }
+                }
+                ricevitore.scegliQualita(livello)
+            }
+        }
+        NotaMenuVideo(testo: String(localized: "Alta e Massima chiedono più dati: se la rete non regge scendono lo stesso, ma prima tengono la qualità di Auto. Massima sceglie da sola risoluzione e fps; scegliendo una risoluzione si passa ad Alta."))
     }
 }
 

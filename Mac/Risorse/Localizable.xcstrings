@@ -252,6 +252,40 @@
         }
       }
     },
+    "Alta" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "High"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alta"
+          }
+        }
+      }
+    },
+    "Alta e Massima chiedono più dati: se la rete non regge scendono lo stesso, ma prima tengono la qualità di Auto. Massima sceglie da sola risoluzione e fps; scegliendo una risoluzione si passa ad Alta." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "High and Maximum use more data: if the network can’t keep up they still step down, but first they hold Auto’s quality. Maximum picks the resolution and fps on its own; choosing a resolution switches to High."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alta e Massima chiedono più dati: se la rete non regge scendono lo stesso, ma prima tengono la qualità di Auto. Massima sceglie da sola risoluzione e fps; scegliendo una risoluzione si passa ad Alta."
+          }
+        }
+      }
+    },
     "Altre risposte sul sito" : {
       "localizations" : {
         "en" : {
@@ -573,6 +607,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Turn on the virtual webcam in “Outputs”: then these apps can use the video."
+          }
+        }
+      }
+    },
+    "Auto" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auto"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auto"
           }
         }
       }
@@ -3484,6 +3535,23 @@
         }
       }
     },
+    "Massima" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maximum"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Massima"
+          }
+        }
+      }
+    },
     "Media" : {
       "localizations" : {
         "en" : {
@@ -4661,6 +4729,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "QR code to download WebcamLR on the phone"
+          }
+        }
+      }
+    },
+    "Qualità chiesta al telefono: %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quality requested from the phone: %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qualità chiesta al telefono: %@"
+          }
+        }
+      }
+    },
+    "Qualità del flusso" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stream quality"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qualità del flusso"
           }
         }
       }
@@ -7134,6 +7236,23 @@
         }
       }
     },
+    "il massimo del telefono" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "the phone’s best"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "il massimo del telefono"
+          }
+        }
+      }
+    },
     "in arrivo" : {
       "localizations" : {
         "en" : {
@@ -7421,6 +7540,23 @@
         }
       }
     },
+    "più nitida" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sharper"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "più nitida"
+          }
+        }
+      }
+    },
     "più veloce ora" : {
       "localizations" : {
         "en" : {
@@ -7518,6 +7654,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "picks at the start, then stays"
+          }
+        }
+      }
+    },
+    "segue la rete" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "follows the network"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "segue la rete"
           }
         }
       }

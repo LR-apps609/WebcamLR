@@ -32,6 +32,8 @@ enum Preferenze {
     static let gobbo = "gobbo"
     /// L'ultimo profilo pronto scelto nel pannello «Profilo» (Profili.swift).
     static let profiloPronto = "profiloPronto"
+    /// Qualità 15: Auto, Alta o Massima per il flusso dal telefono (`LivelliQualita`, QualitaScelta.swift).
+    static let qualitaFlusso = "qualitaFlusso"
     /// Le sezioni richiudibili del pannello di destra, aperte o chiuse (chiuse di serie).
     static let sezioneEffetti = "sezioneEffettiAperta"
     static let sezioneRegoleFini = "sezioneRegoleFiniAperta"

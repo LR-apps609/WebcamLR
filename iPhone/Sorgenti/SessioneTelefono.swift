@@ -67,6 +67,12 @@ final class SessioneTelefono {
     /// Come si è collegati (1.2): Wi-Fi, cavo USB, Wi-Fi diretto…; `nil` finché non si sa.
     private(set) var tipoCollegamento: TipoCollegamento?
     private(set) var obiettivo: Obiettivo = .principale
+    /// Collaudo 6: l'obiettivo che va in `stato.obiettivo`, cioè quello dei fotogrammi che possono uscire adesso, non
+    /// quello appena scelto. Verso la frontale cambia prima dei suoi fotogrammi (lo `stato` parte prima che la
+    /// fotocamera si riconfiguri); via dalla frontale cambia solo dopo, a fotocamera nuova accesa. Così il computer non
+    /// vede mai fotogrammi della frontale con uno `stato` posteriore (lo sfondo resterebbe spento). `nil` prima della
+    /// prima accensione: vale `obiettivo`.
+    @ObservationIgnored private var obiettivoInStato: Obiettivo?
     let obiettiviDisponibili = Obiettivo.disponibili
     /// 1.14: «Specchia l'immagine inviata», uno stato solo per video inviato e anteprima, cambiato dal vivo
     /// (`impostaSpecchio`, anche dal computer con `comando.specchia`). Salvato in `UserDefaults` («specchia»).
@@ -1849,8 +1855,16 @@ final class SessioneTelefono {
         // Un fotogramma chiave comunque: la scena cambia di colpo (altro obiettivo) e il computer riparte pulito.
         codificatore.richiediFotogrammaChiave()
         formatoApplicato = (formato.larghezza, formato.altezza, formato.fps, formato.codec)
+        let daAccendere = obiettivo
+        // Collaudo 6: verso la frontale lo `stato` parte prima dei suoi fotogrammi, che escono appena la cattura si
+        // riconfigura (sulla sua coda, prima che questa funzione riprenda). Gli ultimi fotogrammi della posteriore
+        // arrivano al computer con uno `stato` frontale: al più sfocati, mai la frontale con la stanza vera.
+        if daAccendere == .frontale && (obiettivoInStato ?? .principale) != .frontale {
+            obiettivoInStato = .frontale
+            aggiornaStato(conQualita: false)
+        }
         do {
-            try await cattura.configura(obiettivo: obiettivo, larghezza: larghezzaRichiesta,
+            try await cattura.configura(obiettivo: daAccendere, larghezza: larghezzaRichiesta,
                                         altezza: altezzaRichiesta, fps: fpsRichiesti,
                                         stabilizzazione: UserDefaults.standard.bool(forKey: "stabilizzazione"))
             // Chiusa mentre la fotocamera si accendeva: si spegne, altrimenti resterebbe accesa.
@@ -1858,10 +1872,15 @@ final class SessioneTelefono {
             if chiusaDallUtente || (inAttesaDelComputer && collegamento == nil) || pausa.fotocameraSpenta {
                 cattura.ferma()
                 formatoApplicato = nil
+                // Collaudo 6: i fotogrammi che sono usciti erano di questo obiettivo.
+                obiettivoInStato = daAccendere
                 return
             }
             fotocameraPronta = true
             impostazioniApplicate = impostazioni
+            // Collaudo 6: da qui escono i fotogrammi di `daAccendere`. Se intanto se n'è scelto un altro, la sua
+            // accensione è già in coda e lo dirà lei.
+            obiettivoInStato = daAccendere
             // Punto F: lo sfondo segue l'obiettivo davvero acceso.
             visivi.impostaPosteriore(obiettivo != .frontale)
             // La riconfigurazione riparte con messa a fuoco ed esposizione automatiche: niente più «AE/AF bloccati».
@@ -2418,10 +2437,12 @@ final class SessioneTelefono {
         }
     }
 
-    private func aggiornaStato() {
+    /// `conQualita` falso: si manda solo lo `stato`, senza decidere qui se il calore chiede un formato più basso (serve
+    /// prima di riconfigurare la fotocamera, che non deve partire due volte).
+    private func aggiornaStato(conQualita: Bool = true) {
         misuraStato()
         var statoTelefono = StatoTelefono(batteria: batteria, inCarica: inCarica,
-                                          temperatura: temperatura, obiettivo: obiettivo.rawValue)
+                                          temperatura: temperatura, obiettivo: (obiettivoInStato ?? obiettivo).rawValue)
         visivi.completa(&statoTelefono)
         funzioni.completa(&statoTelefono)
         gobbo.completa(&statoTelefono)
@@ -2440,7 +2461,7 @@ final class SessioneTelefono {
         statoTelefono.collegamento = statoCollegamento
         // Quarta prova: `sfocaturaSistema` e `luceSistema` non si mandano più (niente Ritratto né Luce da studio).
         collegamento?.invia(.stato(statoTelefono))
-        if regolaQualita() { riconfiguraSeCambiaFormato(perche: String(localized: "calore o batteria")) }
+        if conQualita && regolaQualita() { riconfiguraSeCambiaFormato(perche: String(localized: "calore o batteria")) }
     }
 
     // MARK: - Misuratore

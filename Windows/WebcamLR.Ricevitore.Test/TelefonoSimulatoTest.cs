@@ -72,6 +72,47 @@ public class TelefonoSimulatoTest
     }
 
     /// <summary>
+    /// Qualità 14: nei numeri del computer la latenza si divide in rete (cattura → arrivo, qui i 30 ms simulati), coda
+    /// (dall'anteprima) e decodifica (il resto fino all'anteprima).
+    /// </summary>
+    [Fact]
+    public async Task LaLatenzaSiDivideNelleSueParti()
+    {
+        using var idComputer = IdentitaDispositivo.Nuova();
+        var abbinamento = new Abbinamento(idComputer);
+        var conParti = new TaskCompletionSource<Statistiche>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var ricevitore = new Ricevitore(abbinamento, sessione =>
+        {
+            sessione.MisuraUscita = () => (90, null);
+            sessione.MisuraCoda = () => 8;
+            sessione.StatisticheAggiornate += s =>
+            {
+                if (s.ArrivoMs is not null) conParti.TrySetResult(s);
+            };
+        });
+        await using var telefono = new TelefonoFinto(orologio: OrologioTelefono);
+        await telefono.CollegaAsync(ricevitore.Ascoltatore.Porta, gettone: abbinamento.Gettone);
+        await telefono.AttendiAsync<Benvenuto>().WaitAsync(Limite);
+        await telefono.InviaAsync(new FormatoVideo(Codec.H264, 1280, 720, 30));
+        using var basta = new CancellationTokenSource(Limite);
+        var invio = Task.Run(async () =>
+        {
+            for (var i = 0; !conParti.Task.IsCompleted && !basta.IsCancellationRequested; i++)
+            {
+                await telefono.InviaAsync(Fotogramma(chiave: i == 0));
+                await Task.Delay(33);
+            }
+        });
+
+        var statistiche = await conParti.Task.WaitAsync(Limite);
+        await invio;
+        // La rete: i 30 ms simulati, più poco (loopback, thread di prova).
+        Assert.InRange(statistiche.ArrivoMs!.Value, 29, 70);
+        Assert.Equal(8, statistiche.CodaMs);
+        Assert.Equal(90 - statistiche.ArrivoMs - 8, statistiche.DecodificaMs);
+    }
+
+    /// <summary>
     /// Pausa «sottofondo» (Protocollo.md, «Pausa intelligente»): il telefono lo dice e poi tace. Con l'orologio finto
     /// avanti di 30 s non c'è «Riconnessione» né chiusura; dopo i 10 minuti di tolleranza sì.
     /// </summary>

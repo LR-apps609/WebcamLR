@@ -113,6 +113,16 @@ object NumeriQualita {
     /** Il bitrate del livello, da quello di Auto (con il cavo già compreso), entro il tetto. */
     fun bitrate(diAuto: Int, livello: String): Int =
         minOf((diAuto * moltiplicatore(LivelliQualita.normalizza(livello))).toLong(), TETTO.toLong()).toInt()
+
+    /**
+     * Il formato di Massima tra i `formati` dell'obiettivo (già con i limiti della versione gratuita): quello con più
+     * pixel e, a parità, con più fps (al massimo 60). `null` se non ce n'è nessuno: allora vale il formato chiesto.
+     * Come `QualitaScelta.formatoMassimo` dell'iPhone.
+     */
+    fun formatoMassimo(formati: List<FormatoSupportato>): FormatoSupportato? =
+        formati.filter { it.fpsMassimo > 0 }
+            .maxWithOrNull(compareBy<FormatoSupportato>({ it.larghezza.toLong() * it.altezza }, { it.fpsMassimo }))
+            ?.let { FormatoSupportato(maxOf(it.larghezza, it.altezza), minOf(it.larghezza, it.altezza), minOf(it.fpsMassimo, 60)) }
 }
 
 /** Come è collegato il telefono al computer (1.2): si ricava dall'interfaccia di rete usata, nessun messaggio nuovo. */

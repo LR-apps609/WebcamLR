@@ -93,9 +93,11 @@ import it.lrapps.webcamlr.protocollo.Filtri
 import it.lrapps.webcamlr.protocollo.FormatoVideo
 import it.lrapps.webcamlr.protocollo.InOnda
 import it.lrapps.webcamlr.protocollo.Latenza
+import it.lrapps.webcamlr.protocollo.LivelliQualita
 import it.lrapps.webcamlr.protocollo.ModiSfondo
 import it.lrapps.webcamlr.protocollo.MotiviPausa
 import it.lrapps.webcamlr.protocollo.MotivoChiusura
+import it.lrapps.webcamlr.protocollo.NumeriQualita
 import it.lrapps.webcamlr.protocollo.PacchettoImmagine
 import it.lrapps.webcamlr.protocollo.Piattaforma
 import it.lrapps.webcamlr.protocollo.SfondiPronti
@@ -440,6 +442,12 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     private val perditeUltimiSecondi = ArrayDeque<Int>()
     /** Il formato chiesto dal computer con `formato`, adattato all'obiettivo: vale per questa sessione. */
     private var formatoRichiesto: FormatoScelto? = null
+    /**
+     * Qualità 15: Auto, Alta o Massima, da `comando.qualita` ([LivelliQualita]). Non si salva: la sceglie il computer.
+     * Osservata: le Impostazioni la mostrano accanto alla qualità inviata.
+     */
+    var livelloQualita by mutableStateOf(LivelliQualita.AUTO)
+        private set
     private var esposizione = 0.0
     private var bianco = 0
     private var effettiGpu = false
@@ -1704,8 +1712,12 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
      * calore, batteria, Pro (720p30 senza) e 4K. Tiene anche [motiviRiduzione] per le Impostazioni e i Dettagli.
      */
     private fun formatoEffettivo(): FormatoScelto {
+        // Qualità 15: con Massima il formato più alto dell'obiettivo tra quelli che il computer vede in `capacita.formati`.
+        val massima = if (livelloQualita != LivelliQualita.MASSIMA) null else formatiPossibili()?.let { tutti ->
+            NumeriQualita.formatoMassimo(if (pro) tutti else LimitiGratis.formati(tutti))
+        }
         val scelta = SceltaFormato.conMotivi(
-            SceltaFormato.diSerie(pro), formatoRichiesto, formatoChiesto, caloreInterno.value, risparmioBatteria, pro,
+            SceltaFormato.diSerie(pro), formatoRichiesto, formatoChiesto, caloreInterno.value, risparmioBatteria, pro, massima,
         )
         if (scelta.motivi != motiviRiduzione) motiviRiduzione = scelta.motivi
         return scelta.formato
@@ -1933,6 +1945,28 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         formato?.let { collegamento?.invia(it) }
     }
 
+    /**
+     * Qualità 15: il computer sceglie Auto, Alta o Massima. Il bitrate cambia dal vivo; entrando in Massima o uscendone
+     * la fotocamera si riapre solo se cambiano risoluzione o fps. Lo `stato` lo dice subito.
+     */
+    private fun impostaQualita(valore: String) {
+        val nuovo = LivelliQualita.normalizza(valore)
+        if (nuovo == livelloQualita) return
+        livelloQualita = nuovo
+        registro.aggiungi(Testi.testo(R.string.registro_qualita_scelta, Testi.testo(nomeLivelloQualita(nuovo))))
+        synchronized(adattamento) {
+            adattamento.livello = nuovo
+            codificatore.impostaQualita(nuovo)
+            if (codificaAttiva && codificatore.bitrateBase > 0) codificatore.impostaBitrate(adattamento.bitrate(codificatore.bitrateBase))
+        }
+        val atteso = formatoEffettivo()
+        val attuale = formato
+        val uguale = attuale != null && maxOf(attuale.larghezza, attuale.altezza) == atteso.larghezza &&
+            attuale.fps == atteso.fps && attuale.codec == atteso.codec
+        if (!uguale && fotocameraPronta && !chiusaDallUtente) avviaFotocamera()
+        aggiornaStato()
+    }
+
     /** Comandi della fotocamera e degli effetti, dal computer o dall'interfaccia: solo i campi presenti, nei limiti. */
     fun applica(ricevuto: Comando) {
         // Senza WebcamLR Pro i campi che accenderebbero una funzione Pro si ignorano; lo `stato` dopo riallinea il computer.
@@ -1967,6 +2001,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         comando.specchia?.let { impostaSpecchio(it) }
         comando.audio?.let { impostaAudio(it) }
         comando.collegamento?.let { impostaPreferenzaCollegamento(it) }
+        comando.qualita?.let { impostaQualita(it) }
         if (comando.togliLogo == true) togliLogo()
         aggiornaControlli()
         if (ignorato) registro.aggiungi(Testi.testo(R.string.registro_pro_ignorato))
@@ -2324,6 +2359,8 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
             formatiPro = formatiPro,
             // Sa mandare la fotocamera così com'è e lasciare tutti gli effetti al computer.
             effettiSulComputer = true,
+            // Qualità 15: Auto, Alta o Massima dal computer (`comando.qualita`).
+            sceltaQualita = true,
         )
         verso.invia(ModelloEffetti.completa(base, funzioniInterne.value, grafica.sfondiPronti))
     }
@@ -2357,6 +2394,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
                 collegamento = strade,
                 immaginePersonale = grafica.improntaFoto,
                 logo = grafica.improntaLogo,
+                qualita = livelloQualita,
             )
             // Con gli effetti sul computer il telefono non ne fa nessuno: lo `stato` non ne dichiara.
             verso.invia(if (sulComputerInterno.value) base else ModelloEffetti.completa(base, effettiEffettivi(), funzioniInterne.value))
@@ -2537,6 +2575,13 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         const val ATTESA_RISPOSTA_EFFETTO_MS = 2_000L
 
         fun nomeCodec(formato: FormatoVideo) = if (formato.codec.valore == "hevc") "HEVC" else "H.264"
+
+        /** Qualità 15: il nome di Auto, Alta o Massima (risorsa), per il registro e le Impostazioni. */
+        fun nomeLivelloQualita(livello: String): Int = when (livello) {
+            LivelliQualita.ALTA -> R.string.qualita_alta
+            LivelliQualita.MASSIMA -> R.string.qualita_massima
+            else -> R.string.qualita_auto
+        }
 
         /** Il nome della qualità come sul computer e nelle Impostazioni: «720p», «1080p», «4K» (dal lato corto). */
         fun nomeQualita(larghezza: Int, altezza: Int): String {

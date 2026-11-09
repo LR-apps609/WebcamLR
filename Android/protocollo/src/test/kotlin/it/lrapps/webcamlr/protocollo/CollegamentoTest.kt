@@ -450,6 +450,18 @@ class QualitaTest {
     }
 
     @Test
+    fun formatoDiMassima() {
+        val formati = listOf(FormatoSupportato(1280, 720, 60), FormatoSupportato(1920, 1080, 60), FormatoSupportato(3840, 2160, 30))
+        assertEquals(FormatoSupportato(3840, 2160, 30), NumeriQualita.formatoMassimo(formati))
+        // Senza 4K: il 1080p con più fps; in verticale si risponde in orizzontale.
+        assertEquals(
+            FormatoSupportato(1920, 1080, 60),
+            NumeriQualita.formatoMassimo(listOf(FormatoSupportato(1080, 1920, 30), FormatoSupportato(1920, 1080, 60))),
+        )
+        assertEquals(null, NumeriQualita.formatoMassimo(listOf(FormatoSupportato(1280, 720, 0))))
+    }
+
+    @Test
     fun tipoDiCollegamentoDallInterfaccia() {
         assertEquals(TipoCollegamento.WIFI, TipoCollegamento.daInterfaccia("wlan0"))
         assertEquals(TipoCollegamento.CAVO_USB, TipoCollegamento.daInterfaccia("rndis0"))

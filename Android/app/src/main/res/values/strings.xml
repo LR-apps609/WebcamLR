@@ -392,6 +392,10 @@
     <string name="registro_fermo">Fermo: %1$s</string>
     <string name="registro_codificatore_fermo">Codificatore fermo: lo riavvio</string>
     <string name="registro_computer_chiede">Il computer chiede %1$d×%2$d, %3$d fps, %4$s</string>
+    <string name="registro_qualita_scelta">Qualità scelta sul computer: %1$s</string>
+    <string name="qualita_auto">Auto</string>
+    <string name="qualita_alta">Alta</string>
+    <string name="qualita_massima">Massima</string>
     <string name="registro_video">Video %1$d×%2$d, %3$d fps, %4$s</string>
     <string name="registro_pro_ignorato">Senza WebcamLR Pro: comando Pro ignorato</string>
     <string name="registro_immagine_senza_pro">Senza WebcamLR Pro: immagine dal computer ignorata</string>

@@ -60,6 +60,11 @@ final class Codificatore: @unchecked Sendable {
     private var secondiPuliti = 0
     /// Qualità ed efficienza (27 ottobre): sul cavo (USB o di rete) il bitrate di riferimento sale del 50%.
     private var cavo = false
+    /// Qualità 15: la qualità a scelta del computer (`LivelliQualita`, `comando.qualita`). Alta e Massima moltiplicano
+    /// il bitrate di riferimento e, con la rete che non regge, si fermano al bitrate di Auto (vedi `adattaAllaRete`).
+    private var livello = LivelliQualita.auto
+    /// Secondi di fila con scarti o rete satura mentre si è già alla soglia di Alta o Massima.
+    private var secondiAllaSoglia = 0
     /// La sessione attuale usa il controllo del bitrate a bassa latenza di VideoToolbox.
     private var bassaLatenza = false
     /// Con la bassa latenza il codificatore non mette fotogrammi chiave da solo (GOP infinito): se ne chiede uno
@@ -85,6 +90,25 @@ final class Codificatore: @unchecked Sendable {
     /// Mai sotto un quinto della qualità scelta, né sotto 500 kbit/s.
     private static let fattoreMinimo = 0.2
     private static let bitrateMinimo = 500_000
+    /// Qualità 15: il tetto del bitrate in tutti i livelli (Protocollo.md, «Qualità a scelta»).
+    private static let tetto = 80_000_000
+    /// Alta e Massima: secondi di fila che la rete non regge la soglia, prima di scendere sotto.
+    private static let secondiPrimaDiScendereSottoLaSoglia = 3
+
+    /// Alta × 1,5, Massima × 2 (gli stessi numeri di `NumeriQualita` su Android).
+    private static func moltiplicatore(_ livello: String) -> Double {
+        switch livello {
+        case LivelliQualita.alta: 1.5
+        case LivelliQualita.massima: 2
+        default: 1
+        }
+    }
+
+    /// Il fattore sotto cui si scende solo se la rete non regge: con Alta e Massima il bitrate di Auto.
+    private static func soglia(_ livello: String) -> Double {
+        let per = moltiplicatore(livello)
+        return per > 1 ? 1 / per : fattoreMinimo
+    }
 
     /// Fotogrammi al secondo e codec della fotocamera appena configurata. Se sono quelli di prima (fotocamera
     /// riconfigurata per un altro obiettivo o per la stabilizzazione, o lo stesso formato riapplicato) la sessione di
@@ -163,7 +187,22 @@ final class Codificatore: @unchecked Sendable {
             cavo = nuovo
             guard larghezza > 0 else { return }
             bitrateBase = Self.bitrateDiRiferimento(larghezza: larghezza, altezza: altezza, fps: fps, codec: codec,
-                                                    cavo: cavo)
+                                                    cavo: cavo, livello: livello)
+            applicaBitrate()
+        }
+    }
+
+    /// Qualità 15: Auto, Alta o Massima (`comando.qualita`). Cambia il bitrate di riferimento sulla sessione viva,
+    /// senza ricrearla; risoluzione e fps di Massima li sceglie `SessioneTelefono.formatoEffettivo`.
+    func impostaQualita(_ nuovo: String) {
+        blocco.withLock {
+            let normalizzato = LivelliQualita.normalizza(nuovo)
+            guard normalizzato != livello else { return }
+            livello = normalizzato
+            secondiAllaSoglia = 0
+            guard larghezza > 0 else { return }
+            bitrateBase = Self.bitrateDiRiferimento(larghezza: larghezza, altezza: altezza, fps: fps, codec: codec,
+                                                    cavo: cavo, livello: livello)
             applicaBitrate()
         }
     }
@@ -173,27 +212,44 @@ final class Codificatore: @unchecked Sendable {
         blocco.withLock {
             fattoreRete = 1
             secondiPuliti = 0
+            secondiAllaSoglia = 0
             applicaBitrate()
         }
     }
 
     /// Chiamata una volta al secondo dal collegamento. Se si scarta o la rete è satura il bitrate
     /// scende del 30%; dopo 3 secondi puliti risale del 10% della qualità scelta, fino a quella.
-    /// Ritorna `true` se la rete è debole (bitrate ben sotto la qualità scelta).
+    /// Qualità 15: con Alta e Massima la discesa si ferma al bitrate di Auto e va sotto solo dopo 3 secondi di fila
+    /// che la rete non regge nemmeno quello (come `AdattamentoRete` su Android).
+    /// Ritorna `true` se la rete è debole (bitrate ben sotto quello di Auto).
     func adattaAllaRete(scartati: Int, saturo: Bool) -> Bool {
         return blocco.withLock { () -> Bool in
+            let soglia = Self.soglia(livello)
             if scartati > 0 || saturo {
-                fattoreRete = max(fattoreRete * 0.7, Self.fattoreMinimo)
                 secondiPuliti = 0
-            } else if fattoreRete < 1 {
-                secondiPuliti += 1
-                if secondiPuliti >= 3 {
-                    fattoreRete = min(fattoreRete + 0.1, 1)
-                    secondiPuliti = 0
+                let giu = fattoreRete * 0.7
+                if giu >= soglia {
+                    fattoreRete = giu
+                } else if fattoreRete > soglia {
+                    fattoreRete = soglia
+                } else {
+                    secondiAllaSoglia += 1
+                    if secondiAllaSoglia >= Self.secondiPrimaDiScendereSottoLaSoglia {
+                        fattoreRete = max(giu, Self.fattoreMinimo)
+                    }
+                }
+            } else {
+                secondiAllaSoglia = 0
+                if fattoreRete < 1 {
+                    secondiPuliti += 1
+                    if secondiPuliti >= 3 {
+                        fattoreRete = min(fattoreRete + 0.1, 1)
+                        secondiPuliti = 0
+                    }
                 }
             }
             applicaBitrate()
-            return fattoreRete < 0.6
+            return fattoreRete * Self.moltiplicatore(livello) < 0.6
         }
     }
 
@@ -370,7 +426,8 @@ final class Codificatore: @unchecked Sendable {
         sessioneProvata = false
         ultimaChiave = nil
 
-        bitrateBase = Self.bitrateDiRiferimento(larghezza: l, altezza: a, fps: fps, codec: codec, cavo: cavo)
+        bitrateBase = Self.bitrateDiRiferimento(larghezza: l, altezza: a, fps: fps, codec: codec, cavo: cavo,
+                                                livello: livello)
         // Se la rete era già lenta si parte dal bitrate che reggeva.
         let bitrate = max(Int(Double(bitrateBase) * fattoreRete), min(bitrateBase, Self.bitrateMinimo))
         bitrateApplicato = bitrate
@@ -401,8 +458,10 @@ final class Codificatore: @unchecked Sendable {
     /// Qualità ed efficienza (27 ottobre): il bitrate (bit/s) con la rete che regge. Il video va solo dal telefono al
     /// computer, in rete locale o sul cavo: si può spendere. H.264 a 30 fps: 720p 8, 1080p 16, 4K 40 Mbit/s, in
     /// mezzo in proporzione ai pixel (fuori, in proporzione al punto più vicino); 60 fps ×1,5 (1080p60 = 24 Mbit/s),
-    /// sotto i 30 fps in proporzione (24 fps ×0,8); HEVC ×0,65; sul cavo ×1,5. Poi `adattaAllaRete` scende se serve.
-    static func bitrateDiRiferimento(larghezza: Int32, altezza: Int32, fps: Int, codec: Codec, cavo: Bool) -> Int {
+    /// sotto i 30 fps in proporzione (24 fps ×0,8); HEVC ×0,65; sul cavo ×1,5. Qualità 15: Alta ×1,5, Massima ×2, con
+    /// un tetto di 80 Mbit/s (Protocollo.md, «Qualità a scelta»). Poi `adattaAllaRete` scende se serve.
+    static func bitrateDiRiferimento(larghezza: Int32, altezza: Int32, fps: Int, codec: Codec, cavo: Bool,
+                                     livello: String = LivelliQualita.auto) -> Int {
         let pixel = max(Double(larghezza) * Double(altezza), 1)
         let punti: [(pixel: Double, bitrate: Double)] = [(1280 * 720, 8_000_000), (1920 * 1080, 16_000_000),
                                                          (3840 * 2160, 40_000_000)]
@@ -418,7 +477,8 @@ final class Codificatore: @unchecked Sendable {
         let perFps = fps > 30 ? 1 + 0.5 * min(Double(fps - 30) / 30, 1) : Double(max(fps, 1)) / 30
         let perCodec = codec == .hevc ? 0.65 : 1
         let perCavo = cavo ? 1.5 : 1
-        return Int(a30 * perFps * perCodec * perCavo)
+        let perLivello = moltiplicatore(LivelliQualita.normalizza(livello))
+        return min(Int(a30 * perFps * perCodec * perCavo * perLivello), tetto)
     }
 
     /// Da AVCC (lunghezze di 4 byte) ad Annex B, con SPS e PPS davanti ai fotogrammi chiave.

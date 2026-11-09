@@ -460,6 +460,23 @@
         }
       }
     },
+    "Alta" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "High"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alta"
+          }
+        }
+      }
+    },
     "Altre risposte nelle domande frequenti" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -949,6 +966,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Attivo"
+          }
+        }
+      }
+    },
+    "Auto" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auto"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auto"
           }
         }
       }
@@ -4268,6 +4302,23 @@
         }
       }
     },
+    "Massima" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maximum"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Massima"
+          }
+        }
+      }
+    },
     "Messa a fuoco" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5318,6 +5369,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Qualità"
+          }
+        }
+      }
+    },
+    "Qualità scelta sul computer: %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quality chosen on the computer: %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qualità scelta sul computer: %@"
           }
         }
       }
@@ -8854,6 +8922,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "qualità scelta"
+          }
+        }
+      }
+    },
+    "qualità scelta sul computer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "quality chosen on the computer"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "qualità scelta sul computer"
           }
         }
       }

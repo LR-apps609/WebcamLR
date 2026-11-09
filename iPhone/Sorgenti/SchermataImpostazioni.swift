@@ -357,7 +357,10 @@ struct SchermataImpostazioni: View {
         let lato = min(sessione.larghezza, sessione.altezza)
         // Con gli stessi nomi del menu del computer: 720p, 1080p, 4K.
         let nome = lato >= 2160 ? "4K" : "\(lato)p"
-        return "\(nome) · \(sessione.fps) fps · \(sessione.codec.nome)"
+        let testo = "\(nome) · \(sessione.fps) fps · \(sessione.codec.nome)"
+        // Qualità 15: Alta o Massima scelte sul computer; Auto, quella di sempre, non si scrive.
+        guard let scelta = QualitaScelta.nomeSeScelta(sessione.livelloQualita) else { return testo }
+        return testo + " · " + scelta
     }
 
     /// Perché il telefono manda meno di quanto chiesto dal computer, se è così.

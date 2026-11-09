@@ -805,6 +805,17 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
     /// il 4K al massimo a 30, vedi `fpsMassimo4K`).
     var formatiSupportati: [FormatoSupportato] {
         guard let dispositivo = ingresso?.device else { return [] }
+        return Self.formati(di: dispositivo)
+    }
+
+    /// Qualità 15: come `formatiSupportati`, per un obiettivo qualsiasi, anche prima di configurarlo («Massima» sceglie
+    /// la risoluzione dell'obiettivo verso cui si sta passando, non di quello di prima).
+    static func formatiSupportati(di obiettivo: Obiettivo) -> [FormatoSupportato] {
+        guard let dispositivo = obiettivo.dispositivo else { return [] }
+        return formati(di: dispositivo)
+    }
+
+    private static func formati(di dispositivo: AVCaptureDevice) -> [FormatoSupportato] {
         let risoluzioni: [(Int32, Int32)] = [(1280, 720), (1920, 1080), (3840, 2160)]
         return risoluzioni.compactMap { larghezza, altezza in
             let fps = Self.fpsMassimo(di: dispositivo, larghezza: larghezza, altezza: altezza)

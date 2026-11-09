@@ -72,14 +72,14 @@ public static class RegoleEffettiComputer
     /// <summary>Le scelte salvate nelle preferenze (JSON). Doppia vista e postura no: sono del telefono.</summary>
     private sealed record Salvati(string? Filtro, double Luminosita, double Contrasto, double Saturazione, double Nitidezza,
         string? Sfondo, double IntensitaSfondo, string? ImmagineSfondo, double Pelle, bool Inquadratura, bool LuceVolto,
-        string? Nome, string? Ruolo, bool Specchia, double Calore);
+        string? Nome, string? Ruolo, bool Specchia, double Calore, string? Sfocatura = null);
 
     /// <summary>La prima volta: tutto spento e il calore a 0,3, come lo propone il telefono.</summary>
     public static ValoriEffetti Iniziali { get; } = ValoriEffetti.Iniziali with { Calore = 0.3 };
 
     public static string InTesto(ValoriEffetti v) => JsonSerializer.Serialize(new Salvati(v.Filtro, v.Luminosita, v.Contrasto,
         v.Saturazione, v.Nitidezza, v.Sfondo, v.IntensitaSfondo, v.ImmagineSfondo, v.Pelle, v.Inquadratura, v.LuceVolto,
-        v.Scritta.Nome, v.Scritta.Ruolo, v.Specchia, v.Calore), Opzioni);
+        v.Scritta.Nome, v.Scritta.Ruolo, v.Specchia, v.Calore, v.Sfocatura), Opzioni);
 
     /// <summary>Dalle preferenze; un testo mancante o rovinato vale <see cref="Iniziali"/>. I valori si portano nei limiti.</summary>
     public static ValoriEffetti DaTesto(string? testo)
@@ -97,6 +97,8 @@ public static class RegoleEffettiComputer
                 ImmagineSfondo: s.ImmagineSfondo, Calore: s.Calore)) with
             {
                 Filtro = NomiEffetti.FiltroValido(s.Filtro),
+                // Preferenze di prima (senza lo stile) o di una versione più nuova (stile sconosciuto): sfocatura normale.
+                Sfocatura = StiliSfocatura.Valido(s.Sfocatura),
             };
         }
         catch (JsonException)
@@ -108,9 +110,9 @@ public static class RegoleEffettiComputer
 
 /// <summary>
 /// Dalle scelte della finestra a ciò che il motore applica (come <c>aggiornaMotore</c> del Mac), con le regole di WebcamLR
-/// Pro del telefono nella webcam (<c>capacita.pro</c>): gratis la sfocatura, il calore, la luce sul volto e lo specchio;
-/// il resto (sfondo sostituito, filtri, regolazioni, pelle, inquadratura, scritta e logo) solo con Pro. Specchio e sfondo
-/// solo con la fotocamera frontale (<c>stato.obiettivo</c>), come oggi: con la posteriore niente specchio e niente sfondo.
+/// Pro del telefono nella webcam (<c>capacita.pro</c>): gratis la sfocatura (anche bokeh e mosaico), il calore, la luce
+/// sul volto e lo specchio; il resto (sfondo sostituito, verde per il chroma key compreso, filtri, regolazioni, pelle,
+/// inquadratura, scritta e logo) solo con Pro. Specchio e sfondo solo con la fotocamera frontale (<c>stato.obiettivo</c>), come oggi: con la posteriore niente specchio e niente sfondo.
 /// Con la sfocatura o la luce del sistema del telefono accese (Ritratto, Luce da studio) le nostre restano spente: mai due.
 /// </summary>
 public static class RegoleMotore
@@ -137,6 +139,8 @@ public static class RegoleMotore
                 Sfondo = scelti.Sfondo,
                 IntensitaSfondo = scelti.IntensitaSfondo,
                 ImmagineSfondo = sostituito ? immagineSfondo : null,
+                // Bokeh e mosaico sono gratis come la sfocatura; il verde (un'immagine sostituita) è di Pro come gli sfondi.
+                Sfocatura = sfocato ? StiliSfocatura.Valido(scelti.Sfocatura) : StiliSfocatura.Normale,
             };
         }
         if (!pro) return motore;

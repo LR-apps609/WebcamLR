@@ -991,4 +991,16 @@
   <data name="QualitaScelta_NotaMassima" xml:space="preserve">
     <value>the phone’s best</value>
   </data>
+  <data name="Sfocatura_Normale" xml:space="preserve">
+    <value>Normal</value>
+  </data>
+  <data name="Sfocatura_Bokeh" xml:space="preserve">
+    <value>Lens (bokeh)</value>
+  </data>
+  <data name="Sfocatura_Mosaico" xml:space="preserve">
+    <value>Mosaic</value>
+  </data>
+  <data name="SfondoPronto_SchermoVerde" xml:space="preserve">
+    <value>Green screen</value>
+  </data>
 </root>

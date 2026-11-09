@@ -83,7 +83,8 @@ public static class RegoleTelecomando
     /// <summary>
     /// Specchio, sfondo e luce sul volto come li fa davvero il motore per questo telefono (<see cref="RegoleMotore"/>):
     /// specchio e sfondo solo con la frontale, sfondo sostituito solo con Pro e un'immagine, mai sopra Ritratto o Luce da
-    /// studio del telefono.
+    /// studio del telefono. Gli sfondi che ci sono solo sul PC si dicono con i valori del protocollo: bokeh e mosaico
+    /// «sfocato», il verde per il chroma key «sostituito» (Protocollo.md, «Effetti sul computer»).
     /// </summary>
     /// <param name="immagineSfondo">Con lo sfondo sostituito: l'immagine che il PC ha (null = nessuna).</param>
     public static EffettiComputer Stato(ValoriEffetti scelti, bool pro, StatoTelefono? stato, string? immagineSfondo)
@@ -96,7 +97,8 @@ public static class RegoleTelecomando
     /// <summary>
     /// Il comando per le scelte del PC da un <c>chiedi-effetto</c> (tutti e tre gratis, come i pulsanti del PC): specchio e
     /// sfondo solo con la frontale; «sfocato» accende la sfocatura con <paramref name="ultimoLivello"/> (l'ultimo scelto sul
-    /// PC), ma non sopra Ritratto del telefono; «nessuno» spegne lo sfondo (sfocato o sostituito); un altro valore si
+    /// PC) e con l'ultimo stile scelto sul PC (normale, bokeh o mosaico: resta nelle scelte, il comando non lo tocca), ma
+    /// non sopra Ritratto del telefono; «nessuno» spegne lo sfondo (sfocato o sostituito); un altro valore si
     /// ignora; la luce non si accende sopra Luce da studio. Null se non resta niente da applicare.
     /// </summary>
     public static Comando? Comando(ChiediEffetto richiesta, StatoTelefono? stato, LivelloSfocatura ultimoLivello)

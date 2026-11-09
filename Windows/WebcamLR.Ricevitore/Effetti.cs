@@ -1,3 +1,4 @@
+using WebcamLR.Effetti;
 using WebcamLR.Protocollo;
 
 namespace WebcamLR.Ricevitore;
@@ -38,6 +39,14 @@ public static class NomiEffetti
     /// <summary>Un filtro sconosciuto vale «naturale» (Protocollo.md).</summary>
     public static string FiltroValido(string? id, IReadOnlyList<string>? disponibili = null) =>
         id is not null && (Filtri.Tutti.Contains(id) || disponibili?.Contains(id) == true) ? id : Filtri.Naturale;
+
+    /// <summary>Il nome di uno stile della sfocatura (Qualità 7 e 8): Normale, Obiettivo (bokeh), Mosaico.</summary>
+    public static string StileSfocatura(string stile) => StiliSfocatura.Valido(stile) switch
+    {
+        StiliSfocatura.Bokeh => TestiRicevitore.T("Sfocatura_Bokeh"),
+        StiliSfocatura.Mosaico => TestiRicevitore.T("Sfocatura_Mosaico"),
+        _ => TestiRicevitore.T("Sfocatura_Normale"),
+    };
 
     /// <summary>Uno sfondo sconosciuto vale «nessuno» (Protocollo.md).</summary>
     public static string SfondoValido(string? modo) =>
@@ -132,10 +141,14 @@ public sealed record DisponibilitaEffetti(IReadOnlyList<string> Filtri, bool Sfo
 /// <summary>Gli effetti come li mostra la finestra: quelli del telefono, più i cambi fatti qui e non ancora confermati.</summary>
 /// <param name="Scritta">Nome vuoto = nessuna scritta.</param>
 /// <param name="Calore">Calore del viso, da 0 («Neutro», i colori della fotocamera) a 1.</param>
+/// <param name="Sfocatura">
+/// Con lo sfondo sfocato, lo stile (<see cref="StiliSfocatura"/>: normale, bokeh, mosaico). Solo del PC: non viaggia nel
+/// protocollo, e un comando o uno stato non lo cambiano (lo cambia <see cref="ControlloEffetti.Sfoca"/>).
+/// </param>
 public sealed record ValoriEffetti(string Filtro, double Luminosita, double Contrasto, double Saturazione, double Nitidezza,
     string Sfondo, double IntensitaSfondo, double Pelle, bool Inquadratura, bool LuceVolto, Scritta Scritta,
     bool DoppiaVista, bool Postura, bool Specchia = false, string? ImmagineSfondo = null, string? ImmaginePersonale = null,
-    string? Logo = null, double Calore = 0)
+    string? Logo = null, double Calore = 0, string Sfocatura = StiliSfocatura.Normale)
 {
     public static ValoriEffetti Iniziali { get; } = new(Filtri.Naturale, 0, 0, 0, 0, ModiSfondo.Nessuno, 0.5, 0,
         false, false, Scritta.Nessuna, false, false);
@@ -394,9 +407,21 @@ public sealed class ControlloEffetti
         ? Subito(new Comando(Sfondo: ModiSfondo.Nessuno), adessoMs)
         : Sfoca(intensita ?? Valori.IntensitaSfondo, adessoMs);
 
-    /// <summary>Sfondo sfocato con questa intensità, in un solo comando (Poco, Medio o Tanto dal menu di «Sfondo»).</summary>
-    public Comando Sfoca(double intensita, long adessoMs) =>
-        Subito(new Comando(Sfondo: ModiSfondo.Sfocato, IntensitaSfondo: Math.Clamp(intensita, 0, 1)), adessoMs);
+    /// <summary>
+    /// Sfondo sfocato con questa intensità, in un solo comando (Poco, Medio o Tanto dal menu di «Sfondo»). Con
+    /// <paramref name="stile"/> anche lo stile della sfocatura (Normale, Obiettivo, Mosaico), che resta del PC; senza, quello
+    /// di prima.
+    /// </summary>
+    public Comando Sfoca(double intensita, long adessoMs, string? stile = null)
+    {
+        var comando = Subito(new Comando(Sfondo: ModiSfondo.Sfocato, IntensitaSfondo: Math.Clamp(intensita, 0, 1)), adessoMs);
+        if (stile is not null && StiliSfocatura.Valido(stile) is var valido && valido != Valori.Sfocatura)
+        {
+            Valori = Valori with { Sfocatura = valido };
+            Cambiati?.Invoke();
+        }
+        return comando;
+    }
 
     /// <summary>
     /// Il livello con la spunta nel menu di «Sfondo»: con lo sfondo sfocato quello più vicino all'intensità che il telefono

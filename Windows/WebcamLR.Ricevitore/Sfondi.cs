@@ -1,3 +1,4 @@
+using WebcamLR.Effetti;
 using WebcamLR.Protocollo;
 
 namespace WebcamLR.Ricevitore;
@@ -25,6 +26,7 @@ public static class RegoleSfondo
         SfondiPronti.Piante => TestiRicevitore.T("SfondoPronto_Piante"),
         SfondiPronti.Lrapps => TestiRicevitore.T("SfondoPronto_Lrapps"),
         SfondiPronti.Personale => TestiRicevitore.T("SfondoPronto_Personale"),
+        SfondoVerde.Id => TestiRicevitore.T("SfondoPronto_SchermoVerde"),
         "" => TestiRicevitore.T("SfondoPronto_Personale"),
         _ => char.ToUpperInvariant(id[0]) + id[1..],
     };
@@ -41,12 +43,13 @@ public static class RegoleSfondo
 
     /// <summary>
     /// Con lo sfondo sostituito, l'immagine che il telefono mostra (quella con la spunta): un id sconosciuto o assente vale
-    /// il primo sfondo pronto. Null con lo sfondo spento o sfocato.
+    /// il primo sfondo pronto. Null con lo sfondo spento o sfocato. Il verde per il chroma key (<see cref="SfondoVerde.Id"/>,
+    /// solo del PC) vale sempre: non è un'immagine da avere.
     /// </summary>
     public static string? ImmagineAttuale(ValoriEffetti valori, IReadOnlyList<string> pronti)
     {
         if (valori.Sfondo != ModiSfondo.Sostituito) return null;
-        if (valori.ImmagineSfondo is { } id && (id == SfondiPronti.Personale || pronti.Contains(id))) return id;
+        if (valori.ImmagineSfondo is { } id && (id == SfondiPronti.Personale || id == SfondoVerde.Id || pronti.Contains(id))) return id;
         return pronti.Count > 0 ? pronti[0] : null;
     }
 
@@ -66,14 +69,14 @@ public static class RegoleSfondo
 
     /// <summary>
     /// Il clic sul pulsante «Sfondo»: <see cref="ModiSfondo.Nessuno"/> se lo sfondo è acceso; altrimenti l'ultima scelta.
-    /// Uno sfondo (l'id) solo se c'è ancora e se il telefono ha Pro; in tutti gli altri casi <see cref="Sfocatura"/>, che è
-    /// gratis.
+    /// Uno sfondo (l'id, anche il verde per il chroma key) solo se c'è ancora e se il telefono ha Pro; in tutti gli altri
+    /// casi <see cref="Sfocatura"/> (con l'ultimo stile), che è gratis.
     /// </summary>
     public static string Clic(ValoriEffetti valori, string? ultima, bool pro, IReadOnlyList<string> pronti, bool personaleDisponibile)
     {
         if (valori.SfondoAcceso) return ModiSfondo.Nessuno;
         if (!pro || ultima is null || ultima == Sfocatura) return Sfocatura;
-        var disponibile = ultima == SfondiPronti.Personale ? personaleDisponibile : pronti.Contains(ultima);
+        var disponibile = ultima == SfondiPronti.Personale ? personaleDisponibile : ultima == SfondoVerde.Id || pronti.Contains(ultima);
         return disponibile ? ultima : Sfocatura;
     }
 }

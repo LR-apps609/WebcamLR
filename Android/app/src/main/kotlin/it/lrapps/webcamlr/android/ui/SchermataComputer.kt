@@ -50,7 +50,6 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Usb
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -60,7 +59,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -96,7 +94,12 @@ import it.lrapps.webcamlr.protocollo.Associazione
 import it.lrapps.webcamlr.protocollo.Piattaforma
 import kotlinx.coroutines.delay
 
-/** Ricollegamento automatico (novità 2): una volta sola per avvio dell'app. */
+/**
+ * Ricollegamento automatico (novità 2): una volta sola per avvio dell'app. Qualità 19 («avvio zero passi»): subito,
+ * senza il conto alla rovescia di 3 secondi, solo verso un computer già conosciuto (il collegamento resta sicuro:
+ * stretta di mano e codice di sicurezza verificato) e solo se l'utente lo consente (Impostazioni › Collegamento).
+ * Per scegliere un altro computer basta «Scollega».
+ */
 private object Ricollegamento {
     var fatto = false
 }
@@ -125,8 +128,6 @@ fun SchermataComputer(
     var aiuto by rememberSaveable { mutableStateOf(false) }
     var mostraIndirizzo by remember { mutableStateOf(false) }
     var mostraCavo by remember { mutableStateOf(false) }
-    var ricollegaA by remember { mutableStateOf<ComputerTrovato?>(null) }
-    var secondi by remember { mutableIntStateOf(3) }
 
     DisposableEffect(Unit) {
         cerca.avvia()
@@ -136,24 +137,17 @@ fun SchermataComputer(
         delay(ATTESA_AIUTO_MS)
         aiuto = true
     }
-    // Alla prima comparsa dell'ultimo computer usato parte il conto alla rovescia.
+    // Alla prima comparsa dell'ultimo computer usato ci si collega, se è conosciuto: mai da soli verso uno nuovo.
     val ultimo = Impostazioni.ultimoComputer
-    val trovatoUltimo = cerca.computer.firstOrNull { it.nome == ultimo }
-    LaunchedEffect(trovatoUltimo, inPrimoPiano, mostraIndirizzo) {
-        if (trovatoUltimo == null || Ricollegamento.fatto || !inPrimoPiano || mostraIndirizzo) return@LaunchedEffect
+    val trovatoUltimo = cerca.computer.firstOrNull { it.nome == ultimo && ComputerConosciuti.impronta(it.nome) != null }
+    LaunchedEffect(trovatoUltimo, inPrimoPiano, mostraIndirizzo, Impostazioni.collegaDaSolo) {
+        if (trovatoUltimo == null || Ricollegamento.fatto || !Impostazioni.collegaDaSolo || !inPrimoPiano || mostraIndirizzo) return@LaunchedEffect
         Ricollegamento.fatto = true
-        ricollegaA = trovatoUltimo
-        for (rimasti in 3 downTo 1) {
-            secondi = rimasti
-            delay(1_000)
-        }
-        val scelto = ricollegaA
-        ricollegaA = null
-        if (scelto != null) collega(scelto)
+        collega(trovatoUltimo)
     }
+    /** L'utente sceglie o apre altro da sé: niente collegamento da solo in questo avvio. */
     fun annullaRicollegamento() {
         Ricollegamento.fatto = true
-        ricollegaA = null
     }
 
     val testoLink = stringResource(R.string.presentazione_computer_messaggio, InfoApp.DOWNLOAD)
@@ -199,8 +193,7 @@ fun SchermataComputer(
             val trovati = cerca.computer.toList()
             when {
                 trovati.isNotEmpty() -> PaginaTrovati(
-                    trovati, ricollegaA, secondi,
-                    annulla = { annullaRicollegamento() },
+                    trovati,
                     collega = { scelto -> annullaRicollegamento(); collega(scelto) },
                     qr = qr, aMano = aMano,
                 )
@@ -329,9 +322,6 @@ private fun Radar(modifier: Modifier = Modifier) {
 @Composable
 private fun ColumnScope.PaginaTrovati(
     trovati: List<ComputerTrovato>,
-    ricollegaA: ComputerTrovato?,
-    secondi: Int,
-    annulla: () -> Unit,
     collega: (ComputerTrovato) -> Unit,
     qr: () -> Unit,
     aMano: () -> Unit,
@@ -339,19 +329,6 @@ private fun ColumnScope.PaginaTrovati(
     Pagina(
         contenuto = {
             Text(stringResource(R.string.computer_trovati), style = Stili.titoloGrande, color = Colori.testo, modifier = Modifier.semantics { heading() })
-            ricollegaA?.let { computer ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(Spazi.piccolo),
-                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(Raggi.pannello)).background(Colori.accentoTenue)
-                        .border(1.dp, Colori.accento, RoundedCornerShape(Raggi.pannello)).padding(horizontal = Spazi.medio, vertical = Spazi.stretto)
-                        .semantics { liveRegion = LiveRegionMode.Polite },
-                ) {
-                    CircularProgressIndicator(color = Colori.accento, strokeWidth = 2.dp, modifier = Modifier.size(Misure.iconaPiccola))
-                    Text(stringResource(R.string.ricollego_tra, computer.nome, secondi), style = Stili.corpo, color = Colori.testo, modifier = Modifier.weight(1f))
-                    PulsanteLink(stringResource(R.string.annulla)) { annulla() }
-                }
-            }
             // Il primo è in evidenza: quello usato l'ultima volta, se c'è.
             val ultimo = Impostazioni.ultimoComputer
             val ordinati = trovati.sortedByDescending { it.nome == ultimo }

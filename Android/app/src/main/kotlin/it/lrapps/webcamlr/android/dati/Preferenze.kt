@@ -29,6 +29,7 @@ object Impostazioni {
         oscuraDaSolo = preferenze.getBoolean("oscuraDaSolo", true)
         risparmioBatteria = preferenze.getBoolean("risparmioBatteria", true)
         griglia = preferenze.getBoolean("griglia", false)
+        collegaDaSolo = preferenze.getBoolean("collegaDaSolo", true)
         collegamento = PreferenzeCollegamento.valida(preferenze.getString(CHIAVE_COLLEGAMENTO, null)) ?: PreferenzeCollegamento.AUTOMATICO
     }
 
@@ -42,6 +43,12 @@ object Impostazioni {
         private set
     var griglia by mutableStateOf(false)
         private set
+    /**
+     * Qualità 19: all'avvio ci si collega subito all'ultimo computer conosciuto, se compare (come l'iPhone,
+     * `Ricollegamento.chiaveDaSolo`). Di serie sì: era già così, con il conto alla rovescia.
+     */
+    var collegaDaSolo by mutableStateOf(true)
+        private set
     /** La strada verso il computer: "automatico", "wifi" o "cavo" (anche dal computer, `comando.collegamento`). */
     var collegamento by mutableStateOf(PreferenzeCollegamento.AUTOMATICO)
         private set
@@ -51,6 +58,7 @@ object Impostazioni {
     fun impostaOscuraDaSolo(valore: Boolean) { oscuraDaSolo = valore; salva("oscuraDaSolo", valore) }
     fun impostaRisparmioBatteria(valore: Boolean) { risparmioBatteria = valore; salva("risparmioBatteria", valore) }
     fun impostaGriglia(valore: Boolean) { griglia = valore; salva("griglia", valore) }
+    fun impostaCollegaDaSolo(valore: Boolean) { collegaDaSolo = valore; salva("collegaDaSolo", valore) }
     fun impostaCollegamento(valore: String) {
         val valido = PreferenzeCollegamento.valida(valore) ?: return
         if (valido == collegamento) return

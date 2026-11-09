@@ -89,7 +89,7 @@
     <value>Choose Image…</value>
   </data>
   <data name="NotaAttesa.Text" xml:space="preserve">
-    <value>What Zoom and other apps see when there’s no video from the phone: phone not connected, connection lost, paused. When WebcamLR is closed, apps always see the WebcamLR screen.</value>
+    <value>What Zoom and other apps see when there’s no video from the phone: connection lost, paused. It applies while the phone is connected (it’s the phone that says Pro is unlocked): with no phone, or with WebcamLR closed, apps see the WebcamLR screen.</value>
   </data>
   <data name="EtichettaTelefoni.Text" xml:space="preserve">
     <value>PHONES</value>
@@ -780,7 +780,7 @@ The details are in {1}: send them with “Report a bug”.</value>
     <value>{0}: black, a custom image or the last frame blurred instead of the WebcamLR screen.</value>
   </data>
   <data name="Attesa_Nota" xml:space="preserve">
-    <value>What Zoom and other apps see when there’s no video from the phone: phone not connected, connection lost, paused. When WebcamLR is closed, apps always see the WebcamLR screen.</value>
+    <value>What Zoom and other apps see when there’s no video from the phone: connection lost, paused. It applies while the phone is connected (it’s the phone that says Pro is unlocked): with no phone, or with WebcamLR closed, apps see the WebcamLR screen.</value>
   </data>
   <data name="Attesa_ImmagineGrande" xml:space="preserve">
     <value>Image too large</value>

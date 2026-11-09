@@ -199,3 +199,46 @@ Da fare **prima** su `beta4` e **poi** su `prestazioni`, annotando i numeri.
 
 **Sito**
 - [ ] https://lr-apps609.github.io/WebcamLR/ sul telefono: caratteri, frecce «→» e ✓ come prima.
+
+## 6. Latenza da un capo all'altro (Qualità 14)
+
+Obiettivo: **50 ms o meno in Wi-Fi, 30 ms o meno con il cavo**, dalla cattura sul telefono all'immagine nella finestra
+del computer. Ramo `latenza`. Protocollo invariato: si usano il timestamp di cattura che ogni fotogramma ha già e lo
+scarto degli orologi dei `pong`.
+
+**Cosa c'era già.** iPhone: VideoToolbox in tempo reale, codifica a bassa latenza, nessun riordino
+(`AllowFrameReordering` falso), `MaxFrameDelayCount` 0: niente da cambiare. Android: `KEY_PRIORITY` 0, `KEY_LATENCY` 1,
+`KEY_MAX_B_FRAMES` 0; quest'ultima però esiste solo da Android 10.
+
+**Cosa cambia.**
+- **Android 8 e 9:** profilo Constrained High (senza fotogrammi B per definizione) quando il codificatore lo dichiara.
+  Su ogni versione, se i tempi dei fotogrammi tornano indietro di qualche fotogramma (fotogrammi B), il codificatore si
+  rifà una volta in Constrained Baseline (nel registro del telefono una riga «codificatore fermo»).
+- **Coda di ricezione che si adatta** (`CodaAdattiva`, uguale su Mac e Windows, provata con tempi finti in
+  `CodaAdattivaTest.cs`). Per ogni fotogramma il margine: quanto prima del suo momento è pronto. Degli ultimi 150, tolti
+  i 3 peggiori, il più piccolo va portato all'obiettivo (Mac 2 ms, Windows 12 ms per la decodifica nel lettore): con la
+  rete stabile la coda è minima, si allunga solo con il jitter, al massimo 100 ms, 2 ms a fotogramma. Una pausa isolata
+  della rete (fino a 3 fotogrammi ogni 5 secondi) resta uno scatto e non allunga la coda per tutti.
+  - Mac: prende il posto della «riserva per la fluidità» di prima, che teneva fino a 120 ms. Le immagini arrivate a
+    gruppo già scadute si buttano (esce solo la più recente) invece di uscire tutte insieme in ritardo.
+  - Windows: la coda è la linea del tempo del lettore; prima si poteva solo accorciare fino a 20 ms di anticipo, ora
+    anche allungare un poco. Oltre 6 fotogrammi in fila si salta ancora al prossimo fotogramma chiave (chiesto subito).
+- **Latenza divisa nelle parti**, nei Numeri del computer (Mac e Windows), riga «Parti»: **rete** (dalla cattura
+  all'arrivo, compresa la codifica sul telefono), **decodifica** (Mac: dall'arrivo all'immagine pronta; Windows: il resto
+  fino all'anteprima, decodifica e disegno; con gli effetti del computer accesi anche il loro tempo), **coda** (l'attesa
+  sul computer). Sono mediane di un secondo: la somma è vicina alla latenza della finestra, non sempre uguale.
+- **Registro**, ogni 30 secondi con il video: «Parti della latenza: rete · decodifica · coda»; Windows aggiunge la
+  profondità della coda e i fotogrammi buttati, il Mac le immagini buttate nella riga «Riserva per la fluidità».
+
+**Checklist sui dispositivi veri** (annota la riga «Parti» dei Numeri e le righe del registro):
+- [ ] Cavo USB, iPhone → Mac, 1080p30, senza effetti, 2 minuti: latenza della finestra ≤ 30 ms? Annota rete,
+      decodifica e coda; la coda deve restare sui 2-5 ms. Il video è fluido (niente scatti a ogni secondo).
+- [ ] Come sopra, iPhone → Windows e Android → Windows (cavo o Tethering USB): latenza ≤ 30 ms, coda sui 12-15 ms.
+- [ ] Wi-Fi a 5 GHz vicino al router, 5 minuti, Mac e Windows: latenza ≤ 50 ms; la coda resta sotto i 20 ms.
+- [ ] Wi-Fi lontano dal router (o 2,4 GHz affollato) 2 minuti, poi torna vicino: la coda sale (fino a qualche decina
+      di ms, mai oltre 100), il video resta fluido o quasi; tornato vicino, entro 10-15 secondi la coda torna bassa.
+- [ ] Copri e scopri l'obiettivo guardando telefono e computer insieme: a occhio il ritardo è più basso di prima.
+- [ ] Una chiamata vera (Zoom o Meet) di 10 minuti con il telefono nella webcam: audio e labbra insieme, niente salti.
+- [ ] Un Android con Android 8 o 9 (se c'è): il video si vede giusto, nessun fotogramma che va avanti e indietro.
+- [ ] Se il video **scatta** più di prima in Wi-Fi: manda le righe «Parti della latenza» e «Riserva per la fluidità»
+      (Mac) del registro; si possono alzare i 3 fotogrammi tollerati o l'obiettivo.

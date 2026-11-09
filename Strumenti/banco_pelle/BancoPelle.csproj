@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Qualità 11: il banco del ritocco della pelle e della luce sul volto (Documenti/Ritocco pelle - banco.md). Volti
+       sintetici disegnati qui (nessuna foto di persone), le ricette vere di WebcamLR.Effetti, le misure in testo.
+       Come si esegue: in cima a Program.cs -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Effetti Condition="'$(Effetti)' == ''">..\..\Windows\WebcamLR.Effetti</Effetti>
+    <!-- -p:Prima=true per una libreria di prima della Qualità 11 (senza le zone protette). -->
+    <DefineConstants Condition="'$(Prima)' != 'true'">$(DefineConstants);PROTEZIONE</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(Effetti)\WebcamLR.Effetti.csproj" />
+  </ItemGroup>
+
+</Project>

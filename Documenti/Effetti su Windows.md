@@ -101,7 +101,8 @@ telefono ──H.264/HEVC──▶ MotoreVideo (WebcamLR.App)
 - **Colore**: calore (la stessa diagonale dell'iPhone, 1,0467 / 0,9946 / 0,9158 in lineare), i 10 filtri e le
   regolazioni come catene di tabelle per canale e matrici 3×3 (12 bit), con AVX2 dove c'è. Differenze volute dal Mac:
   vibranza di «Vivido» come saturazione, ombre/luci di «Cinema» pesate col canale, niente riduzione del rumore di «Notte».
-- **Pelle** e **luce sul volto** solo attorno al volto; **nitidezza** sulla luminosità; **inquadratura** con la molla del
+- **Pelle** e **luce sul volto** solo attorno al volto (dalla Qualità 11 filtro guidato sulla luma con il peso della
+  pelle e luce sulla luma: `Ritocco pelle - banco.md`); **nitidezza** sulla luminosità; **inquadratura** con la molla del
   Mac (zoom fino a 1,6×); **scritta** disegnata con GDI+ (Barlow Condensed, `DisegnoScritta`) e **logo** in alto a destra.
 - **Volto senza rilevatore a parte**: con il modello pieno il riquadro della classe «pelle del volto» del multiclasse;
   con il leggero la testa (cima della persona). Basta per inquadrare e illuminare; nessun modello in più da scaricare.
@@ -420,6 +421,24 @@ vuota) su un Mac con Apple silicon. Con i formati che dicono di no, o su un Mac 
   proprietà della classe arriva. L'avviso si vede solo con la webcam virtuale, cioè con l'account sviluppatore a
   pagamento (`project.yml`).
 
+## Qualità 11: ritocco della pelle e luce sul volto (Mac e Windows)
+
+Ramo `ritocco-pelle` (da `prestazioni`), novembre 2026. **Protocollo: non cambia.** Tecnica, banco e numeri:
+`Ritocco pelle - banco.md`. In breve:
+
+- **Pelle**: filtro guidato della luma con sé stessa (conserva i bordi), ritorno del 35% della grana fine, solo dove il
+  colore è pelle e lontano dai bordi veri, dentro un'ellisse attorno al volto; il colore va verso quello medio della
+  pelle attorno a luma ferma (rossori). Sul Mac occhi e bocca protetti con i punti del volto di Vision. Stessi numeri
+  sulle due piattaforme (`RegolePelle`).
+- **Luce sul volto**: la curva sulla luma, lo stesso guadagno sui tre canali (niente colore cambiato), un tetto sotto il
+  bianco, ellisse più stretta.
+- **Banco** (`Strumenti/banco_pelle`, volti sintetici): a forza 0,5 la rugosità scende del 17% invece del 12% con i bordi
+  uguali o meglio; ai livelli leggeri occhi e bocca restano al 94–99% del gradiente (prima 83%); la luce non cambia più
+  saturazione (prima −18% sulla pelle chiara) né tinta.
+- **Costo** (Windows, volto alto 405 px a 1080p, solo il ritocco): 3,9 ms pieno, 2,6 ms leggero (prima 4,9 e 5,4).
+  Leggero (griglia a un quarto, niente grana, tre quarti della forza) da «Bordo leggero» in giù.
+- **Scheda video**: il ritocco resta sul processore dopo la composizione, uguale nei due percorsi; lo shader non cambia.
+
 ## Modello scelto
 
 | | Pieno: Selfie Multiclass 256×256 | Leggero: Selfie Segmenter landscape 144×256 |
@@ -712,6 +731,23 @@ decodificatore.
    volte»). «Spegni la sfocatura» la spegne e l'avviso sparisce; riaccendila: l'avviso non torna fino al riavvio di
    WebcamLR. Riavvia, chiudi con «Non mostrare più»: non torna più. **Screenshot** dell'avviso.
 8. Mac Intel o webcam non in uso: nessun avviso.
+
+### Qualità 11: ritocco della pelle e luce sul volto (ramo `ritocco-pelle`, Mac e Windows)
+
+1. Windows: `dotnet test Windows\WebcamLR.Effetti.Test`: i test `PelleTest` passano. Facoltativo:
+   `dotnet run -c Release --project Strumenti\banco_pelle` e **manda** le tabelle (i tempi sul tuo PC).
+2. Luce davanti, faccia vicina (mezzo busto). «Ritocco della pelle» a 50% e poi al 100%: pelle più uniforme, ma
+   ciglia, sopracciglia, labbra e capelli **nitidi** come a 0; da vicino si vede ancora la trama fine (niente plastica).
+   **Screenshot** a 0, 50% e 100%, stessa posizione.
+3. Un brufolo o un rossore: a 100% si attenua, il colore della pelle attorno non cambia. Le labbra restano rosse.
+4. Muovi la testa piano e poi in fretta: il ritocco segue, nessun alone attorno al viso, nessun tremolio sulle guance
+   o sul contorno. Accanto al viso un mobile di legno o una parete beige: non si leviga.
+5. «Luce sul volto»: il viso si schiarisce, il colore della pelle resta lo stesso (non più grigio né arancione); la
+   fronte o il naso lucidi non diventano bianchi; la parete dietro cambia poco. **Screenshot** spenta e accesa.
+6. Costo: con pelle 100% e luce, dopo 30 s la riga «Effetti sul PC: … ms» (o «sul Mac»): **mandala**. Su un PC lento,
+   ai livelli bassi il ritocco è un po' più leggero ma occhi e bocca restano nitidi.
+7. Mac (build con l'Apple ID gratuito, effetti fatti dal Mac): stesse prove 2–5. Con gli occhiali e con la testa
+   girata a metà: occhi e bocca restano nitidi? Annota se il ritocco «salta» quando giri la testa.
 
 ## Fonti
 

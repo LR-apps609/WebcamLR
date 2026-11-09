@@ -184,6 +184,8 @@ Sull'iPhone: pulsante «Effetti» nella barra di «In onda». Sul Mac: sezione �
 - [ ] F9 · Dal Mac: «Nome», «Ruolo (facoltativo)», «Mostra la scritta»: la scritta compare nel video dopo meno di un secondo
 - [ ] F10 · Tutti gli effetti accesi insieme per 5 minuti: video fluido, latenza simile a prima, l'iPhone tiepido (annota)
 - [ ] F11 · Qualità 10 (solo con la webcam virtuale, account a pagamento): Zoom o FaceTime con «WebcamLR» e la sfocatura di WebcamLR accesa: sotto il video del Mac compare l'avviso della doppia sfocatura, con «Spegni la sfocatura» e «Non mostrare più»; nel Centro di Controllo › Effetti video annota se c'è «Ritratto» per WebcamLR (dettagli e altre prove: `Effetti su Windows.md`, «Qualità 10 e 12»)
+- [ ] F12 · Qualità 11, Mac con gli effetti fatti dal Mac: «Ritocco della pelle» a 50% e 100%: pelle più uniforme, rossori attenuati, ma ciglia, sopracciglia, labbra e capelli nitidi come a 0 e la trama fine ancora visibile (niente plastica); nessun alone attorno al viso muovendo la testa. Screenshot a 0, 50% e 100%
+- [ ] F13 · Qualità 11, Mac: «Luce sul volto»: il viso si schiarisce senza cambiare colore (né grigio né arancione), fronte e naso lucidi non diventano bianchi. Con gli occhiali e con la testa girata a metà occhi e bocca restano nitidi (dettagli: `Ritocco pelle - banco.md`, checklist in `Effetti su Windows.md`, «Qualità 11»)
 
 ## G · L'assistente: le 8 idee nuove
 

@@ -217,115 +217,365 @@ enum RicetteEffetti {
         return risultato
     }
 
-    // MARK: Ritocco della pelle (EffettoPelle.swift, reso sicuro sul Mac)
+    // MARK: Ritocco della pelle (Qualità 11, come RicettePersona.Pelle su Windows)
 
-    /// Oltre circa 1/25 di differenza dalla versione sfocata, misurata in sRGB (percettivo), è un dettaglio (occhi,
-    /// sopracciglia, bocca, contorno del viso), non pelle: lì non si leviga. Prima la differenza si misurava in spazio
-    /// lineare, dove nelle zone scure è minima: occhi e sopracciglia passavano per pelle e, con il raggio grande, il
-    /// viso usciva sfocato (prova di Ledion).
-    private static let sensibilitaBordi: CGFloat = 25
-    /// Forza massima della levigatura: anche al massimo resta metà della grana vera.
-    private static let forzaMassimaPelle: CGFloat = 0.5
-
-    /// `volti`: i rettangoli dei volti in pixel dell'immagine. `leggero`: a forza dimezzata (la maschera dei dettagli
-    /// resta: senza, il ritocco potrebbe sfocare occhi e bocca).
-    static func pelle(_ immagine: CIImage, forza valore: Double, volti: [CGRect], leggero: Bool) -> CIImage {
-        let forza = CGFloat(min(max(valore.isFinite ? valore : 0, 0), 1))
+    /// Il ritocco della pelle, come il «beauty» delle app di webcam ma senza effetto plastica. Gli stessi passi e numeri
+    /// di Windows (`RegolePelle`), con i filtri di sistema di Core Image (niente kernel Metal propri), in sRGB:
+    /// 1. un filtro guidato della luma con sé stessa (He, Sun e Tang, i conti di `coefficientiGuida`), che conserva i
+    ///    bordi: a = var / (var + ε), b = (1 − a)·media, poi media(a)·Y + media(b); le medie su una griglia a metà (a un
+    ///    quarto con `leggero`) della zona dei volti, con un raggio del 2% dell'altezza del volto;
+    /// 2. il ritorno della grana fine (la luma meno la sua gaussiana di 0,7 px) dove il filtro ha levigato;
+    /// 3. solo sulla pelle: il peso dal colore (tabella 3D di `RegolePelle.pesoColore`) spento vicino ai bordi veri
+    ///    (varianza locale), un'ellisse attorno a ogni volto e le zone protette (occhi e bocca dai punti del volto di
+    ///    Vision);
+    /// 4. la luma cambia con la stessa differenza su rosso, verde e blu; il colore va verso quello medio della pelle
+    ///    attorno (media pesata con il colore), a luma ferma: i rossori si attenuano, la tinta della pelle resta.
+    /// `volti` e `protette`: rettangoli in pixel dell'immagine. `leggero`: livelli bassi, griglia a un quarto, niente
+    /// grana e tre quarti della forza. `verificato`: i conti di `verificaAritmetica` tornano (senza, niente ritocco).
+    static func pelle(_ immagine: CIImage, forza valore: Double, volti: [CGRect], protette: [CGRect], leggero: Bool,
+                      verificato: Bool) -> CIImage {
+        var forza = CGFloat(min(max(valore.isFinite ? valore : 0, 0), 1))
         let estensione = immagine.extent
         let rettangoli = volti.filter { $0.intersects(estensione) && $0.height > 8 }
-        guard forza > 0.001, let altezzaMassima = rettangoli.map(\.height).max() else { return immagine }
-        // La zona contiene per intero i dischi di `mascheraVolti` (raggio esterno 0,72 del lato): nessun taglio dritto.
+        guard verificato, forza > 0.001, let altezzaMassima = rettangoli.map(\.height).max() else { return immagine }
+        let eps = RegolePelle.epsilon(forza)
+        if leggero { forza *= RegolePelle.forzaLeggero }
+        // Le ellissi dei volti (centro 4% più in basso: origine in basso, quindi − 0,04·altezza).
+        let ellissi = rettangoli.map { r in
+            (centro: CGPoint(x: r.midX, y: r.midY - r.height * 0.04),
+             sx: r.width / 2 * RegolePelle.ellisseEsterna, sy: r.height / 2 * RegolePelle.ellisseEsterna)
+        }
         var zona = CGRect.null
-        for rettangolo in rettangoli {
-            let lato = max(rettangolo.width, rettangolo.height) * 0.75
-            let centro = CGPoint(x: rettangolo.midX, y: rettangolo.midY - rettangolo.height * 0.04)
-            zona = zona.union(CGRect(x: centro.x - lato, y: centro.y - lato, width: lato * 2, height: lato * 2))
+        for e in ellissi {
+            zona = zona.union(CGRect(x: e.centro.x - e.sx, y: e.centro.y - e.sy, width: e.sx * 2, height: e.sy * 2))
         }
         zona = zona.intersection(estensione).integral
-        guard !zona.isEmpty else { return immagine }
+        let passo: CGFloat = leggero ? 4 : 2
+        guard !zona.isEmpty, zona.width >= passo * 4, zona.height >= passo * 4 else { return immagine }
 
-        // Raggio piccolo: dallo 0,25% allo 0,55% dell'altezza del volto (1-2 px per un volto di 400 px), mai oltre 3 px.
-        // Toglie la grana della pelle, non i lineamenti (prima arrivava all'1,8%: 7 px).
-        let sigma = min(max(1, altezzaMassima * (0.0025 + 0.003 * forza)), 3)
-        let sfocata = immagine.clampedToExtent().applyingGaussianBlur(sigma: Double(sigma)).cropped(to: zona)
+        // Tutto con l'origine della zona in (0, 0); alla fine si torna al posto.
+        let allOrigine = CGAffineTransform(translationX: -zona.minX, y: -zona.minY)
+        let piena = CGRect(origin: .zero, size: zona.size)
+        let sRGB = immagine.applyingFilter("CILinearToSRGBToneCurve").transformed(by: allOrigine).cropped(to: piena)
+        let luma = lumaSRGB(sRGB).cropped(to: piena)
+        // La griglia: la zona ridotta di `passo` (prima una gaussiana di mezzo passo, come la media di Windows).
+        let misuraGriglia = CGRect(x: 0, y: 0, width: (piena.width / passo).rounded(.down),
+                                   height: (piena.height / passo).rounded(.down))
+        let versoGriglia = CGAffineTransform(scaleX: misuraGriglia.width / piena.width, y: misuraGriglia.height / piena.height)
+        func inGriglia(_ immagine: CIImage) -> CIImage {
+            immagine.clampedToExtent().applyingGaussianBlur(sigma: Double(passo / 2)).transformed(by: versoGriglia)
+                .cropped(to: misuraGriglia)
+        }
+        func inPiena(_ immagine: CIImage) -> CIImage {
+            immagine.transformed(by: versoGriglia.inverted()).clampedToExtent().cropped(to: piena)
+        }
+        let lumaGriglia = inGriglia(luma)
+        let coloreGriglia = inGriglia(sRGB)
+        let raggio = max(1, Int((altezzaMassima * RegolePelle.raggioVolto / passo).rounded()))
+        let sigma = RegolePelle.sigma(raggio: raggio)
 
-        let prodotto = CIFilter.multiplyCompositing()
-        prodotto.inputImage = mascheraVolti(rettangoli, zona: zona)
-        prodotto.backgroundImage = mascheraPelle(originale: immagine, sfocata: sfocata, zona: zona, raggio: sigma)
-        let senzaMaschera = CIImage(color: CIColor(red: 0, green: 0, blue: 0)).cropped(to: zona)
-        let maschera = RicetteFiltriMac.scala(prodotto.outputImage ?? senzaMaschera,
-                                              per: forzaMassimaPelle * (leggero ? 0.5 : 1) * forza)
-        let levigata = RicetteFiltriMac.mescola(sopra: sfocata, sotto: immagine.cropped(to: zona), maschera: maschera)
+        // 1. Il filtro guidato: (media(a), media(b)) alla misura piena; Ys = media(a)·(Y − 0,5) + media(b).
+        let coefficienti = inPiena(coefficientiGuida(guida: lumaGriglia, maschera: lumaGriglia, misura: misuraGriglia,
+                                                     sigma: sigma, eps: eps))
+        let uno = CIVector(x: 1, y: 0, z: 0, w: 0)
+        let zero = CIVector(x: 0, y: 0, z: 0, w: 0)
+        let lumaEUno = canali(luma, r: uno, g: zero, b: zero, scostamento: CIVector(x: -0.5, y: 1, z: 0, w: 1))
+        let somme = CIVector(x: 1, y: 1, z: 0, w: 0)
+        let levigata = canali(moltiplica(coefficienti, lumaEUno), r: somme, g: somme, b: somme)
+        let meno = CIVector(x: -1, y: 0, z: 0, w: 0)
+        var differenza = somma(levigata, canali(luma, r: meno, g: meno, b: meno), misura: piena)   // Ys − Y
+        // 2. La grana fine, dove il filtro ha levigato: ritorno · (1 − media(a)) · (Y − gaussiana(Y)).
+        if !leggero {
+            let sfocata = luma.clampedToExtent().applyingGaussianBlur(sigma: 0.7).cropped(to: piena)
+            let grana = somma(luma, canali(sfocata, r: meno, g: meno, b: meno), misura: piena)
+            let g = RegolePelle.ritornoGrana
+            let rigaLevigato = CIVector(x: -g, y: 0, z: 0, w: 0)
+            let levigato = canali(coefficienti, r: rigaLevigato, g: rigaLevigato, b: rigaLevigato,
+                                  scostamento: CIVector(x: g, y: g, z: g, w: 1))
+            differenza = somma(differenza, moltiplica(levigato, grana), misura: piena)
+        }
+
+        // 3. Il peso della pelle sulla griglia: colore × lontano dai bordi, appena ammorbidito; poi alla misura piena.
+        let pesoColore = applicaCubo(coloreGriglia, cuboPelle, lato: latoCuboPelle).cropped(to: misuraGriglia)
+        let bordo = pesoBordo(varianzaLocale(lumaGriglia, misura: misuraGriglia, sigma: sigma))
+        let pesoPelle = inPiena(moltiplica(pesoColore, bordo).clampedToExtent()
+            .applyingGaussianBlur(sigma: Double(RegolePelle.sigma(raggio: 1))).cropped(to: misuraGriglia))
+
+        // 4. Il colore medio della pelle attorno: media(peso · (c + ½)) / media(peso), con un piccolo peso neutro
+        // (0,01) che tiene la divisione tra 0 e 1. c = (R − Y, B − Y) in rosso e blu.
+        let rigaR = CIVector(x: 1 - 0.2126, y: -0.7152, z: -0.0722, w: 0)
+        let rigaB = CIVector(x: -0.2126, y: -0.7152, z: 1 - 0.0722, w: 0)
+        let colorePiu = lineare(canali(coloreGriglia, r: rigaR, g: zero, b: rigaB,
+                                       scostamento: CIVector(x: 0.5, y: 0.5, z: 0.5, w: 1)), pendenza: 1, scostamento: 0)
+        let sigmaColore = Double(RegolePelle.sigma(raggio: 2 * raggio))
+        func mediaColore(_ immagine: CIImage, piu: CGFloat) -> CIImage {
+            canali(immagine.clampedToExtent().applyingGaussianBlur(sigma: sigmaColore).cropped(to: misuraGriglia),
+                   r: uno, g: CIVector(x: 0, y: 1, z: 0, w: 0), b: CIVector(x: 0, y: 0, z: 1, w: 0),
+                   scostamento: CIVector(x: piu, y: piu, z: piu, w: 1))
+        }
+        let numeratore = mediaColore(moltiplica(colorePiu, pesoColore), piu: 0.005)
+        let denominatore = mediaColore(pesoColore, piu: 0.01)
+        let mediaPiu = inPiena(lineare(dividi(numeratore, per: denominatore), pendenza: 1, scostamento: 0))
+        // k · (media − c) in rosso e blu, il verde che tiene ferma la luma.
+        let cPiena = canali(sRGB, r: rigaR, g: zero, b: rigaB)
+        let scarto = somma(canali(mediaPiu, r: uno, g: zero, b: CIVector(x: 0, y: 0, z: 1, w: 0),
+                                  scostamento: CIVector(x: -0.5, y: 0, z: -0.5, w: 1)),
+                           canali(cPiena, r: meno, g: zero, b: CIVector(x: 0, y: 0, z: -1, w: 0)), misura: piena)
+        let k = RegolePelle.uniformaColore
+        let spostaColore = canali(scarto, r: CIVector(x: k, y: 0, z: 0, w: 0),
+                                  g: CIVector(x: -0.2126 * k / 0.7152, y: 0, z: -0.0722 * k / 0.7152, w: 0),
+                                  b: CIVector(x: 0, y: 0, z: k, w: 0))
+
+        // La pelle ritoccata in sRGB, poi mescolata con il peso: forza × ellisse × pelle × zone protette.
+        let ritoccata = lineare(somma(sRGB, somma(differenza, spostaColore, misura: piena), misura: piena),
+                                pendenza: 1, scostamento: 0)
+        var peso = moltiplica(RicetteFiltriMac.scala(mascheraEllissi(ellissi, zona: zona).transformed(by: allOrigine)
+                                                        .cropped(to: piena), per: forza), pesoPelle)
+        if !protette.isEmpty {
+            peso = moltiplica(peso, mascheraProtette(protette, zona: zona).transformed(by: allOrigine).cropped(to: piena))
+        }
+        return RicetteFiltriMac.mescola(sopra: ritoccata, sotto: sRGB, maschera: peso)
+            .cropped(to: piena)
+            .applyingFilter("CISRGBToneCurveToLinear")
+            .transformed(by: allOrigine.inverted())
             .cropped(to: zona)
-        return levigata.composited(over: immagine)
+            .composited(over: immagine)
     }
 
-    /// Un disco morbido per volto, centrato appena sotto il centro del rettangolo (guance e bocca).
-    private static func mascheraVolti(_ rettangoli: [CGRect], zona: CGRect) -> CIImage {
+    /// I numeri del ritocco della pelle e della luce sul volto: gli stessi di `RegolePelle` su Windows
+    /// (Windows/WebcamLR.Effetti/Motore/RicettePersona.cs). Tecnica e misure: Documenti/Ritocco pelle - banco.md.
+    enum RegolePelle {
+        /// Raggio delle medie del filtro guidato, in parte dell'altezza del volto: 2%, 8 px per un volto di 400 px.
+        static let raggioVolto: CGFloat = 0.02
+        /// ε sulla luma sRGB 0…1: (0,015 + 0,025·forza)². Sotto √ε di deviazione locale (pori, macchie) si leviga.
+        static func epsilon(_ forza: CGFloat) -> CGFloat {
+            let s = 0.015 + 0.025 * min(max(forza, 0), 1)
+            return s * s
+        }
+        /// Quanta grana fine torna sulla pelle levigata.
+        static let ritornoGrana: CGFloat = 0.35
+        /// Quanto il colore va verso quello medio della pelle attorno.
+        static let uniformaColore: CGFloat = 0.5
+        /// Ai livelli bassi (senza grana) tre quarti della forza.
+        static let forzaLeggero: CGFloat = 0.75
+        /// L'ellisse attorno a ogni volto, in parti dei semiassi del rettangolo: piena fino a 1, niente oltre 1,4.
+        static let ellisseInterna: CGFloat = 1.0
+        static let ellisseEsterna: CGFloat = 1.4
+        /// Vicino ai bordi veri il ritocco si spegne: varianza locale della luma da 0,0016 a 0,0064 (smoothstep).
+        static let bordoInizio: CGFloat = 0.0016
+        static let bordoLarghezza: CGFloat = 0.0048
+        /// La crominanza (Cb, Cr BT.601 in byte) ruotata verso la tinta della pelle (130°): pesi su R, G, B in byte.
+        static let pesiU = (r: 0.49148, g: -0.10780, b: -0.38368)
+        static let pesiV = (r: -0.19213, g: 0.52289, b: -0.33076)
+
+        /// Quanto un colore sRGB (byte 0…255) è pelle, 0…1: tinta entro circa ±12° da quella della pelle (fino a ±24°)
+        /// e almeno un po' di colore (il bianco degli occhi, i capelli neri e i grigi restano fuori).
+        static func pesoColore(r: Double, g: Double, b: Double) -> Double {
+            let u = pesiU.r * r + pesiU.g * g + pesiU.b * b
+            let v = pesiV.r * r + pesiV.g * g + pesiV.b * b
+            return min(max((0.45 * u - abs(v)) / 4, 0), 1) * min(max((u - 5) / 4, 0), 1)
+        }
+
+        /// La sigma della gaussiana con la stessa varianza della media quadrata di raggio `raggio` usata su Windows.
+        static func sigma(raggio: Int) -> CGFloat {
+            CGFloat((Double(raggio) * Double(raggio + 1) / 3).squareRoot())
+        }
+
+        /// L'ellisse della luce: centro più in basso del 6% dell'altezza, semiassi 0,8 della larghezza e 1 dell'altezza.
+        static let luceCentro: CGFloat = 0.06
+        static let luceLarghezza: CGFloat = 0.8
+        static let luceAltezza: CGFloat = 1.0
+
+        /// Il guadagno più alto per un pixel con il canale più alto a `massimo` (sRGB 0…1): quel canale arriva al più a
+        /// metà strada da 254/255, quindi resta sotto il bianco pieno e il colore non cambia.
+        static func tettoLuce(_ massimo: Double) -> Double {
+            let limite = 254.0 / 255
+            return massimo <= 0 || massimo >= limite ? 1 : (massimo + (limite - massimo) * 0.5) / massimo
+        }
+
+        /// La curva della luce (circa +0,4 EV su ombre e mezzitoni, il bianco al suo posto), cubica monotona di
+        /// Fritsch–Carlson sui cinque punti, come `Colore.Curva` su Windows.
+        static func curvaLuce(_ x: Double) -> Double {
+            let px: [Double] = [0, 0.25, 0.5, 0.75, 1]
+            let py: [Double] = [0, 0.29, 0.565, 0.81, 1]
+            let n = px.count
+            var d = [Double](repeating: 0, count: n - 1)
+            for i in 0..<(n - 1) { d[i] = (py[i + 1] - py[i]) / (px[i + 1] - px[i]) }
+            var m = [Double](repeating: 0, count: n)
+            m[0] = d[0]
+            m[n - 1] = d[n - 2]
+            for i in 1..<(n - 1) { m[i] = d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2 }
+            for i in 0..<(n - 1) {
+                if d[i] == 0 {
+                    m[i] = 0
+                    m[i + 1] = 0
+                    continue
+                }
+                let a = m[i] / d[i]
+                let b = m[i + 1] / d[i]
+                let s = a * a + b * b
+                if s > 9 {
+                    let t = 3 / s.squareRoot()
+                    m[i] = t * a * d[i]
+                    m[i + 1] = t * b * d[i]
+                }
+            }
+            if x <= px[0] { return py[0] }
+            if x >= px[n - 1] { return py[n - 1] }
+            var i = 0
+            while i < n - 2 && x > px[i + 1] { i += 1 }
+            let h = px[i + 1] - px[i]
+            let t = (x - px[i]) / h
+            let t2 = t * t
+            let t3 = t2 * t
+            return (2 * t3 - 3 * t2 + 1) * py[i] + (t3 - 2 * t2 + t) * h * m[i]
+                + (-2 * t3 + 3 * t2) * py[i + 1] + (t3 - t2) * h * m[i + 1]
+        }
+    }
+
+    /// Il peso della pelle dal colore sRGB come tabella 3D per `CIColorCube` (grigio, alfa 1).
+    private static let latoCuboPelle = 64
+    private static let cuboPelle: Data = cubo(lato: latoCuboPelle) { r, g, b in
+        let peso = RegolePelle.pesoColore(r: r * 255, g: g * 255, b: b * 255)
+        return (peso, peso, peso)
+    }
+
+    /// La luce piena sul volto come tabella 3D (sRGB → sRGB): lo stesso guadagno sui tre canali, dalla curva della luce
+    /// sulla luma, con il tetto dei chiari.
+    private static let latoCuboLuce = 32
+    private static let cuboLuce: Data = cubo(lato: latoCuboLuce) { r, g, b in
+        let massimo = max(r, g, b)
+        let luma = 0.2126 * r + 0.7152 * g + 0.0722 * b
+        guard massimo > 0, luma > 0 else { return (r, g, b) }
+        let guadagno = min(RegolePelle.curvaLuce(luma) / luma, RegolePelle.tettoLuce(massimo))
+        return (r * guadagno, g * guadagno, b * guadagno)
+    }
+
+    /// Una tabella 3D per `CIColorCube`: RGBA in Float, il rosso che cambia più in fretta, poi il verde, poi il blu.
+    private static func cubo(lato n: Int, _ f: (Double, Double, Double) -> (Double, Double, Double)) -> Data {
+        var valori = [Float](repeating: 1, count: n * n * n * 4)
+        let passo = 1 / Double(n - 1)
+        for b in 0..<n {
+            for g in 0..<n {
+                for r in 0..<n {
+                    let (x, y, z) = f(Double(r) * passo, Double(g) * passo, Double(b) * passo)
+                    let i = ((b * n + g) * n + r) * 4
+                    valori[i] = Float(x)
+                    valori[i + 1] = Float(y)
+                    valori[i + 2] = Float(z)
+                }
+            }
+        }
+        return valori.withUnsafeBufferPointer { Data(buffer: $0) }
+    }
+
+    /// `CIColorCube` sui valori così come sono (qui sRGB già codificati: la tabella è in sRGB).
+    private static func applicaCubo(_ immagine: CIImage, _ dati: Data, lato: Int) -> CIImage {
+        let filtro = CIFilter.colorCube()
+        filtro.inputImage = immagine
+        filtro.cubeDimension = Float(lato)
+        filtro.cubeData = dati
+        return filtro.outputImage ?? immagine
+    }
+
+    /// La luma sRGB (pesi Rec. 709) di un'immagine già in sRGB, in tutti i canali, tra 0 e 1, alfa 1.
+    private static func lumaSRGB(_ sRGB: CIImage) -> CIImage {
+        let pesi = CIVector(x: 0.2126, y: 0.7152, z: 0.0722, w: 0)
+        return lineare(canali(sRGB, r: pesi, g: pesi, b: pesi), pendenza: 1, scostamento: 0)
+    }
+
+    /// media(Y²) − media(Y)² con la luma centrata (Y − 0,5, come in `coefficientiGuida`), non sotto zero, grigia.
+    private static func varianzaLocale(_ luma: CIImage, misura: CGRect, sigma: CGFloat) -> CIImage {
+        func media(_ immagine: CIImage) -> CIImage {
+            immagine.clampedToExtent().applyingGaussianBlur(sigma: Double(sigma)).cropped(to: misura)
+        }
+        let uno = CIVector(x: 1, y: 0, z: 0, w: 0)
+        let centrata = canali(luma, r: uno, g: uno, b: uno, scostamento: CIVector(x: -0.5, y: -0.5, z: -0.5, w: 1))
+        let mediaQuadrati = media(moltiplica(centrata, centrata))
+        let mediaY = media(centrata)
+        let meno = CIVector(x: -1, y: 0, z: 0, w: 0)
+        let varianza = somma(mediaQuadrati, canali(moltiplica(mediaY, mediaY), r: meno, g: meno, b: meno), misura: misura)
+        return lineare(varianza, pendenza: 1, scostamento: 0)
+    }
+
+    /// 1 lontano dai bordi, 0 sui bordi veri: 1 − smoothstep((var − inizio) / larghezza), grigio.
+    private static func pesoBordo(_ varianza: CIImage) -> CIImage {
+        let t = lineare(varianza, pendenza: 1 / RegolePelle.bordoLarghezza,
+                        scostamento: -RegolePelle.bordoInizio / RegolePelle.bordoLarghezza)
+        let inverso = CIFilter.colorPolynomial()
+        inverso.inputImage = t
+        let unoMenoSmoothstep = CIVector(x: 1, y: 0, z: -3, w: 2)
+        inverso.redCoefficients = unoMenoSmoothstep
+        inverso.greenCoefficients = unoMenoSmoothstep
+        inverso.blueCoefficients = unoMenoSmoothstep
+        inverso.alphaCoefficients = CIVector(x: 1, y: 0, z: 0, w: 0)
+        return inverso.outputImage ?? t
+    }
+
+    /// Un'ellisse morbida per volto (piena fino a `ellisseInterna`, niente oltre `ellisseEsterna`), la più forte.
+    private static func mascheraEllissi(_ ellissi: [(centro: CGPoint, sx: CGFloat, sy: CGFloat)], zona: CGRect) -> CIImage {
         var maschera = CIImage(color: CIColor(red: 0, green: 0, blue: 0)).cropped(to: zona)
-        for rettangolo in rettangoli {
-            let lato = max(rettangolo.width, rettangolo.height)
+        for e in ellissi where e.sx > 0 && e.sy > 0 {
             let disco = CIFilter.radialGradient()
-            disco.center = CGPoint(x: rettangolo.midX, y: rettangolo.midY - rettangolo.height * 0.04)
-            disco.radius0 = Float(lato * 0.38)
-            disco.radius1 = Float(lato * 0.72)
+            disco.center = .zero
+            disco.radius0 = Float(RegolePelle.ellisseInterna / RegolePelle.ellisseEsterna)
+            disco.radius1 = 1
             disco.color0 = CIColor(red: 1, green: 1, blue: 1)
             disco.color1 = CIColor(red: 0, green: 0, blue: 0)
-            guard let immagineDisco = disco.outputImage?.cropped(to: zona) else { continue }
+            guard let ellisse = disco.outputImage?
+                .transformed(by: CGAffineTransform(scaleX: e.sx, y: e.sy)
+                    .concatenating(CGAffineTransform(translationX: e.centro.x, y: e.centro.y)))
+                .cropped(to: zona) else { continue }
             let massimo = CIFilter.maximumCompositing()
-            massimo.inputImage = immagineDisco
+            massimo.inputImage = ellisse
             massimo.backgroundImage = maschera
             maschera = massimo.outputImage ?? maschera
         }
         return maschera
     }
 
-    /// Bianco dove l'originale differisce poco dalla versione sfocata (pelle), nero sui dettagli veri. La differenza si
-    /// misura in sRGB (le zone scure contano quanto le chiare) e il nero si allarga di `raggio` (minimo locale): anche
-    /// i pixel accanto a un dettaglio restano com'erano.
-    private static func mascheraPelle(originale: CIImage, sfocata: CIImage, zona: CGRect, raggio: CGFloat) -> CIImage {
-        let differenza = CIFilter.colorAbsoluteDifference()
-        differenza.inputImage = originale.cropped(to: zona).applyingFilter("CILinearToSRGBToneCurve")
-        differenza.inputImage2 = sfocata.applyingFilter("CILinearToSRGBToneCurve")
-        guard let assoluta = differenza.outputImage else {
-            return CIImage(color: CIColor(red: 0, green: 0, blue: 0)).cropped(to: zona)
+    /// Le zone protette (occhi con le sopracciglia, bocca): un'ellisse inscritta in ogni rettangolo, nera fino a 0,75 del
+    /// raggio, bianca da 1,1 in fuori; si tiene il minimo. Come `RegolePelle.Protezione` su Windows.
+    private static func mascheraProtette(_ zone: [CGRect], zona: CGRect) -> CIImage {
+        var maschera = CIImage(color: CIColor(red: 1, green: 1, blue: 1)).cropped(to: zona)
+        for z in zone where z.width > 0 && z.height > 0 {
+            let disco = CIFilter.radialGradient()
+            disco.center = .zero
+            disco.radius0 = 0.75
+            disco.radius1 = 1.1
+            disco.color0 = CIColor(red: 0, green: 0, blue: 0)
+            disco.color1 = CIColor(red: 1, green: 1, blue: 1)
+            guard let ellisse = disco.outputImage?
+                .transformed(by: CGAffineTransform(scaleX: z.width / 2, y: z.height / 2)
+                    .concatenating(CGAffineTransform(translationX: z.midX, y: z.midY)))
+                .cropped(to: zona) else { continue }
+            let minimo = CIFilter.minimumCompositing()
+            minimo.inputImage = ellisse
+            minimo.backgroundImage = maschera
+            maschera = minimo.outputImage ?? maschera
         }
-        let peso = -sensibilitaBordi / 3
-        let riga = CIVector(x: peso, y: peso, z: peso, w: 0)
-        let inversa = CIFilter.colorMatrix()
-        inversa.inputImage = assoluta
-        inversa.rVector = riga
-        inversa.gVector = riga
-        inversa.bVector = riga
-        inversa.aVector = CIVector(x: 0, y: 0, z: 0, w: 0)
-        inversa.biasVector = CIVector(x: 1, y: 1, z: 1, w: 1)
-        let limiti = CIFilter.colorClamp()
-        limiti.inputImage = inversa.outputImage ?? assoluta
-        limiti.minComponents = CIVector(x: 0, y: 0, z: 0, w: 1)
-        limiti.maxComponents = CIVector(x: 1, y: 1, z: 1, w: 1)
-        let pelle = (limiti.outputImage ?? assoluta).cropped(to: zona)
-        let minimo = CIFilter.morphologyMinimum()
-        minimo.inputImage = pelle.clampedToExtent()
-        minimo.radius = Float(max(1, raggio.rounded()))
-        return (minimo.outputImage ?? pelle).cropped(to: zona)
+        return maschera
     }
 
-    // MARK: Luce sul volto (EffettoLuceVolto.swift, la parte «schiarisci il viso»)
+    // MARK: Luce sul volto (EffettoLuceVolto.swift, la parte «schiarisci il viso»; Qualità 11)
 
-    /// Un'ellisse morbida attorno al volto (`volto` in pixel, già levigato), schiarita con una curva di tono che
-    /// solleva ombre e mezzitoni (circa +0,4 EV) e lascia il bianco al suo posto. `presenza` 0…1 per la dissolvenza.
+    /// Un'ellisse morbida attorno al volto (`volto` in pixel, già levigato; smoothstep dal 30% del raggio al bordo),
+    /// schiarita con la curva della luce applicata alla luma: lo stesso guadagno sui tre canali (tabella 3D
+    /// `cuboLuce`), con il canale più alto che si prende al massimo metà dello spazio fino a 254/255. Niente chiari
+    /// bruciati e niente colore cambiato (prima la curva andava canale per canale e spegneva le pelli chiare).
+    /// La mescolanza in sRGB, come su Windows. `presenza` 0…1 per la dissolvenza.
     static func luceVolto(_ immagine: CIImage, volto: CGRect, presenza: CGFloat) -> CIImage {
         let estensione = immagine.extent
         guard presenza > 0.01 else { return immagine }
-        let centro = CGPoint(x: volto.midX, y: volto.midY - volto.height * 0.08)
-        let semiasseX = volto.width * 1.0
-        let semiasseY = volto.height * 1.25
+        let centro = CGPoint(x: volto.midX, y: volto.midY - volto.height * RegolePelle.luceCentro)
+        let semiasseX = volto.width * RegolePelle.luceLarghezza
+        let semiasseY = volto.height * RegolePelle.luceAltezza
         let zona = CGRect(x: centro.x - semiasseX, y: centro.y - semiasseY, width: semiasseX * 2, height: semiasseY * 2)
             .intersection(estensione).integral
         guard !zona.isEmpty, semiasseX > 0, semiasseY > 0 else { return immagine }
         let disco = CIFilter.radialGradient()
         disco.center = .zero
-        disco.radius0 = 0.35
+        disco.radius0 = 0.3
         disco.radius1 = 1
         disco.color0 = CIColor(red: 1, green: 1, blue: 1)
         disco.color1 = CIColor(red: 0, green: 0, blue: 0)
@@ -333,13 +583,15 @@ enum RicetteEffetti {
             .transformed(by: CGAffineTransform(scaleX: semiasseX, y: semiasseY)
                 .concatenating(CGAffineTransform(translationX: centro.x, y: centro.y)))
             .cropped(to: zona) else { return immagine }
-        let maschera = RicetteFiltriMac.scala(ellisse, per: presenza)
+        // Rampa lineare tra 0,3 e 1 → smoothstep (la soglia morbida larga 1 centrata a metà).
+        let maschera = RicetteFiltriMac.scala(sogliaMorbida(ellisse, larghezza: 1, centro: 0.5), per: presenza)
         let originale = immagine.cropped(to: zona)
-        let illuminata = RicetteFiltriMac.percettivo(originale) {
-            RicetteFiltriMac.curva($0, [(0, 0), (0.25, 0.29), (0.5, 0.565), (0.75, 0.81), (1, 1)])
+        return RicetteFiltriMac.percettivo(originale) { sRGB in
+            let illuminata = applicaCubo(sRGB, cuboLuce, lato: latoCuboLuce)
+            return RicetteFiltriMac.mescola(sopra: illuminata, sotto: sRGB, maschera: maschera)
         }
-        let risultato = RicetteFiltriMac.mescola(sopra: illuminata, sotto: originale, maschera: maschera).cropped(to: zona)
-        return risultato.composited(over: immagine)
+        .cropped(to: zona)
+        .composited(over: immagine)
     }
 
     // MARK: Sfondo (EffettoSfondo.swift)
@@ -463,9 +715,11 @@ enum RicetteEffetti {
     }
 
     /// media(a) nel rosso e media(b) nel verde, alla misura della guida. `guida` e `maschera` grigie, alfa 1.
-    private static func coefficientiGuida(guida: CIImage, maschera: CIImage, misura: CGRect) -> CIImage {
+    /// `sigma` ed `eps`: quelli del bordo della persona, o del ritocco della pelle (Qualità 11, guida = maschera = luma).
+    private static func coefficientiGuida(guida: CIImage, maschera: CIImage, misura: CGRect,
+                                          sigma: CGFloat = raggioGuida, eps: CGFloat = epsilonGuida) -> CIImage {
         func media(_ immagine: CIImage) -> CIImage {
-            immagine.clampedToExtent().applyingGaussianBlur(sigma: Double(raggioGuida)).cropped(to: misura)
+            immagine.clampedToExtent().applyingGaussianBlur(sigma: Double(sigma)).cropped(to: misura)
         }
         let zero = CIVector(x: 0, y: 0, z: 0, w: 0)
         let primo = CIVector(x: 1, y: 0, z: 0, w: 0)
@@ -482,7 +736,6 @@ enum RicetteEffetti {
         // r = (a + k) / 2k = ((cov + k·(var + ε)) / 2k) / (var + ε), sempre tra 0 e 1 (k = `limiteA`). Anche
         // numeratore e denominatore restano tra 0 e 1 (var ≤ 0,25 con la luma centrata): nessun taglio possibile.
         let k = limiteA
-        let eps = epsilonGuida
         let rigaNumeratore = CIVector(x: 0.5, y: 1 / (2 * k), z: 0, w: 0)
         let numeratore = canali(momenti, r: rigaNumeratore, g: rigaNumeratore, b: rigaNumeratore,
                                 scostamento: CIVector(x: eps / 2, y: eps / 2, z: eps / 2, w: 1))

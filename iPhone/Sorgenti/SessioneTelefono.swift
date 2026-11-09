@@ -1303,11 +1303,20 @@ final class SessioneTelefono {
         if inAttesaDiConferma && (motivo == .rete || motivo == .dalComputer) {
             // Il computer aspetta 60 secondi: chiuso dopo quasi un minuto vuol dire che nessuno ha risposto.
             let senzaRisposta = secondiInAttesa >= 55
-            fermaConErrore(titolo: String(localized: "Collegamento non confermato"),
-                           descrizione: senzaRisposta
-                               ? String(localized: "Nessuna risposta da «\(nome)»: tocca «Riprova» e conferma sul computer.")
-                               : String(localized: "Il collegamento non è stato consentito su \(nome). Tocca «Riprova» e conferma sul computer."),
-                           domanda: "codice")
+            // Collaudo 4: sul cavo, dopo «Non consentire», il computer mette il cavo in pausa e non lo riapre da solo:
+            // «Riprova» qui aspetterebbe a vuoto. Serve ricollegare il cavo (o «Collega via cavo» sul Mac); l'ascolto
+            // resta acceso, così la domanda ricompare subito, ma solo dopo quel gesto dell'utente.
+            let rifiutatoSulCavo = viaCavo && !senzaRisposta
+            let descrizione: String
+            if senzaRisposta {
+                descrizione = String(localized: "Nessuna risposta da «\(nome)»: tocca «Riprova» e conferma sul computer.")
+            } else if rifiutatoSulCavo {
+                descrizione = String(localized: "Il collegamento non è stato consentito su \(nome). Stacca e ricollega il cavo (sul Mac puoi anche scegliere «Collega via cavo»), poi conferma sul computer.")
+            } else {
+                descrizione = String(localized: "Il collegamento non è stato consentito su \(nome). Tocca «Riprova» e conferma sul computer.")
+            }
+            fermaConErrore(titolo: String(localized: "Collegamento non confermato"), descrizione: descrizione,
+                           domanda: "codice", attendiCavo: rifiutatoSulCavo)
             return
         }
         switch motivo {

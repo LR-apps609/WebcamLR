@@ -454,7 +454,8 @@ Ramo `ritocco-pelle` (da `prestazioni`), novembre 2026. **Protocollo: non cambia
 Perché questi: sono gli unici candidati con licenza Apache chiara **per codice e pesi** già provati da noi (Android), con
 un formato convertibile in ONNX qui. Robust Video Matting resta escluso (GPL-3.0); MODNet (Apache 2.0) e
 PP-HumanSegV2 sono alternative possibili in futuro (Documenti/Modelli ritaglio.md), ma vanno convertiti da PyTorch/Paddle
-fuori da qui e non danno un vantaggio dimostrato. Il Selfie Segmenter quadrato 256×256 non serve: il video del telefono
+fuori da qui e non danno un vantaggio dimostrato. MODNet è stato provato sul banco (Qualità 9, `Prova MODNet.md`): a
+512×288 è nettamente migliore sui capelli ma costa 2–2,4 volte il pieno, e per ora non entra. Il Selfie Segmenter quadrato 256×256 non serve: il video del telefono
 è sempre orizzontale nel computer o comunque si stira.
 
 Le proporzioni: il fotogramma (16:9) si stira nel quadrato 256×256, come fa MediaPipe con `ImageSegmenter`. La maschera

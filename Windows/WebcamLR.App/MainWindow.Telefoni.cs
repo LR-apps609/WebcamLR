@@ -267,7 +267,7 @@ public sealed partial class MainWindow
                 uscitaWebcam.Formato(formato.Larghezza, formato.Altezza, formato.Codec);
                 FormatoPerRiprese(formato);
                 // Con gli effetti sul computer il motore ha il suo decodificatore, da cui prendono webcam, foto e registrazione.
-                if (SulComputer) motoreVideo.Formato(formato.Larghezza, formato.Altezza, formato.Codec);
+                if (SulComputer) motoreVideo.Formato(formato.Larghezza, formato.Altezza, formato.Codec, formato.Fps);
             }
             // Un'app usa la webcam a 60 fps e questo formato ne ha meno: forse si chiede di più (P12).
             SuInterfaccia(_ => Valuta60Fps());

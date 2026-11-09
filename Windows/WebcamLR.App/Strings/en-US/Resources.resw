@@ -1868,6 +1868,9 @@ The details are in {1}: send them with “Report a bug”.</value>
   <data name="Registro_EffettiLivello" xml:space="preserve">
     <value>Effects: this PC can't keep up with {0} ms per frame (mask {1} ms, render {2} ms): {3}</value>
   </data>
+  <data name="Registro_EffettiLivelloSu" xml:space="preserve">
+    <value>Effects: this PC has headroom at {0} ms per frame (mask {1} ms, render {2} ms): back to {3}</value>
+  </data>
   <data name="Registro_EffettiErrore" xml:space="preserve">
     <value>Effects: mask failed ({0} in total): {1}</value>
   </data>
@@ -1895,8 +1898,14 @@ The details are in {1}: send them with “Report a bug”.</value>
   <data name="Effetti_LivelloBordoLeggero" xml:space="preserve">
     <value>edge refined at a quarter</value>
   </data>
+  <data name="Effetti_LivelloMascheraAlterna" xml:space="preserve">
+    <value>mask every other frame, edge refined at a quarter</value>
+  </data>
   <data name="Effetti_LivelloVeloce" xml:space="preserve">
     <value>light model, simple edge</value>
+  </data>
+  <data name="Effetti_LivelloMinimo" xml:space="preserve">
+    <value>light model, mask every other frame</value>
   </data>
   <data name="Effetti_Fonte" xml:space="preserve">
     <value>{0}, {1}</value>

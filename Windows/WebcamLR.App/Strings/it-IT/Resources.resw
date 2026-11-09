@@ -1870,6 +1870,9 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
   <data name="Registro_EffettiLivello" xml:space="preserve">
     <value>Effetti: il PC non regge {0} ms a fotogramma (maschera {1} ms, resa {2} ms): {3}</value>
   </data>
+  <data name="Registro_EffettiLivelloSu" xml:space="preserve">
+    <value>Effetti: il PC ha margine a {0} ms a fotogramma (maschera {1} ms, resa {2} ms): di nuovo {3}</value>
+  </data>
   <data name="Registro_EffettiErrore" xml:space="preserve">
     <value>Effetti: maschera non riuscita ({0} in tutto): {1}</value>
   </data>
@@ -1897,8 +1900,14 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
   <data name="Effetti_LivelloBordoLeggero" xml:space="preserve">
     <value>bordo rifinito a un quarto</value>
   </data>
+  <data name="Effetti_LivelloMascheraAlterna" xml:space="preserve">
+    <value>maschera un fotogramma sì e uno no, bordo rifinito a un quarto</value>
+  </data>
   <data name="Effetti_LivelloVeloce" xml:space="preserve">
     <value>modello leggero, bordo semplice</value>
+  </data>
+  <data name="Effetti_LivelloMinimo" xml:space="preserve">
+    <value>modello leggero, maschera un fotogramma sì e uno no</value>
   </data>
   <data name="Effetti_Fonte" xml:space="preserve">
     <value>{0}, {1}</value>

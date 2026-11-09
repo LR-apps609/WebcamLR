@@ -17,7 +17,8 @@ import WebcamLRProtocollo
 // Percorso di un fotogramma (uno `MotoreEffetti` per `Schermo`, acceso solo per il telefono nella webcam):
 //   coda dello Schermo: decodifica → `elabora` (non aspetta mai)
 //   coda di analisi:    Vision sulla persona (`VNGeneratePersonSegmentationRequest`) sul fotogramma più recente; i
-//                       volti (`VNDetectFaceRectanglesRequest`) con una chiamata separata, 10 volte al secondo
+//                       volti (`VNDetectFaceRectanglesRequest`; con la pelle accesa `VNDetectFaceLandmarksRequest`, per
+//                       proteggere occhi e bocca) con una chiamata separata, 10 volte al secondo
 //   coda di resa:       un solo grafo Core Image su Metal con la maschera → buffer nuovo (stesso formato YCbCr e
 //                       stessi allegati di colore del decodificatore, IOSurface) → `consegna`
 // Vision e la resa vanno in parallelo (prova di Ledion, 27 ottobre: con Vision in fila davanti alla resa il motore
@@ -322,8 +323,9 @@ final class MotoreEffetti: @unchecked Sendable {
     /// Luce sul volto o inquadratura spente ma ancora in dissolvenza: il motore lavora finché non sono a riposo.
     private var inRitorno = false
     private var livello = Livello.iniziale
-    /// I volti dell'ultima analisi (normalizzati, origine in basso a sinistra come Vision e Core Image) e quando.
-    private var volti: (rettangoli: [CGRect], quando: UInt64)?
+    /// I volti dell'ultima analisi (normalizzati, origine in basso a sinistra come Vision e Core Image) e quando; con la
+    /// pelle accesa anche le zone da non ritoccare (occhi con le sopracciglia, bocca), normalizzate allo stesso modo.
+    private var volti: (rettangoli: [CGRect], protette: [CGRect], quando: UInt64)?
     private var ultimiVoltiChiesti: UInt64 = 0
     /// Gli ultimi 30 intervalli tra due fotogrammi (µs): il tempo di un fotogramma è la loro media. Non il più breve: il
     /// video arriva dalla rete a gruppi (Wi-Fi, USB), due fotogrammi a pochi ms l'uno dall'altro sono normali, e con il
@@ -353,6 +355,8 @@ final class MotoreEffetti: @unchecked Sendable {
     private var sequenza: VNSequenceRequestHandler?
     private var livelloRichiesta: Livello?
     private let richiestaVolti = VNDetectFaceRectanglesRequest()
+    /// Qualità 11: con la pelle accesa i volti con i punti (occhi, sopracciglia, labbra), per proteggerli dal ritocco.
+    private let richiestaPunti = VNDetectFaceLandmarksRequest()
 
     // Solo sulla coda di resa.
     private var pool: CVPixelBufferPool?
@@ -651,17 +655,53 @@ final class MotoreEffetti: @unchecked Sendable {
         }
     }
 
-    /// I volti, con una chiamata separata da quella della persona: l'errore di una non fa perdere l'altra.
+    /// I volti, con una chiamata separata da quella della persona: l'errore di una non fa perdere l'altra. Con la pelle
+    /// accesa i punti del volto (qualche millisecondo in più, sulla coda di analisi, fuori dal tempo di Vision misurato).
     private func cercaVolti(_ immagine: CVPixelBuffer) {
         let gestore = VNImageRequestHandler(cvPixelBuffer: immagine, orientation: .up, options: [:])
+        let conPunti = StatoMotoreEffetti.condiviso.impostazioni.pelle > 0.001
         do {
-            try gestore.perform([richiestaVolti])
-            let trovati = (richiestaVolti.results ?? []).map(\.boundingBox)
+            let osservazioni: [VNFaceObservation]
+            if conPunti {
+                try gestore.perform([richiestaPunti])
+                osservazioni = richiestaPunti.results ?? []
+            } else {
+                try gestore.perform([richiestaVolti])
+                osservazioni = richiestaVolti.results ?? []
+            }
+            let trovati = osservazioni.map(\.boundingBox)
+            let protette = conPunti ? osservazioni.flatMap(Self.zoneProtette) : []
             let adesso = Orologio.adesso()
-            blocco.withLock { volti = (rettangoli: trovati, quando: adesso) }
+            blocco.withLock { volti = (rettangoli: trovati, protette: protette, quando: adesso) }
         } catch {
             contaErrore(error)
         }
+    }
+
+    /// Qualità 11: le zone del volto da non ritoccare, normalizzate come `boundingBox`: ogni occhio con il suo
+    /// sopracciglio e la bocca. Il riquadro dei punti allargato di metà (minimo alto mezza larghezza): il ritocco si
+    /// ferma del tutto entro tre quarti dell'ellisse inscritta (`RegolePelle`, `mascheraProtette`).
+    private static func zoneProtette(_ volto: VNFaceObservation) -> [CGRect] {
+        guard let punti = volto.landmarks else { return [] }
+        let riquadro = volto.boundingBox
+        func zona(_ regioni: [VNFaceLandmarkRegion2D?]) -> CGRect? {
+            let tutti = regioni.compactMap { $0 }.flatMap(\.normalizedPoints)
+            guard let primo = tutti.first else { return nil }
+            var minimo = primo, massimo = primo
+            for p in tutti {
+                minimo = CGPoint(x: min(minimo.x, p.x), y: min(minimo.y, p.y))
+                massimo = CGPoint(x: max(massimo.x, p.x), y: max(massimo.y, p.y))
+            }
+            // Dal riquadro del volto all'immagine (i punti sono normalizzati al riquadro).
+            let larghezza = (massimo.x - minimo.x) * riquadro.width * 1.5
+            let altezza = max((massimo.y - minimo.y) * riquadro.height * 1.5, larghezza / 2)
+            let centro = CGPoint(x: riquadro.minX + (minimo.x + massimo.x) / 2 * riquadro.width,
+                                 y: riquadro.minY + (minimo.y + massimo.y) / 2 * riquadro.height)
+            guard larghezza > 0 else { return nil }
+            return CGRect(x: centro.x - larghezza / 2, y: centro.y - altezza / 2, width: larghezza, height: altezza)
+        }
+        return [zona([punti.leftEye, punti.leftEyebrow]), zona([punti.rightEye, punti.rightEyebrow]),
+                zona([punti.outerLips])].compactMap { $0 }
     }
 
     /// Ogni pool esaurito si conta; nel registro il primo subito, poi al massimo uno ogni 10 secondi.
@@ -796,13 +836,17 @@ final class MotoreEffetti: @unchecked Sendable {
         let dt = passo(lavoro.arrivo)
         // Volti di non più di un secondo fa, normalizzati e in pixel.
         var voltiFreschi: [CGRect]?
+        var protetteFresche: [CGRect] = []
         if let trovati = voltiAttuali, lavoro.arrivo &- min(trovati.quando, lavoro.arrivo) < 1_000_000 {
             voltiFreschi = trovati.rettangoli
+            protetteFresche = trovati.protette
         }
-        let voltiPixel = (voltiFreschi ?? []).map {
-            CGRect(x: $0.minX * CGFloat(larghezza), y: $0.minY * CGFloat(altezza),
-                   width: $0.width * CGFloat(larghezza), height: $0.height * CGFloat(altezza))
+        func inPixel(_ r: CGRect) -> CGRect {
+            CGRect(x: r.minX * CGFloat(larghezza), y: r.minY * CGFloat(altezza),
+                   width: r.width * CGFloat(larghezza), height: r.height * CGFloat(altezza))
         }
+        let voltiPixel = (voltiFreschi ?? []).map(inPixel)
+        let protettePixel = protetteFresche.map(inPixel)
 
         // Lo stesso spazio di colore per leggere e scrivere (quello degli allegati del decodificatore): un pixel che
         // nessun effetto tocca esce identico (bug 6 dell'iPhone).
@@ -888,9 +932,10 @@ final class MotoreEffetti: @unchecked Sendable {
             mascheraFiltrata = nil
             ultimaConSfondo = nil
         }
-        // 3. Ritocco della pelle, solo attorno ai volti.
+        // 3. Ritocco della pelle, solo attorno ai volti (Qualità 11: filtro guidato sulla luma, occhi e bocca protetti).
         if impostazioni.pelle > 0.001 {
-            immagine = RicetteEffetti.pelle(immagine, forza: impostazioni.pelle, volti: voltiPixel, leggero: leggero)
+            immagine = RicetteEffetti.pelle(immagine, forza: impostazioni.pelle, volti: voltiPixel, protette: protettePixel,
+                                            leggero: leggero, verificato: Self.guidedFilterVerificato)
         }
         // 4. Luce sul volto: il volto più grande, levigato, con una dissolvenza di mezzo secondo.
         immagine = luce(immagine, volti: voltiPixel, acceso: impostazioni.luceVolto, dt: dt)

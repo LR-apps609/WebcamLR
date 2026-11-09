@@ -9,10 +9,13 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>VerificaCs</RootNamespace>
+    <!-- La libreria da provare: quella di questa copia, oppure un'altra (per esempio un altro ramo) con
+         dotnet run -p:CartellaEffetti=<cartella di WebcamLR.Effetti>, o l'opzione «effetti» di verifica_cs.py. -->
+    <CartellaEffetti Condition="'$(CartellaEffetti)' == ''">$(MSBuildThisFileDirectory)..\..\..\Windows\WebcamLR.Effetti</CartellaEffetti>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Windows\WebcamLR.Effetti\WebcamLR.Effetti.csproj" />
+    <ProjectReference Include="$(CartellaEffetti)\WebcamLR.Effetti.csproj" />
   </ItemGroup>
 
 </Project>

@@ -47,8 +47,12 @@ Conclusioni e numeri commentati: `Documenti/Qualità sfondo - banco.md`.
    persa, rosso = sfondo preso per persona) | sfocatura, e sotto l'ingrandimento del bordo della testa.
 
 `verifica_cs.py` + `VerificaCs/` passano gli stessi fotogrammi nella libreria C# vera (`RitaglioPersona`,
-`Compositore.Rendi`) e confrontano: maschere del pieno identiche (0 punti diversi), leggero al massimo 1/255 su
-0,0003% dei punti, immagine della variante A al massimo 1/255. Danno anche i tempi veri di C#.
+`Compositore.Rendi`) e la confrontano con D* (`D:fondo_modello=1:fine=0`, maschere con il filtro nel tempo e la media
+dal movimento di `varianti.C`). Con la libreria del ramo prestazioni (30 fotogrammi di vm0003_studio): maschere del
+pieno identiche (0 punti diversi), leggero al massimo 1/255 su 0,0002% dei punti, immagine di D* al massimo 1/255
+(nessun punto oltre 2). Danno anche i tempi veri di C#. Con una libreria di prima di D* le maschere differiscono
+(fino a 93/255 sul 13% dei punti): la verifica se ne accorge. `--effetti <cartella di WebcamLR.Effetti>` prova la
+libreria di un'altra copia, per esempio di un altro ramo.
 
 ## Come si esegue
 
@@ -66,8 +70,8 @@ cd Strumenti/banco_sfondo
 ~/banco-venv/bin/python -I banco.py ... --varianti pieno/A pieno/B:raggio=4:eps=0.01 --clip vm0003_studio --fotogrammi 30
 # 3. Tempi per fotogramma (la rete; la rifinitura in numpy vale solo come rapporto tra varianti)
 ~/banco-venv/bin/python -I banco.py ... --tempi
-# 4. Stessi conti della libreria C# e tempi veri della variante A
-~/banco-venv/bin/python -I verifica_cs.py --dati ~/banco-dati/vm240k --lavoro /tmp/banco-cs
+# 4. Stessi conti della libreria C# (D*) e tempi veri di C#
+~/banco-venv/bin/python -I verifica_cs.py --dati ~/banco-dati/vm240k --lavoro /tmp/banco-cs [--effetti <altra copia>/Windows/WebcamLR.Effetti]
 ```
 
 `banco.py` scrive in `--uscita`: `risultati.json` (si aggiorna a ogni esecuzione, variante per variante),

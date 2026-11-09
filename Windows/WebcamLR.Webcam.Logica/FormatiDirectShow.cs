@@ -62,7 +62,9 @@ public readonly record struct FormatoDirectShow(int Larghezza, int Altezza, int 
 /// 30 fps, leggero da convertire anche su un PC vecchio (Windows 10); Zoom, Meet e OBS scelgono comunque da sé.
 /// Per ogni misura prima YUY2 (lo accettano tutte le app DirectShow), poi NV12 (nessuna conversione), poi RGB24.
 /// Tutte le misure sono anche in <see cref="FormatiWebcam.Tutti"/>, così l'app scrive già la misura giusta.
-/// Niente 4K: le app DirectShow non lo chiedono e ogni app che usa la webcam converte per conto suo.
+/// Qualità 16: anche il 4K a 30 fps, in fondo (come su Windows 11 e sul Mac), per OBS e per chi lo sceglie: le app che
+/// prendono il primo formato adatto non cambiano scelta. Ogni app che usa la webcam converte per conto suo, sul
+/// processore: in 4K YUY2 sono circa 500 MB/s, quindi va bene su un PC recente.
 /// </summary>
 public static class FormatiDirectShow
 {
@@ -74,6 +76,7 @@ public static class FormatiDirectShow
         (640, 360, 30),
         (1280, 720, 60),
         (1920, 1080, 60),
+        (3840, 2160, 30),
     ];
 
     private static readonly CodificaDirectShow[] Codifiche = [CodificaDirectShow.Yuy2, CodificaDirectShow.Nv12, CodificaDirectShow.Rgb24];

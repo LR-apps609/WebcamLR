@@ -115,6 +115,11 @@ public sealed class SessioneComputer : IAsyncDisposable
     private int benvenutoInviato;
     private bool? anteprimaInviata;
     private readonly SemaphoreSlim inviiAnteprima = new(1, 1);
+    // Qualità 18, pausa automatica: come l'«anteprima», dopo il benvenuto (sempre, anche falsa) e a ogni cambiamento.
+    private int pausaAutomatica;
+    /// <summary>-1 = mai mandato in questa sessione, 0 = ripresa, 1 = pausa.</summary>
+    private int pausaAutomaticaInviata = -1;
+    private readonly SemaphoreSlim inviiPausaAutomatica = new(1, 1);
 
     /// <param name="intervallo">Ogni quanto mandare ping e statistiche: 1 secondo, più breve solo nei test.</param>
     /// <param name="arrivo">Quando la connessione è stata accettata (Orologio, µs), per misurare l'avvio (1.11).</param>
@@ -324,6 +329,43 @@ public sealed class SessioneComputer : IAsyncDisposable
         finally { inviiAnteprima.Release(); }
     }
 
+    /// <summary>
+    /// Qualità 18: il computer chiede al telefono la pausa automatica (nessuna app usa la webcam e nessuno guarda il
+    /// video, <see cref="RegolaPausaAutomatica"/>). Si può impostare prima di <see cref="Avvia"/>: il valore parte
+    /// subito dopo il benvenuto, anche falso, così un telefono rimasto in pausa (passaggio al cavo) riprende.
+    /// </summary>
+    public bool PausaAutomaticaChiesta
+    {
+        get => Volatile.Read(ref pausaAutomatica) == 1;
+        set => Volatile.Write(ref pausaAutomatica, value ? 1 : 0);
+    }
+
+    /// <summary>Vero se l'ultimo «pausa-automatica» arrivato al telefono chiedeva la pausa.</summary>
+    public bool PausaAutomaticaInviata => Volatile.Read(ref pausaAutomaticaInviata) == 1;
+
+    /// <summary>Cambia <see cref="PausaAutomaticaChiesta"/> e lo dice al telefono, se è accettato e se il valore è nuovo.</summary>
+    public Task SegnalaPausaAutomaticaAsync(bool attiva)
+    {
+        PausaAutomaticaChiesta = attiva;
+        return InviaPausaAutomaticaAsync();
+    }
+
+    /// <summary>Uno alla volta, come <see cref="InviaAnteprimaAsync"/>: l'ultimo valore arrivato è quello giusto.</summary>
+    private async Task InviaPausaAutomaticaAsync()
+    {
+        await inviiPausaAutomatica.WaitAsync();
+        try
+        {
+            if (Volatile.Read(ref benvenutoInviato) == 0 || Terminata) return;
+            var attiva = PausaAutomaticaChiesta;
+            var valore = attiva ? 1 : 0;
+            if (Volatile.Read(ref pausaAutomaticaInviata) == valore) return;
+            await InviaAsync(new PausaAutomatica(attiva));
+            Volatile.Write(ref pausaAutomaticaInviata, valore);
+        }
+        finally { inviiPausaAutomatica.Release(); }
+    }
+
     /// <summary>Dice al telefono se un'app sta usando la webcam «WebcamLR»: lì compare il rosso «IN ONDA».</summary>
     public Task SegnalaAsync(InOnda inOnda) => InviaAsync(inOnda);
 
@@ -457,7 +499,11 @@ public sealed class SessioneComputer : IAsyncDisposable
                 break;
             case StatoTelefono stato:
                 var sanificato = ValoriSicuri.Sanifica(stato);
-                lock (blocco) pausa.Aggiorna(sanificato, (long)(OrologioSilenzio() / 1000));
+                CambioPausa cambio;
+                lock (blocco) cambio = pausa.Aggiorna(sanificato, (long)(OrologioSilenzio() / 1000));
+                // Fine di una pausa (anche la pausa automatica, Qualità 18): il video riparte da un fotogramma chiave.
+                // Se il primo non lo è, lo si chiede (Protocollo.md, «Fotogramma chiave su richiesta», caso b).
+                if (cambio.FinitaDopo is not null) chiaveArrivata = false;
                 StatoRicevuto?.Invoke(sanificato);
                 break;
             case Capacita capacita:
@@ -552,6 +598,7 @@ public sealed class SessioneComputer : IAsyncDisposable
             // Subito dopo il benvenuto: se la finestra mostra il video (pausa intelligente).
             Volatile.Write(ref benvenutoInviato, 1);
             await InviaAnteprimaAsync();
+            await InviaPausaAutomaticaAsync();
         }
         catch (Exception)
         {

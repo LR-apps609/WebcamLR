@@ -122,6 +122,8 @@ fun SchermataComputer(
     apriPro: () -> Unit,
     apriDomanda: (String) -> Unit,
     inPrimoPiano: Boolean,
+    /** Qualità 17: «Usa il cavo USB» riaccende l'ascolto del cavo con adb, anche dopo «Scollega» su una sessione del cavo. */
+    usaCavo: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val cerca = remember { CercaComputer(context) }
@@ -165,7 +167,7 @@ fun SchermataComputer(
         }
     }
     val qr = { annullaRicollegamento(); apriLettore() }
-    val cavo = { annullaRicollegamento(); mostraCavo = true }
+    val cavo = { annullaRicollegamento(); usaCavo(); mostraCavo = true }
     val aMano = { annullaRicollegamento(); mostraIndirizzo = true }
 
     Box(Modifier.fillMaxSize().background(Colori.sfondoSchermata).safeDrawingPadding(), contentAlignment = Alignment.TopCenter) {
@@ -212,7 +214,7 @@ fun SchermataComputer(
             },
         )
     }
-    if (mostraCavo) DialogoCavo(chiudi = { mostraCavo = false }, apriDomanda = { mostraCavo = false; apriDomanda("cavo") })
+    if (mostraCavo) DialogoCavo(chiudi = { mostraCavo = false }, apriDomanda = { id -> mostraCavo = false; apriDomanda(id) })
 }
 
 /** «PRO» in cima alla schermata dei computer: la strada più corta verso WebcamLR Pro. */
@@ -516,9 +518,10 @@ private fun apriImpostazioniDiSistema(context: Context, azione: String) {
 /**
  * Il cavo su Android è il Tethering USB: una rete sul cavo che non chiede niente al computer. Tre passi e un tasto
  * per le impostazioni del tethering (dove Android lo permette, altrimenti «Rete e Internet»).
+ * Qualità 17: sotto, la strada del debug USB (più veloce, chiede la modalità sviluppatore), con la sua domanda frequente.
  */
 @Composable
-private fun DialogoCavo(chiudi: () -> Unit, apriDomanda: () -> Unit) {
+private fun DialogoCavo(chiudi: () -> Unit, apriDomanda: (String) -> Unit) {
     val context = LocalContext.current
     AlertDialog(
         onDismissRequest = chiudi,
@@ -532,7 +535,8 @@ private fun DialogoCavo(chiudi: () -> Unit, apriDomanda: () -> Unit) {
                         Text(stringResource(passo), style = Stili.corpo, color = Colori.testoChiaro)
                     }
                 }
-                PulsanteLink(stringResource(R.string.come_funziona)) { apriDomanda() }
+                PulsanteLink(stringResource(R.string.come_funziona)) { apriDomanda("cavo") }
+                PulsanteLink(stringResource(R.string.cavo_con_debug_usb)) { apriDomanda("cavo-android") }
             }
         },
         confirmButton = {

@@ -44,6 +44,11 @@ object DomandeFrequenti {
             listOf("usb", "cavo", "usb-c", "filo", "tethering"),
         ),
         DomandaFrequente(
+            "cavo-android", "Posso usare il cavo senza tethering, con il debug USB?",
+            "Sì, ed è la strada più veloce. Sul telefono apri Impostazioni › Informazioni sul telefono e tocca sette volte «Numero build» (su Samsung: Informazioni software › Numero build; su Xiaomi: «Versione MIUI» o «Versione del sistema operativo»). Poi in Impostazioni › Sistema › Opzioni sviluppatore attiva «Debug USB». Sul computer servono gli strumenti di Android (adb), gratuiti da Google: con Android Studio ci sono già. Collega il cavo, scegli «Consenti» alla domanda «Consentire il debug USB?» (spunta «Consenti sempre da questo computer») e tieni aperta WebcamLR: il computer si collega da solo e in alto vedrai «Cavo USB». Se il collegamento non parte, stacca e riattacca il cavo.",
+            listOf("usb", "cavo", "debug", "adb", "sviluppatore", "opzioni sviluppatore", "numero build"),
+        ),
+        DomandaFrequente(
             "codice", "Perché il computer mi chiede un codice?",
             "È la prima volta che questo telefono si collega. Controlla che le 4 cifre siano uguali sul telefono e sul computer, poi scegli «Consenti». Dalla volta dopo si collega senza domande. Con il QR code il codice non serve.",
             listOf("4 cifre", "consentire", "abbinamento", "conferma"),
@@ -135,6 +140,11 @@ object DomandeFrequenti {
             "cavo", "How do I connect with a USB cable?",
             "Connect the phone to the computer with the cable, then on the phone open Settings › Network & internet › Hotspot & tethering › USB tethering (on Xiaomi: Settings › Connection & sharing; on Samsung: Connections › Mobile Hotspot and Tethering). A small network is created over the cable: the computer shows up in the list as usual, and “USB cable” appears at the top. It’s the most stable connection and it charges the phone too. On Windows it just works. On a Mac it works with newer phones; if the Mac doesn’t see the new network, use Wi-Fi or the phone’s hotspot.",
             listOf("usb", "cable", "usb-c", "wire", "tethering"),
+        ),
+        DomandaFrequente(
+            "cavo-android", "Can I use the cable without tethering, with USB debugging?",
+            "Yes, and it’s the fastest way. On the phone open Settings › About phone and tap “Build number” seven times (on Samsung: Software information › Build number; on Xiaomi: “MIUI version” or “OS version”). Then in Settings › System › Developer options turn on “USB debugging”. The computer needs the Android tools (adb), free from Google: with Android Studio you already have them. Plug in the cable, choose “Allow” when asked “Allow USB debugging?” (tick “Always allow from this computer”) and keep WebcamLR open: the computer connects by itself and “USB cable” appears at the top. If the connection doesn’t start, unplug and replug the cable.",
+            listOf("usb", "cable", "debug", "debugging", "adb", "developer", "developer options", "build number"),
         ),
         DomandaFrequente(
             "codice", "Why does the computer ask me for a code?",

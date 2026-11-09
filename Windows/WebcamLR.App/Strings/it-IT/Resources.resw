@@ -584,8 +584,8 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
   <data name="App_DescrizionePro" xml:space="preserve">
     <value>Qualità piena, effetti da studio e tutti i comandi del PC. Si paga una volta sola, senza abbonamento. Il resto di WebcamLR resta gratis.</value>
   </data>
-  <data name="App_ProAndroid" xml:space="preserve">
-    <value>Con un telefono Android: apri WebcamLR › App › WebcamLR Pro, come sull'iPhone.</value>
+  <data name="App_ProDove" xml:space="preserve">
+    <value>Su iPhone e Android: apri WebcamLR › Impostazioni › WebcamLR Pro, oppure tocca «PRO» in alto.</value>
   </data>
   <data name="App_Gratis" xml:space="preserve">
     <value>Gratis</value>

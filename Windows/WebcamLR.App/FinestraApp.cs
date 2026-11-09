@@ -137,7 +137,7 @@ public static class FinestraApp
             },
         });
         if (!attivo) stato.Children.Add(Testo(RegolePro.Strada, "TestoChiaro"));
-        if (!attivo) stato.Children.Add(Testo(Testi.T("App_ProAndroid"), "TestoTenue", Token.MisuraNota));
+        if (!attivo) stato.Children.Add(Testo(Testi.T("App_ProDove"), "TestoTenue", Token.MisuraNota));
         // Superfici a gradini: il dialogo è sul pannello, la scheda sale a pannelloChiaro con contornoSuRialzato e le note
         // in testoTenue (testoSecondario sul rialzato è sotto 4,5:1).
         pannello.Children.Add(new Border

@@ -25,7 +25,7 @@ finestra** (ramo `effetti-windows`, sezione «Motore effetti» qui sotto): prima
 
 Stesso disegno e stessi nomi del Mac (`Mac/Sorgenti/MotoreEffetti.swift`, ramo `effetti-mac`): `EffettiSulComputer`
 (vero di serie), `ImpostazioniMotore`, `StatoEffettiComputer`, `MotoreEffetti` con le sue `Misure` e `Note`,
-`MollaInquadratura`, livelli che scendono da soli e non risalgono.
+`MollaInquadratura`, livelli che scendono presto e risalgono piano da soli (Qualità 6, «Qualità che si adatta al PC»).
 
 ### Architettura
 
@@ -127,12 +127,53 @@ le misure ballano del ±30%). Un PC desktop con 6–8 core veri dovrebbe stare a
 
 Analisi: riduzioni a metà e a un quarto 1,3 ms; maschera dal quarto sul processore 4 ms (leggero) e 52 ms (pieno: per
 questo il pieno va sulla scheda video, o si scende al leggero da soli). Analisi e resa lavorano in parallelo: a 30 fps
-(33 ms) la sfocatura con un filtro ci sta anche qui; «tutto insieme» no, e allora il livello scende (bordo leggero,
-poi veloce) e i fotogrammi in eccesso si saltano. Il livello scende se in media su 60 fotogrammi maschera o resa superano
-l'85% del tempo di un fotogramma: la media della metà centrale degli ultimi 30 intervalli d'arrivo, mai sotto 1/60 s (un
-intoppo del Wi-Fi o una raffica non contano). I primi 5 fotogrammi dopo un azzeramento o una fonte nuova non contano
-(riscaldamento di DirectML); maschera e resa si confrontano sulle medie per scegliere se passare subito al veloce. Nel registro ogni 30 secondi: «Effetti sul PC: … ms (maschera …, resa
-…; livello; scheda video/processore, modello) · scartati · senza maschera · anteprima»; nei numeri la riga «Effetti».
+(33 ms) la sfocatura con un filtro ci sta anche qui; «tutto insieme» no, e allora il livello scende (vedi sotto) e i
+fotogrammi in eccesso si saltano. Nel registro ogni 30 secondi: «Effetti sul PC: … ms (maschera …, resa …; livello;
+scheda video/processore, modello) · scartati · senza maschera · anteprima»; nei numeri la riga «Effetti».
+
+### Qualità che si adatta al PC (Qualità 6)
+
+Come Google Meet: sui PC deboli lo sfondo non deve far scendere i fotogrammi. Con lo sfondo acceso `SceltaLivello`
+(`Motore/SceltaLivello.cs`, senza thread e senza orologio: si prova con tempi finti in `SceltaLivelloTest`) sceglie uno
+di cinque livelli (`LivelloResa`; che cosa cambia lo dicono `ConBordoAMeta`, `ConMascheraAlterna`, `ConModelloLeggero`,
+`ConBordoBilineare`):
+
+| Livello | Modello | Maschera | Bordo |
+|---|---|---|---|
+| 1 `Pieno` | pieno | ogni fotogramma | filtro guidato a metà risoluzione |
+| 2 `BordoLeggero` | pieno | ogni fotogramma | filtro guidato a un quarto |
+| 3 `MascheraAlterna` | pieno | un fotogramma sì e uno no | filtro guidato a un quarto |
+| 4 `Veloce` | leggero | ogni fotogramma | bilineare |
+| 5 `Minimo` | leggero | un fotogramma sì e uno no | bilineare |
+
+Il filtro nel tempo e la media dal movimento della maschera restano accesi a tutti i livelli (meno di 1 ms).
+
+- **Misura**: finestre di 2 s (almeno 10 fotogrammi resi) con le medie di maschera e resa: sono due code in parallelo,
+  conta la più lenta. Il **tempo di un fotogramma** è la media della metà centrale degli ultimi 30 intervalli d'arrivo,
+  mai sotto quello dei fps dichiarati dal telefono nel messaggio `formato` (33 ms a 30 fps, 17 ms a 60;
+  `MotoreVideo.Formato` → `MotoreEffetti.Fps`), né sotto 1/60 s se non li dice. I primi 5 fotogrammi dopo un azzeramento
+  o una fonte nuova non contano (riscaldamento di DirectML); un buco di più di 1 s apre una finestra nuova.
+- **Scende** appena una finestra supera l'**85%** del fotogramma (a 30 fps: 28 ms), di un gradino che alleggerisce la
+  coda più lenta: maschera lenta → maschera alterna (o subito il veloce se anche dimezzata non ci starebbe); resa lenta
+  → bordo leggero, poi il veloce; dal veloce il minimo; dal minimo niente (si saltano fotogrammi).
+- **Risale** di un gradino dopo **5 finestre di fila (circa 10 s) sotto il 50%** del fotogramma. Se ricade dal gradino
+  appena preso entro 30 s, la prossima risalita aspetta il doppio (20, 40, 80, al massimo 160 s); tenuto 30 s, si torna a
+  10 s. Tra il 50% e l'85% resta dov'è.
+- **Maschera alterna**: il fotogramma «in mezzo» passa comunque dalla coda di analisi (l'ordine non cambia, le riduzioni
+  a metà e a un quarto si fanno lo stesso) e prende la maschera del precedente se non ha più di 100 ms
+  (`EtaMassimaRiuso`); altrimenti la calcola. Non conta come «senza maschera». Niente interpolazione tra due maschere:
+  servirebbe la maschera del fotogramma dopo, cioè un fotogramma di ritardo.
+- **Cambio di modello** (tra il 3 e il 4): la fonte nuova si apre e si scalda (una maschera su un fotogramma vuoto) su un
+  altro thread mentre la vecchia continua; quando è pronta prende il suo posto e la vecchia si chiude. Così la risalita
+  al pieno non ferma il video per la compilazione degli shader. Se la fonte nuova non si apre, si resta sulla vecchia
+  finché il livello non cambia. Il passaggio al leggero «perché il pieno è lento» dentro `RitaglioPersona`
+  (`MisuraVelocita`) nel motore è spento (`RipiegoSeLento = false`): lo decide la scala, che può anche risalire. Senza
+  DirectML si parte comunque dal leggero.
+- **Registro**: una riga a ogni cambio. Giù: «Effetti: il PC non regge 33 ms a fotogramma (maschera 45 ms, resa 12 ms):
+  maschera un fotogramma sì e uno no, bordo rifinito a un quarto». Su: «Effetti: il PC ha margine a 33 ms a fotogramma
+  (…): di nuovo bordo rifinito a metà risoluzione». Nessun avviso nuovo per l'utente: Windows non ne ha uno di «resa
+  lenta», e il cambio di livello non chiede nulla a chi guarda.
+- Dopo un azzeramento (telefono nuovo, sessione nuova, altra misura del video) si riparte dal pieno.
 
 ## Modello scelto
 
@@ -252,7 +293,8 @@ var maschera = ritaglio.Calcola(bgra, 1920, 1080, passo); // bloccante: fuori da
   modello pieno.
 - **Ripiego** (`MisuraVelocita`): senza DirectML si parte dal leggero; col pieno, dopo 5 maschere di riscaldamento e
   20 di prova, se la media supera 25 ms si passa al leggero per il resto della sessione (sulla stessa scheda video). Il
-  motivo è in `MotivoRipiego`, per il registro.
+  motivo è in `MotivoRipiego`, per il registro. Nel motore effetti questo secondo passaggio è spento: lo fa la scala dei
+  livelli («Qualità che si adatta al PC»).
 - **Controlli**: un file modello mancante o con ingresso/uscita diversi è un errore chiaro, non una maschera senza senso.
 - Le sessioni ONNX Runtime riusano gli stessi buffer a ogni fotogramma (`OrtValue` su array fissi): nessuna allocazione
   grande per fotogramma, tranne la maschera restituita (64 KB).
@@ -318,8 +360,8 @@ decodificatore.
 - **Ripiego automatico**: nessuna DirectX 12 (macchine virtuali, Desktop remoto, driver di base Microsoft), DirectML che
   non si apre, o pieno troppo lento → **modello leggero**: sul processore circa 5 ms anche su un portatile modesto, bordo
   più grossolano sui capelli. Nessuna configurazione richiesta all'utente; nel registro si legge il motivo.
-- **Sotto il minimo** (processore a 2 core vecchio, ritaglio oltre 30 ms anche col leggero): maschera a metà frequenza
-  (un fotogramma sì e uno no) con il filtro nel tempo; da decidere con le misure vere.
+- **Sotto il minimo** (processore a 2 core vecchio, ritaglio oltre 30 ms anche col leggero): il livello `Minimo`, maschera
+  a metà frequenza (un fotogramma sì e uno no) con il filtro nel tempo; ci arriva da sola la scala dei livelli.
 - Memoria: +17 MB su disco (modelli) e circa 60–120 MB di RAM/VRAM per il pieno con DirectML (stima).
 - ARM64 (Snapdragon X): il pacchetto DirectML ha i binari ARM64; la GPU Adreno supporta DirectX 12. Da provare se Ledion
   ha accesso a un PC ARM.
@@ -358,6 +400,16 @@ decodificatore.
    «PRO» e senza effetto. Con Pro: sfondo «Ufficio», «La tua immagine», filtro Cinema, scritta con logo.
 7. Riavvio dell'app: le scelte degli effetti restano.
 8. Tempi: con «tutto insieme» il video resta fluido? Se il registro dice «il PC non regge …», annota il livello.
+
+### Qualità che si adatta al PC (Qualità 6)
+
+1. Sfondo › Medio su un PC lento (o con il portatile a batteria in risparmio energetico): entro 2–4 s dal primo
+   rallentamento il registro dice «il PC non regge …» con il livello nuovo, e il video torna fluido.
+2. Lascia lo sfondo acceso e chiudi ciò che pesa (o attacca l'alimentatore): dopo circa 10 s «il PC ha margine … di
+   nuovo …», un gradino alla volta. Alla risalita dal modello leggero al pieno il video **non** si deve fermare.
+3. Telefono a 60 fps: il registro, se scende, dice «17 ms a fotogramma».
+4. Riservatezza: con «maschera un fotogramma sì e uno no» muoviti in fretta: nessun lampo della stanza vera.
+5. Manda le righe «Effetti: …» del registro con il nome del processore e della scheda video.
 
 ## Fonti
 

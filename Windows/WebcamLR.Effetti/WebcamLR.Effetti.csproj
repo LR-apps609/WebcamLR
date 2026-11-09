@@ -22,6 +22,20 @@
     <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.24.4" Condition="!$([MSBuild]::IsOSPlatform('Windows'))" />
   </ItemGroup>
 
+  <!-- Qualità 5: la composizione dello sfondo sulla scheda video con Direct3D 11 (cartella SchedaVideo). Vortice.Windows
+       (Amer Koleci, licenza MIT): solo codice .NET che chiama d3d11.dll e d3dcompiler_47.dll di Windows, quindi si compila
+       anche su Linux (dove la scheda video non si apre e resta il processore). Porta con sé Vortice.DXGI, Vortice.DirectX,
+       Vortice.Mathematics e SharpGen.Runtime(.COM), tutti MIT: Licenze/MIT-Vortice.txt. -->
+  <ItemGroup>
+    <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
+    <PackageReference Include="Vortice.D3DCompiler" Version="3.8.3" />
+  </ItemGroup>
+
+  <!-- Lo shader (HLSL) si compila all'avvio con D3DCompile: nella libreria c'è il testo, nessun .cso. -->
+  <ItemGroup>
+    <EmbeddedResource Include="SchedaVideo\Composizione.hlsl" LogicalName="Composizione.hlsl" />
+  </ItemGroup>
+
   <!-- Gli identificativi di filtri, sfondi e sfondi pronti (Documenti/Protocollo.md), per le impostazioni del motore. -->
   <ItemGroup>
     <ProjectReference Include="..\WebcamLR.Protocollo\WebcamLR.Protocollo.csproj" />

@@ -762,6 +762,8 @@ public class MotoreTest(ITestOutputHelper uscita)
         Misura("sfocatura Medio, bordo leggero", new ImpostazioniMotore { Sfondo = ModiSfondo.Sfocato, IntensitaSfondo = 0.55 }, LivelloResa.BordoLeggero);
         Misura("sfocatura Medio, veloce", new ImpostazioniMotore { Sfondo = ModiSfondo.Sfocato, IntensitaSfondo = 0.55 }, LivelloResa.Veloce);
         Misura("sostituito", new ImpostazioniMotore { Sfondo = ModiSfondo.Sostituito, IntensitaSfondo = 0.5 });
+        Misura("sostituito, bordo leggero", new ImpostazioniMotore { Sfondo = ModiSfondo.Sostituito, IntensitaSfondo = 0.5 }, LivelloResa.BordoLeggero);
+        Misura("sostituito, veloce", new ImpostazioniMotore { Sfondo = ModiSfondo.Sostituito, IntensitaSfondo = 0.5 }, LivelloResa.Veloce);
         Misura("pelle + luce + specchio", new ImpostazioniMotore { Pelle = 0.6, LuceVolto = true, Specchia = true });
         Misura("tutto", new ImpostazioniMotore
         {

@@ -3,8 +3,10 @@ namespace WebcamLR.Effetti;
 /// <summary>
 /// La qualità della resa con lo sfondo acceso, che si adatta al PC (Qualità 6, come Google Meet): scende presto se il PC
 /// non regge i fotogrammi al secondo e risale piano quando c'è margine (<see cref="SceltaLivello"/>). In ordine, dal più
-/// bello al più leggero; il filtro nel tempo della maschera (<see cref="FiltroTemporale"/>, <see cref="MediaNelMovimento"/>)
-/// resta acceso a tutti i livelli: costa meno di un millisecondo.
+/// bello al più leggero; il filtro nel tempo della maschera (<see cref="FiltroTemporale"/>, <see cref="MediaNelMovimento"/>,
+/// <see cref="IsteresiMaschera"/>) resta acceso a tutti i livelli: costa meno di un millisecondo. Con lo sfondo sostituito
+/// il bordo pulito si salta ai livelli con il bordo bilineare; dove si compone (scheda video o processore) lo sceglie il
+/// <see cref="Compositore"/>, e il tempo misurato è quello vero, scheda video compresa.
 /// </summary>
 public enum LivelloResa
 {

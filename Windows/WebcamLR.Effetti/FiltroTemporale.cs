@@ -55,7 +55,13 @@ public sealed class MediaNelMovimento
     /// <summary>Raggio della media del movimento (5×5).</summary>
     public const int Raggio = 2;
 
-    private float[]? media, lumaPrecedente, luma, movimento, appoggio;
+    private float[]? media, lumaPrecedente, luma, movimento, appoggio, pesi;
+
+    /// <summary>
+    /// Il peso della maschera nuova usato per ogni punto nell'ultima <see cref="Applica"/> (tra <see cref="PesoFermo"/> e
+    /// 1; tutto 1 alla prima maschera): dice a <see cref="IsteresiMaschera"/> dove l'immagine è ferma.
+    /// </summary>
+    public ReadOnlySpan<float> Pesi => pesi;
 
     /// <summary>
     /// Filtra <paramref name="maschera"/> sul posto (valori in [0, 1], <paramref name="larghezza"/> ×
@@ -70,6 +76,7 @@ public sealed class MediaNelMovimento
             luma = new float[n];
             movimento = new float[n];
             appoggio = new float[n];
+            pesi = new float[n];
             media = lumaPrecedente = null;
         }
         for (var i = 0; i < n; i++) luma[i] = 0.2126f * rgb[i * 3] + 0.7152f * rgb[i * 3 + 1] + 0.0722f * rgb[i * 3 + 2];
@@ -77,6 +84,7 @@ public sealed class MediaNelMovimento
         {
             media = maschera.ToArray();
             lumaPrecedente = (float[])luma.Clone();
+            Array.Fill(pesi!, 1f);
             return;
         }
         for (var i = 0; i < n; i++) movimento![i] = MathF.Abs(luma[i] - lumaPrecedente[i]);
@@ -85,6 +93,7 @@ public sealed class MediaNelMovimento
         for (var i = 0; i < n; i++)
         {
             var peso = Math.Clamp(PesoFermo + Pendenza * movimento![i], PesoFermo, 1f);
+            pesi![i] = peso;
             var v = media[i] + (maschera[i] - media[i]) * peso;
             media[i] = v;
             maschera[i] = v;
@@ -120,4 +129,62 @@ public sealed class MediaNelMovimento
             }
         }
     }
+}
+
+/// <summary>
+/// Isteresi nel tempo della maschera, dopo <see cref="MediaNelMovimento"/> (Qualità 4, come filtraNelTempo del Mac, tarata
+/// sulla maschera di MediaPipe con il banco di qualità): ogni punto ricorda se è persona. Diventa persona quando la media
+/// supera <see cref="SogliaSu"/>, torna sfondo sotto <see cref="SogliaGiu"/>; in mezzo resta com'era, e il valore si
+/// sposta di <see cref="Spinta"/> dalla parte del suo stato, lontano dal centro della soglia del bordo (0,5). Così un
+/// punto incerto non salta tra nitido e sfocato a ogni fotogramma (la felpa scura sul divano). La spinta vale solo dove
+/// l'immagine è ferma: dove si muove (peso della media dal movimento verso 1) scende a zero e vale la maschera nuova,
+/// niente scie.
+/// Il filtro del Mac così com'è (media 0,3, isteresi 0,3/0,7, spinta 0,15) sulla maschera di MediaPipe peggiorava il
+/// bordo (variante «Cm» del banco: MAD 137 → 190); questi valori, sopra D*, tolgono un po' di tremolio in tutte le clip
+/// (in media −7%) e un po' di errore sul bordo (−2%; scuro su scuro −5%), con il dtSSD +2%
+/// (Documenti/Effetti su Windows.md, «Qualità 4»).
+/// </summary>
+public sealed class IsteresiMaschera
+{
+    /// <summary>Sopra questa media un punto sfondo diventa persona.</summary>
+    public const float SogliaSu = 0.6f;
+
+    /// <summary>Sotto questa media un punto persona torna sfondo.</summary>
+    public const float SogliaGiu = 0.4f;
+
+    /// <summary>Di quanto si sposta il valore dalla parte del suo stato, dove l'immagine è ferma.</summary>
+    public const float Spinta = 0.1f;
+
+    /// <summary>Centro di partenza: alla prima maschera un punto è persona da qui in su.</summary>
+    public const float Centro = 0.5f;
+
+    private bool[]? persona;
+
+    /// <summary>
+    /// Filtra <paramref name="maschera"/> sul posto (valori in [0, 1]). <paramref name="pesi"/>: il peso della media dal
+    /// movimento per ogni punto (<see cref="MediaNelMovimento.Pesi"/>); vuoto = immagine ferma ovunque.
+    /// </summary>
+    public void Applica(Span<float> maschera, ReadOnlySpan<float> pesi)
+    {
+        var n = maschera.Length;
+        if (pesi.Length != 0 && pesi.Length != n) throw new ArgumentException("Misure diverse tra maschera e pesi", nameof(pesi));
+        var daCapo = persona is null || persona.Length != n;
+        if (daCapo) persona = new bool[n];
+        const float scala = 1f / (1f - MediaNelMovimento.PesoFermo);
+        for (var i = 0; i < n; i++)
+        {
+            var v = maschera[i];
+            var p = daCapo ? v >= Centro : persona![i];
+            if (p && v < SogliaGiu) p = false;
+            else if (!p && v > SogliaSu) p = true;
+            persona![i] = p;
+            // 1 dove l'immagine è ferma (peso = PesoFermo), 0 dove si muove (peso 1). Alla prima maschera (nessun movimento
+            // ancora misurato) come ferma, come il Mac: una scena ferma resta uguale dal primo fotogramma.
+            var fermo = daCapo || pesi.Length == 0 ? 1f : 1f - (pesi[i] - MediaNelMovimento.PesoFermo) * scala;
+            maschera[i] = Math.Clamp(v + (p ? Spinta : -Spinta) * fermo, 0f, 1f);
+        }
+    }
+
+    /// <summary>Dimentica lo stato dei punti (cambio di modello, scena nuova).</summary>
+    public void Dimentica() => persona = null;
 }

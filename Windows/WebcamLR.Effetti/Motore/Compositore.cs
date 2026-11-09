@@ -16,7 +16,7 @@ public sealed record IngressoResa(ImmagineBgra Immagine, ImmagineBgra? Meta, Imm
 /// (volto levigato, molla dell'inquadratura) e le cose disegnate una volta (sfondo alla misura, scritta, tabelle).
 /// Non è thread-safe: la usa solo il thread della resa (al suo interno divide le righe tra i processori).
 /// </summary>
-public sealed class Compositore
+public sealed class Compositore : IDisposable
 {
     /// <summary>Il fondo di Tema (#13211D) quando l'immagine dello sfondo non è ancora pronta.</summary>
     public static readonly (byte R, byte G, byte B) ColoreFondo = (0x13, 0x21, 0x1D);
@@ -41,6 +41,25 @@ public sealed class Compositore
     private byte[] alfa = [];
     private byte[] copiaNitidezza = [];
     private readonly Elaborazione.LavagnaGuidato lavagna = new();
+    private byte[] alfaQuarto = [], mascheraMorbida = [];
+    private float[] lavagnaColore = [], appoggioColore = [], lavagnaMaschera = [], appoggioMaschera = [];
+    private ImmagineBgra? colorePersona;
+    private (string Chiave, ImmagineBgra Immagine)? sfondoMorbido;
+
+    // La composizione a piena risoluzione (Qualità 5): sulla scheda video se si apre, altrimenti sul processore.
+    private readonly ComposizioneProcessore processore = new();
+    private readonly Func<IComposizione>? creaSchedaVideo;
+    private IComposizione? schedaVideo;
+    private Task<IComposizione>? preparazioneSchedaVideo;
+    private bool schedaVideoEsclusa;
+    private int erroriSchedaVideo, riaperture;
+    private readonly List<CambioComposizione> cambi = [];
+
+    /// <param name="creaSchedaVideo">
+    /// La composizione sulla scheda video (<see cref="ComposizioneSchedaVideo.Crea"/>): si chiama in sottofondo la prima
+    /// volta che serve; se lancia un errore si resta sul processore. Null: sempre il processore.
+    /// </param>
+    public Compositore(Func<IComposizione>? creaSchedaVideo = null) => this.creaSchedaVideo = creaSchedaVideo;
 
     /// <summary>Luce sul volto o inquadratura spente ma ancora in dissolvenza: il motore deve lavorare finché non sono a riposo.</summary>
     public bool InRitorno => inquadratura.InMovimento || presenzaLuce > 0.01;
@@ -229,12 +248,221 @@ public sealed class Compositore
         else Elaborazione.SogliaMorbida(rifinita, alfa, Elaborazione.LarghezzaSogliaSfocato, Elaborazione.CentroSogliaSfocato);
 
         // Il fondo: l'immagine scelta alla misura del video, o lo sfondo sfocato senza alone (piccolo).
-        ImmagineBgra? fondoPieno = null;
-        ImmagineBgra? fondoPiccolo = null;
-        if (sostituito) fondoPieno = SfondoAllaMisura(istantanea, imp.ImmagineSfondo, l, a);
-        else fondoPiccolo = SfocataSenzaAlone(quarto, maschera, intensita, calore, l, a);
+        PianoComposizione piano;
+        if (sostituito)
+        {
+            // Come il Mac (personaSuSfondoNuovo): bordo pulito dal vecchio sfondo (non al livello bilineare) e light wrap
+            // del nuovo. Tutto in piccolo, a un quarto: il passo a piena risoluzione lo fa la composizione.
+            var (fondoPieno, chiaveFondo) = SfondoAllaMisura(istantanea, imp.ImmagineSfondo, l, a);
+            var alfaQuarto = AlfaAlQuarto(alfa, lw, aw, lq, aq);
+            var unita = Math.Min(l, a) / 1080.0 * lq / l;
+            piano = new PianoComposizione
+            {
+                Sorgente = src, Alfa = alfa, LarghezzaAlfa = lw, AltezzaAlfa = aw, Calore = calore,
+                FondoPieno = fondoPieno, ChiaveFondo = chiaveFondo,
+                ColorePersona = livello.ConBordoBilineare() ? null : ColorePersona(quarto, alfaQuarto, RegoleBordo.SigmaColorePersona * unita),
+                SfondoMorbido = SfondoMorbido(fondoPieno, chiaveFondo, lq, aq, RegoleBordo.SigmaSfondoMorbido * unita),
+                MascheraMorbida = MascheraMorbida(alfaQuarto, lq, aq, RegoleBordo.SigmaMascheraMorbida * unita),
+                LarghezzaMorbida = lq, AltezzaMorbida = aq,
+            };
+        }
+        else
+        {
+            piano = new PianoComposizione
+            {
+                Sorgente = src, Alfa = alfa, LarghezzaAlfa = lw, AltezzaAlfa = aw, Calore = calore,
+                FondoPiccolo = SfocataSenzaAlone(quarto, maschera, intensita, calore, l, a),
+            };
+        }
+        ComponiConLaMigliore(piano, destinazione);
+    }
 
-        Componi(src, calore, alfa, lw, aw, fondoPieno, fondoPiccolo, destinazione);
+    // MARK: composizione sulla scheda video o sul processore (Qualità 5)
+
+    /// <summary>Errori di fila della scheda video dopo i quali la si lascia (driver aggiornato, sospensione, TDR).</summary>
+    public const int ErroriSchedaVideoPerLasciare = 3;
+
+    /// <summary>Quante volte si riapre la scheda video persa durante il funzionamento, poi resta il processore.</summary>
+    public const int RiapertureSchedaVideo = 1;
+
+    /// <summary>
+    /// Il passo a piena risoluzione sulla scheda video se c'è e funziona, altrimenti sul processore. La scheda video si
+    /// apre in sottofondo la prima volta che serve (compila lo shader e si confronta con il processore): intanto, e se
+    /// non si apre, lavora il processore. Un errore della scheda video rifà lo stesso fotogramma sul processore; dopo
+    /// <see cref="ErroriSchedaVideoPerLasciare"/> di fila la si chiude e si riapre una volta sola.
+    /// </summary>
+    private void ComponiConLaMigliore(PianoComposizione piano, ImmagineBgra destinazione)
+    {
+        PreparaSchedaVideo();
+        if (schedaVideo is { } gpu)
+        {
+            try
+            {
+                gpu.Componi(piano, destinazione);
+                erroriSchedaVideo = 0;
+                return;
+            }
+            catch (Exception errore)
+            {
+                if (++erroriSchedaVideo >= ErroriSchedaVideoPerLasciare)
+                {
+                    try { gpu.Dispose(); }
+                    catch (Exception) { }
+                    schedaVideo = null;
+                    erroriSchedaVideo = 0;
+                    var riapre = riaperture++ < RiapertureSchedaVideo;
+                    if (!riapre) schedaVideoEsclusa = true;
+                    preparazioneSchedaVideo = null;
+                    cambi.Add(new CambioComposizione(false, processore.Descrizione,
+                        $"{(riapre ? "scheda video persa, si riapre" : "scheda video persa")}: {errore.Message}"));
+                }
+            }
+        }
+        processore.Componi(piano, destinazione);
+    }
+
+    /// <summary>Apre la scheda video in sottofondo (una volta), e la prende quando è pronta.</summary>
+    private void PreparaSchedaVideo()
+    {
+        if (creaSchedaVideo is null || schedaVideo is not null || schedaVideoEsclusa) return;
+        if (preparazioneSchedaVideo is null)
+        {
+            var crea = creaSchedaVideo;
+            preparazioneSchedaVideo = Task.Run(crea);
+            return;
+        }
+        if (!preparazioneSchedaVideo.IsCompleted) return;
+        var compito = preparazioneSchedaVideo;
+        preparazioneSchedaVideo = null;
+        if (compito.IsCompletedSuccessfully)
+        {
+            schedaVideo = compito.Result;
+            erroriSchedaVideo = 0;
+            cambi.Add(new CambioComposizione(true, schedaVideo.Descrizione, null));
+        }
+        else
+        {
+            // Non si apre (niente Direct3D 11, shader che non compila, risultato diverso dal processore): non si riprova.
+            schedaVideoEsclusa = true;
+            var motivo = compito.Exception?.InnerException?.Message ?? "non si apre";
+            cambi.Add(new CambioComposizione(false, processore.Descrizione, motivo));
+        }
+    }
+
+    /// <summary>Dove si fa adesso il passo a piena risoluzione dello sfondo.</summary>
+    public bool ComponeSullaSchedaVideo => schedaVideo is not null;
+
+    /// <summary>I cambi (scheda video presa o lasciata) dall'ultima chiamata, per il registro.</summary>
+    public IReadOnlyList<CambioComposizione> PrendiCambi()
+    {
+        if (cambi.Count == 0) return [];
+        var presi = cambi.ToList();
+        cambi.Clear();
+        return presi;
+    }
+
+    public void Dispose()
+    {
+        schedaVideo?.Dispose();
+        schedaVideo = null;
+        if (preparazioneSchedaVideo is { } compito)
+        {
+            compito.ContinueWith(t =>
+            {
+                if (t.IsCompletedSuccessfully) t.Result.Dispose();
+                else _ = t.Exception;
+            }, TaskScheduler.Default);
+        }
+        preparazioneSchedaVideo = null;
+        schedaVideoEsclusa = true;
+    }
+
+    // MARK: bordo pulito e light wrap (sostituito)
+
+    /// <summary>L'alfa (0–255) a un quarto: com'è se è già lì, altrimenti media di 2×2 (come Dimezza).</summary>
+    private byte[] AlfaAlQuarto(byte[] alfa, int lw, int aw, int lq, int aq)
+    {
+        if (lw == lq && aw == aq) return alfa;
+        if (alfaQuarto.Length != lq * aq) alfaQuarto = new byte[lq * aq];
+        for (var y = 0; y < aq; y++)
+        {
+            var r0 = Math.Min(2 * y, aw - 1) * lw;
+            var r1 = Math.Min(2 * y + 1, aw - 1) * lw;
+            for (var x = 0; x < lq; x++)
+            {
+                int c0 = Math.Min(2 * x, lw - 1), c1 = Math.Min(2 * x + 1, lw - 1);
+                alfaQuarto[y * lq + x] = (byte)((alfa[r0 + c0] + alfa[r0 + c1] + alfa[r1 + c0] + alfa[r1 + c1] + 2) >> 2);
+            }
+        }
+        return alfaQuarto;
+    }
+
+    /// <summary>
+    /// Il colore dell'interno sicuro della persona, piccolo: media pesata (<see cref="RegoleBordo.PesoInterno"/>) con il
+    /// nucleo gaussiano, divisa per il peso sfocato (mediaNormalizzata del Mac).
+    /// </summary>
+    private ImmagineBgra ColorePersona(ImmagineBgra quarto, byte[] alfaQuarto, double sigma)
+    {
+        int l = quarto.Larghezza, a = quarto.Altezza, n = l * a;
+        if (lavagnaColore.Length < n * 4) lavagnaColore = new float[n * 4];
+        if (appoggioColore.Length < n * 4) appoggioColore = new float[n * 4];
+        var s = quarto.Dati;
+        for (var i = 0; i < n; i++)
+        {
+            var w = RegoleBordo.PesoInterno(alfaQuarto[i] * (1f / 255f));
+            lavagnaColore[i * 4] = s[i * 4] * w;
+            lavagnaColore[i * 4 + 1] = s[i * 4 + 1] * w;
+            lavagnaColore[i * 4 + 2] = s[i * 4 + 2] * w;
+            lavagnaColore[i * 4 + 3] = w;
+        }
+        Elaborazione.Gaussiana(lavagnaColore, l, a, 4, sigma, appoggioColore);
+        colorePersona = Prepara(colorePersona, l, a);
+        var d = colorePersona.Dati;
+        for (var i = 0; i < n; i++)
+        {
+            var inv = 1f / Math.Max(lavagnaColore[i * 4 + 3], 1e-4f);
+            d[i * 4] = (byte)Math.Min(255f, lavagnaColore[i * 4] * inv + 0.5f);
+            d[i * 4 + 1] = (byte)Math.Min(255f, lavagnaColore[i * 4 + 1] * inv + 0.5f);
+            d[i * 4 + 2] = (byte)Math.Min(255f, lavagnaColore[i * 4 + 2] * inv + 0.5f);
+            d[i * 4 + 3] = 255;
+        }
+        return colorePersona;
+    }
+
+    /// <summary>Lo sfondo nuovo ridotto a un quarto e sfocato, per il light wrap: si rifà solo quando cambia lo sfondo.</summary>
+    private ImmagineBgra SfondoMorbido(ImmagineBgra fondoPieno, string chiave, int lq, int aq, double sigma)
+    {
+        var chiaveMorbido = $"{chiave}|{lq}x{aq}|{sigma:0.###}";
+        if (sfondoMorbido is { } pronto && pronto.Chiave == chiaveMorbido) return pronto.Immagine;
+        var meta = Elaborazione.Dimezza(fondoPieno);
+        var piccolo = Elaborazione.Dimezza(meta);
+        if (piccolo.Larghezza != lq || piccolo.Altezza != aq)
+        {
+            var esatto = new ImmagineBgra(lq, aq);
+            Elaborazione.Ricampiona(piccolo, 0, 0, piccolo.Larghezza, piccolo.Altezza, esatto, false);
+            piccolo = esatto;
+        }
+        int n = lq * aq;
+        var piano = new float[n * 4];
+        for (var i = 0; i < n * 4; i++) piano[i] = piccolo.Dati[i];
+        Elaborazione.Gaussiana(piano, lq, aq, 4, sigma, new float[n * 4]);
+        for (var i = 0; i < n * 4; i++) piccolo.Dati[i] = (byte)Math.Min(255f, piano[i] + 0.5f);
+        for (var i = 3; i < n * 4; i += 4) piccolo.Dati[i] = 255;
+        sfondoMorbido = (chiaveMorbido, piccolo);
+        return piccolo;
+    }
+
+    /// <summary>La maschera a un quarto sfocata (0–255), per trovare l'orlo interno della persona (light wrap).</summary>
+    private byte[] MascheraMorbida(byte[] alfaQuarto, int lq, int aq, double sigma)
+    {
+        var n = lq * aq;
+        if (lavagnaMaschera.Length < n) lavagnaMaschera = new float[n];
+        if (appoggioMaschera.Length < n) appoggioMaschera = new float[n];
+        for (var i = 0; i < n; i++) lavagnaMaschera[i] = alfaQuarto[i];
+        Elaborazione.Gaussiana(lavagnaMaschera, lq, aq, 1, sigma, appoggioMaschera);
+        if (mascheraMorbida.Length != n) mascheraMorbida = new byte[n];
+        for (var i = 0; i < n; i++) mascheraMorbida[i] = (byte)Math.Min(255f, lavagnaMaschera[i] + 0.5f);
+        return mascheraMorbida;
     }
 
     /// <summary>
@@ -302,13 +530,16 @@ public sealed class Compositore
         return uscita;
     }
 
-    /// <summary>L'immagine dello sfondo sostituito alla misura del video, disegnata una volta; il fondo di Tema finché non c'è.</summary>
-    private ImmagineBgra SfondoAllaMisura(StatoEffettiComputer.Istantanea istantanea, string? voluta, int l, int a)
+    /// <summary>
+    /// L'immagine dello sfondo sostituito alla misura del video, disegnata una volta; il fondo di Tema finché non c'è. Con
+    /// la sua chiave (versione e misura), per non ricaricarla sulla scheda video a ogni fotogramma.
+    /// </summary>
+    private (ImmagineBgra Immagine, string Chiave) SfondoAllaMisura(StatoEffettiComputer.Istantanea istantanea, string? voluta, int l, int a)
     {
         var sfondo = istantanea.Sfondo;
         var valida = sfondo is { } s && (voluta is null || s.Id == voluta);
         var chiave = valida ? $"{sfondo!.Value.Versione}-{l}x{a}" : $"fondo-{l}x{a}";
-        if (sfondoPronto is { } pronto && pronto.Chiave == chiave) return pronto.Immagine;
+        if (sfondoPronto is { } pronto && pronto.Chiave == chiave) return (pronto.Immagine, chiave);
         ImmagineBgra immagine;
         if (valida) immagine = Elaborazione.Riempi(sfondo!.Value.Immagine, l, a);
         else
@@ -323,111 +554,7 @@ public sealed class Compositore
             }
         }
         sfondoPronto = (chiave, immagine);
-        return immagine;
-    }
-
-    /// <summary>
-    /// La persona sopra il fondo, a piena risoluzione: alfa e fondo piccolo ingranditi bilineari riga per riga, la miscela
-    /// con i vettori del processore (SIMD).
-    /// </summary>
-    private static unsafe void Componi(ImmagineBgra src, byte[][]? calore, byte[] alfa, int lw, int aw, ImmagineBgra? fondoPieno,
-        ImmagineBgra? fondoPiccolo, ImmagineBgra destinazione)
-    {
-        int l = src.Larghezza, a = src.Altezza;
-        var (ax0, ax1, afx) = Campionamento8(l, lw);
-        var (ay0, ay1, afy) = Campionamento8(a, aw);
-        int[] fx0 = [], fx1 = [], ffx = [], fy0 = [], fy1 = [], ffy = [];
-        if (fondoPiccolo is not null)
-        {
-            (fx0, fx1, ffx) = Campionamento8(l, fondoPiccolo.Larghezza);
-            (fy0, fy1, ffy) = Campionamento8(a, fondoPiccolo.Altezza);
-        }
-        byte[] cr = calore?[0] ?? [], cg = calore?[1] ?? [], cb = calore?[2] ?? [];
-        Elaborazione.PerRighe(a, (inizio, fine) =>
-        {
-            var rigaAlfa = new int[lw];
-            var alfa4 = new byte[l * 4];
-            var fondo = new byte[l * 4];
-            int[] rigaPiccola = fondoPiccolo is null ? [] : new int[fondoPiccolo.Larghezza * 3];
-            fixed (byte* pa = alfa, a4 = alfa4, pf = fondo, ps = src.Dati, pd = destinazione.Dati)
-            fixed (byte* tr = cr, tg = cg, tb = cb)
-            fixed (int* ra = rigaAlfa, rp = rigaPiccola, x0 = ax0, x1 = ax1, wx = afx)
-            {
-                for (var y = inizio; y < fine; y++)
-                {
-                    // Alfa: prima in verticale sulla riga di lavoro (×256), poi in orizzontale.
-                    var r0 = pa + ay0[y] * lw;
-                    var r1 = pa + ay1[y] * lw;
-                    var wy = afy[y];
-                    for (var x = 0; x < lw; x++) ra[x] = (r0[x] << 8) + (r1[x] - r0[x]) * wy;
-                    var q = (uint*)a4;
-                    for (var x = 0; x < l; x++)
-                    {
-                        var v = (uint)(((ra[x0[x]] << 8) + (ra[x1[x]] - ra[x0[x]]) * wx[x] + 32768) >> 16);
-                        q[x] = 0xFF000000u | (v * 0x010101u);
-                    }
-                    // Fondo.
-                    if (fondoPieno is not null)
-                    {
-                        fondoPieno.Dati.AsSpan(y * fondoPieno.Passo, l * 4).CopyTo(fondo);
-                    }
-                    else
-                    {
-                        var p = fondoPiccolo!;
-                        var lp = p.Larghezza;
-                        fixed (byte* pp = p.Dati)
-                        fixed (int* gx0 = fx0, gx1 = fx1, gwx = ffx)
-                        {
-                            var q0 = pp + fy0[y] * p.Passo;
-                            var q1 = pp + fy1[y] * p.Passo;
-                            var wq = ffy[y];
-                            for (var x = 0; x < lp; x++)
-                            {
-                                rp[x * 3] = (q0[x * 4] << 8) + (q1[x * 4] - q0[x * 4]) * wq;
-                                rp[x * 3 + 1] = (q0[x * 4 + 1] << 8) + (q1[x * 4 + 1] - q0[x * 4 + 1]) * wq;
-                                rp[x * 3 + 2] = (q0[x * 4 + 2] << 8) + (q1[x * 4 + 2] - q0[x * 4 + 2]) * wq;
-                            }
-                            var f = pf;
-                            for (var x = 0; x < l; x++, f += 4)
-                            {
-                                var i0 = gx0[x] * 3;
-                                var i1 = gx1[x] * 3;
-                                var w = gwx[x];
-                                f[0] = (byte)(((rp[i0] << 8) + (rp[i1] - rp[i0]) * w + 32768) >> 16);
-                                f[1] = (byte)(((rp[i0 + 1] << 8) + (rp[i1 + 1] - rp[i0 + 1]) * w + 32768) >> 16);
-                                f[2] = (byte)(((rp[i0 + 2] << 8) + (rp[i1 + 2] - rp[i0 + 2]) * w + 32768) >> 16);
-                                f[3] = 255;
-                            }
-                        }
-                    }
-                    // Persona (con il calore) sopra il fondo.
-                    var d = pd + y * destinazione.Passo;
-                    var s = ps + y * src.Passo;
-                    if (calore is not null)
-                    {
-                        for (var x = 0; x < l; x++)
-                        {
-                            d[x * 4] = tb[s[x * 4]];
-                            d[x * 4 + 1] = tg[s[x * 4 + 1]];
-                            d[x * 4 + 2] = tr[s[x * 4 + 2]];
-                            d[x * 4 + 3] = s[x * 4 + 3];
-                        }
-                    }
-                    else
-                    {
-                        Buffer.MemoryCopy(s, d, l * 4, l * 4);
-                    }
-                    Miscela(new Span<byte>(d, l * 4), fondo, alfa4);
-                }
-            }
-        });
-    }
-
-    /// <summary>Come <see cref="Elaborazione.Campionamento"/>, con il peso in 256esimi.</summary>
-    private static (int[] Primo, int[] Secondo, int[] Peso) Campionamento8(int destinazione, int sorgente)
-    {
-        var (primo, secondo, peso) = Elaborazione.Campionamento(destinazione, sorgente);
-        return (primo, secondo, peso.Select(p => (int)(p * 256)).ToArray());
+        return (immagine, chiave);
     }
 
     /// <summary>sopra × alfa + sotto × (1 − alfa), byte per byte, con i vettori del processore; il risultato in <paramref name="sopra"/>.</summary>

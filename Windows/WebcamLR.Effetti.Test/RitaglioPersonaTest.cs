@@ -12,6 +12,8 @@ public class RitaglioPersonaTest(ITestOutputHelper uscita)
         Acceleratore = Acceleratore.Processore,
         RipiegoAutomatico = false,
         FiltroNelTempo = false,
+        // Il confronto con Python è sui numeri del modello: l'isteresi sposta già la prima maschera.
+        Isteresi = false,
     };
 
     [Theory]
@@ -80,6 +82,17 @@ public class RitaglioPersonaTest(ITestOutputHelper uscita)
         var prima = r.Calcola(bgra, l, a);
         var seconda = r.Calcola(bgra, l, a);
         Assert.Equal(prima.Valori, seconda.Valori);
+    }
+
+    [Fact]
+    public void ConLIsteresiUnaScenaFermaResta()
+    {
+        // Qualità 4: l'isteresi sposta i punti dalla parte del loro stato già alla prima maschera, poi una scena ferma
+        // non cambia più.
+        var (bgra, l, a) = Immagini.LeggiPpm(Immagini.Dati("sintetica.ppm.gz"));
+        using var r = RitaglioPersona.Crea(SoloProcessore with { Modello = ModelloRitaglio.Leggero, FiltroNelTempo = true, Isteresi = true });
+        var prima = r.Calcola(bgra, l, a);
+        for (var i = 0; i < 3; i++) Assert.Equal(prima.Valori, r.Calcola(bgra, l, a).Valori);
     }
 
     [Fact]

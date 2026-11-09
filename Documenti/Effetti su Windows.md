@@ -3,7 +3,8 @@
 Studio di fattibilità e base del «motore effetti» sul PC (decisione del 27 ottobre: gli effetti pesanti si fanno sul
 computer, come iVCam; il telefono fa solo fotocamera e codifica). Questo documento copre **Windows**: il modello che
 ritaglia la persona, le licenze, i tempi, la libreria (`Windows/WebcamLR.Effetti`) e il **motore effetti collegato alla
-finestra** (ramo `effetti-windows`, sezione «Motore effetti» qui sotto): prima versione con la resa sul processore.
+finestra** (ramo `effetti-windows`, sezione «Motore effetti» qui sotto). Dalla lista qualità 1.0: la rifinitura del
+bordo come il Mac (Qualità 4) e la composizione dello sfondo sulla scheda video (Qualità 5), sezione «Qualità 4 e 5».
 
 ## In breve
 
@@ -36,8 +37,10 @@ telefono ──H.264/HEVC──▶ MotoreVideo (WebcamLR.App)
                           → memoria BGRA ─▶ MotoreEffetti.Elabora (WebcamLR.Effetti, non aspetta mai)
                                              coda di analisi: metà e quarto della misura, maschera dal quarto
                                                               (RitaglioPersona: DirectML o processore), volto dalla maschera
-                                             coda di resa:    Compositore sul processore con la maschera DELLO STESSO
-                                                              fotogramma → giro di 16 immagini di uscita
+                                             coda di resa:    Compositore con la maschera DELLO STESSO fotogramma: le cose
+                                                              piccole sul processore, il passo a piena risoluzione dello
+                                                              sfondo sulla scheda video (Direct3D 11) o sul processore
+                                                              → giro di 16 immagini di uscita
                           ─▶ Fotogramma(immagine, elaborata) ─┬▶ anteprima e finestra mini (VideoElaborato, WriteableBitmap
                                                               │   sopra il MediaPlayerElement)
                                                               ├▶ webcam virtuale (UscitaWebcam.Scrivi → NV12, memoria condivisa)
@@ -86,6 +89,10 @@ telefono ──H.264/HEVC──▶ MotoreVideo (WebcamLR.App)
   guida = luminosità del video) = bordo guidato dal colore; soglia morbida smoothstep **0,3–0,7** (centro 0,5, larga
   0,4: variante «D\*» del banco di qualità, `Documenti/Qualità sfondo - banco.md`) con lo sfocato, centrata a 0,42 e
   larga da 0,8 a 0,2 con l'intensità con il sostituito.
+- **Nel tempo** (nella maschera, `RitaglioPersona`): filtro senza ritardo, media dal movimento (D\*) e **isteresi** per
+  punto (Qualità 4, `IsteresiMaschera`: persona sopra 0,6, sfondo sotto 0,4, spinta 0,1 dove l'immagine è ferma).
+- **Sostituito** (Qualità 4, come `personaSuSfondoNuovo` del Mac): **bordo pulito** dal vecchio sfondo (dove la
+  maschera è parziale il colore viene dall'interno sicuro della persona) e **light wrap** dello sfondo nuovo sull'orlo.
 - **Sfocatura senza alone**: persona allargata (2m − 0,3) tolta come alfa, sfocatura gaussiana di sfondo × alfa e
   dell'alfa, poi divisione: ogni punto prende colore solo dallo sfondo vicino. Sigma a 1080p 32 × intensità^1,6 (Poco
   3,5 px, Medio 12 px, Tanto 32 px), calcolata sul gradino della piramide (1/4…1/32) dove resta sotto i 3 px.
@@ -99,12 +106,12 @@ telefono ──H.264/HEVC──▶ MotoreVideo (WebcamLR.App)
 
 ### GPU o CPU, e perché
 
-La resa è sul **processore** (C# con `System.Numerics`/AVX2, cicli paralleli), la maschera sulla **scheda video** con
-DirectML quando c'è. Motivo: l'integrazione Direct3D 11 (texture condivise con il `MediaPlayer`, shader HLSL, Vortice)
-non si può né compilare né provare qui, e un errore lì è uno schermo nero; la versione sul processore è tutta provata con
-i test su Linux e sta in un'interfaccia (`Compositore`) che una versione con gli shader può sostituire senza toccare il
-resto. Costo: la copia del fotogramma dalla scheda video alla memoria (circa 2–5 ms a 1080p, da misurare) e la resa sul
-processore; il 4K si elabora a 1080p.
+La maschera è sulla **scheda video** con DirectML quando c'è; dalla Qualità 5 anche il **passo a piena risoluzione dello
+sfondo** (persona sopra il fondo sfocato o sostituito, bordo pulito, light wrap, calore) va sulla scheda video con
+Direct3D 11, con il processore come ripiego automatico (sezione «Qualità 4 e 5»). Il resto della resa (filtri, pelle,
+luce, inquadratura, scritta) resta sul **processore** (C# con `System.Numerics`/AVX2, cicli paralleli). Le uscite del
+motore restano in memoria (webcam, anteprima, registrazione, foto): il fotogramma sale sulla scheda video e torna, il 4K
+si elabora a 1080p.
 
 ### Tempi misurati qui (resa a 1080p sul processore)
 
@@ -146,7 +153,9 @@ di cinque livelli (`LivelloResa`; che cosa cambia lo dicono `ConBordoAMeta`, `Co
 | 4 `Veloce` | leggero | ogni fotogramma | bilineare |
 | 5 `Minimo` | leggero | un fotogramma sì e uno no | bilineare |
 
-Il filtro nel tempo e la media dal movimento della maschera restano accesi a tutti i livelli (meno di 1 ms).
+Il filtro nel tempo, la media dal movimento e l'isteresi della maschera restano accesi a tutti i livelli (meno di 1 ms).
+Con lo sfondo sostituito il bordo pulito si salta ai livelli `Veloce` e `Minimo` (come il «leggero» del Mac); il light
+wrap resta.
 
 - **Misura**: finestre di 2 s (almeno 10 fotogrammi resi) con le medie di maschera e resa: sono due code in parallelo,
   conta la più lenta. Il **tempo di un fotogramma** è la media della metà centrale degli ultimi 30 intervalli d'arrivo,
@@ -174,6 +183,78 @@ Il filtro nel tempo e la media dal movimento della maschera restano accesi a tut
   (…): di nuovo bordo rifinito a metà risoluzione». Nessun avviso nuovo per l'utente: Windows non ne ha uno di «resa
   lenta», e il cambio di livello non chiede nulla a chi guarda.
 - Dopo un azzeramento (telefono nuovo, sessione nuova, altra misura del video) si riparte dal pieno.
+
+## Qualità 4 e 5: rifinitura come il Mac, composizione sulla scheda video
+
+Ramo `effetti-windows` (da `prestazioni`), novembre 2026.
+
+### Mac e Windows prima di questo giro
+
+| | Mac (`MotoreEffetti.swift`, `RicetteEffetti.swift`) | Windows prima |
+|---|---|---|
+| Bordo guidato dal colore | filtro guidato sulla luma, a e b a lato corto 540, applicati alla luma piena; soglia 0,55 | filtro guidato veloce: a e b al quarto, applicati a metà; soglia D\* 0,3–0,7 (sfocato) |
+| Filtro nel tempo | media 0,3 con **isteresi** 0,3/0,7 e spinta 0,15 | filtro senza ritardo + media dal movimento (D\*), **niente isteresi** |
+| Sfocato senza alone | sfocatura normalizzata, persona allargata 12 px (2,5m − 0,25) | sfocatura normalizzata, persona 2m − 0,3 (già senza alone) |
+| Sostituito | **bordo pulito** dal vecchio sfondo + **light wrap** | solo la miscela: il vecchio sfondo restava sull'orlo |
+| Dove | tutto Core Image sulla scheda video | resa sul processore |
+
+Il bordo guidato e lo sfocato senza alone di Windows restano com'erano: il banco li aveva già confrontati con quelli del
+Mac (varianti B e D) e la versione del Mac non migliorava (B) o peggiorava (D: alone 1,0 → 2,5) sulla maschera di
+MediaPipe. Mancavano l'isteresi, il bordo pulito e il light wrap.
+
+### Qualità 4: cosa è stato portato
+
+- **Isteresi** (`IsteresiMaschera`, dopo `MediaNelMovimento` in `RitaglioPersona`): ogni punto ricorda se è persona;
+  lo diventa sopra **0,6**, torna sfondo sotto **0,4**, e dove l'immagine è ferma il valore si sposta di **0,1** dalla
+  parte del suo stato (dove si muove la spinta scende a zero: niente scie). Il filtro del Mac così com'è peggiorava la
+  maschera di MediaPipe (variante «Cm»: MAD 137 → 190): questi valori sono tarati con il banco sopra D\*.
+  Banco (pieno, 5 clip × 60 fotogrammi), D\* → D\* + isteresi: tremolio del bordo 16,8 → 15,6 (−7%, meno in tutte
+  le clip), MAD bordo 124,6 → 122,3 (scuro su scuro 165 → 158), dtSSD 3,30 → 3,38 (+2%), IoU 0,958 → 0,958, alone
+  uguale. Varianti provate: spinta 0,05 (metà dell'effetto), soglie 0,3/0,7 (uguale), spinta anche dove l'immagine si
+  muove (tremolio −11% ma dtSSD +4%).
+- **Bordo pulito** (sostituito, non ai livelli bilineari): fiducia nel pixel 2,5a − 1,5; dove è bassa il colore viene
+  dalla media pesata dell'interno sicuro della persona (peso 0 sotto 0,75, 1 da 0,95; sigma 8 px a 1080p, calcolata a un
+  quarto). Banco (sostituito «Medio», errore contro la persona vera sullo sfondo nuovo, fascia ±10 px): 12,0 → 11,8
+  in media; ufficio chiaro −9%, libreria −2%, soggiorno uguale, studio scuro e cemento +5–10% (lì il vecchio sfondo
+  somiglia già alla persona). Da guardare sul video vero: capelli chiari su un muro bianco, poi sfondo scuro.
+- **Light wrap** (sostituito): lo sfondo nuovo sfocato (14 px) entra con lo «schermo» sull'orlo interno, peso
+  0,3·a·(1 − a sfocata) al massimo 0,15 (i numeri del Mac). È una scelta di resa: nel banco aggiunge 0,3 livelli di
+  errore nella fascia del bordo, come atteso.
+- Tutti i numeri in un posto (`RegoleBordo`), usati dal processore, dallo shader e dai test.
+
+### Qualità 5: la composizione sulla scheda video
+
+- **Che cosa va sulla scheda video**: il passo a piena risoluzione dello sfondo (`PianoComposizione` → `IComposizione`):
+  per ogni pixel alfa (da metà o un quarto), bordo pulito, calore, light wrap e miscela con il fondo (pieno con il
+  sostituito, piccolo con lo sfocato). Le cose piccole (filtro guidato e soglia, fondo sfocato, colore della persona,
+  sfondo nuovo sfocato, maschera sfocata) restano sul processore, uguali per le due strade.
+- **Come**: Direct3D 11 con un compute shader (`SchedaVideo/Composizione.hlsl`, cs_5_0) tramite **Vortice.Windows**
+  (MIT). Lo shader è nella libreria come testo e si **compila all'apertura con D3DCompile** (`d3dcompiler_47.dll`,
+  presente in Windows 10 e 11): nessun `.cso` da preparare. Per fotogramma: il fotogramma sale (`UpdateSubresource`),
+  lo shader compone, il risultato torna in memoria (`CopyResource` + `Map`); l'immagine dello sfondo sostituito e la sua
+  versione sfocata salgono solo quando cambiano. La resa resta sincrona sulla coda di resa: `SceltaLivello` (Qualità
+  6) misura il tempo vero, scheda video compresa, e la scala dei livelli non cambia.
+- **Ripiego automatico** (nel `Compositore`):
+  - la scheda video si apre **in sottofondo** alla prima resa con lo sfondo; intanto lavora il processore;
+  - non si apre → processore per tutta la sessione, nel registro «Effetti: sfondo composto sul processore (motivo)».
+    Motivi: non è Windows; Direct3D 11 livello 11.0 assente; solo il «Microsoft Basic Render Driver» (WARP, cioè il
+    processore: più lento del nostro); lo shader non compila; **il risultato su due fotogrammi di prova differisce da
+    quello del processore** (più di 4 livelli, o 0,6 in media: `ComposizioneSchedaVideo.Verifica`). Così uno shader
+    sbagliato o un driver strano non arrivano mai al video;
+  - presa → «Effetti: sfondo composto sulla scheda video (nome della scheda)»;
+  - un errore durante il lavoro (driver aggiornato, sospensione, TDR) rifà **lo stesso fotogramma** sul processore
+    (nessun fotogramma perso, mai lo sfondo vero); dopo 3 errori di fila la scheda video si chiude e si riapre **una
+    volta**; se si perde di nuovo, processore fino alla fine.
+- **Interfaccia per la App**: `MotoreEffetti(..., creaComposizione: () => ComposizioneSchedaVideo.Crea())` in
+  `MotoreVideo`; la nota `MotoreEffetti.Nota.Composizione` va nel registro (testi in italiano e inglese).
+- **Tempi sul processore** (qui, Xeon 4 processori virtuali, Release, mediana; la macchina è condivisa, ±30%): sfocatura
+  Medio 10–14 ms come prima; sostituito 10 → 15–21 ms con bordo pulito e light wrap (13 ms al livello veloce). Sulla
+  scheda video il passo a piena risoluzione dovrebbe costare 1–3 ms più le copie (8 MB su e giù a 1080p, 1–4 ms):
+  **da misurare** (il test `SchedaVideoVeraComeIlProcessore` li scrive su Windows).
+- **Non verificato qui**: lo shader non si è potuto né compilare né eseguire (niente Windows né compilatore HLSL); il C#
+  di Direct3D 11 compila (Vortice è codice .NET) ma gira solo su Windows. I conti dello shader sono la copia di `RegoleBordo.Canale`, che i test provano contro il processore
+  (differenza ≤ 2). La CI su Windows (rami ci, prestazioni, round-2) compila tutto ed esegue
+  `SchedaVideoVeraComeIlProcessore` con WARP: è la prima prova vera dello shader.
 
 ## Modello scelto
 
@@ -231,6 +312,7 @@ torna quadrata e si applica con le coordinate normalizzate del fotogramma: nessu
 | Modelli MediaPipe (pesi), modificati da noi | Apache 2.0 (Google) | Sì; serve la licenza e l'avviso delle modifiche | `Apache-MediaPipe.txt` (testo completo + elenco modifiche, sezione 4 b) |
 | ONNX Runtime 1.24.4 (`Microsoft.ML.OnnxRuntime`, `.Managed`, `.DirectML`) | MIT (Microsoft) | Sì | `MIT-OnnxRuntime.txt`, `OnnxRuntime-ThirdPartyNotices.txt` |
 | DirectML 1.15.4 (`Microsoft.AI.DirectML`, dipendenza del pacchetto DirectML) | Licenza Microsoft «DirectML»: ridistribuibile dentro le nostre app, **solo su Windows e Xbox** | Sì | `DirectML.txt`, `DirectML-ThirdPartyNotices.txt` |
+| Vortice.Windows 3.8.3 (`Vortice.Direct3D11`, `Vortice.D3DCompiler`, con `Vortice.DXGI`, `Vortice.DirectX`, `Vortice.Mathematics` 2.1.0), SharpGen.Runtime 2.4.2-beta (Qualità 5) | MIT (Amer Koleci; SharpGen: Mutel, Koritzinsky, Koleci) | Sì | `MIT-Vortice.txt` |
 
 Le licenze vanno copiate accanto all'exe (lo fa il progetto: `Content` → `Licenze\`) e citate nella finestra «Informazioni»
 quando si collega la libreria. Nota: la licenza DirectML dice che il software può raccogliere dati di diagnostica
@@ -371,7 +453,8 @@ decodificatore.
 - DirectML non si prova su Linux: i tempi GPU sono stime. Nessuna misura su Windows.
 - L'app WinUI non si compila qui: il C# della finestra è controllato con il banco (compilatore C# con lo XAML simulato),
   ma `MediaTranscoder`, `WriteableBitmap`, GDI+ e la copia dalla scheda video si vedono solo su Windows.
-- Gli shader Direct3D 11 non ci sono: la resa è sul processore (vedi «GPU o CPU»).
+- Lo shader Direct3D 11 della Qualità 5 non si è potuto né compilare né eseguire qui (niente Windows, niente
+  compilatore HLSL): è controllato solo a occhio contro `RegoleBordo` (vedi «Qualità 4 e 5»).
 - La resa del pieno su una persona vera si è vista su un solo fotogramma; quella in movimento (tremolio, scie) va vista
   dal vivo.
 
@@ -410,6 +493,23 @@ decodificatore.
 3. Telefono a 60 fps: il registro, se scende, dice «17 ms a fotogramma».
 4. Riservatezza: con «maschera un fotogramma sì e uno no» muoviti in fretta: nessun lampo della stanza vera.
 5. Manda le righe «Effetti: …» del registro con il nome del processore e della scheda video.
+
+### Qualità 4 e 5 (ramo `effetti-windows`)
+
+1. `dotnet test Windows\WebcamLR.Effetti.Test`: il test `SchedaVideoVeraComeIlProcessore` deve passare e scrivere il nome
+   della scheda video, i ms per fotogramma e la differenza dal processore (sfocato e sostituito). **Mandali.**
+2. Sfondo › Medio: entro 1–2 s nel registro «Effetti: sfondo composto sulla scheda video (…)». Se c'è «sul
+   processore (…)», manda il motivo.
+3. Dopo 30 s la riga «Effetti sul PC: … ms»: la resa deve essere scesa rispetto a prima (con lo sfocato a 1080p prima
+   era 10–20 ms). Manda la riga e il livello; con «tutto insieme» il livello dovrebbe scendere meno spesso.
+4. Bordo fermo: seduto immobile davanti a un fondo con bordi (libreria, mensola), sfocato Medio: il bordo di spalle e
+   felpa scura trema meno di prima? Poi muoviti in fretta: nessuna scia.
+5. Sostituito («Ufficio» e un'immagine tua scura): sull'orlo dei capelli e delle spalle non deve restare il colore della
+   stanza vera (alone chiaro con il muro bianco); un filo di luce dello sfondo nuovo sull'orlo, non un contorno.
+6. Scheda video persa: con lo sfondo acceso metti il PC in sospensione e riaprilo (o aggiorna il driver): il video non
+   si ferma e non mostra mai la stanza; nel registro, se succede, «sul processore (scheda video persa…)».
+7. PC senza scheda video adatta (Desktop remoto o macchina virtuale): «sul processore (solo il driver di base…)» e lo
+   sfondo funziona come prima.
 
 ## Fonti
 

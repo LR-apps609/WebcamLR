@@ -2048,4 +2048,16 @@ The details are in {1}: send them with “Report a bug”.</value>
   <data name="Comando_Registrando" xml:space="preserve">
     <value>● {0}</value>
   </data>
+  <data name="TitoloLivelliQualita.Text" xml:space="preserve">
+    <value>Stream quality</value>
+  </data>
+  <data name="ElencoLivelli.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Stream quality</value>
+  </data>
+  <data name="NotaLivelli.Text" xml:space="preserve">
+    <value>High and Maximum use more data: if the network can’t keep up they still step down, but first they hold Auto’s quality. Maximum picks the resolution and fps on its own; choosing a resolution switches to High.</value>
+  </data>
+  <data name="Registro_QualitaChiesta" xml:space="preserve">
+    <value>Quality requested from “{0}”: {1}</value>
+  </data>
 </root>

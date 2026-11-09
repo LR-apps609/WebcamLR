@@ -2054,4 +2054,16 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
   <data name="Comando_Registrando" xml:space="preserve">
     <value>● {0}</value>
   </data>
+  <data name="TitoloLivelliQualita.Text" xml:space="preserve">
+    <value>Qualità del flusso</value>
+  </data>
+  <data name="ElencoLivelli.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Qualità del flusso</value>
+  </data>
+  <data name="NotaLivelli.Text" xml:space="preserve">
+    <value>Alta e Massima chiedono più dati: se la rete non regge scendono lo stesso, ma prima tengono la qualità di Auto. Massima sceglie da sola risoluzione e fps; scegliendo una risoluzione si passa ad Alta.</value>
+  </data>
+  <data name="Registro_QualitaChiesta" xml:space="preserve">
+    <value>Qualità chiesta a «{0}»: {1}</value>
+  </data>
 </root>

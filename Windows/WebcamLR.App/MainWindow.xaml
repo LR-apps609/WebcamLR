@@ -572,6 +572,13 @@
                                                     <TextBlock x:Name="NotaQualitaPro" FontSize="{StaticResource MisuraNota}" Foreground="{ThemeResource TestoSecondario}" TextWrapping="Wrap" Margin="{StaticResource MargineNotaMenu}" Visibility="Collapsed" />
                                                     <TextBlock x:Name="TestoQualitaArriva" FontFamily="{StaticResource Numeri}" FontSize="{StaticResource MisuraNumeri}" Foreground="{ThemeResource TestoSecondario}" Margin="{StaticResource MargineNotaMenu}" Visibility="Collapsed" />
                                                     <TextBlock x:Name="NotaScendere" TextWrapping="Wrap" FontSize="{StaticResource MisuraNota}" Foreground="{ThemeResource TestoSecondario}" Margin="{StaticResource MargineNotaMenu}" />
+                                                    <!-- Qualità 15: Auto, Alta, Massima, solo con un telefono che dichiara sceltaQualita (MainWindow.QualitaScelta.cs). -->
+                                                    <StackPanel x:Name="SezioneLivelli" Spacing="{StaticResource SpazioMinuscolo}" Visibility="Collapsed">
+                                                        <Rectangle Height="1" Fill="{ThemeResource LineaTenue}" Margin="{StaticResource MargineDivisoreMenu}" />
+                                                        <TextBlock x:Uid="TitoloLivelliQualita" Style="{StaticResource EtichettaSezione}" Margin="{StaticResource MargineTitoloMenu}" />
+                                                        <StackPanel x:Name="ElencoLivelli" x:Uid="ElencoLivelli" Spacing="{StaticResource SpazioMinuscolo}" />
+                                                        <TextBlock x:Uid="NotaLivelli" TextWrapping="Wrap" FontSize="{StaticResource MisuraNota}" Foreground="{ThemeResource TestoSecondario}" Margin="{StaticResource MargineNotaMenu}" />
+                                                    </StackPanel>
                                                     <Rectangle Height="1" Fill="{ThemeResource LineaTenue}" Margin="{StaticResource MargineDivisoreMenu}" />
                                                     <!-- I numeri di sempre (funzioni 28 e 31) e il grafico della latenza: gli ultimi 60 secondi, con la linea dei 100 ms. -->
                                                     <StackPanel Spacing="{StaticResource SpazioStretto}" Padding="{StaticResource PaddingNumeriMenu}">

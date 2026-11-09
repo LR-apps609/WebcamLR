@@ -72,6 +72,13 @@ public static class Preferenze
         set => Scrivi("ultimo-sfondo", value ?? RegoleSfondo.Sfocatura);
     }
 
+    /// <summary>Qualità 15: Auto, Alta o Massima per il flusso dal telefono (<see cref="LivelliQualita"/>); Auto la prima volta.</summary>
+    public static string QualitaFlusso
+    {
+        get => LivelliQualita.Normalizza(Leggi("qualita-flusso"));
+        set => Scrivi("qualita-flusso", LivelliQualita.Normalizza(value));
+    }
+
     /// <summary>
     /// Gli effetti del motore del PC (effetti sul computer, RegoleEffettiComputer.InTesto, JSON): sfondo, filtro, regolazioni, pelle,
     /// calore, luce sul volto, inquadratura, specchio e scritta. Null la prima volta.

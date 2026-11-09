@@ -316,6 +316,7 @@ public sealed partial class MainWindow
             // Effetti sul computer: alla prima della sessione telecomando o spegnimento; poi `effetti` se Pro è cambiato.
             DecidiEffetti(collegato, capacita);
             MandaEffetti(collegato);
+            MandaQualitaSeServe(collegato);
             if (!telefoni.ESelezionato(collegato)) return;
             MostraComandi(capacita);
             Valuta60Fps();

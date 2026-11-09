@@ -89,7 +89,7 @@
     <value>Scegli l'immagine…</value>
   </data>
   <data name="NotaAttesa.Text" xml:space="preserve">
-    <value>Quello che vedono Zoom e le altre app quando il video del telefono non c'è: telefono non collegato, collegamento interrotto, pausa. Con WebcamLR chiusa le app vedono sempre la schermata di WebcamLR.</value>
+    <value>Quello che vedono Zoom e le altre app quando il video del telefono non c'è: collegamento interrotto, pausa. Vale con il telefono collegato (è il telefono a dire se Pro è sbloccato): senza telefono, o con WebcamLR chiusa, le app vedono la schermata di WebcamLR.</value>
   </data>
   <data name="EtichettaTelefoni.Text" xml:space="preserve">
     <value>TELEFONI</value>
@@ -584,8 +584,8 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
   <data name="App_DescrizionePro" xml:space="preserve">
     <value>Qualità piena, effetti da studio e tutti i comandi del PC. Si paga una volta sola, senza abbonamento. Il resto di WebcamLR resta gratis.</value>
   </data>
-  <data name="App_ProAndroid" xml:space="preserve">
-    <value>Con un telefono Android: apri WebcamLR › App › WebcamLR Pro, come sull'iPhone.</value>
+  <data name="App_ProDove" xml:space="preserve">
+    <value>Su iPhone e Android: apri WebcamLR › Impostazioni › WebcamLR Pro, oppure tocca «PRO» in alto.</value>
   </data>
   <data name="App_Gratis" xml:space="preserve">
     <value>Gratis</value>
@@ -780,7 +780,7 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
     <value>{0}: nero, immagine personale o ultima immagine sfocata al posto della schermata di WebcamLR.</value>
   </data>
   <data name="Attesa_Nota" xml:space="preserve">
-    <value>Quello che vedono Zoom e le altre app quando il video del telefono non c'è: telefono non collegato, collegamento interrotto, pausa. Con WebcamLR chiusa le app vedono sempre la schermata di WebcamLR.</value>
+    <value>Quello che vedono Zoom e le altre app quando il video del telefono non c'è: collegamento interrotto, pausa. Vale con il telefono collegato (è il telefono a dire se Pro è sbloccato): senza telefono, o con WebcamLR chiusa, le app vedono la schermata di WebcamLR.</value>
   </data>
   <data name="Attesa_ImmagineGrande" xml:space="preserve">
     <value>Immagine troppo grande</value>

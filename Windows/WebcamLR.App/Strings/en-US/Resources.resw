@@ -89,7 +89,7 @@
     <value>Choose Image…</value>
   </data>
   <data name="NotaAttesa.Text" xml:space="preserve">
-    <value>What Zoom and other apps see when there’s no video from the phone: phone not connected, connection lost, paused. When WebcamLR is closed, apps always see the WebcamLR screen.</value>
+    <value>What Zoom and other apps see when there’s no video from the phone: connection lost, paused. It applies while the phone is connected (it’s the phone that says Pro is unlocked): with no phone, or with WebcamLR closed, apps see the WebcamLR screen.</value>
   </data>
   <data name="EtichettaTelefoni.Text" xml:space="preserve">
     <value>PHONES</value>
@@ -584,8 +584,8 @@ The details are in {1}: send them with “Report a bug”.</value>
   <data name="App_DescrizionePro" xml:space="preserve">
     <value>Full quality, studio effects and every control on the PC. You pay once, no subscription. The rest of WebcamLR stays free.</value>
   </data>
-  <data name="App_ProAndroid" xml:space="preserve">
-    <value>With an Android phone: open WebcamLR › App › WebcamLR Pro, just like on the iPhone.</value>
+  <data name="App_ProDove" xml:space="preserve">
+    <value>On iPhone and Android: open WebcamLR › Settings › WebcamLR Pro, or tap “PRO” at the top.</value>
   </data>
   <data name="App_Gratis" xml:space="preserve">
     <value>Free</value>
@@ -780,7 +780,7 @@ The details are in {1}: send them with “Report a bug”.</value>
     <value>{0}: black, a custom image or the last frame blurred instead of the WebcamLR screen.</value>
   </data>
   <data name="Attesa_Nota" xml:space="preserve">
-    <value>What Zoom and other apps see when there’s no video from the phone: phone not connected, connection lost, paused. When WebcamLR is closed, apps always see the WebcamLR screen.</value>
+    <value>What Zoom and other apps see when there’s no video from the phone: connection lost, paused. It applies while the phone is connected (it’s the phone that says Pro is unlocked): with no phone, or with WebcamLR closed, apps see the WebcamLR screen.</value>
   </data>
   <data name="Attesa_ImmagineGrande" xml:space="preserve">
     <value>Image too large</value>

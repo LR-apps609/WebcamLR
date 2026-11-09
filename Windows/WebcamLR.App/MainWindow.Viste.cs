@@ -531,6 +531,8 @@ public sealed partial class MainWindow
                 AiutoAppWebcam.Visibility = Visibility.Visible;
                 // Passo 8: la schermata di attesa (WebcamLR Pro), quello che vedono le app senza video.
                 Prendi(SezioneAttesa);
+                // Qualità 18: «Pausa quando nessuna app usa la webcam».
+                Prendi(SezionePausaAutomatica);
                 break;
             case PaginaImpostazioni.Avvio:
                 Prendi(SezioneAvvio);

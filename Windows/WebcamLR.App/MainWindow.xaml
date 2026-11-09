@@ -1169,6 +1169,12 @@
                         <TextBlock x:Name="NotaAttesa" x:Uid="NotaAttesa" TextWrapping="Wrap" FontSize="{StaticResource MisuraNota}" Foreground="{ThemeResource TestoSecondario}" />
                         <TextBlock x:Name="ErroreImmagineAttesa" TextWrapping="Wrap" FontSize="{StaticResource MisuraNota}" Foreground="{ThemeResource Ambra}" Visibility="Collapsed" />
                     </StackPanel>
+                    <!-- Qualità 18: la pausa automatica, nella pagina «Uscite»: dipende dalla webcam per le altre app. -->
+                    <StackPanel x:Name="SezionePausaAutomatica" Spacing="{StaticResource SpazioMinuscolo}">
+                        <ToggleSwitch x:Name="InterruttorePausaAutomatica" x:Uid="InterruttorePausaAutomatica" IsOn="True" Toggled="SuPausaAutomatica" />
+                        <TextBlock x:Name="NotaPausaAutomatica" TextWrapping="Wrap" FontSize="{StaticResource MisuraNota}"
+                                   Foreground="{ThemeResource TestoSecondario}" />
+                    </StackPanel>
                     <StackPanel x:Name="SezioneSchermo" Spacing="{StaticResource SpazioMedio}">
                         <StackPanel Spacing="{StaticResource SpazioMinuscolo}">
                             <!-- Vale solo per l'anteprima qui: le altre app ricevono il video intero. -->

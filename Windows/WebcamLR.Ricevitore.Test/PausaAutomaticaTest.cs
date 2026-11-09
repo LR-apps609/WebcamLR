@@ -104,6 +104,16 @@ public class PausaAutomaticaTest
         Assert.True(regola.Valuta(Uso(), 10_000 + AttesaMs));
     }
 
+    [Theory]
+    [InlineData(true, false, false, true, true)]   // finestra attiva: la si guarda
+    [InlineData(true, false, false, false, false)] // aperta ma dietro le altre
+    [InlineData(true, true, false, true, false)]   // ridotta a icona
+    [InlineData(false, false, false, true, false)] // nascosta accanto all'orologio
+    [InlineData(true, false, true, false, true)]   // la mini resta sopra le altre: conta anche non attiva
+    [InlineData(false, false, true, false, false)] // mini nascosta
+    public void QuandoLaFinestraContaComeGuardata(bool mostrata, bool ridotta, bool mini, bool attiva, bool guardata) =>
+        Assert.Equal(guardata, PausaIntelligente.FinestraGuardata(mostrata, ridotta, mini, attiva));
+
     // MARK: con il telefono simulato
 
     /// <summary>Un ricevitore su loopback con una sessione, come la crea la finestra.</summary>

@@ -17,6 +17,9 @@ namespace WebcamLR;
 /// telefono, calore, app in sottofondo, fotocamera interrotta; «nessuna app» solo i telefoni di prima), sopra il video
 /// compare «In pausa» con il motivo, in toni calmi. In sottofondo il telefono può tacere: per 10 minuti niente
 /// «Riconnessione» (TolleranzaSottofondo). Il registro ha una riga a ogni inizio di pausa e una alla ripresa, con la durata. Le decisioni sono in PausaIntelligente e Richiesta60Fps, provate con i test.
+/// Qualità 18, pausa automatica: quando nessuna app usa la webcam, non si registra e nessuno guarda la finestra (non in
+/// primo piano, e niente mini) da 20 secondi, il PC chiede ai telefoni di spegnere la fotocamera («pausa-automatica»), e la
+/// toglie appena serve. La regola è RegolaPausaAutomatica (provata a tempi finti); qui solo i suoi ingressi e l'invio.
 /// </summary>
 public sealed partial class MainWindow
 {
@@ -29,6 +32,12 @@ public sealed partial class MainWindow
     private bool finestraMostrata = true;
     private DispatcherQueueTimer? controlloAnteprima;
     private readonly Richiesta60Fps richiesta60Fps = new();
+    /// <summary>Qualità 18: la regola dei 20 secondi, sul thread dell'interfaccia.</summary>
+    private readonly RegolaPausaAutomatica regolaPausa = new();
+    /// <summary>L'interruttore «Pausa quando nessuna app usa la webcam» (Preferenze.PausaAutomatica).</summary>
+    private bool pausaAutomaticaAccesa = true;
+    /// <summary>Le sessioni già viste dalla regola: una nuova (telefono appena collegato, anche al cavo) riparte da capo.</summary>
+    private readonly HashSet<SessioneComputer> sessioniInPausaAutomatica = [];
 
     private void InizializzaPausa()
     {
@@ -40,6 +49,9 @@ public sealed partial class MainWindow
         controlloAnteprima.Tick += (_, _) => AggiornaAnteprimaVisibile();
         controlloAnteprima.Start();
         uscitaWebcam.FpsChiestiCambiato += _ => coda.TryEnqueue(Valuta60Fps);
+        // Qualità 18: la finestra torna in primo piano (o la lascia): la pausa automatica si decide subito, non al tick.
+        Activated += (_, _) => coda.TryEnqueue(ValutaPausaAutomatica);
+        InizializzaPausaAutomatica();
         // Il primo controllo a finestra già mostrata (nel costruttore non lo è ancora): fino ad allora vale «visibile».
     }
 
@@ -71,6 +83,75 @@ public sealed partial class MainWindow
         }
         // Ogni telefono il suo valore (P21); la sessione manda solo i cambiamenti.
         foreach (var collegato in telefoni.Telefoni) SegnalaAnteprima(collegato);
+        ValutaPausaAutomatica();
+    }
+
+    // MARK: pausa automatica (Qualità 18)
+
+    private void InizializzaPausaAutomatica()
+    {
+        pausaAutomaticaAccesa = Preferenze.PausaAutomatica;
+        InterruttorePausaAutomatica.IsOn = pausaAutomaticaAccesa;
+        MostraNotaPausaAutomatica();
+    }
+
+    /// <summary>L'interruttore nella pagina «Uscite»: si salva e vale subito.</summary>
+    private void SuPausaAutomatica(object sender, RoutedEventArgs e)
+    {
+        if (InterruttorePausaAutomatica.IsOn == pausaAutomaticaAccesa) return;
+        pausaAutomaticaAccesa = InterruttorePausaAutomatica.IsOn;
+        Preferenze.PausaAutomatica = pausaAutomaticaAccesa;
+        // Appena acceso si contano i 20 secondi da qui; spento, la pausa finisce subito.
+        regolaPausa.Riparti(Environment.TickCount64);
+        ValutaPausaAutomatica();
+    }
+
+    /// <summary>Sotto l'interruttore: cosa fa, o perché qui non può funzionare (webcam non installata).</summary>
+    private void MostraNotaPausaAutomatica()
+    {
+        var testo = uscitaWebcam.SaLeggereUso
+            ? Testi.T("PausaAutomatica_Nota", Servizio.SecondiPausaAutomatica)
+            : Testi.T("PausaAutomatica_NonLeggibile");
+        if (NotaPausaAutomatica.Text != testo) NotaPausaAutomatica.Text = testo;
+    }
+
+    /// <summary>
+    /// A ogni controllo della finestra (ogni secondo), quando un'app apre o chiude la webcam, quando la finestra entra o
+    /// esce dal primo piano e quando la registrazione parte o finisce: la regola decide, ogni sessione manda solo i
+    /// cambiamenti. Durante la pausa la webcam si controlla ogni 250 ms, così il video riparte in meno di un secondo.
+    /// </summary>
+    private void ValutaPausaAutomatica()
+    {
+        bool guardata;
+        try
+        {
+            var ridotta = AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized };
+            guardata = PausaIntelligente.FinestraGuardata(AppWindow.IsVisible, ridotta, InMini, inPrimoPiano);
+        }
+        catch (Exception) { return; }
+        var adesso = Environment.TickCount64;
+        // Un telefono appena collegato (o passato al cavo): i 20 secondi ripartono, e la sua sessione ha già mandato
+        // «nessuna pausa» dopo il benvenuto.
+        var attuali = telefoni.Telefoni.Select(t => t.Sessione).OfType<SessioneComputer>().ToList();
+        if (attuali.Any(s => !sessioniInPausaAutomatica.Contains(s))) regolaPausa.Riparti(adesso);
+        sessioniInPausaAutomatica.Clear();
+        sessioniInPausaAutomatica.UnionWith(attuali);
+
+        var uso = new UsoVideo(pausaAutomaticaAccesa, uscitaWebcam.SaLeggereUso, uscitaWebcam.InUso, registrazione is not null, guardata);
+        var prima = regolaPausa.Pausa;
+        var pausa = regolaPausa.Valuta(uso, adesso);
+        uscitaWebcam.ImpostaControllo(regolaPausa.Controllo);
+        MostraNotaPausaAutomatica();
+        if (pausa != prima && attuali.Count > 0)
+            registro.Aggiungi(pausa ? Testi.T("PausaAutomatica_Chiesta", Servizio.SecondiPausaAutomatica) : Testi.T("PausaAutomatica_Tolta"));
+        foreach (var sessione in attuali) SegnalaPausaAutomatica(sessione, pausa);
+    }
+
+    /// <summary>Come <see cref="SegnalaAnteprima"/>: dal thread dell'interfaccia, un errore di rete qui non conta.</summary>
+    private static async void SegnalaPausaAutomatica(SessioneComputer sessione, bool pausa)
+    {
+        try { await sessione.SegnalaPausaAutomaticaAsync(pausa); }
+        catch (Exception) { }
     }
 
     /// <summary>P21: il telefono che non è nella webcam si vede solo nel riquadro piccolo, nella finestra intera.</summary>

@@ -37,6 +37,8 @@ public sealed partial class MainWindow
         uscitaWebcam.InUsoCambiato += inUso => coda.TryEnqueue(() =>
         {
             ImpostaInOnda(inUso);
+            // Qualità 18: un'app ha aperto la webcam: la pausa automatica finisce adesso, non al prossimo secondo.
+            ValutaPausaAutomatica();
             // Fine dell'uso: la prossima app a 60 fps potrà chiedere di nuovo (P12).
             Valuta60Fps();
             _ = AggiornaWebcamAsync();

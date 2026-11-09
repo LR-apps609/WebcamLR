@@ -28,6 +28,16 @@ public static class Preferenze
     // Lo specchio (1.14) non si salva più qui: è uno solo, del telefono, e il PC lo legge dal suo «stato».
     // La modalità avanzata non c'è più: numeri, registro e regole fini stanno a un clic, come sul Mac.
 
+    /// <summary>
+    /// Qualità 18: «Pausa quando nessuna app usa la webcam» (Impostazioni › Uscite), acceso di serie. Vale solo se il PC
+    /// sa leggere l'uso della webcam (UscitaWebcam.SaLeggereUso).
+    /// </summary>
+    public static bool PausaAutomatica
+    {
+        get => Leggi("pausa-automatica") != "0";
+        set => Scrivi("pausa-automatica", value ? "1" : "0");
+    }
+
     /// <summary>«Riempi l'inquadratura» (Impostazioni › Schermo): vale solo per l'anteprima in questa finestra.</summary>
     public static bool Riempi
     {

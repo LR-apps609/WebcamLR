@@ -438,6 +438,8 @@ public sealed partial class MainWindow
             MostraFineRegistrazione(fine);
         });
         Volatile.Write(ref registrazione, nuova);
+        // Qualità 18: registrando il video serve (anche partendo da una scorciatoia con la finestra dietro le altre).
+        ValutaPausaAutomatica();
         inizioRegistrazione = DateTime.UtcNow;
         secondiRegistrazione = 0;
         spazioScarso = null;

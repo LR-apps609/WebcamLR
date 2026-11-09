@@ -196,7 +196,7 @@ Oltre alla qualità che segue la rete (**Auto**, quella di sempre) il computer p
 - `capacita.sceltaQualita`: vero = il telefono accetta `comando.qualita`. Assente o falso (telefono vecchio): il computer non mostra la scelta e il telefono resta in Auto.
 - `comando.qualita` (computer → telefono): `auto`, `alta` o `massima` (`LivelliQualita`); un valore sconosciuto vale `auto`. Il telefono la applica **dal vivo**: il bitrate cambia sulla sessione di codifica che va, senza fermare il video. Solo entrare in `massima` o uscirne può cambiare risoluzione e fps: allora, come sempre, nuovo `formato` e fotogramma chiave.
 - `stato.qualita` (telefono → computer): il livello in uso, **l'unica fonte di verità** per la spunta del computer (come `specchia`). Il telefono manda subito uno `stato` quando cambia.
-- Vale per la sessione: il telefono non la salva e a ogni collegamento riparte da `auto`. La salva il computer (una scelta per computer, non per telefono) e la rimanda, se non è `auto`, alla prima `capacita` con `sceltaQualita` di ogni sessione.
+- La salva il **computer** (una scelta per computer, non per telefono), mai il telefono: il computer la rimanda alla prima `capacita` con `sceltaQualita` di ogni sessione, anche quando è `auto` (così un telefono rimasto su un'altra scelta si riallinea). Cambiandola, la manda a tutti i telefoni collegati.
 - **WebcamLR Pro**: la scelta è gratis, il bitrate non è tra le cose del Pro. Restano i limiti di sempre sulla risoluzione: con un telefono gratis Massima va a 720p 30 (il più alto dei `formati` gratis), con il bitrate di Massima.
 
 | | Auto | Alta | Massima |

@@ -353,117 +353,6 @@ public class MotoreTest(ITestOutputHelper uscita)
         Assert.False(molla.InMovimento);
     }
 
-    // MARK: livello
-
-    [Fact]
-    public void IlLivelloScendeSoloSeNonSiRegge()
-    {
-        var scelta = new SceltaLivello();
-        for (var i = 0; i < 30; i++) scelta.Intervallo(33_333);
-        for (var i = 0; i < SceltaLivello.FotogrammiDiRiscaldamento; i++) Assert.Null(scelta.Aggiungi(500, 500, out _));
-        for (var i = 0; i < SceltaLivello.FotogrammiPerDecidere; i++) Assert.Null(scelta.Aggiungi(10, 12, out _));
-        Assert.Equal(LivelloResa.Pieno, scelta.Livello);
-        // La resa troppo lenta: prima il bordo leggero.
-        LivelloResa? nuovo = null;
-        for (var i = 0; i < SceltaLivello.FotogrammiPerDecidere; i++) nuovo ??= scelta.Aggiungi(10, 40, out _);
-        Assert.Equal(LivelloResa.BordoLeggero, nuovo);
-        // La maschera troppo lenta: subito il veloce.
-        nuovo = null;
-        for (var i = 0; i < SceltaLivello.FotogrammiPerDecidere; i++) nuovo ??= scelta.Aggiungi(45, 10, out _);
-        Assert.Equal(LivelloResa.Veloce, nuovo);
-        scelta.Azzera();
-        Assert.Equal(LivelloResa.Pieno, scelta.Livello);
-    }
-
-    /// <summary>Una finestra di decisione intera (dopo il riscaldamento) con gli stessi tempi; il livello nuovo o null.</summary>
-    private static LivelloResa? Finestra(SceltaLivello scelta, double mascheraMs, double resaMs)
-    {
-        LivelloResa? nuovo = null;
-        for (var i = 0; i < SceltaLivello.FotogrammiPerDecidere; i++) nuovo ??= scelta.Aggiungi(mascheraMs, resaMs, out _);
-        return nuovo;
-    }
-
-    private static SceltaLivello Scaldata()
-    {
-        var scelta = new SceltaLivello();
-        for (var i = 0; i < SceltaLivello.FotogrammiDiRiscaldamento; i++) scelta.Aggiungi(0, 0, out _);
-        return scelta;
-    }
-
-    [Fact]
-    public void UnIntervalloAnomaloNonFaScendere()
-    {
-        // Collaudo 20: un solo intervallo da 1 ms (due fotogrammi a raffica dopo un intoppo del Wi-Fi) tra 29 da 33 ms.
-        var scelta = Scaldata();
-        for (var i = 0; i < 29; i++) scelta.Intervallo(33_333);
-        scelta.Intervallo(1_000);
-        Assert.Null(Finestra(scelta, 10, 8));
-        Assert.Equal(LivelloResa.Pieno, scelta.Livello);
-
-        // Fotogrammi che arrivano a coppie (2 ms e 64 ms, in media 33): il fotogramma vale ancora circa 33 ms.
-        scelta = Scaldata();
-        for (var i = 0; i < 30; i++) scelta.Intervallo(i % 2 == 0 ? 2_000UL : 64_000UL);
-        Assert.Null(Finestra(scelta, 10, 8));
-        Assert.Equal(LivelloResa.Pieno, scelta.Livello);
-
-        // Una pausa lunga non fa credere a un fotogramma lento: a 30 fps con 31 ms di resa si scende lo stesso.
-        scelta = Scaldata();
-        for (var i = 0; i < 28; i++) scelta.Intervallo(33_333);
-        scelta.Intervallo(400_000);
-        scelta.Intervallo(300_000);
-        LivelloResa? nuovo = null;
-        var fotogrammaMs = 0.0;
-        for (var i = 0; i < SceltaLivello.FotogrammiPerDecidere && nuovo is null; i++) nuovo = scelta.Aggiungi(10, 31, out fotogrammaMs);
-        Assert.Equal(LivelloResa.BordoLeggero, nuovo);
-        Assert.InRange(fotogrammaMs, 33, 34);
-
-        // Mai sotto 1/60 di secondo, anche se gli intervalli sono tutti brevissimi.
-        scelta = Scaldata();
-        for (var i = 0; i < 30; i++) scelta.Intervallo(1_000);
-        Assert.Null(Finestra(scelta, 10, 12));
-    }
-
-    [Fact]
-    public void IlRiscaldamentoDellaSchedaVideoNonFaScendere()
-    {
-        // Collaudo 21: la prima maschera con DirectML compila gli shader (1,5 s), le altre durano 10 ms.
-        var scelta = new SceltaLivello();
-        for (var i = 0; i < 30; i++) scelta.Intervallo(33_333);
-        Assert.Null(scelta.Aggiungi(1500, 12, out _));
-        for (var i = 0; i < SceltaLivello.FotogrammiPerDecidere * 2; i++) Assert.Null(scelta.Aggiungi(10, 12, out _));
-        Assert.Equal(LivelloResa.Pieno, scelta.Livello);
-        // Una fonte nuova (riaperta o cambiata) scalda di nuovo.
-        scelta.FonteNuova();
-        Assert.Null(scelta.Aggiungi(2000, 12, out _));
-        for (var i = 0; i < SceltaLivello.FotogrammiPerDecidere * 2; i++) Assert.Null(scelta.Aggiungi(10, 12, out _));
-        // E così dopo un azzeramento (telefono girato, sessione nuova).
-        scelta.Azzera();
-        for (var i = 0; i < 30; i++) scelta.Intervallo(33_333);
-        Assert.Null(scelta.Aggiungi(1500, 12, out _));
-        for (var i = 0; i < SceltaLivello.FotogrammiPerDecidere * 2; i++) Assert.Null(scelta.Aggiungi(10, 12, out _));
-        Assert.Equal(LivelloResa.Pieno, scelta.Livello);
-    }
-
-    [Fact]
-    public void LaSceltaTraVeloceEBordoSiFaSulleMedie()
-    {
-        // Collaudo 23: 59 fotogrammi con la maschera lenta e l'ultimo con una maschera breve: il collo è la maschera.
-        var scelta = Scaldata();
-        for (var i = 0; i < 30; i++) scelta.Intervallo(33_333);
-        LivelloResa? nuovo = null;
-        for (var i = 0; i < SceltaLivello.FotogrammiPerDecidere - 1; i++) nuovo ??= scelta.Aggiungi(45, 10, out _);
-        nuovo ??= scelta.Aggiungi(9, 10, out _);
-        Assert.Equal(LivelloResa.Veloce, nuovo);
-
-        // Al contrario: una sola resa lenta alla fine non manda al modello leggero, basta il bordo leggero.
-        scelta = Scaldata();
-        for (var i = 0; i < 30; i++) scelta.Intervallo(33_333);
-        nuovo = null;
-        for (var i = 0; i < SceltaLivello.FotogrammiPerDecidere - 1; i++) nuovo ??= scelta.Aggiungi(10, 40, out _);
-        nuovo ??= scelta.Aggiungi(60, 10, out _);
-        Assert.Equal(LivelloResa.BordoLeggero, nuovo);
-    }
-
     // MARK: motore
 
     private sealed class FonteFinta(Func<MascheraPersona>? calcola = null, SemaphoreSlim? via = null) : IFonteMaschera
@@ -481,7 +370,8 @@ public class MotoreTest(ITestOutputHelper uscita)
         public string? MotivoRipiego => null;
         public Acceleratore InUso => Acceleratore.Processore;
         public ModelloRitaglio Modello => ModelloRitaglio.Leggero;
-        public void Dispose() { }
+        public bool Chiusa;
+        public void Dispose() => Chiusa = true;
     }
 
     private static ImmagineBgra Riempita(MotoreEffetti motore, int l = 320, int a = 180)
@@ -668,6 +558,112 @@ public class MotoreTest(ITestOutputHelper uscita)
             [Acceleratore.Automatico, Acceleratore.Automatico, Acceleratore.Processore, Acceleratore.Processore],
             create);
         Assert.Contains(motore.PrendiNote(), n => n is MotoreEffetti.Nota.FonteRiaperta { SulProcessore: true });
+    }
+
+    [Fact]
+    public void ConLaMascheraAlternaSiCalcolaUnFotogrammaSuDue()
+    {
+        // Qualità 6: il fotogramma in mezzo riusa la maschera del precedente, nell'ordine di arrivo, e si consegna.
+        var stato = new StatoEffettiComputer();
+        stato.Imposta(new ImpostazioniMotore { Sfondo = ModiSfondo.Sostituito, IntensitaSfondo = 1 });
+        var fonte = new FonteFinta();
+        using var motore = new MotoreEffetti(stato, _ => fonte, new SceltaLivello(LivelloResa.MascheraAlterna));
+        motore.Abilita(true);
+        var consegnate = new List<ulong>();
+        using var fatto = new SemaphoreSlim(0);
+        // A coppie, una subito dopo l'altra: la seconda arriva pochi ms dopo la prima (il riuso vale fino a 100 ms anche
+        // se la macchina dei test è lenta) e aspetta la sua analisi al suo posto.
+        for (var i = 0; i < 6; i += 2)
+        {
+            for (var j = i; j < i + 2; j++)
+            {
+                var immagine = Riempita(motore);
+                immagine.Timestamp = (ulong)j;
+                motore.Elabora(immagine, u =>
+                {
+                    // Sempre lo sfondo sostituito a destra: mai la stanza vera nemmeno col riuso.
+                    if (Pixel(u, 300, 90).G == Compositore.ColoreFondo.G)
+                        lock (consegnate) consegnate.Add(u.Timestamp!.Value);
+                    fatto.Release();
+                });
+            }
+            Assert.True(fatto.Wait(5000));
+            Assert.True(fatto.Wait(5000));
+        }
+        Assert.Equal([0UL, 1UL, 2UL, 3UL, 4UL, 5UL], consegnate);
+        Assert.Equal(3, fonte.Chiamate);
+        Assert.Equal(0, motore.PrendiMisure().SenzaMaschera);
+
+        // Al pieno, invece, una maschera per fotogramma.
+        var ognuno = new FonteFinta();
+        using var pieno = new MotoreEffetti(stato, _ => ognuno);
+        pieno.Abilita(true);
+        for (var i = 0; i < 4; i++)
+        {
+            pieno.Elabora(Riempita(pieno), _ => fatto.Release());
+            Assert.True(fatto.Wait(5000));
+        }
+        Assert.Equal(4, ognuno.Chiamate);
+    }
+
+    [Fact]
+    public void LAltroModelloSiPreparaAParteEIlVideoNonSiFerma()
+    {
+        // Qualità 6: la scala risale dal veloce (modello leggero) alla maschera alterna (modello pieno). La fonte nuova
+        // si apre e si scalda su un altro thread (qui resta ferma finché il test non la lascia andare): intanto i
+        // fotogrammi si fanno con la vecchia; quando è pronta prende il suo posto e la vecchia si chiude.
+        var stato = new StatoEffettiComputer();
+        stato.Imposta(new ImpostazioniMotore { Sfondo = ModiSfondo.Sfocato });
+        var scelta = new SceltaLivello(LivelloResa.Veloce);
+        using var via = new SemaphoreSlim(0);
+        var leggera = new FonteFinta();
+        var piena = new FonteFinta(via: via);
+        var create = new List<LivelloResa>();
+        using var motore = new MotoreEffetti(stato, livello =>
+        {
+            lock (create) create.Add(livello);
+            return livello.ConModelloLeggero() ? leggera : piena;
+        }, scelta);
+        motore.Abilita(true);
+        using var fatto = new SemaphoreSlim(0);
+        void Uno()
+        {
+            motore.Elabora(Riempita(motore), _ => fatto.Release());
+            Assert.True(fatto.Wait(5000));
+        }
+        Uno();
+        Assert.Equal([LivelloResa.Veloce], create);
+
+        // Margine per 10 s, con tempi finti dati alla scala mentre il motore è fermo (dopo il riscaldamento e una pausa).
+        var adesso = 100_000_000UL;
+        for (var i = 0; i < 400 && scelta.Livello == LivelloResa.Veloce; i++)
+        {
+            adesso += 33_333;
+            scelta.Intervallo(33_333);
+            scelta.Aggiungi(1, 1, adesso);
+        }
+        Assert.Equal(LivelloResa.MascheraAlterna, scelta.Livello);
+
+        // La piena si scalda (ferma): tre fotogrammi passano lo stesso, con la leggera.
+        for (var i = 0; i < 3; i++) Uno();
+        Assert.Equal([LivelloResa.Veloce, LivelloResa.Pieno], create);
+        Assert.False(leggera.Chiusa);
+        for (var i = 0; i < 100 && Volatile.Read(ref piena.Chiamate) == 0; i++) Thread.Sleep(10);
+        Assert.Equal(1, piena.Chiamate);
+        var primaLeggera = leggera.Chiamate;
+
+        // Pronta: al prossimo fotogramma calcolato prende il posto della leggera.
+        via.Release(100);
+        for (var i = 0; i < 50 && !leggera.Chiusa; i++)
+        {
+            Thread.Sleep(20);
+            Uno();
+        }
+        Assert.True(leggera.Chiusa);
+        Assert.True(piena.Chiamate > 1);
+        Assert.True(leggera.Chiamate >= primaLeggera);
+        Assert.Equal(2, create.Count);
+        Assert.Equal(2, motore.PrendiNote().Count(n => n is MotoreEffetti.Nota.Fonte));
     }
 
     [Fact]

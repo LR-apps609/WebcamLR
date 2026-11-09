@@ -3,19 +3,6 @@ using WebcamLR.Protocollo;
 
 namespace WebcamLR.Effetti;
 
-/// <summary>
-/// La qualità della resa, che scende da sola solo se il PC non regge i fotogrammi al secondo (come i livelli del Mac).
-/// </summary>
-public enum LivelloResa
-{
-    /// <summary>Modello pieno se c'è, bordo rifinito con il filtro guidato a metà risoluzione.</summary>
-    Pieno,
-    /// <summary>Bordo rifinito a un quarto della risoluzione (costa quattro volte meno).</summary>
-    BordoLeggero,
-    /// <summary>Modello leggero e bordo bilineare, senza filtro guidato: per i PC lenti.</summary>
-    Veloce,
-}
-
 /// <summary>Un fotogramma da rendere, con quello che l'analisi ha già preparato.</summary>
 /// <param name="Quarto">Il fotogramma a un quarto della misura (fatto dall'analisi per la maschera); null = lo fa la resa.</param>
 /// <param name="Maschera">La maschera dello stesso istante (o l'ultima buona); null = nessuna.</param>
@@ -95,7 +82,7 @@ public sealed class Compositore
             calore = null;
             corrente = lavoro;
         }
-        if (pelle) RicettePersona.Pelle(corrente, imp.Pelle, voltiPixel, livello != LivelloResa.Pieno);
+        if (pelle) RicettePersona.Pelle(corrente, imp.Pelle, voltiPixel, !livello.ConBordoAMeta());
         if (luce is { } volto) RicettePersona.LuceVolto(corrente, volto, presenzaLuce, tabellaLuce);
         if (Math.Abs(nitidezza) > 0.005) RicettePersona.Nitidezza(corrente, nitidezza, ref copiaNitidezza);
 
@@ -104,7 +91,7 @@ public sealed class Compositore
 
         // 6-8. Ritaglio, specchio, calore (se non già fatto), filtro e regolazioni in un passaggio solo.
         var catena = Catena(imp, calore is not null);
-        var vignetta = imp.Filtro == Filtri.Cinema && livello != LivelloResa.Veloce ? Vignetta(l, a) : null;
+        var vignetta = imp.Filtro == Filtri.Cinema && !livello.ConBordoBilineare() ? Vignetta(l, a) : null;
         if (zoom is { } z)
         {
             var (rx, ry, rl, ra) = z.Ritaglio(l, a);
@@ -203,15 +190,15 @@ public sealed class Compositore
         }
 
         // Il bordo: la maschera rifinita con la guida (luminosità del video), poi la soglia morbida. Pieno: filtro guidato
-        // veloce con i coefficienti al quarto e la resa a metà risoluzione; bordo leggero: tutto al quarto; veloce:
-        // maschera bilineare appena ammorbidita. Oltre il 1080p (4K) anche il pieno resta al quarto.
-        var conMeta = livello == LivelloResa.Pieno && Math.Min(l, a) <= 1080;
+        // veloce con i coefficienti al quarto e la resa a metà risoluzione; bordo leggero e maschera alterna: tutto al
+        // quarto; veloce e minimo: maschera bilineare appena ammorbidita. Oltre il 1080p (4K) anche il pieno resta al quarto.
+        var conMeta = livello.ConBordoAMeta() && Math.Min(l, a) <= 1080;
         if (conMeta) meta ??= metaPropria = Elaborazione.Dimezza(src, metaPropria);
         int lq = quarto.Larghezza, aq = quarto.Altezza;
         int lw = conMeta ? meta!.Larghezza : lq, aw = conMeta ? meta!.Altezza : aq;
         mascheraLavoro = Elaborazione.Campiona(maschera.Valori, maschera.Larghezza, maschera.Altezza, lq, aq, mascheraLavoro);
         float[] rifinita;
-        if (livello == LivelloResa.Veloce)
+        if (livello.ConBordoBilineare())
         {
             if (appoggio.Length < lq * aq) appoggio = new float[lq * aq];
             if (sfocata.Length < lq * aq) sfocata = new float[lq * aq];

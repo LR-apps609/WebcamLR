@@ -331,7 +331,7 @@ public sealed partial class MainWindow
         {
             if (scelto.Capacita is { } capacita) effettiComputer.Capacita(capacita);
             if (scelto.Stato is { } stato) effettiComputer.Stato(stato, AdessoMs);
-            if (scelto.Formato is { } formato) motoreVideo.Formato(formato.Larghezza, formato.Altezza, formato.Codec);
+            if (scelto.Formato is { } formato) motoreVideo.Formato(formato.Larghezza, formato.Altezza, formato.Codec, formato.Fps);
             else motoreVideo.Ferma();
         }
         else
@@ -356,6 +356,8 @@ public sealed partial class MainWindow
         {
             registro.Aggiungi(nota switch
             {
+                // Qualità 6: una riga a ogni cambio, giù (il PC non regge) o su (c'è margine).
+                MotoreEffetti.Nota.Livello { Salita: true } l => Testi.T("Registro_EffettiLivelloSu", l.FotogrammaMs, l.MascheraMs, l.ResaMs, NomeLivello(l.Nuovo)),
                 MotoreEffetti.Nota.Livello l => Testi.T("Registro_EffettiLivello", l.FotogrammaMs, l.MascheraMs, l.ResaMs, NomeLivello(l.Nuovo)),
                 MotoreEffetti.Nota.ErroreMaschera e => Testi.T("Registro_EffettiErrore", e.Totale, e.Errore),
                 MotoreEffetti.Nota.FonteRiaperta r => r.SulProcessore
@@ -400,7 +402,9 @@ public sealed partial class MainWindow
     private static string NomeLivello(LivelloResa livello) => livello switch
     {
         LivelloResa.BordoLeggero => Testi.T("Effetti_LivelloBordoLeggero"),
+        LivelloResa.MascheraAlterna => Testi.T("Effetti_LivelloMascheraAlterna"),
         LivelloResa.Veloce => Testi.T("Effetti_LivelloVeloce"),
+        LivelloResa.Minimo => Testi.T("Effetti_LivelloMinimo"),
         _ => Testi.T("Effetti_LivelloPieno"),
     };
 }

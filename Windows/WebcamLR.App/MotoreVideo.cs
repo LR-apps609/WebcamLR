@@ -91,8 +91,11 @@ public sealed class MotoreVideo : IDisposable
     /// <summary>Apre il modello in anticipo (lo sfondo è appena stato acceso): il primo fotogramma non aspetta.</summary>
     public void Prepara() => motore.Prepara();
 
-    /// <summary>Il formato del video del telefono nella webcam (messaggio «formato»): il decodificatore riparte.</summary>
-    public void Formato(int larghezza, int altezza, Codec codec)
+    /// <summary>
+    /// Il formato del video del telefono nella webcam (messaggio «formato»): il decodificatore riparte. I fps dicono alla
+    /// qualità che si adatta al PC quanto dura un fotogramma (33 ms a 30 fps, 17 ms a 60).
+    /// </summary>
+    public void Formato(int larghezza, int altezza, Codec codec, int fps)
     {
         lock (blocco)
         {
@@ -100,6 +103,7 @@ public sealed class MotoreVideo : IDisposable
             generazione++;
             FermaDecodifica();
             motore.Azzera();
+            motore.Fps(fps);
             var nuovo = decodificatore.Avvia(larghezza, altezza, codec, perFotogrammi: true);
             nuovo.VideoFrameAvailable += SuFotogramma;
             nuovo.MediaFailed += (_, evento) => Evento?.Invoke(Testi.T("Effetti_NonSiDecodifica", evento.ErrorMessage));

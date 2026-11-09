@@ -369,6 +369,48 @@ class CollegamentoTest {
         assertNotNull(chiuso.errore)
     }
 
+    /**
+     * Qualità 17, cavo con adb: la connessione arriva già aperta (qui la apre il test, come adb che la porta dal
+     * computer alla porta 52741 del telefono). Il telefono non cerca indirizzi: manda la stretta su quella e arriva al
+     * benvenuto come sempre.
+     */
+    @Test
+    fun connessioneGiaApertaDalCavo() {
+        val computer = ComputerSimulato(Modo.FIDATO)
+        val dalCavo = Socket(java.net.InetAddress.getLoopbackAddress(), computer.porta)
+        val eventi = LinkedBlockingQueue<EventoCollegamento>()
+        val collegamento = Collegamento(
+            emptyList(), 0, IdentitaDispositivo.nuova(), null, null,
+            Ciao(nome = "Pixel sul cavo", piattaforma = Piattaforma.ANDROID, versioneApp = "0.1"),
+            orologio = { 1u }, suEvento = { eventi.add(it) }, tempi = tempiBrevi, socketPronto = dalCavo,
+        )
+        daChiudere.add { collegamento.chiudi(); computer.chiudi() }
+        collegamento.avvia()
+        val pronto = assertIs<EventoCollegamento.Pronto>(eventi.prossimo())
+        assertEquals(computer.identita.impronta, pronto.impronta)
+        val benvenuto = assertIs<EventoCollegamento.Ricevuto>(eventi.prossimo())
+        assertEquals("PC-STUDIO", (benvenuto.messaggio as Benvenuto).nome)
+        assertEquals("Pixel sul cavo", computer.ricevuti.attendi<Ciao>().nome)
+        assertTrue(dalCavo.tcpNoDelay)
+    }
+
+    /** Una connessione dal cavo già chiusa (il computer ha rinunciato) vale come un computer che non risponde. */
+    @Test
+    fun connessioneDalCavoGiaChiusa() {
+        val computer = ComputerSimulato(Modo.FIDATO)
+        val dalCavo = Socket(java.net.InetAddress.getLoopbackAddress(), computer.porta).apply { close() }
+        val eventi = LinkedBlockingQueue<EventoCollegamento>()
+        val collegamento = Collegamento(
+            emptyList(), 0, IdentitaDispositivo.nuova(), null, null,
+            Ciao(nome = "Pixel", piattaforma = Piattaforma.ANDROID, versioneApp = "0.1"),
+            orologio = { 0u }, suEvento = { eventi.add(it) }, tempi = tempiBrevi, socketPronto = dalCavo,
+        )
+        daChiudere.add { collegamento.chiudi(); computer.chiudi() }
+        collegamento.avvia()
+        val chiuso = assertIs<EventoCollegamento.Chiuso>(eventi.prossimo())
+        assertEquals(ErroreCollegamento.NON_RISPONDE, chiuso.errore)
+    }
+
     @Test
     fun piuIndirizziVinceQuelloCheRisponde() {
         val computer = ComputerSimulato(Modo.FIDATO)

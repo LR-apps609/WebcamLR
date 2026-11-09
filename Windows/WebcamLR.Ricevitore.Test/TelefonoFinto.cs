@@ -12,14 +12,16 @@ public sealed class TelefonoFinto : IAsyncDisposable
 {
     private readonly TcpClient cliente = new();
     private readonly SemaphoreSlim scrittura = new(1, 1);
-    private readonly CancellationTokenSource fine = new(TimeSpan.FromSeconds(20));
+    /// <summary>Oltre questo tempo il telefono finto si ferma da solo (20 s, più a lungo nella prova di durata).</summary>
+    private readonly CancellationTokenSource fine;
     private readonly Func<ulong> orologio;
     private NetworkStream flusso = null!;
     private Task? lettura;
     private SessioneSicura? sicura;
 
-    public TelefonoFinto(IdentitaDispositivo? identita = null, Func<ulong>? orologio = null)
+    public TelefonoFinto(IdentitaDispositivo? identita = null, Func<ulong>? orologio = null, TimeSpan? durata = null)
     {
+        fine = new CancellationTokenSource(durata ?? TimeSpan.FromSeconds(20));
         Identita = identita ?? IdentitaDispositivo.Nuova();
         this.orologio = orologio ?? Orologio.Adesso;
     }

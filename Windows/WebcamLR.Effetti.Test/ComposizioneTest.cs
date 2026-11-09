@@ -249,7 +249,8 @@ public class ComposizioneTest(ITestOutputHelper uscita)
         var scena = Tinta(160, 90, 30, 120, 200);
         var maschera = new MascheraPersona(Enumerable.Repeat((byte)128, 256 * 144).ToArray(), 256, 144, ModelloRitaglio.Leggero, 1);
         var risultato = new ImmagineBgra(160, 90);
-        var fine = DateTime.UtcNow.AddSeconds(5);
+        // L'apertura della scheda video è in sottofondo: sulle macchine lente della GitHub CI 5 s non sempre bastano.
+        var fine = DateTime.UtcNow.AddSeconds(20);
         do
         {
             Assert.True(compositore.Rendi(new IngressoResa(scena, null, null, maschera, null, null, 1 / 30.0),

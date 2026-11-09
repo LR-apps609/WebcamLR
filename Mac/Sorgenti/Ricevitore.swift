@@ -68,6 +68,13 @@ final class Ricevitore {
     private(set) var telefonoNonTornato: String?
     /// Quando ogni telefono rifiutato è stato annunciato: dal cavo riprova da solo, l'avviso no.
     @ObservationIgnored private var ultimiRifiuti: [String: ContinuousClock.Instant] = [:]
+    /// I telefoni (codice di sicurezza) che in questa esecuzione hanno detto di avere WebcamLR Pro (`capacita.pro`): se
+    /// uno di loro si perde e nella webcam resta un telefono gratis, rientra lo stesso, perché è lui che sblocca i due
+    /// telefoni (collaudo 31 e 46, come `ElencoTelefoni` su Windows).
+    @ObservationIgnored private var impronteConPro: Set<String> = []
+    /// I telefoni entrati come secondi mentre le capacità di un altro non erano ancora arrivate (collaudo 32): restano
+    /// solo se, arrivate tutte, almeno un telefono ha Pro (`togliInProvaSenzaPro`).
+    @ObservationIgnored private var inProva: Set<UUID> = []
     /// Chiamato quando l'utente sceglie un altro telefono, mentre quello di prima è ancora lo scelto:
     /// le Riprese chiudono e salvano la registrazione in corso (P21, come su Windows).
     @ObservationIgnored var primaDelCambioTelefono: (@MainActor () -> Void)?
@@ -1000,8 +1007,10 @@ final class Ricevitore {
                 candidato.chiudi()
                 return true
             }
-            // WebcamLR Pro: due telefoni insieme solo se quello nella webcam l'ha sbloccato (`capacita.pro`).
-            guard telefoni.isEmpty || proAttivo else {
+            // WebcamLR Pro: due telefoni insieme solo se uno dei telefoni l'ha sbloccato (`capacita.pro`), o se l'ha
+            // questo; senza le capacità di un telefono collegato entra «in prova» e si decide dopo (`secondoConsentito`).
+            let ammesso = secondoConsentito(impronta)
+            guard ammesso.consentito else {
                 avvisaSecondoTelefonoSenzaPro(ciao.nome)
                 candidato.chiudi()
                 return true
@@ -1010,6 +1019,7 @@ final class Ricevitore {
             let nuovo = TelefonoCollegato(impronta: impronta, telefono: ciao, schermo: creaSchermo())
             nuovo.sessione = candidato
             telefoni.append(nuovo)
+            if ammesso.inAttesa { inProva.insert(nuovo.id) }
             controllaAttesaTelefono()
             aggiornaPosti()
             candidato.diventaAttuale(schermo: nuovo.schermo)
@@ -1074,6 +1084,49 @@ final class Ricevitore {
         ultimiRifiuti[nome] = adesso
         mostraAvviso(String(localized: "Due telefoni insieme sono di WebcamLR Pro: sbloccalo sull'iPhone nella webcam per collegare anche «\(nome)»."),
                      registro: String(localized: "«\(nome)» non collegato: due telefoni insieme sono di WebcamLR Pro"))
+    }
+
+    /// Segna i telefoni dell'elenco che hanno WebcamLR Pro (`impronteConPro`).
+    private func ricordaPro() {
+        for telefono in telefoni where telefono.capacita?.pro == true {
+            impronteConPro.insert(telefono.impronta)
+        }
+    }
+
+    /// Un telefono nuovo può entrare come secondo? Sì senza telefoni; sì se uno dei telefoni ha Pro, o se l'ha lui (visto
+    /// prima in questa esecuzione); sì «in prova» (`inAttesa`) se un telefono collegato non ha ancora mandato le sue
+    /// capacità: non si decide «gratis» senza saperlo (collaudo 31, 32 e 46).
+    private func secondoConsentito(_ impronta: String) -> (consentito: Bool, inAttesa: Bool) {
+        guard !telefoni.isEmpty else { return (true, false) }
+        ricordaPro()
+        if impronteConPro.contains(impronta) || telefoni.contains(where: { impronteConPro.contains($0.impronta) }) {
+            return (true, false)
+        }
+        let inAttesa = telefoni.contains { $0.capacita == nil }
+        return (inAttesa, inAttesa)
+    }
+
+    /// A ogni `capacita`: i telefoni entrati «in prova» escono con l'avviso Pro se, arrivate le capacità di tutti,
+    /// nessuno ha Pro. Restano se uno ha Pro, o se sono rimasti da soli (l'altro è andato via prima delle sue capacità).
+    private func togliInProvaSenzaPro() {
+        inProva = inProva.filter { id in telefoni.contains { $0.id == id } }
+        guard !inProva.isEmpty else { return }
+        ricordaPro()
+        if telefoni.count <= 1 || telefoni.contains(where: { impronteConPro.contains($0.impronta) }) {
+            inProva.removeAll()
+            return
+        }
+        guard !telefoni.contains(where: { $0.capacita == nil }) else { return }
+        let fuori = telefoni.filter { inProva.contains($0.id) }
+        inProva.removeAll()
+        for telefono in fuori {
+            avvisaSecondoTelefonoSenzaPro(telefono.telefono.nome)
+            // Come un telefono rifiutato prima del `benvenuto`: l'`arrivederci`, e sul cavo il client riprova con l'attesa
+            // che cresce.
+            telefono.sessione?.chiudi()
+            telefono.sessione = nil
+            dimentica(telefono)
+        }
     }
 
     /// La X sul banner «… non è tornato».
@@ -2369,6 +2422,9 @@ final class Ricevitore {
             }
         case .capacita(let nuove):
             telefono.capacita = nuove
+            // Un telefono entrato prima delle capacità degli altri: se nessuno ha Pro, ora esce (collaudo 32).
+            togliInProvaSenzaPro()
+            guard telefoni.contains(where: { $0 === telefono }) else { return }
             // Obiettivo senza ISO manuale: l'interruttore sparisce e torna il cursore dell'esposizione.
             if nuove.isoMinimo == nil { telefono.controlli.esposizioneManuale = false }
             chiediAudioSeServe()
@@ -2551,6 +2607,9 @@ final class Ricevitore {
     /// Il telefono non c'è più (scollegato o non tornato): via dall'elenco. Se era quello nella webcam,
     /// ci va l'altro, se c'è.
     private func dimentica(_ telefono: TelefonoCollegato) {
+        // Prima di toglierlo: se ha Pro, quando torna rientra anche con un telefono gratis nella webcam (collaudo 31).
+        ricordaPro()
+        inProva.remove(telefono.id)
         let eraScelto = telefono === attivo
         if eraScelto { primaDiDimenticareLoScelto?() }
         telefono.annullaInvii()

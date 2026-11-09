@@ -7,8 +7,8 @@ import WebcamLRProtocollo
 /// (720p a 30 fps, comandi Pro ignorati) li applica il telefono.
 extension Ricevitore {
     /// Il telefono «Nella webcam» ha sbloccato WebcamLR Pro (`capacita.pro == true`). Falso senza telefono, con un
-    /// telefono gratis o con un telefono vecchio che non manda il campo. Lo usano anche la schermata d'attesa
-    /// personalizzata e il secondo telefono.
+    /// telefono gratis o con un telefono vecchio che non manda il campo. Lo usa anche la schermata d'attesa
+    /// personalizzata. Il secondo telefono conta il Pro di chiunque (`Ricevitore.secondoConsentito`).
     var proAttivo: Bool {
         capacita?.pro == true
     }

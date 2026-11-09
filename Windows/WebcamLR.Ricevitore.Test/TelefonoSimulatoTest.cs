@@ -402,6 +402,29 @@ public class TelefonoSimulatoTest
         Assert.Empty(abbinamento.Fidati);
     }
 
+    /// <summary>
+    /// Collaudo 1: la finestra decide la strada dentro «Salutato» (resta il cavo, resta il Wi-Fi, senza Pro, pieno) e
+    /// chiude come fa MainWindow.Telefoni. Il telefono riceve solo l'arrivederci, mai un benvenuto che lo farebbe passare
+    /// a un collegamento che il computer non usa.
+    /// </summary>
+    [Fact]
+    public async Task UnaStradaRifiutataDopoIlCiaoNonRiceveIlBenvenuto()
+    {
+        using var idComputer = IdentitaDispositivo.Nuova();
+        var abbinamento = new Abbinamento(idComputer);
+        using var ricevitore = new Ricevitore(abbinamento, sessione => sessione.Salutato += ciao => _ = sessione.ChiudiAsync());
+
+        await using var telefono = new TelefonoFinto();
+        await telefono.CollegaAsync(ricevitore.Ascoltatore.Porta, gettone: abbinamento.Gettone);
+        await telefono.Chiuso.Task.WaitAsync(Limite);
+        await ricevitore.Chiusa.Task.WaitAsync(Limite);
+        var ricevuti = new List<Messaggio>();
+        while (telefono.Ricevuti.Reader.TryRead(out var messaggio)) ricevuti.Add(messaggio);
+        Assert.Contains(ricevuti, m => m is Arrivederci);
+        Assert.DoesNotContain(ricevuti, m => m is Benvenuto);
+        Assert.DoesNotContain(ricevuti, m => m is Anteprima);
+    }
+
     [Fact]
     public async Task RifiutatoDaPocoNonFaRicomparireLaDomanda()
     {

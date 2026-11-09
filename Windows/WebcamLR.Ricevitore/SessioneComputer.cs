@@ -23,6 +23,10 @@ public sealed record Statistiche(int Larghezza, int Altezza, int Fps, double Meg
 /// </summary>
 public sealed class SessioneComputer : IAsyncDisposable
 {
+    /// <summary>
+    /// Accettato, prima del benvenuto e sullo stesso thread: qui chi ascolta decide la strada (Telefoni.Accogli). Se chiude
+    /// la sessione con <see cref="ChiudiAsync"/>, il telefono riceve solo l'arrivederci (collaudo 1).
+    /// </summary>
     public event Action<Ciao>? Salutato;
     public event Action<FormatoVideo>? FormatoRicevuto;
     public event Action<StatoTelefono>? StatoRicevuto;
@@ -529,6 +533,9 @@ public sealed class SessioneComputer : IAsyncDisposable
             // (formato, video) trova già la sessione al suo posto e non va perso.
             Volatile.Write(ref accettato, 1);
             Salutato?.Invoke(ciao);
+            // Collaudo 1: la finestra decide la strada dentro Salutato. Se ha chiuso (resta il cavo, resta il Wi-Fi,
+            // pieno, senza Pro) l'arrivederci è già partito: niente benvenuto dopo, nemmeno se la scrittura è lenta.
+            if (Volatile.Read(ref chiusaDalComputer) == 1 || Terminata) return;
             await InviaAsync(new Benvenuto(Servizio.VersioneProtocollo, nomeComputer, Piattaforma.Windows));
             Avvio.Benvenuto();
             // Subito dopo il benvenuto: se la finestra mostra il video (pausa intelligente).

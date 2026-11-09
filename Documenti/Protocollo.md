@@ -571,13 +571,24 @@ Ogni messaggio ha un'intestazione di 16 byte in **little-endian**: lunghezza tot
 
 Il client usbmux di WebcamLR è scritto da zero (Swift e C#): le librerie esistenti (libimobiledevice, usbmuxd) sono LGPL o GPL.
 
+### Cavo USB con Android: adb (Qualità 17)
+
+Stesso schema dell'iPhone, con **adb** al posto di usbmux (scelta e licenze in `Documenti/Cavo USB Android.md`). Sul telefono serve il **debug USB** acceso e consentito per quel computer; sul computer il server di adb (porta TCP **5037** su 127.0.0.1), avviato da adb stesso, da Android Studio o da altri programmi.
+
+- **Telefono Android**: come l'iPhone, resta in ascolto su **127.0.0.1, porta TCP 52741**, solo sull'indirizzo locale. Ascolta con l'app in primo piano e senza una sessione, oppure con una sessione del cavo che aspetta il computer; con una sessione Wi-Fi no (il passaggio dal Wi-Fi al cavo di adb non c'è ancora). La connessione che arriva si tratta come sull'iPhone: `stretta` subito, poi tutto come nel Wi-Fi.
+- **Computer**: tiene aperta una connessione con il server di adb e chiede `host:track-devices`; per ogni telefono sul cavo nello stato `device` apre un'altra connessione e manda `host:transport:<seriale>` e poi `tcp:52741`. Con due `OKAY` la connessione è il canale verso il telefono (come dopo il `Connect` di usbmux). Niente `adb forward` né `adb reverse`: nessuna regola da togliere, nessuna porta occupata sul computer. Se l'app sul telefono non ascolta, adb risponde `FAIL` (di solito «closed»): si riprova ogni secondo, senza l'attesa che raddoppia (quella vale solo per un canale aperto e poi chiuso prima del `ciao`).
+- **Fiducia**: uguale al cavo dell'iPhone. Il telefono non sa a quale computer è collegato finché non arriva il `benvenuto`: un computer conosciuto con quel nome deve avere lo stesso codice di sicurezza, altrimenti il telefono si ferma («Computer da collegare di nuovo»). La prima volta il computer chiede il codice come in Wi-Fi.
+- **Tipo di collegamento**: per tutti e due i lati è «Cavo USB» (`cavo` in `stato.collegamento.attivo`).
+
+**adb in breve.** Ogni richiesta è la sua lunghezza in **4 cifre esadecimali** (ASCII) seguita dal testo: `0012host:track-devices`, `001ahost:transport:R58N12ABCDE`, `0009tcp:52741`. La risposta comincia con `OKAY`, oppure con `FAIL` seguito da un messaggio con la stessa lunghezza in testa (`FAIL0006closed`). Dopo l'`OKAY` di `host:track-devices` arriva un elenco a ogni cambiamento, sempre con la lunghezza in testa: una riga per telefono, `seriale<TAB>stato` (`device`, `unauthorized`, `offline`, `authorizing`, `no permissions`…). I numeri di serie con `:` (debug wireless, `192.168.1.5:5555`), con `._adb-tls-` (debug wireless con mDNS) o che cominciano con `emulator-` non sono il cavo e si ignorano. Il client è scritto da zero (C# e Swift), senza librerie di adb.
+
 ### Riconoscere il telefono (dalla 1.1)
 
 Il computer decide se è «lo stesso telefono» (per rimandargli i comandi, non contarlo come nuovo) dal **codice di sicurezza del telefono** (`ImprontaAltro` della sessione sicura), non dal nome: due telefoni chiamati entrambi «iPhone» sono telefoni diversi.
 
 ### Tipo di collegamento attivo (dalla 1.2)
 
-Le app mostrano come sono collegate: «Wi-Fi», «Cavo USB», «Wi-Fi diretto», «Cavo di rete», «Hotspot». Ognuno lo ricava dal proprio lato (sull'iPhone dall'interfaccia del percorso di rete: `awdl0` = Wi-Fi diretto, connessione su 127.0.0.1 = cavo USB). Dalla scelta del collegamento il telefono lo dice anche in `stato.collegamento.attivo`: vedi sotto.
+Le app mostrano come sono collegate: «Wi-Fi», «Cavo USB», «Wi-Fi diretto», «Cavo di rete», «Hotspot». Ognuno lo ricava dal proprio lato (sull'iPhone dall'interfaccia del percorso di rete: `awdl0` = Wi-Fi diretto, connessione su 127.0.0.1 = cavo USB; su Android la connessione arrivata su 127.0.0.1:52741 = cavo USB con adb). Il computer mostra «In uso · Android» nella riga «Cavo USB» quando sul cavo c'è un telefono Android. Dalla scelta del collegamento il telefono lo dice anche in `stato.collegamento.attivo`: vedi sotto.
 
 ## Scelta del collegamento
 

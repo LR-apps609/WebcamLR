@@ -246,10 +246,9 @@ final class ClienteUSB {
     private var servizioRaggiungibile = true
     /// Qualità 17: il server di adb risponde. Falso finché non si sa: chi non usa Android non vede righe nel registro.
     private var adbRaggiungibile = false
-    /// Numero di serie di adb → numero del dispositivo qui, da `primoIdAndroid` in su (usbmux usa numeri piccoli).
+    /// Numero di serie di adb → numero del dispositivo qui, da 2^40 in su (usbmux usa numeri piccoli).
     private var idPerSeriale: [String: Int] = [:]
-    private var prossimoIdAndroid = ClienteUSB.primoIdAndroid
-    private static let primoIdAndroid = 1 << 40
+    private var prossimoIdAndroid = 1 << 40
     /// Telefoni Android sul cavo che aspettano «Consenti» (debug USB).
     private(set) var androidDaAutorizzare = 0
     private var avviato = false

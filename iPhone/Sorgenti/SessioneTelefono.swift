@@ -103,6 +103,9 @@ final class SessioneTelefono {
     @ObservationIgnored private var confermaEffettiDaCapacita = false
     /// Specchio e sfondo si possono cambiare solo con la frontale (punti E ed F).
     var conFrontale: Bool { obiettivo == .frontale }
+    /// Collaudo 51: la frontale scelta è anche accesa (`fotocameraPronta` dopo `cattura.configura`). Con gli effetti sul
+    /// computer specchio e sfondo si chiedono solo da qui: prima il computer potrebbe non conoscerla ancora.
+    private(set) var frontalePronta = false
     /// Qualità ed efficienza: gli effetti video di Apple usati (solo l'Inquadratura centrata) per l'obiettivo e il
     /// formato attuali.
     private(set) var effettiSistema = EffettiSistema()
@@ -246,7 +249,10 @@ final class SessioneTelefono {
     private var tentativi = 0
     private var chiusaDallUtente = false
     /// La fotocamera è configurata e in funzione con le impostazioni attuali.
-    @ObservationIgnored private var fotocameraPronta = false
+    @ObservationIgnored private var fotocameraPronta = false {
+        // Collaudo 51: a fotocamera spenta o da riaccendere la frontale non è più «pronta».
+        didSet { if !fotocameraPronta && frontalePronta { frontalePronta = false } }
+    }
     /// P03: le impostazioni video con cui la fotocamera è partita l'ultima volta, per capire alla chiusura
     /// delle Impostazioni aperte da «In onda» se serve riconfigurarla.
     @ObservationIgnored private var impostazioniApplicate: ImpostazioniVideo?
@@ -701,6 +707,8 @@ final class SessioneTelefono {
             funzioni.sospendiInquadratura(false)
         }
         obiettivo = nuovo
+        // Collaudo 51: la frontale (se è lei la nuova) torna pronta solo a fotocamera riaccesa.
+        if frontalePronta { frontalePronta = false }
         // Punti E ed F: con la posteriore niente specchio (lo toglie la cattura con l'obiettivo nuovo) e niente
         // sfondo. Lo sfondo si spegne subito; si riaccende con la frontale solo quando la fotocamera è pronta
         // (`avviaFotocamera`), così non si sfoca qualche fotogramma della posteriore.
@@ -1881,6 +1889,8 @@ final class SessioneTelefono {
             // Collaudo 6: da qui escono i fotogrammi di `daAccendere`. Se intanto se n'è scelto un altro, la sua
             // accensione è già in coda e lo dirà lei.
             obiettivoInStato = daAccendere
+            let frontaleAccesa = daAccendere == .frontale && obiettivo == .frontale
+            if frontaleAccesa != frontalePronta { frontalePronta = frontaleAccesa }
             // Punto F: lo sfondo segue l'obiettivo davvero acceso.
             visivi.impostaPosteriore(obiettivo != .frontale)
             // La riconfigurazione riparte con messa a fuoco ed esposizione automatiche: niente più «AE/AF bloccati».

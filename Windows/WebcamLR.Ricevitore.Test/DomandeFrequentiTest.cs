@@ -6,9 +6,9 @@ namespace WebcamLR.Ricevitore.Test;
 public class DomandeFrequentiTest
 {
     [Fact]
-    public void DiciassetteDomandeConIdUnici()
+    public void DiciottoDomandeConIdUnici()
     {
-        Assert.Equal(17, DomandeFrequenti.Tutte.Count);
+        Assert.Equal(18, DomandeFrequenti.Tutte.Count);
         Assert.Equal(DomandeFrequenti.Tutte.Count, DomandeFrequenti.Tutte.Select(d => d.Id).Distinct().Count());
     }
 
@@ -30,7 +30,7 @@ public class DomandeFrequentiTest
     [Fact]
     public void RicercaVuotaMostraTutto()
     {
-        Assert.Equal(17, DomandeFrequenti.Cerca("  ").Count());
+        Assert.Equal(18, DomandeFrequenti.Cerca("  ").Count());
         Assert.Empty(DomandeFrequenti.Cerca("parola-che-non-esiste"));
     }
 }

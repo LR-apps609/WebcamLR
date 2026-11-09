@@ -154,6 +154,11 @@ public sealed class MotoreEffetti : IDisposable
         public sealed record Fonte(Acceleratore InUso, ModelloRitaglio Modello, string? Motivo) : Nota;
         /// <summary>La maschera fallisce di fila: la fonte si chiude e si riapre (sul processore se <paramref name="SulProcessore"/>).</summary>
         public sealed record FonteRiaperta(int ErroriDiFila, bool SulProcessore) : Nota;
+        /// <summary>
+        /// Qualità 5: la composizione dello sfondo va sulla scheda video (<paramref name="Descrizione"/> con il suo nome) o
+        /// torna sul processore, con il motivo.
+        /// </summary>
+        public sealed record Composizione(bool SullaSchedaVideo, string Descrizione, string? Motivo) : Nota;
     }
 
     private sealed class Lavoro
@@ -216,7 +221,7 @@ public sealed class MotoreEffetti : IDisposable
     private bool saltaProssima;
 
     // Solo sulla coda di resa.
-    private readonly Compositore compositore = new();
+    private readonly Compositore compositore;
     private readonly ImmagineBgra?[] giro = new ImmagineBgra?[ImmaginiInUscita];
     private int prossimaUscita;
     private ulong ultimoArrivoResa;
@@ -225,16 +230,23 @@ public sealed class MotoreEffetti : IDisposable
     /// <param name="creaFonte">La fonte per un livello, sulla scheda video se c'è (<see cref="Acceleratore.Automatico"/>) o
     /// solo sul processore (dopo che la scheda video si è persa).</param>
     /// <param name="scelta">La scala dei livelli; null = una nuova che parte dal pieno (i test ne danno una che parte da un altro).</param>
-    public MotoreEffetti(StatoEffettiComputer stato, Func<LivelloResa, Acceleratore, IFonteMaschera> creaFonte, SceltaLivello? scelta = null)
+    /// <param name="creaComposizione">
+    /// Qualità 5: la composizione dello sfondo sulla scheda video (<see cref="ComposizioneSchedaVideo.Crea"/>), aperta in
+    /// sottofondo alla prima resa con lo sfondo; null o un errore: sul processore.
+    /// </param>
+    public MotoreEffetti(StatoEffettiComputer stato, Func<LivelloResa, Acceleratore, IFonteMaschera> creaFonte, SceltaLivello? scelta = null,
+        Func<IComposizione>? creaComposizione = null)
     {
         this.stato = stato;
         this.creaFonte = creaFonte;
         this.scelta = scelta ?? new SceltaLivello();
+        compositore = new Compositore(creaComposizione);
     }
 
     /// <summary>Con una fonte che non sceglie dove gira (i test).</summary>
-    public MotoreEffetti(StatoEffettiComputer stato, Func<LivelloResa, IFonteMaschera> creaFonte, SceltaLivello? scelta = null)
-        : this(stato, (livello, _) => creaFonte(livello), scelta)
+    public MotoreEffetti(StatoEffettiComputer stato, Func<LivelloResa, IFonteMaschera> creaFonte, SceltaLivello? scelta = null,
+        Func<IComposizione>? creaComposizione = null)
+        : this(stato, (livello, _) => creaFonte(livello), scelta, creaComposizione)
     {
     }
 
@@ -752,8 +764,10 @@ public sealed class MotoreEffetti : IDisposable
             else
                 lock (blocco) senzaMaschera++;
             var resaMs = (Adesso - inizio) / 1000.0;
+            var cambi = compositore.PrendiCambi();
             lock (blocco)
             {
+                foreach (var posto in cambi) note.Add(new Nota.Composizione(posto.SullaSchedaVideo, posto.Descrizione, posto.Motivo));
                 inRitorno = compositore.InRitorno;
                 sommaResa += resaMs;
                 contaResa++;
@@ -835,6 +849,7 @@ public sealed class MotoreEffetti : IDisposable
             if (preparazione is { } inPreparazione) Scarta(inPreparazione.Compito);
             preparazione = null;
         });
+        codaResa.Accoda(compositore.Dispose);
         codaAnalisi.Dispose();
         codaResa.Dispose();
     }

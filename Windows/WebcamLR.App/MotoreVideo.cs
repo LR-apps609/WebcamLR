@@ -18,7 +18,8 @@ namespace WebcamLR;
 /// alle foto (<see cref="PrendiAsync"/>) e alla registrazione (<see cref="RegistrazioneElaborata"/>).
 /// Con gli effetti spenti l'anteprima resta quella hardware di sempre (MediaPlayerElement) e le altre uscite ricevono il
 /// fotogramma com'è, solo se servono (webcam in uso, registrazione, foto chiesta): altrimenti qui non si copia niente.
-/// Prima versione sul processore (la resa del motore): la scheda video scala e decodifica, il resto lo fa la CPU.
+/// La scheda video decodifica e scala; il motore compone lo sfondo sulla scheda video (Qualità 5, ComposizioneSchedaVideo)
+/// o, se non si apre, sul processore; il resto della resa lo fa il processore.
 /// </summary>
 public sealed class MotoreVideo : IDisposable
 {
@@ -65,7 +66,10 @@ public sealed class MotoreVideo : IDisposable
 
     public MotoreVideo()
     {
-        motore = new MotoreEffetti(Stato, (livello, acceleratore) => FonteRitaglio.PerLivello(livello, acceleratore: acceleratore));
+        // Qualità 5: la composizione dello sfondo sulla scheda video (Direct3D 11, compute shader), con il processore
+        // come ripiego automatico (ComposizioneSchedaVideo.Crea lancia un errore se non si apre o non dà lo stesso risultato).
+        motore = new MotoreEffetti(Stato, (livello, acceleratore) => FonteRitaglio.PerLivello(livello, acceleratore: acceleratore),
+            creaComposizione: () => ComposizioneSchedaVideo.Crea());
     }
 
     /// <summary>

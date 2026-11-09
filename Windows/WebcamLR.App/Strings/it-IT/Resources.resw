@@ -1894,6 +1894,12 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
   <data name="Registro_EffettiFonteMotivo" xml:space="preserve">
     <value>Effetti: ritaglio della persona: {0} ({1})</value>
   </data>
+  <data name="Registro_EffettiComposizioneGpu" xml:space="preserve">
+    <value>Effetti: sfondo composto sulla scheda video ({0})</value>
+  </data>
+  <data name="Registro_EffettiComposizioneCpu" xml:space="preserve">
+    <value>Effetti: sfondo composto sul processore ({0})</value>
+  </data>
   <data name="Registro_EffettiMotore" xml:space="preserve">
     <value>Effetti sul PC{0}: {1} ms (maschera {2}, resa {3}; {4}; {5}) · scartati {6} · senza maschera {7} · anteprima {8}</value>
   </data>

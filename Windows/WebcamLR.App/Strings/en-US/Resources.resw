@@ -1892,6 +1892,12 @@ The details are in {1}: send them with “Report a bug”.</value>
   <data name="Registro_EffettiFonteMotivo" xml:space="preserve">
     <value>Effects: person cutout: {0} ({1})</value>
   </data>
+  <data name="Registro_EffettiComposizioneGpu" xml:space="preserve">
+    <value>Effects: background composited on the graphics card ({0})</value>
+  </data>
+  <data name="Registro_EffettiComposizioneCpu" xml:space="preserve">
+    <value>Effects: background composited on the processor ({0})</value>
+  </data>
   <data name="Registro_EffettiMotore" xml:space="preserve">
     <value>Effects on this PC{0}: {1} ms (mask {2}, render {3}; {4}; {5}) · dropped {6} · without mask {7} · preview {8}</value>
   </data>

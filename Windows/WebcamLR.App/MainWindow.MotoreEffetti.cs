@@ -363,6 +363,10 @@ public sealed partial class MainWindow
                 MotoreEffetti.Nota.FonteRiaperta r => r.SulProcessore
                     ? Testi.T("Registro_EffettiFonteRiapertaProcessore", r.ErroriDiFila)
                     : Testi.T("Registro_EffettiFonteRiaperta", r.ErroriDiFila),
+                // Qualità 5: dove si compone lo sfondo (scheda video o processore), con il motivo del ripiego.
+                MotoreEffetti.Nota.Composizione c => c.SullaSchedaVideo
+                    ? Testi.T("Registro_EffettiComposizioneGpu", c.Descrizione)
+                    : Testi.T("Registro_EffettiComposizioneCpu", c.Motivo ?? c.Descrizione),
                 MotoreEffetti.Nota.Fonte f => f.Motivo is { } motivo
                     ? Testi.T("Registro_EffettiFonteMotivo", NomeFonte(f.InUso, f.Modello), motivo)
                     : Testi.T("Registro_EffettiFonte", NomeFonte(f.InUso, f.Modello)),

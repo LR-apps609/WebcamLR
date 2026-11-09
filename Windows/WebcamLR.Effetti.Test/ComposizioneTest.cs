@@ -215,4 +215,193 @@ public class ComposizioneTest(ITestOutputHelper uscita)
         uscita.WriteLine($"verde nella fascia del bordo: pieno {verdePieno}, bilineare {verdeBilineare}");
         Assert.True(verdePieno < verdeBilineare * 0.8, $"pieno {verdePieno}, bilineare {verdeBilineare}");
     }
+
+    // MARK: scheda video o processore (Qualità 5)
+
+    /// <summary>Una «scheda video» finta: scrive un grigio fisso (così si vede chi ha composto), o lancia un errore.</summary>
+    private sealed class SchedaFinta(Func<int, bool>? fallisce = null) : IComposizione
+    {
+        public int Chiamate;
+        public bool Chiusa;
+        public string Descrizione => "scheda video, finta";
+        public bool SullaSchedaVideo => true;
+
+        public void Componi(PianoComposizione piano, ImmagineBgra destinazione)
+        {
+            var n = ++Chiamate;
+            if (fallisce?.Invoke(n) == true) throw new InvalidOperationException("dispositivo rimosso");
+            Array.Fill(destinazione.Dati, (byte)7);
+        }
+
+        public void Dispose() => Chiusa = true;
+    }
+
+    private static readonly ImpostazioniMotore Sfocato = new() { Sfondo = ModiSfondo.Sfocato, IntensitaSfondo = 0.55 };
+
+    /// <summary>Rende finché <paramref name="fatto"/> non è vero (la scheda video si apre in sottofondo), al massimo 5 s.</summary>
+    private static ImmagineBgra RendiFinche(Compositore compositore, Func<ImmagineBgra, bool> fatto)
+    {
+        var scena = Tinta(160, 90, 30, 120, 200);
+        var maschera = new MascheraPersona(Enumerable.Repeat((byte)128, 256 * 144).ToArray(), 256, 144, ModelloRitaglio.Leggero, 1);
+        var risultato = new ImmagineBgra(160, 90);
+        var fine = DateTime.UtcNow.AddSeconds(5);
+        do
+        {
+            Assert.True(compositore.Rendi(new IngressoResa(scena, null, null, maschera, null, null, 1 / 30.0),
+                new StatoEffettiComputer.Istantanea(Sfocato, null, null, null), LivelloResa.Pieno, risultato));
+            if (fatto(risultato)) return risultato;
+            Thread.Sleep(5);
+        } while (DateTime.UtcNow < fine);
+        return risultato;
+    }
+
+    private static bool Finta(ImmagineBgra i) => i.Dati[0] == 7 && i.Dati[1] == 7;
+
+    [Fact]
+    public void LaSchedaVideoSiApreInSottofondoEPoiCompone()
+    {
+        var scheda = new SchedaFinta();
+        using var compositore = new Compositore(() => scheda);
+        Assert.False(compositore.ComponeSullaSchedaVideo);
+        Assert.True(Finta(RendiFinche(compositore, Finta)));
+        Assert.True(compositore.ComponeSullaSchedaVideo);
+        var cambi = compositore.PrendiCambi();
+        Assert.Equal([new CambioComposizione(true, "scheda video, finta", null)], cambi);
+        compositore.Dispose();
+        Assert.True(scheda.Chiusa);
+    }
+
+    [Fact]
+    public void SeLaSchedaVideoNonSiApreRestaIlProcessore()
+    {
+        var tentativi = 0;
+        using var compositore = new Compositore(() =>
+        {
+            Interlocked.Increment(ref tentativi);
+            throw new NotSupportedException("Direct3D 11 (livello 11.0) non si apre");
+        });
+        var cambi = new List<CambioComposizione>();
+        RendiFinche(compositore, _ =>
+        {
+            cambi.AddRange(compositore.PrendiCambi());
+            return cambi.Count > 0;
+        });
+        Assert.Equal([new CambioComposizione(false, "processore", "Direct3D 11 (livello 11.0) non si apre")], cambi);
+        // Non si riprova: altri fotogrammi, sempre il processore, nessun tentativo in più.
+        for (var i = 0; i < 5; i++) Assert.False(Finta(RendiFinche(compositore, _ => true)));
+        Assert.Equal(1, tentativi);
+        Assert.False(compositore.ComponeSullaSchedaVideo);
+    }
+
+    [Fact]
+    public void SchedaVideoPersaIlFotogrammaSiRifaSulProcessoreESiRiapreUnaVolta()
+    {
+        // Un compositore solo sul processore dà il fotogramma atteso.
+        using var soloProcessore = new Compositore();
+        var atteso = RendiFinche(soloProcessore, _ => true);
+        var aperture = 0;
+        var schede = new List<SchedaFinta>();
+        using var compositore = new Compositore(() =>
+        {
+            Interlocked.Increment(ref aperture);
+            var nuova = new SchedaFinta(_ => true); // ogni composizione fallisce (TDR)
+            lock (schede) schede.Add(nuova);
+            return nuova;
+        });
+        var cambi = new List<CambioComposizione>();
+        // Ogni fotogramma con la scheda che fallisce esce comunque, uguale a quello del processore.
+        for (var i = 0; i < 40 && cambi.Count(c => !c.SullaSchedaVideo) < 2; i++)
+        {
+            var r = RendiFinche(compositore, _ => true);
+            Assert.Equal(atteso.Dati, r.Dati);
+            cambi.AddRange(compositore.PrendiCambi());
+            Thread.Sleep(5);
+        }
+        // Presa, persa (si riapre), presa di nuovo, persa per sempre.
+        Assert.Equal([true, false, true, false], cambi.Select(c => c.SullaSchedaVideo));
+        Assert.Contains("si riapre", cambi[1].Motivo);
+        Assert.DoesNotContain("si riapre", cambi[3].Motivo);
+        Assert.Equal(2, aperture);
+        Assert.All(schede, s => Assert.True(s.Chiusa));
+        Assert.All(schede, s => Assert.Equal(Compositore.ErroriSchedaVideoPerLasciare, s.Chiamate));
+        for (var i = 0; i < 5; i++) RendiFinche(compositore, _ => true);
+        Assert.Equal(2, aperture);
+    }
+
+    [Fact]
+    public void UnErroreIsolatoNonFaLasciareLaSchedaVideo()
+    {
+        var scheda = new SchedaFinta(n => n % 2 == 0); // un fotogramma sì e uno no
+        using var compositore = new Compositore(() => scheda);
+        RendiFinche(compositore, Finta);
+        for (var i = 0; i < 10; i++) RendiFinche(compositore, _ => true);
+        Assert.True(compositore.ComponeSullaSchedaVideo);
+        Assert.False(scheda.Chiusa);
+    }
+
+    [Fact]
+    public void IlMotoreScriveDoveSiComponeLoSfondo()
+    {
+        var stato = new StatoEffettiComputer();
+        stato.Imposta(Sfocato);
+        var scheda = new SchedaFinta();
+        using var motore = new MotoreEffetti(stato, _ => new FonteMascheraFissa(), creaComposizione: () => scheda);
+        motore.Abilita(true);
+        var note = new List<MotoreEffetti.Nota>();
+        var fine = DateTime.UtcNow.AddSeconds(10);
+        while (DateTime.UtcNow < fine && !note.OfType<MotoreEffetti.Nota.Composizione>().Any())
+        {
+            using var fatto = new SemaphoreSlim(0);
+            var immagine = motore.PrendiIngresso(160, 90);
+            Assert.True(motore.Elabora(immagine, _ => fatto.Release()));
+            fatto.Wait(2000);
+            note.AddRange(motore.PrendiNote());
+        }
+        var nota = Assert.Single(note.OfType<MotoreEffetti.Nota.Composizione>());
+        Assert.True(nota.SullaSchedaVideo);
+        Assert.Equal("scheda video, finta", nota.Descrizione);
+    }
+
+    private sealed class FonteMascheraFissa : IFonteMaschera
+    {
+        public MascheraPersona Calcola(ImmagineBgra immagine) =>
+            new(Enumerable.Repeat((byte)200, 256 * 144).ToArray(), 256, 144, ModelloRitaglio.Leggero, 1);
+
+        public string Descrizione => "fissa";
+        public Acceleratore InUso => Acceleratore.Processore;
+        public ModelloRitaglio Modello => ModelloRitaglio.Leggero;
+        public string? MotivoRipiego => null;
+        public void Dispose() { }
+    }
+
+    [Fact]
+    public void SchedaVideoVeraComeIlProcessore()
+    {
+        // Su Linux (e macOS) Direct3D 11 non c'è: l'errore è chiaro e il motore resta sul processore.
+        if (!OperatingSystem.IsWindows())
+        {
+            var errore = Assert.Throws<PlatformNotSupportedException>(() => ComposizioneSchedaVideo.Crea(ancheSoftware: true));
+            uscita.WriteLine($"niente scheda video qui: {errore.Message}");
+            return;
+        }
+        // Su Windows (anche la CI, con WARP): Crea compila lo shader e si verifica; poi tre fotogrammi a 1080p contro il
+        // processore, con i tempi.
+        using var gpu = ComposizioneSchedaVideo.Crea(ancheSoftware: true);
+        uscita.WriteLine(gpu.Descrizione);
+        var cpu = new ComposizioneProcessore();
+        foreach (var sostituito in new[] { false, true })
+        {
+            var piano = PianoDiProva.Crea(1920, 1080, sostituito);
+            var attesa = new ImmagineBgra(1920, 1080);
+            var ottenuta = new ImmagineBgra(1920, 1080);
+            cpu.Componi(piano, attesa);
+            var orologio = System.Diagnostics.Stopwatch.StartNew();
+            for (var i = 0; i < 3; i++) gpu.Componi(piano, ottenuta);
+            var (massima, media) = PianoDiProva.Differenza(attesa, ottenuta);
+            uscita.WriteLine($"{(sostituito ? "sostituito" : "sfocato")}: {orologio.Elapsed.TotalMilliseconds / 3:0.0} ms per fotogramma, " +
+                             $"differenza massima {massima}, media {media:0.000}");
+            Assert.InRange(massima, 0, ComposizioneSchedaVideo.DifferenzaMassima);
+            Assert.InRange(media, 0, ComposizioneSchedaVideo.DifferenzaMediaMassima);
+        }
+    }
 }

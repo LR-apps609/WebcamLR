@@ -788,7 +788,7 @@ public sealed partial class MainWindow : Window
         // Qualità 17: «In uso · Android» quando sul cavo c'è un telefono Android (debug USB o Tethering USB).
         var usbAndroid = telefoni.Telefoni.Any(t => !t.InRiconnessione && t.Collegamento == TipoCollegamento.CavoUsb
             && t.Ciao.Piattaforma == Piattaforma.Android);
-        var statoCavo = RigaCavo.Stato(usb, usbAndroid, SituazioneCavo.Di(cavo), SituazioneCavo.Di(cavoAndroid)) switch
+        var statoCavo = WebcamLR.Ricevitore.RigaCavo.Stato(usb, usbAndroid, SituazioneCavo.Di(cavo), SituazioneCavo.Di(cavoAndroid)) switch
         {
             StatoRigaCavo.InUso => Testi.T("Connessione_InUso"),
             StatoRigaCavo.InUsoAndroid => Testi.T("Connessione_InUsoAndroid"),

@@ -90,7 +90,8 @@ jobs:
 
   macos:
     name: macos (Mac e iPhone, senza firma)
-    runs-on: macos-latest
+    # Versione fissa: dal 09/11 pomeriggio macos-latest resta in coda senza macchina e dopo 15 minuti si annulla.
+    runs-on: macos-15
     timeout-minutes: 60
     env:
       # Con l'Apple ID gratuito il team serve solo per firmare: qui non si firma.

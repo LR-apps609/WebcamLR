@@ -6243,6 +6243,16 @@
         }
       }
     },
+    "Telefono in pausa: l'audio si ferma, il microfono resta acceso" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phone paused: audio stops, the microphone stays on"
+          }
+        }
+      }
+    },
     "Telefono molto caldo" : {
       "localizations" : {
         "en" : {

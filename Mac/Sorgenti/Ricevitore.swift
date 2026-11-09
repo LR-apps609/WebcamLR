@@ -2381,6 +2381,7 @@ final class Ricevitore {
                 telefono.inizioSottofondo = nil
             }
             let obiettivoPrima = telefono.statoTelefono?.obiettivo
+            let pausaPrima = telefono.statoTelefono?.pausa
             let temperaturaPrima = telefono.statoTelefono?.temperatura ?? .normale
             telefono.statoTelefono = stato
             // Il telefono non preferisce più il Wi-Fi: il cavo messo in pausa per lui riparte.
@@ -2420,7 +2421,16 @@ final class Ricevitore {
             let audioPrima = telefono.audioDalTelefono
             telefono.audioDalTelefono = stato.audio
             if scelto, let audio = stato.audio, let audioPrima, audio != audioPrima {
-                microfonoDalTelefono(audio, telefono: telefono)
+                if pausaPrima != nil || stato.pausa != nil {
+                    // In pausa (o appena entrato o uscito dalla pausa) il telefono smette di mandare la voce senza che
+                    // nessuno abbia spento il microfono: l'interruttore resta com'è e non si salva spento; finita la
+                    // pausa la voce torna da sola (collaudo 40, come `StatoMicrofono.DalTelefono` su Windows).
+                    if audioPrima, !audio, microfonoAcceso {
+                        registra(String(localized: "Telefono in pausa: l'audio si ferma, il microfono resta acceso"), di: telefono)
+                    }
+                } else {
+                    microfonoDalTelefono(audio, telefono: telefono)
+                }
             } else if scelto, audioPrima == nil, stato.audio == true, !microfonoAcceso, telefonoMandaAudio {
                 // Sessione nuova con il microfono che va (era rimasto chiesto sul telefono) e l'interruttore spento
                 // qui: vale l'interruttore, il telefono smette di mandare la voce.

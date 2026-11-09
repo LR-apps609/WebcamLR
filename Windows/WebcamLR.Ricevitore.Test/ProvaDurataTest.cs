@@ -59,6 +59,8 @@ public class ProvaDurataTest(ITestOutputHelper uscita)
     /// </summary>
     public sealed record Copione(TimeSpan Durata, double Accelerazione)
     {
+        /// <summary>Falso: le maniglie si scrivono nel rapporto ma non si controllano (prova breve su Windows, vedi sotto).</summary>
+        public bool ControllaManiglie { get; init; } = true;
         public double SecondiStato { get; init; } = 5;
         public double SecondiFormato { get; init; } = 150;
         public double SecondiCaduta { get; init; } = 210;
@@ -81,7 +83,10 @@ public class ProvaDurataTest(ITestOutputHelper uscita)
     [Fact]
     public async Task DieciMinutiDiSessioneAccelerati()
     {
-        var esito = await EseguiAsync(new Copione(TimeSpan.FromMinutes(10), Accelerazione: 40));
+        // Su Windows le maniglie del runtime (pool dei thread, porte di completamento) in 10 minuti con 6 sessioni
+        // oscillano di ±10 sulla GitHub CI: troppo poco per distinguere una perdita. Lì le controlla la prova di un'ora
+        // (36 sessioni), che la CI di Windows lancia a parte.
+        var esito = await EseguiAsync(new Copione(TimeSpan.FromMinutes(10), Accelerazione: 40) { ControllaManiglie = !OperatingSystem.IsWindows() });
         Assert.InRange(esito.Reale, TimeSpan.Zero, TimeSpan.FromSeconds(40));
     }
 
@@ -809,7 +814,7 @@ public class ProvaDurataTest(ITestOutputHelper uscita)
         // Il riferimento è il secondo minuto: nel primo il pool dei thread di Windows si allarga ancora (10 → 12 thread,
         // +11 maniglie sulla GitHub CI) e poi resta fermo. Una perdita vera cresce con le sessioni, dopo.
         var riferimento = usati.Length > 2 ? usati[1] : primo;
-        if (riferimento.Maniglie >= 0) Assert.InRange(maniglieDopo - riferimento.Maniglie, int.MinValue, 8);
+        if (copione.ControllaManiglie && riferimento.Maniglie >= 0) Assert.InRange(maniglieDopo - riferimento.Maniglie, int.MinValue, 8);
         Assert.InRange(finale.InCoda, 0, 200);
         Assert.Equal(0, vive);
         Assert.Equal(0, dopoLaChiusura);

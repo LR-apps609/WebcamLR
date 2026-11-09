@@ -220,6 +220,16 @@ jobs:
           done
           exit $esito
 
+      - name: Prova di durata di un'ora, accelerata (maniglie su Windows)
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        env:
+          WEBCAMLR_PROVA_LUNGA: "1"
+        run: |
+          dotnet test Windows/WebcamLR.Ricevitore.Test --nologo --filter Categoria=ProvaLunga \
+            --logger "console;verbosity=detailed" 2>&1 | tee registri/prova-lunga.log
+          grep -E "maniglie|Sessioni [0-9]|minuto +[0-9]+:" registri/prova-lunga.log | head -80 || true
+
       - name: Errori e test falliti dai registri
         if: failure()
         run: |

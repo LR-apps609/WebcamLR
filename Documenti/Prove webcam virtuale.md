@@ -120,7 +120,7 @@ Il formato scelto dall'app lo leggi come in «Formati che la webcam offre»; il 
 | Codice | App e formato | Cosa deve succedere | Cosa mandare se non va |
 |---|---|---|---|
 | Q16-1 | **Zoom**, «HD» acceso, telefono a 1080p 60 | l'anteprima è fluida e nitida; nel registro webcam (Windows) «Video dall'app: 1920×1080 → 1920×1080 a …» | le righe del registro e il formato dell'etichetta |
-| Q16-2 | **Zoom** con il telefono in 4K (Massima) | immagine nitida, nessun errore: Zoom prende 1080p o 720p e WebcamLR riduce una volta («3840×2160 → 1280×720» o «→ 1920×1080») | come Q16-1, più «Fotogrammi» dei numeri |
+| Q16-2 | **Zoom** con il telefono in 4K (Massima) | immagine nitida, nessun errore: Zoom prende 1080p o 720p e WebcamLR riduce il 4K una volta; nel registro webcam (Windows) le due misure sono uguali («1920×1080 → 1920×1080 a 30 fps») | come Q16-1, più «Fotogrammi» dei numeri |
 | Q16-3 | **Google Meet** in Chrome, telefono a 1080p 60 e poi in 4K | Meet si apre senza «Fotocamera occupata» e senza nero; il bordo dei capelli non ha scalini | il registro webcam, la versione di Chrome |
 | Q16-4 | **Microsoft Teams** (app nuova), telefono a 1080p 60 e poi in 4K | anteprima e chiamata vera: l'altra persona ti vede nitido | versione di Teams, registri |
 | Q16-5 | **OBS**, Dispositivo di cattura video a 1920×1080 **60 fps**, telefono a 1080p 60 | in OBS (Statistiche) 60 fps senza fotogrammi saltati, movimento fluido | le Statistiche di OBS, la riga «Da vetro a uscita» |

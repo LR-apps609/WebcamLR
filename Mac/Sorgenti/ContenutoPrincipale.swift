@@ -381,6 +381,9 @@ struct ContenutoPrincipale: View {
                         }
                     })
                 }
+                if RitrattoSistema.condiviso.avvisoVisibile {
+                    avvisoRitratto
+                }
                 if completo {
                     Spacer(minLength: 0)
                 }
@@ -390,6 +393,39 @@ struct ContenutoPrincipale: View {
             }
         }
         .padding(soloVideo ? 0 : Spazi.medio)
+        .onChange(of: webcamInUsoConSfocatura, initial: true) { _, nuova in
+            RitrattoSistema.condiviso.valuta(webcamInUsoConSfocatura: nuova)
+        }
+    }
+
+    /// Qualità 10: un'app usa la webcam virtuale e la sfocatura di WebcamLR è accesa (non in pausa per «Ritratto»
+    /// dell'iPhone). Con Ritratto di macOS acceso in quell'app lo sfondo si sfoca due volte.
+    private var webcamInUsoConSfocatura: Bool {
+        ricevitore.webcamInUso && ricevitore.effetti.sfondo == ModiSfondo.sfocato && !ricevitore.sfocaturaSistema
+    }
+
+    /// Qualità 10: l'avviso della doppia sfocatura (RitrattoSistema). Un'informazione, calma, nell'accento: dice come
+    /// spegnere uno dei due. Una volta per avvio (la X), «Non mostrare più» per sempre.
+    private var avvisoRitratto: some View {
+        let certo = RitrattoSistema.condiviso.stato == .acceso
+        return Avviso(certo
+                      ? String(localized: "Sono accesi Ritratto di macOS e la sfocatura di WebcamLR. Spegni Ritratto in Centro di Controllo › Effetti video, oppure la sfocatura qui.")
+                      : String(localized: "Se nell'app di videochiamata hai acceso anche Ritratto (Centro di Controllo › Effetti video), lo sfondo viene sfocato due volte. Spegni Ritratto lì, oppure la sfocatura qui."),
+                      titolo: certo ? String(localized: "Lo sfondo viene sfocato due volte") : String(localized: "Ritratto di macOS acceso?"),
+                      icona: "camera.filters", tono: .informazione,
+                      larghezzaMassima: completo ? CGFloat.infinity : 640,
+                      chiudi: { RitrattoSistema.condiviso.chiudi() }, azioni: {
+            HStack(spacing: Spazi.piccolo) {
+                Button("Spegni la sfocatura") {
+                    ricevitore.scegliNessunSfondo()
+                    RitrattoSistema.condiviso.chiudi()
+                }
+                .buttonStyle(StileSecondario())
+                .fixedSize()
+                Button("Non mostrare più") { RitrattoSistema.condiviso.nonMostrarePiuAvviso() }
+                    .buttonStyle(StileLink())
+            }
+        })
     }
 
     /// Le versioni sul telefono e sul Mac sono diverse in modo che conta (ControlloAggiornamenti).

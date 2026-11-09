@@ -45,7 +45,7 @@ Legenda: ✅ sì · 🟡 in parte o con limiti · ❌ no · 💰 solo a pagament
 | 60 fps | 🟡 dal telefono sì (S); la webcam virtuale esce a 30 | ✅ | ? | 💰 4K60 in OBS | 💰 | ❌ |
 | HDR / 10 bit | ❌ (piano 1.14) | ❌ | ❌ | 💰 nel plugin OBS | ❌ | ❌ |
 | Codec | H.264, HEVC, solo hardware (S; V solo H.264) | H.264/HEVC | ? | H.264, HEVC (OBS) | ? | proprietario |
-| Controllo del bitrate | 🟡 automatico che segue la rete, nessuna scelta manuale (S) | ✅ qualità a scelta | 🟡 | 🟡 | 🟡 | ❌ |
+| Controllo del bitrate | ✅ Auto (segue la rete), Alta, Massima, dal computer (S, Qualità 15) | ✅ qualità a scelta | 🟡 | 🟡 | 🟡 | ❌ |
 | Verticale / orientamento | 🟡 video dritto rispetto al telefono; su Windows «bande nere» o «riempi tagliando» per la webcam; niente uscita 9:16 vera | ✅ | ✅ | ✅ | ✅ | 🟡 |
 | Specchio | ✅ telefono, anteprima e webcam separati (S/C/T) | ✅ | ✅ | ✅ | ✅ | ✅ |
 

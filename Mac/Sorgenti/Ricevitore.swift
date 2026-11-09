@@ -2470,6 +2470,7 @@ final class Ricevitore {
             // Obiettivo senza ISO manuale: l'interruttore sparisce e torna il cursore dell'esposizione.
             if nuove.isoMinimo == nil { telefono.controlli.esposizioneManuale = false }
             chiediAudioSeServe()
+            mandaQualitaSeServe(telefono)
             // Effetti sul computer: alla prima `capacita` della sessione, telecomando o spegnimento dei suoi effetti.
             decidiEffetti(telefono)
             // WebcamLR Pro (`capacita.pro`): le regole del motore effetti.

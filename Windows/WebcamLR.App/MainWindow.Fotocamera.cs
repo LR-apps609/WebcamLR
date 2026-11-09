@@ -563,6 +563,7 @@ public sealed partial class MainWindow
         {
             TestoQualitaArriva.Visibility = Visibility.Collapsed;
         }
+        MostraLivelliQualita();
     }
 
     /// <summary>Una riga del menu: «1080p · 30 fps», con la spunta se è quella che arriva, o grigia con «PRO».</summary>
@@ -606,6 +607,7 @@ public sealed partial class MainWindow
         MostraNumeri();
         // Si rifà da capo: le capacità o il Pro possono essere cambiati a menu chiuso.
         qualitaMostrate = [];
+        livelloMostrato = null;
         MostraQualita();
     }
 
@@ -627,6 +629,8 @@ public sealed partial class MainWindow
                 if (Scelto != scelto || scelto.Sessione != attiva) return;
                 registro.Aggiungi(Testi.T("Formato_Chiesto", formato.Larghezza, formato.Altezza, formato.Fps));
                 ChiediFormato(scelto, attiva, formato);
+                // Qualità 15: con Massima il telefono non seguirebbe la risoluzione scelta: si passa ad Alta.
+                if (QualitaScelta.DopoUnaRisoluzione(capacitaAttuali, statoTelefono, Preferenze.QualitaFlusso) is { } alta) ScegliQualita(alta);
             });
         }
     }

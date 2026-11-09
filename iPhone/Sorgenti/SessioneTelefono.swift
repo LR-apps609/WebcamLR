@@ -258,6 +258,9 @@ final class SessioneTelefono {
     @ObservationIgnored private var impostazioniApplicate: ImpostazioniVideo?
     /// Il formato chiesto dal computer con `formato`, adattato all'obiettivo: vale per questa sessione.
     @ObservationIgnored private var formatoRichiesto: FormatoRichiesto?
+    /// Qualità 15: Auto, Alta o Massima, da `comando.qualita` (`LivelliQualita`). Non si salva: la sceglie il computer.
+    /// Osservata: le Impostazioni la mostrano accanto alla qualità inviata.
+    private(set) var livelloQualita = LivelliQualita.auto
     /// Il formato (da `formatoEffettivo`) con cui `avviaFotocamera` ha configurato, o sta configurando, la fotocamera;
     /// nil se non è accesa. Per non riconfigurarla con lo stesso formato (`riconfiguraSeCambiaFormato`).
     @ObservationIgnored private var formatoApplicato: (larghezza: Int32, altezza: Int32, fps: Int, codec: Codec)?
@@ -2059,6 +2062,19 @@ final class SessioneTelefono {
         if let nome = comando.collegamento, let preferenza = PreferenzaCollegamento(rawValue: nome) {
             impostaPreferenzaCollegamento(preferenza)
         }
+        if let livello = comando.qualita { impostaQualita(livello) }
+    }
+
+    /// Qualità 15: il computer sceglie Auto, Alta o Massima. Il bitrate cambia dal vivo; entrando in Massima o
+    /// uscendone la fotocamera si riconfigura solo se cambiano risoluzione o fps. Lo `stato` lo dice subito.
+    private func impostaQualita(_ valore: String) {
+        let nuovo = LivelliQualita.normalizza(valore)
+        guard nuovo != livelloQualita else { return }
+        livelloQualita = nuovo
+        registro.aggiungi(String(localized: "Qualità scelta sul computer: \(QualitaScelta.nome(nuovo))"))
+        codificatore.impostaQualita(nuovo)
+        riconfiguraSeCambiaFormato(perche: String(localized: "qualità scelta sul computer"))
+        aggiornaStato()
     }
 
     /// Collaudo 52: il computer tiene i valori che ha appena mandato per un attimo (1,5 s) anche contro lo `stato`:
@@ -2124,6 +2140,14 @@ final class SessioneTelefono {
             if let chiesto = formatoChiesto,
                Int(altezza) < min(chiesto.larghezza, chiesto.altezza) || fps < chiesto.fps {
                 motivi.append(.obiettivo)
+            }
+        }
+        // Qualità 15: con Massima risoluzione e fps più alti dell'obiettivo (il codec resta quello chiesto).
+        if livelloQualita == LivelliQualita.massima {
+            let formati = Cattura.formati(per: obiettivo)
+            if let massimo = QualitaScelta.formatoMassimo(pro ? formati : LimitiGratis.formati(formati)) {
+                (larghezza, altezza, fps) = (massimo.larghezza, massimo.altezza, massimo.fps)
+                motivi = []
             }
         }
         let primaDelCalore = (larghezza, altezza, fps)
@@ -2385,6 +2409,8 @@ final class SessioneTelefono {
         capacita.sceltaCollegamento = true
         // Telecomando: con `comando.effettiSulComputer` il telefono manda il video così com'è.
         capacita.effettiSulComputer = true
+        // Qualità 15: Auto, Alta o Massima dal computer (`comando.qualita`).
+        capacita.sceltaQualita = true
         collegamento?.invia(.capacita(capacita))
         if confermaEffettiDaCapacita, collegamento != nil {
             confermaEffettiDaCapacita = false
@@ -2494,6 +2520,7 @@ final class SessioneTelefono {
         statoTelefono.audio = staInviandoAudio
         statoTelefono.pausa = pausa.motivo
         statoTelefono.collegamento = statoCollegamento
+        statoTelefono.qualita = livelloQualita
         // Quarta prova: `sfocaturaSistema` e `luceSistema` non si mandano più (niente Ritratto né Luce da studio).
         collegamento?.invia(.stato(statoTelefono))
         if conQualita && regolaQualita() { riconfiguraSeCambiaFormato(perche: String(localized: "calore o batteria")) }

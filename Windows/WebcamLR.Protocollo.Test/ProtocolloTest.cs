@@ -283,6 +283,21 @@ public class ProtocolloTest
         ComeSwift("""{"batteria":80,"calore":0.25,"inCarica":true,"obiettivo":"frontale","temperatura":"normale","tipo":"stato"}""", new StatoTelefono(80, true, Temperatura.Normale, "frontale", Calore: 0.25));
     }
 
+    /// <summary>Lo stesso JSON di «testQualitaComeNelDocumento» (Swift) e «qualitaComeNelDocumento» (Kotlin): la qualità a scelta.</summary>
+    [Fact]
+    public void QualitaComeNelDocumento()
+    {
+        ComeSwift("""{"obiettivi":["principale"],"sceltaQualita":true,"tipo":"capacita","torcia":true,"zoomMassimo":5}""",
+            new Capacita(["principale"], 5, true, SceltaQualita: true));
+        ComeSwift("""{"qualita":"alta","tipo":"comando"}""", new Comando(Qualita: LivelliQualita.Alta));
+        ComeSwift("""{"batteria":80,"inCarica":true,"obiettivo":"principale","qualita":"massima","temperatura":"normale","tipo":"stato"}""",
+            new StatoTelefono(80, true, Temperatura.Normale, "principale", Qualita: LivelliQualita.Massima));
+        // Un livello sconosciuto vale "auto"; senza campo, il telefono di prima.
+        Assert.Equal(LivelliQualita.Auto, LivelliQualita.Normalizza("altissima"));
+        Assert.Equal(LivelliQualita.Auto, LivelliQualita.Normalizza(null));
+        Assert.Equal(LivelliQualita.Massima, LivelliQualita.Normalizza("massima"));
+    }
+
     /// <summary>Lo stesso JSON di «testEffettiSulComputerComeNelDocumento» (Swift) e «effettiSulComputerComeNelDocumento» (Kotlin).</summary>
     [Fact]
     public void EffettiSulComputerComeNelDocumento()

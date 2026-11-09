@@ -973,4 +973,22 @@
   <data name="Diagnosi_WebcamDaRiparareBreve" xml:space="preserve">
     <value>Webcam needs repair</value>
   </data>
+  <data name="QualitaScelta_Auto" xml:space="preserve">
+    <value>Auto</value>
+  </data>
+  <data name="QualitaScelta_Alta" xml:space="preserve">
+    <value>High</value>
+  </data>
+  <data name="QualitaScelta_Massima" xml:space="preserve">
+    <value>Maximum</value>
+  </data>
+  <data name="QualitaScelta_NotaAuto" xml:space="preserve">
+    <value>follows the network</value>
+  </data>
+  <data name="QualitaScelta_NotaAlta" xml:space="preserve">
+    <value>sharper</value>
+  </data>
+  <data name="QualitaScelta_NotaMassima" xml:space="preserve">
+    <value>the phone’s best</value>
+  </data>
 </root>

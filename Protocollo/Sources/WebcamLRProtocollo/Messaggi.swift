@@ -126,6 +126,8 @@ public struct StatoTelefono: Codable, Equatable, Sendable {
     public var luceSistema: Bool?
     /// Calore del viso attuale, da 0 (colori della fotocamera) a 1.
     public var calore: Double?
+    /// La qualità del flusso in uso (`LivelliQualita`), dopo `comando.qualita` (Protocollo.md, «Qualità a scelta»).
+    public var qualita: String?
 
     public init(batteria: Int, inCarica: Bool, temperatura: Temperatura, obiettivo: String,
                 filtro: String? = nil, regolazioni: Regolazioni? = nil, sfondo: String? = nil,
@@ -135,7 +137,8 @@ public struct StatoTelefono: Codable, Equatable, Sendable {
                 specchia: Bool? = nil, zoom: Double? = nil, torcia: Bool? = nil, esposizione: Double? = nil,
                 bianco: Int? = nil, iso: Double? = nil, tempo: Int? = nil, collegamento: StatoCollegamento? = nil,
                 immagineSfondo: String? = nil, immaginePersonale: String? = nil, logo: String? = nil,
-                sfocaturaSistema: Bool? = nil, luceSistema: Bool? = nil, calore: Double? = nil) {
+                sfocaturaSistema: Bool? = nil, luceSistema: Bool? = nil, calore: Double? = nil,
+                qualita: String? = nil) {
         self.batteria = batteria
         self.inCarica = inCarica
         self.temperatura = temperatura
@@ -167,6 +170,7 @@ public struct StatoTelefono: Codable, Equatable, Sendable {
         self.sfocaturaSistema = sfocaturaSistema
         self.luceSistema = luceSistema
         self.calore = calore
+        self.qualita = qualita
     }
 }
 
@@ -241,6 +245,8 @@ public struct Capacita: Codable, Equatable, Sendable {
     /// Il telefono sa lavorare con gli effetti sul computer: accetta `comando.effettiSulComputer` ed `effetti`,
     /// e manda `chiedi-effetto` (Protocollo.md, «Effetti sul computer»).
     public var effettiSulComputer: Bool?
+    /// Il telefono accetta `comando.qualita` (Auto, Alta, Massima) e la conferma in `stato.qualita`.
+    public var sceltaQualita: Bool?
 
     public init(obiettivi: [String], zoomMassimo: Double, torcia: Bool, isoMinimo: Double? = nil, isoMassimo: Double? = nil,
                 filtri: [String]? = nil, sfondo: Bool? = nil, pelle: Bool? = nil, inquadratura: Bool? = nil,
@@ -248,7 +254,7 @@ public struct Capacita: Codable, Equatable, Sendable {
                 gobbo: Bool? = nil, audio: Bool? = nil, formati: [FormatoSupportato]? = nil, specchia: Bool? = nil,
                 pro: Bool? = nil, sceltaCollegamento: Bool? = nil, formatiPro: [FormatoSupportato]? = nil,
                 sfondiPronti: [String]? = nil, immagini: Bool? = nil, calore: Bool? = nil,
-                effettiSulComputer: Bool? = nil) {
+                effettiSulComputer: Bool? = nil, sceltaQualita: Bool? = nil) {
         self.obiettivi = obiettivi
         self.zoomMassimo = zoomMassimo
         self.torcia = torcia
@@ -273,6 +279,7 @@ public struct Capacita: Codable, Equatable, Sendable {
         self.immagini = immagini
         self.calore = calore
         self.effettiSulComputer = effettiSulComputer
+        self.sceltaQualita = sceltaQualita
     }
 }
 
@@ -324,6 +331,8 @@ public struct Comando: Codable, Equatable, Sendable {
     /// Vero = il computer fa tutti gli effetti di immagine: il telefono spegne la sua pipeline effetti e manda il
     /// video della fotocamera così com'è (Protocollo.md, «Effetti sul computer»).
     public var effettiSulComputer: Bool?
+    /// La qualità del flusso (`LivelliQualita`); una sconosciuta vale "auto". Il telefono conferma in `stato.qualita`.
+    public var qualita: String?
 
     public init(obiettivo: String? = nil, zoom: Double? = nil, torcia: Bool? = nil,
                 esposizione: Double? = nil, bianco: Int? = nil, fuoco: String? = nil,
@@ -333,7 +342,7 @@ public struct Comando: Codable, Equatable, Sendable {
                 luceVolto: Bool? = nil, scritta: Scritta? = nil, doppiaVista: Bool? = nil,
                 postura: Bool? = nil, audio: Bool? = nil, specchia: Bool? = nil, collegamento: String? = nil,
                 immagineSfondo: String? = nil, togliLogo: Bool? = nil, calore: Double? = nil,
-                effettiSulComputer: Bool? = nil) {
+                effettiSulComputer: Bool? = nil, qualita: String? = nil) {
         self.iso = iso
         self.tempo = tempo
         self.obiettivo = obiettivo
@@ -359,6 +368,7 @@ public struct Comando: Codable, Equatable, Sendable {
         self.togliLogo = togliLogo
         self.calore = calore
         self.effettiSulComputer = effettiSulComputer
+        self.qualita = qualita
     }
 }
 
@@ -579,6 +589,24 @@ public enum PreferenzeCollegamento {
     public static let wifi = "wifi"
     public static let cavo = "cavo"
     public static let tutte = [automatico, wifi, cavo]
+}
+
+/// La qualità del flusso video (`comando.qualita`, `stato.qualita`; Protocollo.md, «Qualità a scelta»).
+/// Una sconosciuta vale come "auto".
+public enum LivelliQualita {
+    /// Il bitrate segue la rete (come prima della scelta).
+    public static let auto = "auto"
+    /// Bitrate più alto, che non scende sotto quello di Auto finché la rete regge.
+    public static let alta = "alta"
+    /// Risoluzione e fps più alti dell'obiettivo, bitrate al massimo ragionevole.
+    public static let massima = "massima"
+    public static let tutti = [auto, alta, massima]
+
+    /// Il livello da usare per un valore ricevuto: uno sconosciuto (o assente) vale "auto".
+    public static func normalizza(_ valore: String?) -> String {
+        guard let valore, tutti.contains(valore) else { return auto }
+        return valore
+    }
 }
 
 /// Filtri del telefono. Un filtro sconosciuto si tratta come "naturale".

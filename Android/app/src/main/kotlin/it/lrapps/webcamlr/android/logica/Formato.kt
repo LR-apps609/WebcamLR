@@ -1,6 +1,7 @@
 package it.lrapps.webcamlr.android.logica
 
 import it.lrapps.webcamlr.protocollo.Codec
+import it.lrapps.webcamlr.protocollo.FormatoSupportato
 import it.lrapps.webcamlr.protocollo.FormatoVideo
 import it.lrapps.webcamlr.protocollo.Temperatura
 
@@ -141,10 +142,17 @@ object SceltaFormato {
         calore: RiduzioneCalore,
         risparmioBatteria: Boolean,
         pro: Boolean,
+        massima: FormatoSupportato? = null,
     ): FormatoConMotivi {
         var (larghezza, altezza, fps, codec) = richiesto ?: diSerie
         val motivi = mutableListOf<MotivoRiduzione>()
-        if (richiesto != null && chiesto != null &&
+        if (massima != null) {
+            // Qualità 15, «Massima»: risoluzione e fps più alti dell'obiettivo al posto di quelli chiesti; il codec
+            // resta quello chiesto dal computer (sa cosa decodifica).
+            larghezza = maxOf(massima.larghezza, massima.altezza)
+            altezza = minOf(massima.larghezza, massima.altezza)
+            fps = massima.fpsMassimo
+        } else if (richiesto != null && chiesto != null &&
             (altezza < minOf(chiesto.larghezza, chiesto.altezza) || fps < chiesto.fps)
         ) {
             motivi += MotivoRiduzione.OBIETTIVO

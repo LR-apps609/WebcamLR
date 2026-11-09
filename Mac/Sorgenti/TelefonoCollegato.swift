@@ -82,6 +82,8 @@ final class TelefonoCollegato: Identifiable {
     @ObservationIgnored var effettiInviati: StatoEffettiComputer?
     /// `comando.audio = true` già mandato alla sessione attuale (P20).
     @ObservationIgnored var audioComandato = false
+    /// Qualità 15: la sessione a cui è già andato `comando.qualita` (QualitaScelta.swift); un'altra sessione lo riceve.
+    @ObservationIgnored weak var qualitaInviataA: SessioneComputer?
     /// L'ultimo `stato.audio` di questa sessione: se cambia, il microfono è stato acceso o spento sul telefono.
     @ObservationIgnored var audioDalTelefono: Bool?
     /// Fotogrammi attesi (dal `formato`) e arrivati negli ultimi secondi, per la qualità in parole come sul telefono.

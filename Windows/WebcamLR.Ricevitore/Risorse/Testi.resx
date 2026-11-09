@@ -995,4 +995,22 @@
   <data name="Diagnosi_WebcamDaRiparareBreve" xml:space="preserve">
     <value>Webcam da riparare</value>
   </data>
+  <data name="QualitaScelta_Auto" xml:space="preserve">
+    <value>Auto</value>
+  </data>
+  <data name="QualitaScelta_Alta" xml:space="preserve">
+    <value>Alta</value>
+  </data>
+  <data name="QualitaScelta_Massima" xml:space="preserve">
+    <value>Massima</value>
+  </data>
+  <data name="QualitaScelta_NotaAuto" xml:space="preserve">
+    <value>segue la rete</value>
+  </data>
+  <data name="QualitaScelta_NotaAlta" xml:space="preserve">
+    <value>più nitida</value>
+  </data>
+  <data name="QualitaScelta_NotaMassima" xml:space="preserve">
+    <value>il massimo del telefono</value>
+  </data>
 </root>

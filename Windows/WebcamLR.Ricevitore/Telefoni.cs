@@ -134,6 +134,17 @@ public sealed class TelefonoCollegato
     public Capacita? Capacita { get; set; }
     public Statistiche? Statistiche { get; set; }
 
+    /// <summary>
+    /// Qualità 15: <see cref="Comando.Qualita"/> è già andato a questa sessione (QualitaScelta); una sessione nuova lo
+    /// riceve di nuovo. Solo dal thread dell'interfaccia.
+    /// </summary>
+    public bool QualitaInviata(SessioneComputer sessione) =>
+        qualitaInviataA is { } inviata && inviata.TryGetTarget(out var quella) && ReferenceEquals(quella, sessione);
+
+    /// <summary>Segna che <see cref="Comando.Qualita"/> è andato a <paramref name="sessione"/>.</summary>
+    public void SegnaQualitaInviata(SessioneComputer sessione) => qualitaInviataA = new WeakReference<SessioneComputer>(sessione);
+    private WeakReference<SessioneComputer>? qualitaInviataA;
+
     /// <summary>L'ultimo <c>formato-audio</c> del telefono (W2), per il microfono quando questo telefono viene scelto dopo.</summary>
     public FormatoAudio? FormatoAudio
     {

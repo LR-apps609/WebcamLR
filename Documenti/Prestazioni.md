@@ -162,6 +162,40 @@ non ci sono bozze nuove. Cosa hanno cambiato comunque:
 6. **Piccole:** Gobbo a 60 Hz (iPhone), registro Android come un solo testo, `abiFilters` per l'APK fuori da Play,
    ⌘C in PNG sul Mac, Portachiavi del Mac fuori dal thread principale (dopo la misura R01).
 
+## 4 ter. Qualità a scelta (Qualità 15)
+
+**Auto, Alta, Massima** per il flusso dal telefono al computer, oltre alla qualità che segue la rete (Auto, quella di
+prima). Ramo `qualita-scelta`. Valori e regole in `Protocollo.md`, «Qualità a scelta»; in breve: Alta bitrate × 1,5,
+Massima × 2 con risoluzione e fps più alti dell'obiettivo, tetto 80 Mbit/s; con la rete che non regge Alta e Massima si
+fermano al bitrate di Auto e scendono sotto solo dopo 3 secondi di fila.
+
+- **Dove:** sul computer, nel menu dell'etichetta della qualità sopra il video (Mac e Windows), sezione «Qualità del
+  flusso» sotto le risoluzioni. Il telefono la mostra soltanto (Impostazioni › Video › Qualità, «… · Alta»).
+- **Nuovi campi, facoltativi:** `capacita.sceltaQualita`, `comando.qualita`, `stato.qualita`. Con un telefono vecchio
+  la sezione non compare; un computer vecchio non la manda e il telefono resta in Auto.
+- **Pro:** la scelta è gratis. Con un telefono gratis Massima resta a 720p 30 (il limite di sempre), con più bitrate.
+- **Non compilati qui:** Swift (iPhone, Mac), l'app Android, l'app WinUI. Provati: i tre protocolli
+  (`QualitaComeNelDocumento`), `AdattamentoRete` e `NumeriQualita` in Kotlin, `SceltaFormato` e `BitrateVideo` con un
+  banco Kotlin a parte, `QualitaScelta` in `WebcamLR.Ricevitore.Test`.
+
+**Checklist sui dispositivi veri** (annota la riga «Codifica … Mbit/s» del registro del telefono e i Numeri del computer):
+- [ ] Q1 · iPhone con Pro → Mac, Wi-Fi, 1080p 30: il menu della qualità ha «Qualità del flusso» con Auto spuntato. Scegli
+      Alta: nessuna pausa nel video, il registro del telefono dice «Qualità scelta sul computer: Alta» e i Numeri del Mac
+      salgono verso ~24 Mbit/s; la spunta passa su Alta.
+- [ ] Q2 · Scegli Massima: il video si ferma un attimo e riparte in 4K 30 HEVC (posteriore) o al massimo della frontale;
+      etichetta «… · 4K 30 · HEVC». Le Impostazioni dell'iPhone dicono «4K · 30 fps · HEVC · Massima».
+- [ ] Q3 · In Massima cambia obiettivo (frontale ↔ posteriore): ogni volta la risoluzione più alta di quell'obiettivo.
+- [ ] Q4 · In Massima scegli «1080p · 30 fps» nel menu: arriva 1080p 30 e la spunta passa da sola su Alta.
+- [ ] Q5 · Chiudi e riapri l'app del telefono (o scollega e ricollega): la scelta torna da sola, senza toccare nulla.
+- [ ] Q6 · Alta in Wi-Fi lontano dal router o con un download pesante: per qualche secondo il bitrate si ferma a quello di
+      Auto (~16 Mbit/s a 1080p 30); se la rete non regge ancora scende sotto, il video resta fluido; tornando vicino risale.
+- [ ] Q7 · Telefono gratis: Alta e Massima si scelgono (niente «PRO»); Massima resta a 720p 30.
+- [ ] Q8 · (PC) Gli stessi Q1, Q2, Q4 e Q5 con Windows; con un PC senza l'estensione HEVC, Massima in 4K mostra la
+      barra «Ricollega in H.264» come il 4K scelto a mano.
+- [ ] Q9 · Android → Mac o PC: Q1, Q2, Q6; nelle Impostazioni del telefono «Qualità video … · Massima».
+- [ ] Q10 · Telefono vecchio (versione di prima) con il computer nuovo: la sezione non compare, tutto come prima.
+- [ ] Q11 · Mentre registri sul computer, Massima chiede prima di fermare la registrazione; Alta no.
+
 ## 5. Checklist per le prove sui dispositivi
 
 Da fare **prima** su `beta4` e **poi** su `prestazioni`, annotando i numeri.

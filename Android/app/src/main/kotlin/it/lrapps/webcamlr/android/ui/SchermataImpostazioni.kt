@@ -72,6 +72,7 @@ import it.lrapps.webcamlr.android.sessione.SessioneTelefono
 import it.lrapps.webcamlr.android.sessione.SessioneTelefono.Stato
 import it.lrapps.webcamlr.android.sistema.RegistroCollegamento
 import it.lrapps.webcamlr.protocollo.Comando
+import it.lrapps.webcamlr.protocollo.LivelliQualita
 
 // MARK: Pezzi comuni delle schermate secondarie
 
@@ -364,11 +365,14 @@ private fun ColumnScope.SezioneCollegamento(sessione: SessioneTelefono?) {
 @Composable
 private fun ColumnScope.SezioneVideo(sessione: SessioneTelefono?) {
     val formato = sessione?.takeIf { it.stato == Stato.Collegato }?.formato
+    // Qualità 15: Alta o Massima scelte sul computer; Auto, quella di sempre, non si scrive.
+    val livello = sessione?.livelloQualita?.takeIf { it != LivelliQualita.AUTO }
+        ?.let { " · " + stringResource(SessioneTelefono.nomeLivelloQualita(it)) } ?: ""
     EtichettaSezione(stringResource(R.string.video))
     Gruppo {
         RigaValore(
             stringResource(R.string.qualita_video),
-            formato?.let { "${SessioneTelefono.nomeQualita(it.larghezza, it.altezza)} · ${it.fps} fps · ${SessioneTelefono.nomeCodec(it)}" } ?: "—",
+            formato?.let { "${SessioneTelefono.nomeQualita(it.larghezza, it.altezza)} · ${it.fps} fps · ${SessioneTelefono.nomeCodec(it)}$livello" } ?: "—",
         )
         val motivi = if (formato != null) sessione?.motiviRiduzioneMostrati else null
         if (motivi != null) {

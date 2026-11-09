@@ -57,6 +57,12 @@ class Codificatore(
     /** Il bitrate più alto che il codificatore accetta (0 = non si sa). */
     @Volatile private var bitrateMassimo = 0
 
+    /** Qualità 15: Auto, Alta o Massima (`comando.qualita`, [it.lrapps.webcamlr.protocollo.LivelliQualita]). */
+    @Volatile private var livello = it.lrapps.webcamlr.protocollo.LivelliQualita.AUTO
+
+    /** Con il collegamento sul cavo: lo ricorda [impostaCavo], per rifare il bitrate quando cambia il [livello]. */
+    @Volatile private var cavoAttuale = false
+
     // Il misuratore (Dettagli e registro): fotogrammi e byte usciti dal codificatore dall'ultima lettura.
     private val fotogrammiUsciti = AtomicInteger()
     private val byteUsciti = AtomicLong()
@@ -128,7 +134,8 @@ class Codificatore(
         val altezza = if (verticale) lato1 else lato2
 
         bitrateMassimo = capacita?.videoCapabilities?.bitrateRange?.upper ?: 0
-        val base = limitaBitrate(BitrateVideo.base(larghezza, altezza, fps, scelto, cavo))
+        cavoAttuale = cavo
+        val base = limitaBitrate(BitrateVideo.base(larghezza, altezza, fps, scelto, cavo, livello))
         bitrateBase = base
         val profilo = profiloMigliore(capacita, scelto)
         val cbr = capacita?.encoderCapabilities?.isBitrateModeSupported(MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR) == true
@@ -211,8 +218,19 @@ class Codificatore(
      * cambia. Quello effettivo lo rimette chi chiama, con l'adattamento alla rete ([impostaBitrate]).
      */
     fun impostaCavo(cavo: Boolean) {
+        cavoAttuale = cavo
         val attuale = formato ?: return
-        bitrateBase = limitaBitrate(BitrateVideo.base(attuale.larghezza, attuale.altezza, attuale.fps, attuale.codec, cavo))
+        bitrateBase = limitaBitrate(BitrateVideo.base(attuale.larghezza, attuale.altezza, attuale.fps, attuale.codec, cavo, livello))
+    }
+
+    /**
+     * Qualità 15: Auto, Alta o Massima senza fermare il codificatore: cambia il bitrate della qualità scelta. Quello
+     * effettivo lo rimette chi chiama, con l'adattamento alla rete ([impostaBitrate]), come per [impostaCavo].
+     */
+    fun impostaQualita(nuovo: String) {
+        livello = it.lrapps.webcamlr.protocollo.LivelliQualita.normalizza(nuovo)
+        val attuale = formato ?: return
+        bitrateBase = limitaBitrate(BitrateVideo.base(attuale.larghezza, attuale.altezza, attuale.fps, attuale.codec, cavoAttuale, livello))
     }
 
     private fun limitaBitrate(bitrate: Int): Int = if (bitrateMassimo > 0) minOf(bitrate, bitrateMassimo) else bitrate

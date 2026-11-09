@@ -405,6 +405,63 @@ class QualitaTest {
     }
 
     @Test
+    fun altaEMassimaNonScendonoSottoAutoSeLaReteRegge() {
+        // Alta: 1,5 volte Auto; la discesa si ferma a 2/3, cioè al bitrate di Auto.
+        val alta = AdattamentoRete().apply { livello = LivelliQualita.ALTA }
+        val base = NumeriQualita.bitrate(16_000_000, LivelliQualita.ALTA)
+        assertEquals(24_000_000, base)
+        alta.secondo(1, false) // 0,7
+        assertEquals(16_800_000, alta.bitrate(base))
+        assertFalse(alta.secondo(1, false)) // si ferma alla soglia: 16 Mbit/s, non debole
+        assertEquals(16_000_000, alta.bitrate(base))
+        alta.secondo(1, false)
+        alta.secondo(1, false)
+        assertEquals(16_000_000, alta.bitrate(base)) // due secondi alla soglia: resta
+        alta.secondo(1, false) // il terzo: la rete non regge nemmeno Auto, si scende
+        assertEquals(11_200_000, alta.bitrate(base))
+        repeat(20) { alta.secondo(1, false) }
+        assertEquals(4_800_000, alta.bitrate(base)) // mai sotto un quinto
+        assertTrue(alta.secondo(1, false))
+
+        // Un secondo pulito alla soglia azzera il conto: poi servono di nuovo tre secondi di fila.
+        val massima = AdattamentoRete().apply { livello = LivelliQualita.MASSIMA }
+        repeat(2) { massima.secondo(1, false) } // 0,7 poi la soglia 0,5
+        assertEquals(0.5, massima.fattore, 1e-9)
+        repeat(2) { massima.secondo(1, false) }
+        massima.secondo(0, false)
+        repeat(2) { massima.secondo(1, false) }
+        assertEquals(0.5, massima.fattore, 1e-9)
+
+        // Livello sconosciuto: come Auto, che resta quello di prima.
+        val auto = AdattamentoRete().apply { livello = "altissima" }
+        assertEquals(LivelliQualita.AUTO, auto.livello)
+        repeat(20) { auto.secondo(1, false) }
+        assertEquals(0.2, auto.fattore, 1e-9)
+    }
+
+    @Test
+    fun bitrateDeiLivelli() {
+        assertEquals(16_000_000, NumeriQualita.bitrate(16_000_000, LivelliQualita.AUTO))
+        assertEquals(24_000_000, NumeriQualita.bitrate(16_000_000, LivelliQualita.ALTA))
+        assertEquals(32_000_000, NumeriQualita.bitrate(16_000_000, LivelliQualita.MASSIMA))
+        assertEquals(16_000_000, NumeriQualita.bitrate(16_000_000, "futura"))
+        // 4K H.264 sul cavo (60 Mbit/s di Auto): Massima si ferma al tetto.
+        assertEquals(NumeriQualita.TETTO, NumeriQualita.bitrate(60_000_000, LivelliQualita.MASSIMA))
+    }
+
+    @Test
+    fun formatoDiMassima() {
+        val formati = listOf(FormatoSupportato(1280, 720, 60), FormatoSupportato(1920, 1080, 60), FormatoSupportato(3840, 2160, 30))
+        assertEquals(FormatoSupportato(3840, 2160, 30), NumeriQualita.formatoMassimo(formati))
+        // Senza 4K: il 1080p con più fps; in verticale si risponde in orizzontale.
+        assertEquals(
+            FormatoSupportato(1920, 1080, 60),
+            NumeriQualita.formatoMassimo(listOf(FormatoSupportato(1080, 1920, 30), FormatoSupportato(1920, 1080, 60))),
+        )
+        assertEquals(null, NumeriQualita.formatoMassimo(listOf(FormatoSupportato(1280, 720, 0))))
+    }
+
+    @Test
     fun tipoDiCollegamentoDallInterfaccia() {
         assertEquals(TipoCollegamento.WIFI, TipoCollegamento.daInterfaccia("wlan0"))
         assertEquals(TipoCollegamento.CAVO_USB, TipoCollegamento.daInterfaccia("rndis0"))

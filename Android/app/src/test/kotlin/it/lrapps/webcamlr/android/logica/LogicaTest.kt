@@ -127,6 +127,25 @@ class LogicaTest {
     }
 
     @Test
+    fun massimaPrendeIlFormatoPiuAltoMaIlCaloreVinceAncora() {
+        val chiesto = FormatoVideo(Codec.HEVC, 1920, 1080, 30)
+        val richiesto = FormatoScelto(1920, 1080, 30, Codec.HEVC)
+        val quattroK = FormatoSupportato(3840, 2160, 30)
+        // Qualità 15: Massima al posto di quanto chiesto, con il codec chiesto e senza «obiettivo» tra i motivi.
+        val massima = SceltaFormato.conMotivi(SceltaFormato.diSerie(true), richiesto, chiesto, RiduzioneCalore.NESSUNA, false, pro = true, massima = quattroK)
+        assertEquals(FormatoScelto(3840, 2160, 30, Codec.HEVC), massima.formato)
+        assertEquals(emptyList<MotivoRiduzione>(), massima.motivi)
+        // Il calore scende come sempre.
+        val caldo = SceltaFormato.conMotivi(SceltaFormato.diSerie(true), richiesto, chiesto, RiduzioneCalore.A1080P30, false, pro = true, massima = quattroK)
+        assertEquals(FormatoScelto(1920, 1080, 30, Codec.HEVC), caldo.formato)
+        assertEquals(listOf(MotivoRiduzione.CALORE), caldo.motivi)
+        // Il bitrate di Alta e Massima: 1080p30 H.264 in Wi-Fi 16, 24, 32 Mbit/s.
+        assertEquals(16_000_000, BitrateVideo.base(1920, 1080, 30, Codec.H264, false))
+        assertEquals(24_000_000, BitrateVideo.base(1920, 1080, 30, Codec.H264, false, "alta"))
+        assertEquals(32_000_000, BitrateVideo.base(1920, 1080, 30, Codec.H264, false, "massima"))
+    }
+
+    @Test
     fun caloreScendeSubitoERisaleConCalma() {
         val calore = RegolatoreCalore()
         assertEquals(RiduzioneCalore.NESSUNA, calore.valuta(Temperatura.CALDA, true, 0))

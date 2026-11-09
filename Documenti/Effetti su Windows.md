@@ -5,7 +5,8 @@ computer, come iVCam; il telefono fa solo fotocamera e codifica). Questo documen
 ritaglia la persona, le licenze, i tempi, la libreria (`Windows/WebcamLR.Effetti`) e il **motore effetti collegato alla
 finestra** (ramo `effetti-windows`, sezione «Motore effetti» qui sotto). Dalla lista qualità 1.0: la rifinitura del
 bordo come il Mac (Qualità 4) e la composizione dello sfondo sulla scheda video (Qualità 5), sezione «Qualità 4 e 5»;
-bokeh, mosaico e schermo verde, su Mac e Windows (Qualità 7 e 8), sezione «Qualità 7 e 8».
+bokeh, mosaico e schermo verde, su Mac e Windows (Qualità 7 e 8), sezione «Qualità 7 e 8»; filtri di colore nella
+composizione e avviso della doppia sfocatura con Ritratto di macOS (Qualità 12 e 10), sezione «Qualità 10 e 12».
 
 ## In breve
 
@@ -109,7 +110,8 @@ telefono ──H.264/HEVC──▶ MotoreVideo (WebcamLR.App)
 
 La maschera è sulla **scheda video** con DirectML quando c'è; dalla Qualità 5 anche il **passo a piena risoluzione dello
 sfondo** (persona sopra il fondo sfocato o sostituito, bordo pulito, light wrap, calore) va sulla scheda video con
-Direct3D 11, con il processore come ripiego automatico (sezione «Qualità 4 e 5»). Il resto della resa (filtri, pelle,
+Direct3D 11, con il processore come ripiego automatico (sezione «Qualità 4 e 5»); dalla Qualità 12, con lo sfondo
+acceso, anche **filtro e regolazioni** (sezione «Qualità 10 e 12»). Il resto della resa (filtri senza sfondo, pelle,
 luce, inquadratura, scritta) resta sul **processore** (C# con `System.Numerics`/AVX2, cicli paralleli). Le uscite del
 motore restano in memoria (webcam, anteprima, registrazione, foto): il fotogramma sale sulla scheda video e torna, il 4K
 si elabora a 1080p.
@@ -328,6 +330,95 @@ la riga «Effetti sul Mac» del registro).
   composizione sul processore) è provato dai test (`SfondiNuoviTest`, `IlProcessoreFaIContiDelloShader` con il mosaico).
 - `CIBokehBlur` su un'immagine con l'alfa premoltiplicato (come `CIDiscBlur` nello sfocato di sempre) e la resa esatta
   del verde nel buffer YCbCr di uscita (range e matrice del decodificatore): da vedere sul Mac vero.
+
+## Qualità 10 e 12: doppia sfocatura con Ritratto (Mac) e filtri di colore (Mac e Windows)
+
+Ramo `avviso-filtri` (da `prestazioni`), novembre 2026. **Protocollo: non cambia.**
+
+### Qualità 12: filtri di colore
+
+I filtri c'erano già, su tutte e due le piattaforme: i dieci del protocollo (`naturale` e nove filtri: Caldo, Freddo,
+Luminoso, Cinema, Vivido, Tenue, Bianco e nero, Seppia, Notte), uguali a quelli dell'iPhone, con la scelta nel
+pannello degli effetti (Mac: la griglia «Filtro» di `Effetti.swift`; Windows: il menu `SceltaFiltro` nella colonna
+«Effetti», nella `ZonaPro`), i nomi in italiano e in inglese, sull'immagine intera e anche con lo sfondo spento.
+**Pro**: la regola che c'era, filtri e regolazioni solo con Pro (`RegoleMotore` su Windows, `aggiornaMotore` sul Mac,
+Protocollo.md «Pro»).
+
+- **Mac**: Core Image (`RicetteFiltriMac`: `CIColorMatrix`, `CIColorControls`, `CIToneCurve`, `CIVibrance`,
+  `CIPhotoEffectMono`, `CISepiaTone`, `CIExposureAdjust`, `CIVignetteEffect`, `CINoiseReduction`), sulla scheda video,
+  dopo sfondo, pelle, luce e inquadratura. Non è cambiato: costa poco o nulla (stima, da misurare sulla riga «Effetti sul
+  Mac»); ai livelli leggeri vignettatura di Cinema e riduzione del rumore di Notte si saltano.
+- **Windows, novità**: con lo sfondo acceso, e senza pelle, luce sul volto e nitidezza (che lavorano sui colori veri e
+  restano prima del filtro, come sul Mac), filtro e regolazioni vanno **nella composizione**, dopo la miscela, su persona
+  e fondo (`PianoComposizione.Colore`):
+  - nello shader (`Composizione.hlsl`, funzione `Colore`, opzione `COLORE`): le tabelle della catena in due texture
+    (`R16_UINT` 256 × 3 per stadio, `R8_UINT` 4096 × 3 per stadio) e le matrici nel cbuffer (9 righe `int4`, al massimo
+    3 stadi; oggi una catena ne ha al massimo 2);
+  - nel processore di ripiego (`ComposizioneProcessore`): `CatenaColore.Applica` sulla riga finita;
+  - con gli **stessi interi** (`CatenaColore.StadiPerSchedaVideo`; una catena solo per canale diventa uno stadio con la
+    matrice identità, esatto): sullo stesso pixel lo stesso risultato al bit (`LeTabelleDellaSchedaVideoDannoLoStessoRisultatoAlBit`,
+    tutti i filtri, con e senza regolazioni).
+  - Senza sfondo il filtro resta dov'era, sul processore (con ritaglio, specchio e calore in un passaggio solo).
+  - Con l'inquadratura automatica il filtro ora viene prima del ritaglio invece che dopo: differenza invisibile (il
+    ricampionamento bilineare non cambia i colori).
+- **Verifica della scheda video**: la composizione in virgola mobile e quella in interi differiscono al massimo di 2; il
+  filtro allarga la differenza solo su pochi pixel scuri e saturi, dove un canale vicino allo zero passa dalla parte
+  ripida della curva sRGB (fino a 10, 6–25 valori su 172 800, in media 0,02). Per non spegnere la scheda video per
+  questo, all'apertura il colore si prova **a parte** (`ConfrontaColore`): la scheda compone lo stesso piano senza e con
+  il filtro, il processore applica la catena alla prima, e deve venire la seconda (al massimo 1 di differenza). I tre
+  fotogrammi di prima restano con le soglie di prima.
+
+**Costo e livelli (Qualità 6).** Tempi qui (Xeon, 4 processori virtuali, Linux, build **Debug**, macchina condivisa:
+±30%; a 1080p, mediana):
+
+| | ms |
+|---|---|
+| filtro Luminoso (solo per canale) | 3,4 |
+| filtro Bianco e nero (una matrice) | 9,3 |
+| filtro Cinema + regolazioni (due matrici) | 18,6 |
+| filtro Caldo + regolazioni da solo, per righe (`QuantoCostaIlFiltroA1080p`) | 8,4 |
+| composizione dello sfocato sul processore senza / con filtro Caldo e regolazioni dentro | 11,8 / 22,5 |
+| resa con sfocatura Medio, senza / con filtro Caldo (composizione sul processore) | 27,6 / 42,2 |
+
+Sul processore il filtro costa come prima (prima era nel passaggio finale, ora nella composizione). **Sulla scheda video
+non costa più nulla al processore**: 9 letture di tabella e 9 moltiplicazioni intere per pixel nello shader, sul
+fotogramma già caricato (stima: frazioni di millisecondo, **da misurare**). Il tempo vero entra nella misura della resa,
+quindi se un filtro sul processore rallenta un PC debole la scala dei livelli scende da sola come per il resto; il filtro
+resta acceso a tutti i livelli. Senza sfondo non ci sono livelli: 3–19 ms a 1080p ci stanno nei 33 ms di un fotogramma.
+
+### Qualità 10: doppia sfocatura con Ritratto di macOS
+
+Sul Mac, con la webcam virtuale **in uso** e la **sfocatura di WebcamLR accesa** (non in pausa per Ritratto
+dell'iPhone), sotto il video compare un avviso discreto (`Avviso`, tono informazione, icona `camera.filters`): lo sfondo
+viene sfocato due volte; spegni Ritratto in Centro di Controllo › Effetti video, oppure la sfocatura qui. Pulsanti
+«Spegni la sfocatura» e «Non mostrare più» (preferenza `nonMostrareRitratto`), più la X. Una volta per avvio: chiuso con la
+X, o sparito perché la causa manca da 3 s, non torna fino al prossimo avvio (`RitrattoSistema.swift`).
+
+Che cosa dicono le API pubbliche (macOS 12+, osservate con KVO):
+
+- `AVCaptureDevice.isPortraitEffectEnabled` (della classe, chiave KVO `portraitEffectEnabled` sull'oggetto classe) è la
+  scelta dell'utente **per l'app che la legge**. Letta da WebcamLR dice se Ritratto è acceso per WebcamLR, non per Zoom o
+  Meet; e WebcamLR non usa una fotocamera, quindi nel Centro di Controllo non compare e il valore resta falso.
+- `isPortraitEffectActive` (del dispositivo «WebcamLR», trovato con `AVCaptureDevice(uniqueID:)` e l'UID
+  dell'estensione) è vero quando quella scelta è accesa e il formato attivo lo supporta: anche questo **è dell'app che
+  lo legge**.
+- `AVCaptureDevice.Format.isPortraitEffectSupported` è del formato, uguale per tutte le app: se nessun formato della
+  webcam virtuale lo supporta, Ritratto non si può accendere su WebcamLR in nessuna app.
+
+Quindi per una Camera Extension vista da un'altra app nessuna delle due proprietà di stato vale: l'avviso è **certo**
+(«Lo sfondo viene sfocato due volte») solo se una delle due è vera, e altrimenti **al condizionale** («Ritratto di macOS
+acceso?», «Se nell'app di videochiamata hai acceso anche Ritratto…») quando la webcam virtuale supporta Ritratto, o
+quando non si vede da qui (l'app è in sandbox senza il diritto della fotocamera, e la lista dei dispositivi può essere
+vuota) su un Mac con Apple silicon. Con i formati che dicono di no, o su un Mac Intel, nessun avviso.
+
+### Non verificato qui
+
+- Swift (Mac), WinUI e lo shader non si compilano su Linux: riletti a mano. I conti interi dello shader sono rifatti in
+  C# nel test (`ComeLoShader`) e uguali al processore al bit; il resto del motore è provato dai test.
+- Sul Mac: se Ritratto compare davvero per la webcam WebcamLR nelle app di videochiamata, se i formati
+  dell'estensione dicono `isPortraitEffectSupported`, se la sandbox lascia vedere il dispositivo, e se la KVO sulla
+  proprietà della classe arriva. L'avviso si vede solo con la webcam virtuale, cioè con l'account sviluppatore a
+  pagamento (`project.yml`).
 
 ## Modello scelto
 
@@ -602,6 +693,25 @@ decodificatore.
    sfocatura normale (senza dischi) senza che il video si fermi.
 8. Windows: `dotnet test Windows\WebcamLR.Effetti.Test`: `SchedaVideoVeraComeIlProcessore` ora scrive anche la riga
    «mosaico»: **mandala**.
+
+### Qualità 10 e 12: doppia sfocatura (Mac) e filtri di colore (ramo `avviso-filtri`)
+
+1. Windows: `dotnet test Windows\WebcamLR.Effetti.Test`: `SchedaVideoVeraComeIlProcessore` ora scrive anche tre righe
+   «… differenza massima del colore 0» (Cinema, Caldo e regolazioni, Luminoso): **mandale**. Nel registro deve restare
+   «Effetti: sfondo composto sulla scheda video (…)».
+2. Windows, sfocato Medio, poi filtro **Bianco e nero**: tutto grigio, persona e sfondo, anche sull'orlo dei capelli.
+   Poi Caldo, Freddo, Cinema (con la vignettatura agli angoli), Seppia: **screenshot** di due o tre.
+3. Windows, filtro senza sfondo: Sfondo spento, filtro Vivido: il colore cambia su tutta l'immagine. Poi accendi pelle o
+   luce sul volto: il filtro resta, il volto non cambia colore a scatti.
+4. Windows, costo: con sfocato Medio + Caldo dopo 30 s la riga «Effetti sul PC: … ms»; poi senza filtro: con la scheda
+   video la resa deve essere quasi uguale. **Manda le due righe**, con il livello.
+5. Telefono gratis: il menu dei filtri ha «PRO» e il filtro non si applica; con Pro sì (come prima).
+6. Mac con la webcam virtuale (solo con l'account a pagamento): FaceTime o Zoom con «WebcamLR», sfocatura di WebcamLR
+   accesa. Nel Centro di Controllo › Effetti video compare **Ritratto** per WebcamLR? Annotalo (sì / no / grigio).
+7. Mac, stessa prova: sotto il video compare l'avviso «Ritratto di macOS acceso?» (o «Lo sfondo viene sfocato due
+   volte»). «Spegni la sfocatura» la spegne e l'avviso sparisce; riaccendila: l'avviso non torna fino al riavvio di
+   WebcamLR. Riavvia, chiudi con «Non mostrare più»: non torna più. **Screenshot** dell'avviso.
+8. Mac Intel o webcam non in uso: nessun avviso.
 
 ## Fonti
 

@@ -9,14 +9,13 @@ import WebcamLRProtocollo
 /// - P07 `faccia-in-giu`: l'iPhone appoggiato con lo schermo in giù (gravità z oltre 0,9 per più di un secondo)
 ///   mette in pausa; girato di nuovo (z sotto 0,7) riprende. La fotocamera resta accesa: la ripresa è immediata.
 ///   Si può spegnere nelle Impostazioni.
-/// - P10 `nessuna-app`: nessuna app usa la webcam (`in-onda` falso) e la finestra del computer non mostra il video
-///   (`anteprima` falsa) da più di `Servizio.secondiPrimaDellaPausa` secondi. Mai se in questo collegamento non è
-///   arrivata nessuna `anteprima` (computer vecchio). Qui la fotocamera si spegne del tutto (batteria e calore) e si
-///   riaccende appena `in-onda` o `anteprima` tornano vere. Durante «Prova la webcam» non si va in pausa.
-///   **Spenta dal 27 ottobre** (`pausaNessunaAppAttiva`): dopo la prima prova vera si è deciso che il telefono non
-///   va mai in pausa da solo perché nessuna app usa la webcam o perché la finestra del computer è ridotta o coperta.
-///   Il video continua finché l'app del computer è aperta; se si chiude del tutto cade il collegamento e basta.
-///   Il codice resta, spento, nel caso si voglia riprendere l'idea con regole diverse.
+/// - `nessuna-app` (Qualità 18, pausa automatica): **decide il computer** con il messaggio `pausa-automatica`, perché
+///   solo lui sa se un'app usa la webcam virtuale e se qualcuno guarda la sua finestra (Protocollo.md, «Pausa
+///   automatica»). Con `attiva` vero la fotocamera si spegne del tutto (batteria e calore) e non si codifica nulla;
+///   il collegamento resta vivo (`ping`, `stato`). Con falso, o con `in-onda` vero, si riaccende subito e il video
+///   riparte da un fotogramma chiave. Il telefono non decide più da solo con `anteprima` e `in-onda` (la vecchia P10,
+///   spenta il 27 ottobre: con l'Apple ID gratuito sul Mac nessuna app risultava mai in uso e il telefono si fermava
+///   sempre). Un computer vecchio non manda `pausa-automatica`: il telefono non va mai in pausa per questo motivo.
 /// - `sottofondo` (1.0 beta 2): WebcamLR non è più in primo piano (un'altra app, la schermata Home, lo schermo
 ///   bloccato). La sessione lo manda appena l'app passa in sottofondo, prima che iOS la sospenda; al ritorno riprende.
 /// - `fotocamera-interrotta` (1.0 beta 2): iOS ha tolto la fotocamera all'app (chiamata, un'altra app che la usa,
@@ -32,7 +31,7 @@ final class GestorePausa {
 
     /// L'iPhone è a faccia in giù da più di un secondo.
     private(set) var facciaInGiu = false
-    /// Nessuno guarda il video da più di 10 secondi.
+    /// Pausa automatica chiesta dal computer: nessuna app usa la webcam e nessuno guarda il video.
     private(set) var nessunaApp = false
     /// Pausa chiesta con il pulsante «Pausa» di «In onda» (`utente` nel protocollo): resta finché non si riprende.
     private(set) var utente = false
@@ -54,7 +53,7 @@ final class GestorePausa {
         return nil
     }
 
-    /// P10: la fotocamera va spenta, non solo il video fermato.
+    /// Pausa automatica: la fotocamera va spenta, non solo il video fermato.
     var fotocameraSpenta: Bool { nessunaApp }
 
     /// Il motivo è cambiato: la sessione ferma o riprende il video.
@@ -65,15 +64,8 @@ final class GestorePausa {
     @ObservationIgnored private var giuDa: TimeInterval?
     @ObservationIgnored private var osservatoreImpostazioni: NSObjectProtocol?
 
-    // Pausa intelligente: cosa ha detto il computer in questo collegamento.
-    @ObservationIgnored private var anteprimaRicevuta = false
-    @ObservationIgnored private var anteprimaVisibile = false
+    /// Un'app usa la webcam con questo telefono (`in-onda` dal computer, in questo collegamento).
     @ObservationIgnored private var appInOnda = false
-    @ObservationIgnored private var compitoNessunaApp: Task<Void, Never>?
-
-    /// P10 spenta (decisione del 27 ottobre, vedi il commento della classe): `anteprima` e `in-onda` si ricevono e
-    /// si tengono, ma non mettono mai in pausa. Le altre pause (pulsante, faccia in giù) restano.
-    static let pausaNessunaAppAttiva = false
 
     /// Di serie accesa.
     static var facciaInGiuAbilitata: Bool {
@@ -131,52 +123,33 @@ final class GestorePausa {
         suCambio?()
     }
 
-    // MARK: - Pausa intelligente (P10)
+    // MARK: - Pausa automatica (Qualità 18)
 
-    /// Messaggio `anteprima` dal computer.
-    func anteprima(visibile: Bool) {
-        anteprimaRicevuta = true
-        anteprimaVisibile = visibile
-        valutaNessunaApp()
+    /// Messaggio `pausa-automatica` dal computer. Vero: nessuna app usa la webcam e nessuno guarda il video da un po',
+    /// la fotocamera si spegne. Falso: il video serve di nuovo, si riprende subito.
+    func pausaAutomatica(_ attiva: Bool) {
+        // Un'app che usa la webcam vince sempre: in onda non si va in pausa, anche se i messaggi si incrociano.
+        let nuova = attiva && inFunzione && !appInOnda
+        guard nuova != nessunaApp else { return }
+        nessunaApp = nuova
+        suCambio?()
     }
 
-    /// Messaggio `in-onda` dal computer.
+    /// Messaggio `in-onda` dal computer. Un'app che apre la webcam toglie subito la pausa automatica, anche prima del
+    /// `pausa-automatica` falso che il computer manda comunque.
     func inOnda(_ attivo: Bool) {
         appInOnda = attivo
-        valutaNessunaApp()
+        guard attivo, nessunaApp else { return }
+        nessunaApp = false
+        suCambio?()
     }
 
-    /// Nuovo `benvenuto` dopo una connessione nuova: si riparte come se il computer non avesse detto nulla
-    /// (manderà subito la sua `anteprima`). In silenzio: la sessione riaccende da sé la fotocamera per il video.
-    /// Non si chiama al passaggio dal Wi-Fi al cavo: stesso computer, la pausa resta.
+    /// Nuovo `benvenuto` dopo una connessione nuova: si riparte come se il computer non avesse detto nulla (dopo il
+    /// `benvenuto` manda subito il suo `pausa-automatica`). In silenzio: la sessione riaccende da sé la fotocamera per
+    /// il video. Non si chiama al passaggio dal Wi-Fi al cavo: stesso computer, che rimanda comunque il suo valore.
     func nuovoCollegamento() {
-        compitoNessunaApp?.cancel()
-        compitoNessunaApp = nil
-        anteprimaRicevuta = false
-        anteprimaVisibile = false
         appInOnda = false
         if nessunaApp { nessunaApp = false }
-    }
-
-    private func valutaNessunaApp() {
-        let nessunoGuarda = Self.pausaNessunaAppAttiva && inFunzione && anteprimaRicevuta && !anteprimaVisibile && !appInOnda
-        guard nessunoGuarda else {
-            compitoNessunaApp?.cancel()
-            compitoNessunaApp = nil
-            if nessunaApp {
-                nessunaApp = false
-                suCambio?()
-            }
-            return
-        }
-        guard !nessunaApp, compitoNessunaApp == nil else { return }
-        compitoNessunaApp = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(Servizio.secondiPrimaDellaPausa))
-            guard !Task.isCancelled, let self else { return }
-            self.compitoNessunaApp = nil
-            self.nessunaApp = true
-            self.suCambio?()
-        }
     }
 
     // MARK: - Faccia in giù (P07)

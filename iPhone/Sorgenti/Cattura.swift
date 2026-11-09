@@ -810,7 +810,7 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
 
     /// Qualità 15: come `formatiSupportati`, per un obiettivo qualsiasi, anche prima di configurarlo («Massima» sceglie
     /// la risoluzione dell'obiettivo verso cui si sta passando, non di quello di prima).
-    static func formatiSupportati(di obiettivo: Obiettivo) -> [FormatoSupportato] {
+    static func formati(per obiettivo: Obiettivo) -> [FormatoSupportato] {
         guard let dispositivo = obiettivo.dispositivo else { return [] }
         return formati(di: dispositivo)
     }

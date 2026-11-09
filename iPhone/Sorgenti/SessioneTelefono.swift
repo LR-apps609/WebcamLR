@@ -2090,7 +2090,7 @@ final class SessioneTelefono {
         }
         // Qualità 15: con Massima risoluzione e fps più alti dell'obiettivo (il codec resta quello chiesto).
         if livelloQualita == LivelliQualita.massima {
-            let formati = Cattura.formatiSupportati(di: obiettivo)
+            let formati = Cattura.formati(per: obiettivo)
             if let massimo = QualitaScelta.formatoMassimo(pro ? formati : LimitiGratis.formati(formati)) {
                 (larghezza, altezza, fps) = (massimo.larghezza, massimo.altezza, massimo.fps)
                 motivi = []

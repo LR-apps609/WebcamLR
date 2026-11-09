@@ -1372,8 +1372,15 @@ final class SessioneTelefono {
             if misura == nil && giaCollegato { misura = (inizioRiconnessione ?? Date(), String(localized: "dalla perdita del collegamento"), false) }
             tentativi = min(tentativi + 1, Self.tentativiMassimi)
             stato = .riconnessione(tentativo: tentativi)
-            // Il primo tentativo quasi subito (spesso è solo un attimo di Wi-Fi), poi ogni 2 secondi.
-            let attesa: Duration = tentativi == 1 ? .milliseconds(500) : .seconds(2)
+            // Il primo tentativo quasi subito (spesso è solo un attimo di Wi-Fi), il secondo dopo 1 secondo, poi ogni 2
+            // e l'ultimo dopo 3 (Qualità 19: più fitti nei primi secondi, in tutto gli stessi 8,5 secondi di prima).
+            // Dopo il cavo staccato (1.9) si continua ogni 2 secondi fino alla fine dell'attesa del cavo.
+            let attesa: Duration = switch tentativi {
+            case 1: .milliseconds(500)
+            case 2: .seconds(1)
+            case Self.tentativiMassimi where !attesaCavoInCorso: .seconds(3)
+            default: .seconds(2)
+            }
             compitoRiprova = Task { [weak self] in
                 try? await Task.sleep(for: attesa)
                 guard !Task.isCancelled, let self, !self.chiusaDallUtente, self.collegamento == nil else { return }

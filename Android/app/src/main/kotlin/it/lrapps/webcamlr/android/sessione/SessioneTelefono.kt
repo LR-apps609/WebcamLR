@@ -1340,9 +1340,16 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
             if (inizioRiconnessione == null) inizioRiconnessione = SystemClock.elapsedRealtime()
             tentativi++
             stato = Stato.Riconnessione(tentativi)
-            // Il primo tentativo quasi subito (spesso è solo un attimo di Wi-Fi), poi ogni 2 secondi.
+            // Il primo tentativo quasi subito (spesso è solo un attimo di Wi-Fi), il secondo dopo 1 secondo, poi ogni 2
+            // e l'ultimo dopo 3 (Qualità 19: più fitti nei primi secondi, in tutto gli stessi 8,5 secondi di prima).
             principale.removeCallbacks(riprovaCollegamento)
-            principale.postDelayed(riprovaCollegamento, if (tentativi == 1) 500L else 2_000L)
+            val attesa = when (tentativi) {
+                1 -> 500L
+                2 -> 1_000L
+                TENTATIVI_MASSIMI -> 3_000L
+                else -> 2_000L
+            }
+            principale.postDelayed(riprovaCollegamento, attesa)
         } else if (!giaCollegato && computer.annunciato) {
             fermaConErrore(Testi.testo(R.string.errore_rete_separata_titolo), Testi.testo(R.string.errore_rete_separata), domanda = "rete-ospiti")
         } else {

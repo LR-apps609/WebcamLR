@@ -5,17 +5,17 @@ namespace BancoPelle;
 /// <summary>Le misure di un fotogramma (vedi Program.cs) e la loro media.</summary>
 public sealed class Misure
 {
-    public double RugIn, RugOut, Grana, Occhi, Bocca, Capelli, Contorno, Alone, Cb, Cr;
+    public double RugIn, RugOut, RosIn, RosOut, Grana, Occhi, Bocca, Capelli, Contorno, Alone, Cb, Cr;
 
     public void Somma(Misure m)
     {
-        RugIn += m.RugIn; RugOut += m.RugOut; Grana += m.Grana; Occhi += m.Occhi; Bocca += m.Bocca; Capelli += m.Capelli;
+        RugIn += m.RugIn; RugOut += m.RugOut; RosIn += m.RosIn; RosOut += m.RosOut; Grana += m.Grana; Occhi += m.Occhi; Bocca += m.Bocca; Capelli += m.Capelli;
         Contorno += m.Contorno; Alone += m.Alone; Cb += m.Cb; Cr += m.Cr;
     }
 
     public void Media(int n)
     {
-        RugIn /= n; RugOut /= n; Grana /= n; Occhi /= n; Bocca /= n; Capelli /= n; Contorno /= n; Alone /= n; Cb /= n; Cr /= n;
+        RugIn /= n; RugOut /= n; RosIn /= n; RosOut /= n; Grana /= n; Occhi /= n; Bocca /= n; Capelli /= n; Contorno /= n; Alone /= n; Cb /= n; Cr /= n;
     }
 
     public static float[] Luma(ImmagineBgra im)
@@ -36,7 +36,7 @@ public sealed class Misure
         int l = Volto.L, a = Volto.A;
         var yi = Luma(ingresso);
         var yo = Luma(uscita);
-        double ri = 0, ro = 0, hi = 0, ho = 0, cb = 0, cr = 0; var n = 0;
+        double ri = 0, ro = 0, si = 0, so = 0, hi = 0, ho = 0, cb = 0, cr = 0; var n = 0;
         for (var y = 1; y < a - 1; y++)
             for (var x = 1; x < l - 1; x++)
             {
@@ -49,6 +49,8 @@ public sealed class Misure
                 var (cbi, cri) = CbCr(ingresso.Dati, i);
                 var (cbo, cro) = CbCr(uscita.Dati, i);
                 cb += cbo - cbi; cr += cro - cri;
+                si += Q(cri - v.PulitaCr[i]);
+                so += Q(cro - v.PulitaCr[i]);
                 n++;
             }
         double alone = 0; var na = 0;
@@ -60,9 +62,9 @@ public sealed class Misure
         }
         return new Misure
         {
-            RugIn = Math.Sqrt(ri / n), RugOut = Math.Sqrt(ro / n), Grana = Math.Sqrt(ho / hi), Cb = cb / n, Cr = cr / n,
-            Occhi = Gradiente(yi, yo, v.Occhi), Bocca = Gradiente(yi, yo, v.Bocca), Capelli = Gradiente(yi, yo, v.Capelli),
-            Contorno = Gradiente(yi, yo, v.Contorno), Alone = alone / na,
+            RugIn = Math.Sqrt(ri / n), RugOut = Math.Sqrt(ro / n), RosIn = Math.Sqrt(si / n), RosOut = Math.Sqrt(so / n), Grana = Math.Sqrt(ho / hi), Cb = cb / n, Cr = cr / n,
+            Occhi = Gradiente(v, yi, yo, v.Occhi), Bocca = Gradiente(v, yi, yo, v.Bocca), Capelli = Gradiente(v, yi, yo, v.Capelli),
+            Contorno = Gradiente(v, yi, yo, v.Contorno), Alone = alone / na,
         };
     }
 
@@ -77,8 +79,12 @@ public sealed class Misure
         return Math.Sqrt(gx * gx + gy * gy);
     }
 
-    /// <summary>Gradiente medio dell'uscita diviso quello dell'ingresso nella zona (1 = bordi intatti).</summary>
-    private static double Gradiente(float[] yi, float[] yo, bool[] zona)
+    /// <summary>
+    /// Gradiente medio dell'uscita diviso quello dell'ingresso sui bordi veri della zona (1 = bordi intatti): i punti dove
+    /// il volto pulito ha un gradiente di Sobel oltre 48 (un gradino di circa 12 livelli). Così la pelle levigata attorno
+    /// agli occhi o alla bocca non conta come bordo perso.
+    /// </summary>
+    private static double Gradiente(Volto v, float[] yi, float[] yo, bool[] zona)
     {
         int l = Volto.L, a = Volto.A;
         double gi = 0, go = 0;
@@ -86,7 +92,7 @@ public sealed class Misure
             for (var x = 1; x < l - 1; x++)
             {
                 var i = y * l + x;
-                if (!zona[i]) continue;
+                if (!zona[i] || Sobel(v.Pulita, i, l) < 48) continue;
                 gi += Sobel(yi, i, l);
                 go += Sobel(yo, i, l);
             }
@@ -98,7 +104,7 @@ public sealed class Misure
     public readonly record struct MisureLuce(double DeltaY, double Saturazione, double Tinta, double Riflessi, double Bruciati, double Sfondo);
 
     /// <summary>
-    /// La luce sul volto: ΔY e saturazione (croma out / in) nel nucleo della pelle, tinta (angolo di Cb, Cr) in gradi, ΔY
+    /// La luce sul volto: ΔY e saturazione (croma / luma, out / in) nel nucleo della pelle, tinta (angolo di Cb, Cr) in gradi, ΔY
     /// sui riflessi (luma ≥ 215), punti con un canale a 255 che prima non c'erano (% dell'ellisse della luce), ΔY medio
     /// sullo sfondo accanto al viso.
     /// </summary>
@@ -122,8 +128,9 @@ public sealed class Misure
             dy += yo[i] - yi[i];
             var (cbi, cri) = CbCr(ingresso.Dati, i);
             var (cbo, cro) = CbCr(uscita.Dati, i);
-            ci += Math.Sqrt(cbi * cbi + cri * cri);
-            co += Math.Sqrt(cbo * cbo + cro * cro);
+            // Saturazione: croma diviso luma (una luce bianca più forte la lascia uguale).
+            ci += Math.Sqrt(cbi * cbi + cri * cri) / Math.Max(yi[i], 1);
+            co += Math.Sqrt(cbo * cbo + cro * cro) / Math.Max(yo[i], 1);
             var d = Math.Atan2(cro, cbo) - Math.Atan2(cri, cbi);
             tinta += d * 180 / Math.PI;
             n++;

@@ -16,6 +16,7 @@ public sealed class Volto
     public readonly double Cx = 960, Cy = 540, Ax = 170, Ay = 225;
     public ImmagineBgra Senza { get; }            // senza rumore del sensore
     public float[] Pulita { get; }                // luma (0..255) del volto ideale, senza rumore
+    public float[] PulitaCr { get; }              // Cr (BT.601, attorno a 0) del volto ideale
     public bool[] Nucleo { get; }                 // pelle lontana dai lineamenti
     public bool[] Occhi { get; }                  // occhi e sopracciglia
     public bool[] Bocca { get; }
@@ -163,10 +164,12 @@ public sealed class Volto
         // In byte (senza rumore) e la luma pulita.
         Senza = new ImmagineBgra(L, A);
         Pulita = new float[n];
+        PulitaCr = new float[n];
         for (var i = 0; i < n; i++)
         {
             Senza.Dati[i * 4 + 2] = B8(r[i]); Senza.Dati[i * 4 + 1] = B8(g[i]); Senza.Dati[i * 4] = B8(b[i]); Senza.Dati[i * 4 + 3] = 255;
             Pulita[i] = (float)(0.2126 * B8(pr[i]) + 0.7152 * B8(pg[i]) + 0.0722 * B8(pb[i]));
+            PulitaCr[i] = (float)(0.5 * B8(pr[i]) - 0.418688 * B8(pg[i]) - 0.081312 * B8(pb[i]));
         }
 
         // Le zone delle misure.

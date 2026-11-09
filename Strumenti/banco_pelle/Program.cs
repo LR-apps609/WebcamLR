@@ -1,15 +1,18 @@
 // Qualità 11 · Il banco del ritocco della pelle e della luce sul volto. Numeri commentati: Documenti/Ritocco pelle - banco.md.
 //
 //   dotnet run -c Release --project Strumenti/banco_pelle                 (la libreria di questa copia)
-//   dotnet run -c Release --project Strumenti/banco_pelle -p:Effetti=<altra copia>/Windows/WebcamLR.Effetti
+//   dotnet run -c Release --project Strumenti/banco_pelle -p:Effetti=<altra copia>/Windows/WebcamLR.Effetti -p:Prima=true
+//                                                       (una libreria di prima della Qualità 11)
 //   ... -- --immagini <cartella>    (anche i ritagli del volto medio, prima e dopo, in PPM)
 //
 // Tre volti sintetici (Volto.cs: pelle chiara, media e scura), le ricette vere di WebcamLR.Effetti (RicettePersona.Pelle e,
 // per la luce, il Compositore con la sua dissolvenza) e un modello in C# della ricetta del Mac di prima (Core Image qui non
 // c'è). Misure sulla luma (Rec. 709, 0–255):
-// - rugosità: scarto quadratico medio dalla pelle pulita (senza macchie, pori e brufoli) nel nucleo della pelle;
+// - rugosità: scarto quadratico medio della luma dalla pelle pulita (senza macchie, pori e brufoli) nel nucleo della pelle;
+// - rossori: lo stesso per Cr (BT.601, 0–255): i brufoli e le macchie rosse;
 // - grana: deviazione della parte più fine (pixel − binomiale 3×3) nel nucleo, uscita / ingresso (0 = plastica);
-// - bordi: gradiente medio (Sobel) uscita / ingresso su occhi e sopracciglia, bocca, capelli e contorno del viso;
+// - bordi: gradiente medio (Sobel) uscita / ingresso sui bordi veri (dove il volto pulito ha un gradiente forte) di
+//   occhi e sopracciglia, bocca, capelli e contorno del viso;
 // - alone: differenza media (0–255, per canale) uscita − ingresso sullo sfondo da 6 a 30 px fuori dal viso;
 // - colore: spostamento medio di Cb e Cr nel nucleo;
 // - sfarfallio: differenza media tra fotogrammi successivi (30 fotogrammi) nel nucleo e sui bordi, con il rettangolo del
@@ -41,8 +44,8 @@ var varianti = new (string Nome, Action<ImmagineBgra, double, Rettangolo, Volto>
 #endif
 };
 
-Console.WriteLine("| Variante | Forza | Rugosità (in → out) | Riduzione | Grana | Occhi | Bocca | Capelli | Contorno | Alone | ΔCb/ΔCr |");
-Console.WriteLine("|---|---|---|---|---|---|---|---|---|---|---|");
+Console.WriteLine("| Variante | Forza | Rugosità (in → out) | Riduzione | Rossori (in → out) | Grana | Occhi | Bocca | Capelli | Contorno | Alone | ΔCb/ΔCr |");
+Console.WriteLine("|---|---|---|---|---|---|---|---|---|---|---|---|");
 var ingressi = volti.Select(v => v.ConRumore(1)).ToArray();
 var cartellaImmagini = args.SkipWhile(a => a != "--immagini").Skip(1).FirstOrDefault();
 if (cartellaImmagini is not null)
@@ -68,7 +71,7 @@ foreach (var forza in new[] { 0.5, 1.0 })
             perTono.Add($"{v.Nome} {r.RugIn:0.00}→{r.RugOut:0.00}");
         }
         m.Media(volti.Length);
-        Console.WriteLine($"| {nome} | {forza:0.0} | {m.RugIn:0.00} → {m.RugOut:0.00} | {100 * (1 - m.RugOut / m.RugIn):0}% | {m.Grana:0.00} | {m.Occhi:0.00} | {m.Bocca:0.00} | {m.Capelli:0.00} | {m.Contorno:0.00} | {m.Alone:0.00} | {m.Cb:+0.00;-0.00;0.00}/{m.Cr:+0.00;-0.00;0.00} |");
+        Console.WriteLine($"| {nome} | {forza:0.0} | {m.RugIn:0.00} → {m.RugOut:0.00} | {100 * (1 - m.RugOut / m.RugIn):0}% | {m.RosIn:0.00} → {m.RosOut:0.00} | {m.Grana:0.00} | {m.Occhi:0.00} | {m.Bocca:0.00} | {m.Capelli:0.00} | {m.Contorno:0.00} | {m.Alone:0.00} | {m.Cb:+0.00;-0.00;0.00}/{m.Cr:+0.00;-0.00;0.00} |");
         Console.Error.WriteLine($"   {nome} {forza}: {string.Join(", ", perTono)}");
     }
 }
@@ -106,7 +109,7 @@ foreach (var v in volti)
     for (var i = 0; i < 20; i++)
         compositore.Rendi(new IngressoResa(ingresso, null, null, null, [norm], (ulong)i * 33_000, 1 / 30.0), ist, LivelloResa.Pieno, uscita);
     var l = Misure.Luce(v, ingresso, uscita);
-    Console.WriteLine($"| {v.Nome} | {l.DeltaY:+0.0;-0.0} | {l.Saturazione:0.000} | {l.Tinta:+0.0;-0.0} | {l.Riflessi:+0.0;-0.0} | {l.Bruciati:0.00}% | {l.Sfondo:+0.0;-0.0} |");
+    Console.WriteLine($"| {v.Nome} | {l.DeltaY:+0.0;-0.0} | {l.Saturazione:0.000} | {l.Tinta:+0.0;-0.0;0.0} | {l.Riflessi:+0.0;-0.0} | {l.Bruciati:0.00}% | {l.Sfondo:+0.0;-0.0} |");
 }
 
 Console.WriteLine();

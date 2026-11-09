@@ -38,6 +38,12 @@ public sealed record OpzioniRitaglio
     /// <summary>Dopo il filtro nel tempo, la media che dipende dal movimento (<see cref="MediaNelMovimento"/>).</summary>
     public bool MediaNelMovimento { get; init; } = true;
 
+    /// <summary>
+    /// Dopo la media dal movimento, l'isteresi per punto (<see cref="IsteresiMaschera"/>, Qualità 4). Solo con
+    /// <see cref="MediaNelMovimento"/>: usa i suoi pesi per sapere dove l'immagine è ferma.
+    /// </summary>
+    public bool Isteresi { get; init; } = true;
+
     /// <summary>Cartella dei .onnx; null: «Modelli» accanto all'exe.</summary>
     public string? CartellaModelli { get; init; }
 
@@ -84,6 +90,7 @@ public sealed class RitaglioPersona : IDisposable
     private readonly string cartella;
     private readonly FiltroTemporale filtro = new();
     private readonly MediaNelMovimento media = new();
+    private readonly IsteresiMaschera isteresi = new();
     private float[] rgbMovimento = [];
     private readonly MisuraVelocita misura = new();
     private Motore motore;
@@ -165,7 +172,11 @@ public sealed class RitaglioPersona : IDisposable
             m.Esegui();
             Preparazione.Persona(m.Uscita, d.Canali, m.Persona);
             if (opzioni.FiltroNelTempo) filtro.Applica(m.Persona);
-            if (opzioni.MediaNelMovimento) media.Applica(m.Persona, ImmagineInUnoAMisura(bgra, larghezza, altezza, passo, m), d.Larghezza, d.Altezza);
+            if (opzioni.MediaNelMovimento)
+            {
+                media.Applica(m.Persona, ImmagineInUnoAMisura(bgra, larghezza, altezza, passo, m), d.Larghezza, d.Altezza);
+                if (opzioni.Isteresi) isteresi.Applica(m.Persona, media.Pesi);
+            }
             var valori = new byte[m.Persona.Length];
             for (var i = 0; i < valori.Length; i++) valori[i] = (byte)(m.Persona[i] * 255f + 0.5f);
             byte[]? volto = null;
@@ -186,6 +197,7 @@ public sealed class RitaglioPersona : IDisposable
                     m.Dispose();
                     filtro.Dimentica();
                     media.Dimentica();
+                    isteresi.Dimentica();
                 }
                 catch (Exception e)
                 {

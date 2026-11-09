@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
+using WebcamLR.Effetti;
 using WebcamLR.Protocollo;
 using WebcamLR.Ricevitore;
 
@@ -76,6 +77,31 @@ public sealed partial class MainWindow
         }
         ritardoEffetti?.Stop();
         Comanda(effetti.Sfoca(LivelliSfocatura.Intensita(livello), AdessoMs));
+        MostraValoriEffetti();
+    }
+
+    /// <summary>
+    /// Qualità 7 e 8: Normale, Obiettivo (bokeh) o Mosaico, dal menu di «Sfondo», dalla sua pagina o dalla colonna. Accende
+    /// la sfocatura con quello stile (gratis come la sfocatura): con lo sfondo già sfocato l'intensità resta quella di
+    /// adesso (anche se scelta con il cursore), altrimenti quella dell'ultimo livello. Lo stile resta del PC.
+    /// </summary>
+    private void ScegliStileSfocatura(string stile)
+    {
+        if (EffettiDelSistema.Sfocatura(statoTelefono) || !SulComputer)
+        {
+            MostraPulsantiVideo();
+            return;
+        }
+        Preferenze.UltimoSfondo = RegoleSfondo.Sfocatura;
+        if (sessione is null || capacitaEffetti?.Sfondo != true)
+        {
+            MostraPulsantiVideo();
+            return;
+        }
+        var valori = effetti.Valori;
+        var intensita = valori.SfondoSfocato ? valori.IntensitaSfondo : LivelliSfocatura.Intensita(Preferenze.LivelloSfocatura);
+        ritardoEffetti?.Stop();
+        Comanda(effetti.Sfoca(intensita, AdessoMs, stile));
         MostraValoriEffetti();
     }
 
@@ -197,6 +223,7 @@ public sealed partial class MainWindow
         CursoreSaturazione.Value = Math.Round(v.Saturazione * 100);
         CursoreNitidezza.Value = Math.Round(v.Nitidezza * 100);
         SceltaSfondo.SelectedIndex = Math.Max(0, NomiEffetti.ModiSfondo.ToList().IndexOf(v.Sfondo));
+        SceltaStileSfocatura.SelectedIndex = Math.Max(0, StiliSfocatura.Tutti.ToList().IndexOf(StiliSfocatura.Valido(v.Sfocatura)));
         CursoreIntensitaSfondo.Value = Math.Round(v.IntensitaSfondo * 100);
         CursorePelle.Value = Math.Round(v.Pelle * 100);
         CursoreCalore.Value = Math.Round(v.Calore * 100);
@@ -223,9 +250,14 @@ public sealed partial class MainWindow
         var v = effetti.Valori;
         PulsanteAzzeraRegolazioni.IsEnabled = EffettiAttivi && !v.RegolazioniNeutre;
         PulsanteCaloreNeutro.IsEnabled = EffettiAttivi && v.Calore > 0;
-        CursoreIntensitaSfondo.Visibility = Visibile(v.Sfondo != ModiSfondo.Nessuno);
-        ToolTipService.SetToolTip(CursoreIntensitaSfondo, v.Sfondo == ModiSfondo.Sostituito
-            ? Testi.T("Effetti_IntensitaSostituito") : Testi.T("Effetti_IntensitaSfocato"));
+        // Lo schermo verde ha il bordo netto fisso (per il chroma key): niente intensità. Con il mosaico l'intensità è la
+        // misura dei quadretti.
+        var verde = v.Sfondo == ModiSfondo.Sostituito && v.ImmagineSfondo == SfondoVerde.Id;
+        CursoreIntensitaSfondo.Visibility = Visibile(v.Sfondo != ModiSfondo.Nessuno && !verde);
+        ToolTipService.SetToolTip(CursoreIntensitaSfondo, v.Sfondo == ModiSfondo.Sostituito ? Testi.T("Effetti_IntensitaSostituito")
+            : StiliSfocatura.Valido(v.Sfocatura) == StiliSfocatura.Mosaico ? Testi.T("Effetti_IntensitaMosaico")
+            : Testi.T("Effetti_IntensitaSfocato"));
+        SceltaStileSfocatura.Visibility = Visibile(SulComputer && v.SfondoSfocato);
         NotaSfondo.Visibility = Visibile(v.Sfondo == ModiSfondo.Sostituito);
         MostraLogo();
         AbilitaEffetti();
@@ -299,6 +331,8 @@ public sealed partial class MainWindow
             : (SulComputer ? Testi.T("Effetti_SpecchiaSpentoComputer") : Testi.T("Effetti_SpecchiaSpento")));
         var descrizione = !acceso ? NomiEffetti.Sfondo(ModiSfondo.Nessuno)
             : delTelefono ? Testi.T("Sfondo_SfocaturaTelefono")
+            : v.SfondoSfocato && SulComputer && StiliSfocatura.Valido(v.Sfocatura) != StiliSfocatura.Normale
+                ? Testi.T("Sfondo_StileLivello", NomiEffetti.StileSfocatura(v.Sfocatura), LivelliSfocatura.Nome(effetti.LivelloAttuale(Preferenze.LivelloSfocatura)))
             : v.SfondoSfocato ? Testi.T("Sfondo_SfocaturaLivello", LivelliSfocatura.Nome(effetti.LivelloAttuale(Preferenze.LivelloSfocatura)))
             : RegoleSfondo.ImmagineAttuale(v, ProntiDelTelefono) is { } immagine ? RegoleSfondo.Nome(immagine)
             : NomiEffetti.Sfondo(ModiSfondo.Sostituito);
@@ -382,6 +416,13 @@ public sealed partial class MainWindow
         ComandaEffetto(modo == ModiSfondo.Nessuno
             ? new Comando(Sfondo: modo)
             : new Comando(Sfondo: modo, IntensitaSfondo: DaCursore(CursoreIntensitaSfondo.Value)));
+    }
+
+    /// <summary>Lo stile della sfocatura dalla colonna (Qualità 7 e 8).</summary>
+    private void SuStileSfocatura(object sender, SelectionChangedEventArgs e)
+    {
+        if (aggiornoEffetti || SceltaStileSfocatura?.SelectedItem is not ComboBoxItem { Tag: string stile }) return;
+        ScegliStileSfocatura(stile);
     }
 
     private void SuIntensitaSfondo(object sender, RangeBaseValueChangedEventArgs e) =>

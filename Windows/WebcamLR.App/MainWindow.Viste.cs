@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
+using WebcamLR.Effetti;
 using WebcamLR.Ricevitore;
 using WebcamLR.Webcam;
 
@@ -646,7 +647,7 @@ public sealed partial class MainWindow
         var stato = StatoSfondo();
         var valori = effetti.Valori;
         var disponibile = SfondoDisponibile && !SoloFrontaleBloccati;
-        var firma = string.Join("|", stato, disponibile, valori.SfondoSfocato, RegoleSfondo.ImmagineAttuale(valori, ProntiDelTelefono),
+        var firma = string.Join("|", stato, disponibile, valori.SfondoSfocato, valori.Sfocatura, RegoleSfondo.ImmagineAttuale(valori, ProntiDelTelefono),
             BloccoPro, PersonaleDisponibile, ImmaginiDisponibili, ProntiDelTelefono.Count, miniaturaPersonale?.GetHashCode());
         if (firma == statoPaginaSfondo) return;
         statoPaginaSfondo = firma;
@@ -683,6 +684,49 @@ public sealed partial class MainWindow
             var voce = Scelta(LivelliSfocatura.Nome(livello), valori.SfondoSfocato && livello == stato.Attuale, disponibile && !stato.Sistema);
             voce.Click += (_, _) => ScegliLivelloSfocatura(livello);
             scelte.Children.Add(voce);
+        }
+        if (SulComputer)
+        {
+            // Qualità 7 e 8: lo stile della sfocatura, un gruppo a parte (resta scelto anche con lo sfondo spento).
+            scelte.Children.Add(new TextBlock
+            {
+                Text = Testi.T("Sfondo_Stile"),
+                FontFamily = (FontFamily)Application.Current.Resources["CorpoForte"],
+                Margin = Token.MargineGruppo,
+            });
+            foreach (var stile in StiliSfocatura.Tutti)
+            {
+                var voce = new RadioButton
+                {
+                    Content = NomiEffetti.StileSfocatura(stile),
+                    GroupName = "stile-sfocatura-impostazioni",
+                    IsChecked = StiliSfocatura.Valido(valori.Sfocatura) == stile,
+                    IsEnabled = disponibile && !stato.Sistema,
+                };
+                voce.Click += (_, _) => ScegliStileSfocatura(stile);
+                scelte.Children.Add(voce);
+            }
+            scelte.Children.Add(new TextBlock
+            {
+                Text = Testi.T("Sfondo_SchermoVerdeTitolo"),
+                FontFamily = (FontFamily)Application.Current.Resources["CorpoForte"],
+                Margin = Token.MargineGruppo,
+            });
+            var verde = Scelta(BloccoPro ? Testi.T("Sfondo_SchermoVerdePro") : RegoleSfondo.Nome(SfondoVerde.Id),
+                !BloccoPro && RegoleSfondo.ImmagineAttuale(valori, ProntiDelTelefono) == SfondoVerde.Id, disponibile);
+            ToolTipService.SetToolTip(verde, Testi.T("Sfondo_SchermoVerdeAiuto"));
+            verde.Click += (_, _) =>
+            {
+                if (!BloccoPro)
+                {
+                    ScegliImmagineSfondo(SfondoVerde.Id);
+                    return;
+                }
+                // Senza Pro non parte: la scelta non resta segnata, e si apre la spiegazione di WebcamLR Pro.
+                verde.IsChecked = false;
+                _ = ApriProAsync();
+            };
+            scelte.Children.Add(verde);
         }
         scelte.Children.Add(new TextBlock
         {

@@ -806,7 +806,10 @@ public class ProvaDurataTest(ITestOutputHelper uscita)
         // Maniglie: si contano a sessioni chiuse e dopo il GC. Su Windows, mentre la sessione è aperta, il runtime tiene
         // maniglie sue (pool dei thread, porte di completamento) che crescono un poco nei primi minuti: a fine sessione
         // la GitHub CI ne ha viste +11, e +7 dopo la chiusura. Una perdita vera resta: cresce con le sessioni.
-        if (primo.Maniglie >= 0) Assert.InRange(maniglieDopo - primo.Maniglie, int.MinValue, 8);
+        // Il riferimento è il secondo minuto: nel primo il pool dei thread di Windows si allarga ancora (10 → 12 thread,
+        // +11 maniglie sulla GitHub CI) e poi resta fermo. Una perdita vera cresce con le sessioni, dopo.
+        var riferimento = usati.Length > 2 ? usati[1] : primo;
+        if (riferimento.Maniglie >= 0) Assert.InRange(maniglieDopo - riferimento.Maniglie, int.MinValue, 8);
         Assert.InRange(finale.InCoda, 0, 200);
         Assert.Equal(0, vive);
         Assert.Equal(0, dopoLaChiusura);

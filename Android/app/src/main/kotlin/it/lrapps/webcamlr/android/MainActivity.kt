@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import it.lrapps.webcamlr.android.dati.Impostazioni
+import it.lrapps.webcamlr.android.rete.AscoltoCavoAdb
 import it.lrapps.webcamlr.android.rete.ComputerTrovato
 import it.lrapps.webcamlr.android.sessione.SessioneTelefono
 import it.lrapps.webcamlr.android.sessione.Sessioni
@@ -51,6 +52,7 @@ import it.lrapps.webcamlr.android.ui.TemaWebcamLR
 import it.lrapps.webcamlr.android.ui.VoceAltro
 import it.lrapps.webcamlr.protocollo.Associazione
 import kotlinx.coroutines.flow.MutableStateFlow
+import java.net.Socket
 
 /** Nessuna sessione: nessun permesso del microfono da chiedere. */
 private val nessunaRichiesta = MutableStateFlow(false)
@@ -76,6 +78,21 @@ class MainActivity : ComponentActivity() {
     private var richiestaScollega by mutableStateOf(false)
     /** Collaudo 55: un `webcamlr://collega` di un altro computer arrivato durante una sessione, da confermare. */
     private var collegamentoDaConfermare by mutableStateOf<ComputerTrovato?>(null)
+
+    /**
+     * Qualità 17: il cavo USB con il debug USB. Il computer apre la connessione attraverso adb sulla porta 52741 del
+     * telefono; l'ascolto è acceso con l'app in primo piano e senza una sessione, o con una sessione del cavo che aspetta
+     * il computer (vedi [aggiornaAscoltoCavo]).
+     */
+    private val ascoltoCavo = AscoltoCavoAdb { socket -> arrivoDalCavo(socket) }
+    private var inPrimoPiano = false
+    /**
+     * Dopo la fine di una sessione del cavo con adb («Scollega», «Torna ai computer») l'ascolto resta spento: il
+     * computer riprova ogni secondo e riaprirebbe subito «In onda». Torna con «Usa il cavo USB» o riaprendo l'app.
+     */
+    private var cavoEscluso = false
+    /** La sessione vista l'ultima volta da [aggiornaAscoltoCavo]: per accorgersi di quando una del cavo finisce. */
+    private var ultimaSessione: SessioneTelefono? = null
 
     /** Cosa fare quando arriva il permesso della fotocamera. */
     private var dopoIlPermesso: (() -> Unit)? = null
@@ -146,6 +163,10 @@ class MainActivity : ComponentActivity() {
      */
     override fun onStart() {
         super.onStart()
+        // Di ritorno nell'app: il cavo escluso dopo «Scollega» torna disponibile.
+        if (!inPrimoPiano) cavoEscluso = false
+        inPrimoPiano = true
+        aggiornaAscoltoCavo()
         // P3 e P4: di ritorno da Impostazioni schede e righe dicono subito lo stato nuovo.
         Permessi.aggiorna(this)
         Sessioni.attuale?.tornataInPrimoPiano()
@@ -160,6 +181,8 @@ class MainActivity : ComponentActivity() {
      */
     override fun onStop() {
         super.onStop()
+        inPrimoPiano = false
+        aggiornaAscoltoCavo()
         if (!isChangingConfigurations) Sessioni.attuale?.andataInSottofondo()
     }
 
@@ -254,6 +277,8 @@ class MainActivity : ComponentActivity() {
         LaunchedEffect(sessione) {
             if (sessione == null && pila.contains(Schermata.InOnda)) pila.remove(Schermata.InOnda)
         }
+        // Qualità 17: l'ascolto sul cavo segue la sessione (nuova, chiusa, in attesa del computer).
+        LaunchedEffect(sessione, sessione?.stato) { aggiornaAscoltoCavo() }
         val chiedeMicrofono by (sessione?.permessoMicrofonoDaChiedere ?: nessunaRichiesta).collectAsState()
         LaunchedEffect(sessione, chiedeMicrofono) {
             if (sessione != null && chiedeMicrofono) chiediMicrofono(sessione)
@@ -267,6 +292,10 @@ class MainActivity : ComponentActivity() {
                 apriApp = { pila.add(Schermata.App) },
                 apriDomanda = { pila.add(Schermata.Domande(it)) },
                 inPrimoPiano = pila.size == 1,
+                usaCavo = {
+                    cavoEscluso = false
+                    aggiornaAscoltoCavo()
+                },
             )
             Schermata.LettoreQR -> SchermataLettoreQR(
                 letto = { associazione ->
@@ -340,8 +369,42 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /** Collegamento e fotocamera partono subito, mentre «In onda» si apre. */
-    private fun apriSessione(computer: ComputerTrovato) {
+    /**
+     * Qualità 17: acceso solo quando una connessione dal cavo si può usare: in primo piano senza sessione (si apre «In
+     * onda», come sull'iPhone), oppure con una sessione del cavo che aspetta il computer (anche in sottofondo, con il
+     * servizio «In onda»). Con una sessione Wi-Fi resta spento: adb risponde «FAIL» al computer, che riprova ogni secondo
+     * senza allungare l'attesa, e il cavo arriva appena la sessione Wi-Fi finisce.
+     */
+    private fun aggiornaAscoltoCavo() {
+        val sessione = Sessioni.attuale
+        val finita = ultimaSessione
+        if (finita != null && finita !== sessione && finita.computer.viaAdb) cavoEscluso = true
+        ultimaSessione = sessione
+        val serve = if (sessione != null) sessione.aspettaIlCavo else inPrimoPiano && !cavoEscluso && puoAprireDalCavo()
+        if (serve) ascoltoCavo.avvia() else ascoltoCavo.ferma()
+    }
+
+    /** Senza la presentazione vista o senza il permesso della fotocamera una connessione dal cavo non può aprire «In onda». */
+    private fun puoAprireDalCavo(): Boolean = Impostazioni.benvenutoVisto &&
+        ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+
+    /** Una connessione dal cavo (thread principale): alla sessione che la aspetta, oppure una sessione nuova. */
+    private fun arrivoDalCavo(socket: Socket) {
+        val attuale = Sessioni.attuale
+        if (attuale != null) {
+            if (!attuale.accogliCavo(socket)) runCatching { socket.close() }
+            aggiornaAscoltoCavo()
+            return
+        }
+        if (!inPrimoPiano || !puoAprireDalCavo()) {
+            runCatching { socket.close() }
+            return
+        }
+        apriSessione(ComputerTrovato.dalCavoAdb(getString(R.string.computer_sul_cavo)), socket)
+    }
+
+    /** Collegamento e fotocamera partono subito, mentre «In onda» si apre. `socketCavo`: arrivata dal cavo con adb. */
+    private fun apriSessione(computer: ComputerTrovato, socketCavo: Socket? = null) {
         conPermessoFotocamera {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
                 ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
@@ -350,7 +413,7 @@ class MainActivity : ComponentActivity() {
                 permessoNotifiche.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
             Sessioni.attuale?.termina()
-            SessioneTelefono(this, computer).avvia()
+            SessioneTelefono(this, computer, socketCavoIniziale = socketCavo).avvia()
             pila.removeAll { it == Schermata.InOnda || it == Schermata.LettoreQR }
             pila.add(Schermata.InOnda)
         }

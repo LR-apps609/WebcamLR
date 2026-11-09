@@ -150,7 +150,13 @@ data class ControlliFotocamera(
  * [avvisoPostura], [avvioSecondi], [riduzioneCalore], [audioInviato], [avvisoMicrofono], [permessoMicrofonoDaChiedere]).
  * I comandi Pro, l'inquadratura, la luce sul volto e la postura passano da [applica], come quelli del computer.
  */
-class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, private val inizioTocco: Long = SystemClock.elapsedRealtime()) {
+class SessioneTelefono(
+    context: Context,
+    computerIniziale: ComputerTrovato,
+    private val inizioTocco: Long = SystemClock.elapsedRealtime(),
+    /** Qualità 17: la connessione arrivata dal cavo con adb (computer con [ComputerTrovato.viaAdb]), già aperta. */
+    socketCavoIniziale: java.net.Socket? = null,
+) {
 
     sealed interface Stato {
         data object Collegamento : Stato
@@ -402,6 +408,12 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     private var collegamento: Collegamento? = null
     private var tentativi = 0
     private var chiusaDallUtente = false
+    /**
+     * Qualità 17, cavo con adb: la prossima connessione dal computer, ancora da usare. Sul cavo è il computer ad aprire
+     * la connessione (attraverso adb, ogni secondo): il telefono non può ricollegarsi da solo, aspetta la prossima con
+     * [accogliCavo].
+     */
+    private var socketCavo: java.net.Socket? = socketCavoIniziale
     private var fotocameraPronta = false
     /** La fotocamera si sta accendendo: al `benvenuto` non si riaccende, il codificatore parte quando è pronta. */
     private var fotocameraInAvvio = false
@@ -542,7 +554,8 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         analisi.prepara { principale.post { aggiornaFunzioni() } }
         regola.impostaPreferenza(Impostazioni.collegamento)
         // La ricerca resta accesa per tutta la sessione: trova gli indirizzi dell'altra strada (cavo o Wi-Fi).
-        avviaRicercaRiconnessione()
+        // Qualità 17: non sul cavo con adb, dove è il computer a collegarsi (il passaggio al Wi-Fi verrà dopo).
+        if (!computer.viaAdb) avviaRicercaRiconnessione()
         principale.post(controlloStrade)
         principale.post(misuratore)
         // Fotocamera tolta dal sistema: si riprende appena torna libera. Chiamata: il microfono zittito si dice.
@@ -557,6 +570,8 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         if (!chiusaDallUtente) registro.aggiungi(Testi.testo(R.string.registro_scollegato, computer.nome))
         chiusaDallUtente = true
         principale.removeCallbacksAndMessages(null)
+        socketCavo?.let { runCatching { it.close() } }
+        socketCavo = null
         destinazione = null
         collegamento?.chiudi()
         collegamento = null
@@ -1129,6 +1144,16 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         // R05: rete tornata o computer ritrovato chiamano collega() subito: il tentativo già in attesa non deve aprire
         // una seconda catena di riconnessione.
         principale.removeCallbacks(riprovaCollegamento)
+        // Qualità 17, cavo con adb: si usa la connessione arrivata dal computer; senza, si aspetta la prossima.
+        val dalCavo = if (computer.viaAdb) {
+            socketCavo.also { socketCavo = null } ?: run {
+                aspettaCavo()
+                return
+            }
+        } else {
+            null
+        }
+        principale.removeCallbacks(cavoNonTornato)
         stato = if (tentativi == 0) Stato.Collegamento else Stato.Riconnessione(tentativi)
         registro.aggiungi(
             if (tentativi == 0) Testi.testo(R.string.registro_collegamento_a, computer.nome)
@@ -1146,17 +1171,19 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         val indirizzi = if (preferita != null && tentativi < 3) perStrada[preferita].orEmpty() else computer.indirizzi
         lateinit var nuovo: Collegamento
         nuovo = Collegamento(
-            indirizzi = indirizzi,
+            indirizzi = if (dalCavo != null) emptyList() else indirizzi,
             porta = computer.porta,
             identita = IdentitaTelefono.condivisa(app),
-            // Protocollo 2: l'impronta attesa viene dal QR code, altrimenti dai computer conosciuti.
-            improntaAttesa = computer.impronta ?: ComputerConosciuti.impronta(computer.nome),
+            // Protocollo 2: l'impronta attesa viene dal QR code, altrimenti dai computer conosciuti. Sul cavo con adb il
+            // nome del computer arriva solo con il `benvenuto`: si controlla lì, come sull'iPhone (vedi [accolto]).
+            improntaAttesa = if (dalCavo != null) null else computer.impronta ?: ComputerConosciuti.impronta(computer.nome),
             gettone = computer.gettone,
             ciao = nuovoCiao(),
             orologio = Orologio::adesso,
             suEvento = { evento -> principale.post { gestisci(evento, nuovo) } },
             // Priorità video sul Wi-Fi (DSCP CS5 → coda «video» del Wi-Fi).
             preparaSocket = { socket -> runCatching { socket.trafficClass = 0xA0 } },
+            socketPronto = dalCavo,
         )
         preparaCollegamento(nuovo)
         synchronized(adattamento) { adattamento.azzera() }
@@ -1196,7 +1223,8 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
             is EventoCollegamento.Pronto -> {
                 improntaComputer = evento.impronta
                 interfacciaAttiva = evento.interfaccia
-                tipoCollegamento = TipoCollegamento.daInterfaccia(evento.interfaccia) ?: TipoCollegamento.WIFI
+                tipoCollegamento = if (computer.viaAdb) TipoCollegamento.CAVO_USB
+                else TipoCollegamento.daInterfaccia(evento.interfaccia) ?: TipoCollegamento.WIFI
                 registro.aggiungi(Testi.testo(R.string.registro_collegamento_sicuro, evento.impronta.take(8)))
                 tipoCollegamento?.let { registro.aggiungi(Testi.testo(R.string.registro_collegamento_via, testoTipo(it))) }
             }
@@ -1256,6 +1284,25 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
 
     private fun accolto(da: Collegamento, benvenuto: Benvenuto) {
         codiceConferma = null
+        // Qualità 17, cavo con adb: il nome del computer arriva ora. Un computer conosciuto deve avere lo stesso codice di
+        // sicurezza di sempre (come iPhone/Sorgenti/SessioneTelefono.swift sul cavo); altrimenti ci si ferma.
+        if (computer.viaAdb) {
+            val nome = benvenuto.nome.ifBlank { computer.nome }.take(100)
+            val salvata = ComputerConosciuti.impronta(nome)
+            val impronta = improntaComputer
+            computer = computer.copy(nome = nome)
+            if (salvata != null && impronta != null && salvata != impronta) {
+                // Il `Chiuso` di questo collegamento non arriva più qui (non è più quello attuale).
+                collegamento = null
+                destinazione = null
+                da.chiudi()
+                tipoCollegamento = null
+                if (Impostazioni.ultimoComputer == nome) Impostazioni.ultimoComputer = null
+                fermaConErrore(Testi.testo(R.string.errore_identita_titolo), Testi.testo(R.string.errore_identita, nome),
+                    definitivo = true, domanda = "identita")
+                return
+            }
+        }
         giaCollegato = true
         // Indirizzo scritto a mano: con il nome vero funzionano i computer conosciuti e la ricerca (se non è già di un altro).
         if (!computer.annunciato && computer.impronta == null && benvenuto.nome.isNotBlank() && benvenuto.nome != computer.nome) {
@@ -1327,6 +1374,11 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
                 return
             }
         }
+        // Qualità 17, cavo con adb: è il computer a riaprire la connessione (ogni secondo, se il cavo c'è).
+        if (computer.viaAdb) {
+            aspettaCavo()
+            return
+        }
         // Mentre si riprova si cerca anche il computer (Wi-Fi e cavo): se cambia indirizzo o passa al cavo lo si ritrova.
         if (giaCollegato) avviaRicercaRiconnessione()
         // Senza rete non si consumano tentativi: si riparte appena torna (o appena compare il cavo).
@@ -1358,6 +1410,48 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
                 domanda = if (giaCollegato) null else "non-trova")
         }
     }
+
+    /**
+     * Qualità 17, cavo con adb: nessuna connessione dal computer adesso (cavo staccato, WebcamLR chiusa sul computer, o
+     * il computer che si ricollega). Si resta in «Ricollego…» con la fotocamera accesa; la connessione nuova arriva con
+     * [accogliCavo]. Dopo [ATTESA_CAVO_MS] senza cavo ci si ferma e si dice cosa fare; l'ascolto resta acceso.
+     */
+    private fun aspettaCavo() {
+        if (chiusaDallUtente) return
+        if (stato !is Stato.Riconnessione) registro.aggiungi(Testi.testo(R.string.registro_aspetto_cavo))
+        if (inizioRiconnessione == null) inizioRiconnessione = SystemClock.elapsedRealtime()
+        stato = Stato.Riconnessione(maxOf(tentativi, 1))
+        principale.removeCallbacks(cavoNonTornato)
+        principale.postDelayed(cavoNonTornato, ATTESA_CAVO_MS)
+    }
+
+    private val cavoNonTornato = Runnable {
+        if (chiusaDallUtente || collegamento != null || stato !is Stato.Riconnessione) return@Runnable
+        fermaConErrore(Testi.testo(R.string.errore_cavo_adb_titolo), Testi.testo(R.string.errore_cavo_adb), domanda = "cavo-android")
+    }
+
+    /**
+     * Qualità 17: una connessione dal cavo con adb arrivata mentre questa sessione c'è (MainActivity). Vero se la usa:
+     * una sessione del cavo che aspetta il computer (anche dopo l'errore «Cavo USB scollegato»). Falso, e chi chiama la
+     * chiude, se la sessione è del Wi-Fi, è già collegata, è chiusa o si è fermata per un computer diverso.
+     */
+    fun accogliCavo(socket: java.net.Socket): Boolean {
+        if (!computer.viaAdb || chiusaDallUtente || collegamento != null) return false
+        if (stato is Stato.Errore && erroreDefinitivo) return false
+        socketCavo?.let { runCatching { it.close() } }
+        socketCavo = socket
+        registro.aggiungi(Testi.testo(R.string.registro_cavo_arrivato))
+        tentativi = 0
+        erroreDefinitivo = false
+        erroreLocale = false
+        if (!fotocameraPronta && !fotocameraInAvvio) avviaFotocamera()
+        collega()
+        return true
+    }
+
+    /** Vero se la sessione è del cavo con adb e aspetta una connessione dal computer: l'ascolto sul cavo serve. */
+    val aspettaIlCavo: Boolean
+        get() = computer.viaAdb && !chiusaDallUtente && collegamento == null && !(stato is Stato.Errore && erroreDefinitivo)
 
     /** R05: il prossimo tentativo in attesa; un campo (non una lambda) per poterlo togliere quando si ricollega prima. */
     private val riprovaCollegamento = Runnable {
@@ -1520,6 +1614,17 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     private fun aggiornaStrade() {
         val interfacce = StradeRete.interfacce()
         val strade = HashSet<Strada>()
+        // Qualità 17: sul cavo con adb non ci sono indirizzi né interfacce da guardare (127.0.0.1): c'è il cavo finché
+        // il collegamento è aperto. Niente passaggi automatici al Wi-Fi in questo primo giro.
+        if (computer.viaAdb) {
+            if (destinazione != null) strade.add(Strada.CAVO)
+            regola.disponibilita(strade)
+            if (strade != stradeNote) {
+                stradeNote = strade
+                aggiornaStato()
+            }
+            return
+        }
         for (indirizzo in computer.indirizzi) StradeRete.strada(indirizzo, interfacce)?.let { strade.add(it) }
         // La strada in uso c'è finché la sua interfaccia è accesa (anche se il computer sta su un'altra sottorete).
         val inUso = if (destinazione != null) tipoCollegamento?.let { stradaDi(it) } else null
@@ -2567,6 +2672,8 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
 
     companion object {
         const val TENTATIVI_MASSIMI = 5
+        /** Qualità 17: quanto si aspetta il computer sul cavo con adb prima di dire «Cavo USB scollegato». */
+        const val ATTESA_CAVO_MS = 30_000L
         /** Riaperture automatiche della fotocamera dopo un'interruzione, prima di aspettare il ritorno in primo piano. */
         private const val MASSIMO_RIPRESE_AUTOMATICHE = 5
         private const val ATTESA_PRIMA_DI_RIPROVARE_MS = 1_000L

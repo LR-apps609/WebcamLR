@@ -446,7 +446,7 @@
     <value>How do I connect with the USB cable?</value>
   </data>
   <data name="Risposta_Cavo" xml:space="preserve">
-    <value>With an iPhone: plug it into the PC with the cable and open WebcamLR on both; the connection starts by itself and “USB cable” appears at the top. You need the free “Apple Devices” app from the Microsoft Store. If you’re already connected over Wi-Fi, the video moves to the cable by itself, without stopping; if you unplug the cable it goes back to Wi-Fi. With Android: plug in the cable, turn on “USB tethering” on the phone (Settings › Hotspot &amp; tethering) and choose the PC, or use the QR code. The cable is the most stable choice and charges the phone at the same time.</value>
+    <value>With an iPhone: plug it into the PC with the cable and open WebcamLR on both; the connection starts by itself and “USB cable” appears at the top. You need the free “Apple Devices” app from the Microsoft Store. If you’re already connected over Wi-Fi, the video moves to the cable by itself, without stopping; if you unplug the cable it goes back to Wi-Fi. With Android: plug in the cable, turn on “USB tethering” on the phone (Settings › Hotspot &amp; tethering) and choose the PC, or use the QR code. Or USB debugging: see “How do I connect an Android phone with the USB cable?”. The cable is the most stable choice and charges the phone at the same time.</value>
   </data>
   <data name="Domanda_Codice" xml:space="preserve">
     <value>Why does the computer ask me for a code?</value>
@@ -1002,5 +1002,41 @@
   </data>
   <data name="SfondoPronto_SchermoVerde" xml:space="preserve">
     <value>Green screen</value>
+  </data>
+  <data name="CavoAndroid_ServizioTrovato" xml:space="preserve">
+    <value>adb server found (Android USB cable)</value>
+  </data>
+  <data name="CavoAndroid_ServizioFermo" xml:space="preserve">
+    <value>The adb server stopped</value>
+  </data>
+  <data name="CavoAndroid_Collegato" xml:space="preserve">
+    <value>Android phone connected with the USB cable (USB debugging)</value>
+  </data>
+  <data name="CavoAndroid_Staccato" xml:space="preserve">
+    <value>Android phone unplugged from the USB cable</value>
+  </data>
+  <data name="CavoAndroid_Rifiutato" xml:space="preserve">
+    <value>The Android phone closed the cable channel before accepting the connection: retrying in {0}</value>
+  </data>
+  <data name="CavoAndroid_CanaleAperto" xml:space="preserve">
+    <value>Connected to WebcamLR on the Android phone through the cable</value>
+  </data>
+  <data name="Diagnosi_AndroidDaAutorizzareTitolo" xml:space="preserve">
+    <value>Allow USB debugging on the phone</value>
+  </data>
+  <data name="Diagnosi_AndroidDaAutorizzare" xml:space="preserve">
+    <value>The Android phone is asking “Allow USB debugging?”: choose “Allow” and tick “Always allow from this computer”. If you don't see it, unlock the phone, then unplug and replug the cable.</value>
+  </data>
+  <data name="Diagnosi_AndroidAlCavoTitolo" xml:space="preserve">
+    <value>Android phone connected with the cable</value>
+  </data>
+  <data name="Diagnosi_AndroidAlCavo" xml:space="preserve">
+    <value>Open WebcamLR on the phone and keep it open: the connection starts by itself.</value>
+  </data>
+  <data name="Domanda_CavoAndroid" xml:space="preserve">
+    <value>How do I connect an Android phone with the USB cable?</value>
+  </data>
+  <data name="Risposta_CavoAndroid" xml:space="preserve">
+    <value>There are two ways. With USB debugging (the fastest): on the phone open Settings › About phone and tap “Build number” seven times; then in Settings › System › Developer options turn on “USB debugging”. The PC needs the Android tools (adb), free from Google: if Android Studio is installed you already have them. Plug in the cable, choose “Allow” when asked “Allow USB debugging?” and open WebcamLR on the phone: the connection starts by itself and the “USB cable” row says “In use · Android”. Without developer mode: turn on “USB tethering” (Settings › Hotspot &amp; tethering) and choose the PC from the list.</value>
   </data>
 </root>

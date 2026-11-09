@@ -1343,8 +1343,8 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
   <data name="Connessione_ApriApp" xml:space="preserve">
     <value>Apri l'app</value>
   </data>
-  <data name="Connessione_NessunIPhone" xml:space="preserve">
-    <value>Nessun iPhone</value>
+  <data name="Connessione_NessunTelefono" xml:space="preserve">
+    <value>Nessun telefono</value>
   </data>
   <data name="Registro_Diagnosi" xml:space="preserve">
     <value>Diagnosi: {0}</value>
@@ -2128,5 +2128,32 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
   </data>
   <data name="Effetti_IntensitaMosaico" xml:space="preserve">
     <value>Quanto sono grandi i quadretti</value>
+  </data>
+  <data name="Registro_CavoAndroidCollegato" xml:space="preserve">
+    <value>Cavo USB Android: collegato</value>
+  </data>
+  <data name="Registro_CavoAndroidInAscolto" xml:space="preserve">
+    <value>Cavo USB Android: server di adb in ascolto</value>
+  </data>
+  <data name="Registro_CavoAndroidServizioAssente" xml:space="preserve">
+    <value>Cavo USB Android: server di adb assente</value>
+  </data>
+  <data name="Connessione_InUsoAndroid" xml:space="preserve">
+    <value>In uso · Android</value>
+  </data>
+  <data name="Connessione_ConsentiSulTelefono" xml:space="preserve">
+    <value>Consenti sul telefono</value>
+  </data>
+  <data name="Dati_CavoAndroid" xml:space="preserve">
+    <value>Cavo USB Android</value>
+  </data>
+  <data name="Dati_ServerAdbPresente" xml:space="preserve">
+    <value>server di adb presente</value>
+  </data>
+  <data name="Dati_ServerAdbAssente" xml:space="preserve">
+    <value>server di adb assente</value>
+  </data>
+  <data name="Dati_AdbMancante" xml:space="preserve">
+    <value>adb non installato</value>
   </data>
 </root>

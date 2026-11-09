@@ -504,4 +504,10 @@
     <string name="registro_fotocamera_riprovo">Fotocamera di nuovo libera: la riaccendo</string>
     <string name="registro_chiamata">Chiamata in corso: il sistema ha zittito il microfono</string>
     <string name="registro_chiamata_finita">Chiamata finita: microfono di nuovo attivo</string>
+    <string name="computer_sul_cavo">Computer sul cavo USB</string>
+    <string name="registro_aspetto_cavo">Cavo USB: aspetto il computer (debug USB)</string>
+    <string name="registro_cavo_arrivato">Collegamento in arrivo dal cavo USB</string>
+    <string name="errore_cavo_adb_titolo">Cavo USB scollegato</string>
+    <string name="errore_cavo_adb">Il computer non si collega più dal cavo. Controlla il cavo, che WebcamLR sia aperta sul computer e che il debug USB sia attivo: il collegamento riparte da solo.</string>
+    <string name="cavo_con_debug_usb">Oppure con il debug USB (più veloce)</string>
 </resources>

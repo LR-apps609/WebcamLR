@@ -452,7 +452,7 @@
     <value>Come mi collego con il cavo USB?</value>
   </data>
   <data name="Risposta_Cavo" xml:space="preserve">
-    <value>Con l'iPhone: collegalo al PC con il cavo e apri WebcamLR su tutti e due; il collegamento parte da solo e in alto compare «Cavo USB». Serve l'app gratuita «Dispositivi Apple» di Microsoft Store. Se sei già collegato in Wi-Fi, il video passa al cavo da solo, senza fermarsi; se stacchi il cavo torna al Wi-Fi. Con Android: collega il cavo, sul telefono attiva «Tethering USB» (Impostazioni › Hotspot e tethering) e scegli il PC, o usa il QR code. Il cavo è la scelta più stabile e intanto ricarica il telefono.</value>
+    <value>Con l'iPhone: collegalo al PC con il cavo e apri WebcamLR su tutti e due; il collegamento parte da solo e in alto compare «Cavo USB». Serve l'app gratuita «Dispositivi Apple» di Microsoft Store. Se sei già collegato in Wi-Fi, il video passa al cavo da solo, senza fermarsi; se stacchi il cavo torna al Wi-Fi. Con Android: collega il cavo, sul telefono attiva «Tethering USB» (Impostazioni › Hotspot e tethering) e scegli il PC, o usa il QR code. Oppure il debug USB: vedi «Come collego un telefono Android con il cavo USB?». Il cavo è la scelta più stabile e intanto ricarica il telefono.</value>
   </data>
   <data name="Domanda_Codice" xml:space="preserve">
     <value>Perché il computer mi chiede un codice?</value>
@@ -1024,5 +1024,41 @@
   </data>
   <data name="SfondoPronto_SchermoVerde" xml:space="preserve">
     <value>Schermo verde</value>
+  </data>
+  <data name="CavoAndroid_ServizioTrovato" xml:space="preserve">
+    <value>Server di adb trovato (cavo USB di Android)</value>
+  </data>
+  <data name="CavoAndroid_ServizioFermo" xml:space="preserve">
+    <value>Il server di adb si è fermato</value>
+  </data>
+  <data name="CavoAndroid_Collegato" xml:space="preserve">
+    <value>Telefono Android collegato con il cavo USB (debug USB)</value>
+  </data>
+  <data name="CavoAndroid_Staccato" xml:space="preserve">
+    <value>Telefono Android staccato dal cavo USB</value>
+  </data>
+  <data name="CavoAndroid_Rifiutato" xml:space="preserve">
+    <value>Il telefono Android ha chiuso il cavo prima di accettare il collegamento: riprovo tra {0}</value>
+  </data>
+  <data name="CavoAndroid_CanaleAperto" xml:space="preserve">
+    <value>Collegato a WebcamLR sul telefono Android attraverso il cavo</value>
+  </data>
+  <data name="Diagnosi_AndroidDaAutorizzareTitolo" xml:space="preserve">
+    <value>Consenti il debug USB sul telefono</value>
+  </data>
+  <data name="Diagnosi_AndroidDaAutorizzare" xml:space="preserve">
+    <value>Sul telefono Android c'è la domanda «Consentire il debug USB?»: scegli «Consenti» e spunta «Consenti sempre da questo computer». Se non la vedi, sblocca il telefono, poi stacca e riattacca il cavo.</value>
+  </data>
+  <data name="Diagnosi_AndroidAlCavoTitolo" xml:space="preserve">
+    <value>Telefono Android collegato con il cavo</value>
+  </data>
+  <data name="Diagnosi_AndroidAlCavo" xml:space="preserve">
+    <value>Apri WebcamLR sul telefono e tienila aperta: il collegamento parte da solo.</value>
+  </data>
+  <data name="Domanda_CavoAndroid" xml:space="preserve">
+    <value>Come collego un telefono Android con il cavo USB?</value>
+  </data>
+  <data name="Risposta_CavoAndroid" xml:space="preserve">
+    <value>Ci sono due strade. Con il debug USB (la più veloce): sul telefono apri Impostazioni › Informazioni sul telefono e tocca sette volte «Numero build»; poi in Impostazioni › Sistema › Opzioni sviluppatore attiva «Debug USB». Sul PC servono gli strumenti di Android (adb), gratuiti da Google: se c'è Android Studio ci sono già. Collega il cavo, scegli «Consenti» alla domanda «Consentire il debug USB?» e apri WebcamLR sul telefono: il collegamento parte da solo e la riga «Cavo USB» dice «In uso · Android». Senza modalità sviluppatore: attiva «Tethering USB» (Impostazioni › Hotspot e tethering) e scegli il PC dalla lista.</value>
   </data>
 </root>

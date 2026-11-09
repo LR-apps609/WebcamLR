@@ -502,4 +502,10 @@
     <string name="registro_fotocamera_riprovo">Camera free again: turning it back on</string>
     <string name="registro_chiamata">Call in progress: the system muted the microphone</string>
     <string name="registro_chiamata_finita">Call over: microphone back on</string>
+    <string name="computer_sul_cavo">Computer on the USB cable</string>
+    <string name="registro_aspetto_cavo">USB cable: waiting for the computer (USB debugging)</string>
+    <string name="registro_cavo_arrivato">Incoming connection from the USB cable</string>
+    <string name="errore_cavo_adb_titolo">USB cable disconnected</string>
+    <string name="errore_cavo_adb">The computer no longer connects over the cable. Check the cable, that WebcamLR is open on the computer and that USB debugging is on: the connection restarts by itself.</string>
+    <string name="cavo_con_debug_usb">Or with USB debugging (faster)</string>
 </resources>

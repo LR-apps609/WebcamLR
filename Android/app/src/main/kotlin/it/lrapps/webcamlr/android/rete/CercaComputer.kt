@@ -31,6 +31,11 @@ data class ComputerTrovato(
     val annunciato: Boolean = true,
     /** Trovato sulla rete del Tethering USB (il cavo): gli indirizzi del cavo sono i primi da provare. */
     val viaCavo: Boolean = false,
+    /**
+     * Qualità 17: arrivato dal cavo USB con il debug USB (adb). Nessun indirizzo: è il computer ad aprire la connessione,
+     * sulla porta 52741 del telefono (vedi [AscoltoCavoAdb]); il nome vero arriva con il `benvenuto`.
+     */
+    val viaAdb: Boolean = false,
 ) {
     /** Lo stesso computer visto anche da un'altra ricerca: indirizzi uniti, quelli del cavo per primi. */
     fun unitoA(altro: ComputerTrovato): ComputerTrovato {
@@ -43,6 +48,15 @@ data class ComputerTrovato(
     }
 
     companion object {
+        /** Il computer di una connessione arrivata dal cavo con adb, prima del `benvenuto`: `nome` è provvisorio. */
+        fun dalCavoAdb(nome: String) = ComputerTrovato(
+            nome = nome,
+            indirizzi = emptyList(),
+            porta = AscoltoCavoAdb.PORTA,
+            annunciato = false,
+            viaAdb = true,
+        )
+
         fun da(associazione: Associazione) = ComputerTrovato(
             nome = associazione.nome,
             indirizzi = associazione.indirizzi,

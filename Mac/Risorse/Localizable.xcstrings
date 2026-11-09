@@ -500,6 +500,16 @@
         }
       }
     },
+    "Apri WebcamLR sul telefono e tienila aperta: il collegamento parte da solo." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open WebcamLR on the phone and keep it open: the connection starts by itself."
+          }
+        }
+      }
+    },
     "Apri WebcamLR sul telefono." : {
       "comment" : "Primo avvio, passo 1.",
       "localizations" : {
@@ -865,6 +875,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Switching phones stops and saves the recording. Continue?"
+          }
+        }
+      }
+    },
+    "Canale aperto sul cavo USB: aspetto WebcamLR sul telefono Android" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Channel open on the USB cable: waiting for WebcamLR on the Android phone"
           }
         }
       }
@@ -1367,6 +1387,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Allow"
+          }
+        }
+      }
+    },
+    "Consenti il debug USB sul telefono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allow USB debugging on the phone"
+          }
+        }
+      }
+    },
+    "Consenti sul telefono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allow on the phone"
           }
         }
       }
@@ -2521,6 +2561,26 @@
         }
       }
     },
+    "Il server di adb si è fermato" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The adb server stopped"
+          }
+        }
+      }
+    },
+    "Il telefono Android ha chiuso il cavo prima di accettare il collegamento: riprovo tra %lld secondi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Android phone closed the cable channel before accepting the connection: retrying in %lld seconds"
+          }
+        }
+      }
+    },
     "Il telefono cancella il logo" : {
       "localizations" : {
         "en" : {
@@ -3048,6 +3108,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "In use by another app"
+          }
+        }
+      }
+    },
+    "In uso · Android" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In use · Android"
           }
         }
       }
@@ -4020,16 +4090,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No data for 3 seconds: the phone is in the background, waiting up to 10 minutes"
-          }
-        }
-      }
-    },
-    "Nessun iPhone" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No iPhone"
           }
         }
       }
@@ -5909,6 +5969,16 @@
         }
       }
     },
+    "Server di adb trovato (cavo USB di Android)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "adb server found (Android USB cable)"
+          }
+        }
+      }
+    },
     "Servizio del cavo USB non raggiungibile (%@: %@, errno %lld): il cavo non si può usare" : {
       "localizations" : {
         "en" : {
@@ -6395,6 +6465,16 @@
         }
       }
     },
+    "Sul telefono Android c'è la domanda «Consentire il debug USB?»: scegli «Consenti» e spunta «Consenti sempre da questo computer». Se non la vedi, sblocca il telefono, poi stacca e riattacca il cavo." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Android phone is asking “Allow USB debugging?”: choose “Allow” and tick “Always allow from this computer”. If you don’t see it, unlock the phone, then unplug and replug the cable."
+          }
+        }
+      }
+    },
     "Sul telefono: «Inquadra il QR code del computer»." : {
       "localizations" : {
         "en" : {
@@ -6531,6 +6611,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Phone"
+          }
+        }
+      }
+    },
+    "Telefono Android collegato con il cavo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Android phone connected with the cable"
+          }
+        }
+      }
+    },
+    "Telefono Android collegato con il cavo USB (debug USB)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Android phone connected with the USB cable (USB debugging)"
+          }
+        }
+      }
+    },
+    "Telefono Android staccato dal cavo USB" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Android phone unplugged from the USB cable"
+          }
+        }
+      }
+    },
+    "Telefono Android sul cavo: WebcamLR non risponde, riprovo ogni secondo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Android phone on the cable: WebcamLR doesn’t answer, retrying every second"
           }
         }
       }

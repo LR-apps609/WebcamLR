@@ -102,6 +102,12 @@ class Collegamento(
     private val tempi: TempiCollegamento = TempiCollegamento(),
     /** Per esempio la priorità video sul Wi-Fi; chiamata prima di `connect`. */
     private val preparaSocket: (Socket) -> Unit = {},
+    /**
+     * Qualità 17, cavo USB con adb: una connessione già aperta, arrivata dal computer sulla porta 52741 del telefono
+     * (127.0.0.1). Se c'è, `indirizzi` e `porta` non servono: il telefono non si collega, manda subito la `stretta` su
+     * questa (Documenti/Protocollo.md, «Cavo USB con Android: adb»). Si usa una volta sola, come un collegamento normale.
+     */
+    private val socketPronto: Socket? = null,
 ) {
     /** Una volta al secondo: fotogrammi scartati e se la rete era satura (quasi sempre fotogrammi in attesa). */
     @Volatile
@@ -236,8 +242,13 @@ class Collegamento(
         leggi(aperto.getInputStream())
     }
 
-    /** 1.10: tutti gli indirizzi insieme, vince il primo che risponde. */
+    /** 1.10: tutti gli indirizzi insieme, vince il primo che risponde. Con [socketPronto] (cavo con adb), quello. */
     private fun connetti(): Socket? {
+        socketPronto?.let { pronto ->
+            if (!pronto.isConnected || pronto.isClosed) return null
+            runCatching { pronto.tcpNoDelay = true }
+            return pronto
+        }
         if (indirizzi.isEmpty()) return null
         val vincitore = java.util.concurrent.atomic.AtomicReference<Socket?>(null)
         val finiti = java.util.concurrent.CountDownLatch(indirizzi.size)

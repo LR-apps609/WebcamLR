@@ -23,8 +23,9 @@ public enum StatoFirewall
 /// <param name="Profilo">Il profilo delle reti del PC, senza quella del Tethering USB (vedi <see cref="Diagnosi.Riassumi(IEnumerable{ReteCollegata})"/>).</param>
 /// <param name="Cavo">Null finché il servizio di Apple (cavo dell'iPhone) non è stato cercato.</param>
 /// <param name="ProfiloTethering">Il profilo della rete del Tethering USB di Android; null se non c'è.</param>
+/// <param name="Android">Il cavo di Android con adb (Qualità 17); null finché non è stato cercato.</param>
 public sealed record SituazioneRete(bool HaRete, ProfiloRete Profilo, StatoFirewall Firewall, StatoCavo? Cavo, bool IPhoneAlCavo,
-    ProfiloRete? ProfiloTethering = null);
+    ProfiloRete? ProfiloTethering = null, SituazioneCavo? Android = null);
 
 /// <summary>Una rete collegata come la vede Windows: il profilo, e se passa dal Tethering USB di un telefono Android.</summary>
 public sealed record ReteCollegata(ProfiloRete Profilo, bool TetheringUsb = false);
@@ -112,6 +113,17 @@ public static class Diagnosi
                     "firewall", new AzioneDiagnosi(TestiRicevitore.T("Diagnosi_SistemaFirewall"), SistemaFirewall), Grave: true,
                     Breve: TestiRicevitore.T("Diagnosi_FirewallBreve")));
             }
+        }
+
+        // Qualità 17: il cavo di Android (debug USB e adb). Prima la domanda sul telefono, che blocca tutto il resto.
+        if (situazione.Android is { } android && android.Stato != StatoCavo.Collegato)
+        {
+            if (android.DaAutorizzare > 0)
+                problemi.Add(new("android-da-autorizzare", TestiRicevitore.T("Diagnosi_AndroidDaAutorizzareTitolo"),
+                    TestiRicevitore.T("Diagnosi_AndroidDaAutorizzare"), "cavo-android", null, Grave: false));
+            else if (android.TelefonoAlCavo)
+                problemi.Add(new("android-al-cavo", TestiRicevitore.T("Diagnosi_AndroidAlCavoTitolo"),
+                    TestiRicevitore.T("Diagnosi_AndroidAlCavo"), "cavo-android", null, Grave: false));
         }
 
         if (situazione.IPhoneAlCavo && situazione.Cavo != StatoCavo.Collegato)

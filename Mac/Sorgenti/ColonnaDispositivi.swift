@@ -195,9 +195,14 @@ struct SezioneConnessione: View {
     }
 
     private func statoCavo(_ inUso: Set<TipoCollegamento>) -> String {
+        // Qualità 17: un telefono Android sul cavo (debug USB o Tethering USB) si dice, come per Windows.
+        if ricevitore.telefoni.contains(where: { $0.collegato && $0.tipoCollegamento == .cavoUSB && $0.telefono.piattaforma == .android }) {
+            return String(localized: "In uso · Android")
+        }
         if inUso.contains(.cavoUSB) { return String(localized: "In uso") }
         switch ricevitore.statoCavo {
-        case .nessunIPhone: return String(localized: "Nessun iPhone")
+        case .nessunIPhone: return String(localized: "Nessun telefono")
+        case .androidDaAutorizzare: return String(localized: "Consenti sul telefono")
         case .servizioAssente: return String(localized: "Non disponibile")
         case .inAttesaApp: return String(localized: "Apri l'app")
         case .inPausa: return String(localized: "In pausa")

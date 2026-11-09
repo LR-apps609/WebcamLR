@@ -41,7 +41,7 @@ public sealed class TelefonoFinto : IAsyncDisposable
     public TaskCompletionSource Chiuso { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     /// <summary>Collega, stretta di mano, prova (con il gettone se c'è) e «ciao».</summary>
-    public async Task CollegaAsync(int porta, string nome = "iPhone finto", string? gettone = null)
+    public async Task CollegaAsync(int porta, string nome = "iPhone finto", string? gettone = null, Piattaforma piattaforma = Piattaforma.Iphone)
     {
         await cliente.ConnectAsync(IPAddress.Loopback, porta);
         flusso = cliente.GetStream();
@@ -54,7 +54,7 @@ public sealed class TelefonoFinto : IAsyncDisposable
         sicura = sessione;
         lettura = LeggiAsync(lettore);
         await InviaAsync(prova);
-        await InviaAsync(new Ciao(Servizio.VersioneProtocollo, nome, Piattaforma.Iphone, "0.10"));
+        await InviaAsync(new Ciao(Servizio.VersioneProtocollo, nome, piattaforma, "0.10"));
     }
 
     /// <summary>Un telefono del round 1: manda «ciao» in chiaro, senza stretta di mano.</summary>

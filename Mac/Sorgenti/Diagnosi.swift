@@ -62,6 +62,21 @@ struct Diagnosi: Equatable {
         }
         // Il cavo prima della rete: se c'è un iPhone sul cavo, è quello che l'utente sta provando a usare.
         switch ricevitore.statoCavo {
+        case .androidDaAutorizzare:
+            // Qualità 17: la domanda del debug USB sul telefono blocca il cavo di Android finché non ha risposta.
+            return Diagnosi(
+                titolo: String(localized: "Consenti il debug USB sul telefono"),
+                spiegazione: String(localized: "Sul telefono Android c'è la domanda «Consentire il debug USB?»: scegli «Consenti» e spunta «Consenti sempre da questo computer». Se non la vedi, sblocca il telefono, poi stacca e riattacca il cavo."),
+                azione: nil,
+                domanda: "cavo",
+                avviso: false)
+        case .inAttesaApp where ricevitore.cavoAndroidInAttesa:
+            return Diagnosi(
+                titolo: String(localized: "Telefono Android collegato con il cavo"),
+                spiegazione: String(localized: "Apri WebcamLR sul telefono e tienila aperta: il collegamento parte da solo."),
+                azione: nil,
+                domanda: "cavo",
+                avviso: false)
         case .inAttesaApp:
             return Diagnosi(
                 titolo: String(localized: "iPhone collegato con il cavo"),

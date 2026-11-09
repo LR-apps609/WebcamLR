@@ -95,6 +95,9 @@ public sealed partial class MainWindow
             int? webcam = telefoni.ESelezionato(collegato) && uscitaWebcam.InUso ? uscitaWebcam.RitardoMs : null;
             return (anteprima, webcam);
         };
+        // Qualità 14: l'attesa nella coda dell'anteprima, per dividere la latenza in rete, decodifica e coda.
+        nuova.MisuraCoda = () => Volatile.Read(ref mio) is { } collegato && video.TryGetValue(collegato, out var suo)
+            ? suo.Anteprima.Attesa.Valore(Orologio.Adesso()) : null;
         void SuInterfaccia(Action<TelefonoCollegato> azione) => coda.TryEnqueue(() =>
         {
             if (Volatile.Read(ref mio) is { } collegato && collegato.Sessione == nuova && telefoni.Contiene(collegato)) azione(collegato);
@@ -229,6 +232,11 @@ public sealed partial class MainWindow
                     RitardoNelRegistro.Testo(nuove.AnteprimaMs), RitardoNelRegistro.Testo(nuove.WebcamMs),
                     RitardoNelRegistro.Testo(webcamQui ? uscitaWebcam.AttesaSorgenteMs : null),
                     webcamQui ? uscitaWebcam.RecuperatoMs : 0, RitardoNelRegistro.Testo(audio)));
+                // Qualità 14: le parti della latenza e la coda che si adatta (profondità, fotogrammi buttati in 30 s).
+                if (video.TryGetValue(collegato, out var suo))
+                    registro.Aggiungi(Testi.T("Registro_Parti", DiChi(collegato), RitardoNelRegistro.Testo(nuove.ArrivoMs),
+                        RitardoNelRegistro.Testo(nuove.DecodificaMs), RitardoNelRegistro.Testo(nuove.CodaMs),
+                        suo.Anteprima.ProfonditaMs, suo.Anteprima.PrendiScartati()));
             }
             if (telefoni.ESelezionato(collegato))
             {

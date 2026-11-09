@@ -724,6 +724,10 @@ public sealed partial class MainWindow : Window
         if (s.AnteprimaMs is not null || s.WebcamMs is not null)
             righe.Add(Testi.T("Numeri_Tappe", RitardoNelRegistro.Testo(s.ArrivoMs), RitardoNelRegistro.Testo(s.AnteprimaMs),
                 RitardoNelRegistro.Testo(s.WebcamMs)));
+        // Qualità 14: la latenza dell'anteprima nelle sue parti (rete fino all'arrivo, decodifica, coda sul PC).
+        if (s.CodaMs is not null && s.AnteprimaMs is not null)
+            righe.Add(Testi.T("Numeri_Parti", RitardoNelRegistro.Testo(s.ArrivoMs), RitardoNelRegistro.Testo(s.DecodificaMs),
+                RitardoNelRegistro.Testo(s.CodaMs)));
         // Il motore effetti del PC (già compreso nell'anteprima e nella webcam qui sopra).
         if (RigaNumeriEffetti() is { } effettiRiga) righe.Add(effettiRiga);
         if (storiaLatenza.Media is int media) righe.Add(Testi.T("Numeri_Media", media, storiaLatenza.Massima));

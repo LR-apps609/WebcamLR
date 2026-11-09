@@ -13,8 +13,10 @@ namespace WebcamLR;
 /// hardware del sistema: i fotogrammi Annex B vanno a una MediaStreamSource in tempo reale.
 /// Ritardo «da vetro a uscita» (Protocollo.md, «Latenza»): per ogni campione si tiene quale fotogramma del telefono è
 /// (<see cref="TracciaFotogrammi"/>); dalla posizione del lettore si sa quale si vede adesso e da quanto è stato catturato
-/// (<see cref="Ritardo"/>). Se il lettore tiene i fotogrammi più del necessario (il primo era arrivato tardi), la linea del
-/// tempo si accorcia piano piano (<see cref="RecuperoRitardo"/>).
+/// (<see cref="Ritardo"/>). Qualità 14: la linea del tempo del lettore è la coda di ricezione, e si adatta
+/// (<see cref="CodaAdattiva"/>): si accorcia piano piano se il lettore tiene i fotogrammi più del necessario (il primo era
+/// arrivato tardi, rete stabile), si allunga un poco solo se i campioni arrivano con ritardi che variano (jitter).
+/// L'attesa sul PC (in fila qui più l'anticipo sul lettore) è <see cref="Attesa"/>, per dividere la latenza nelle parti.
 /// </summary>
 public sealed class AnteprimaVideo : IDisposable
 {
@@ -27,7 +29,7 @@ public sealed class AnteprimaVideo : IDisposable
     private readonly object blocco = new();
     // Una coda per ogni lettore: una richiesta rimasta in attesa sul lettore vecchio non deve
     // rubare il primo fotogramma chiave a quello nuovo.
-    private Channel<FotogrammaVideo>? attesa;
+    private Channel<InFila>? attesa;
     private MediaStreamSource? sorgente;
     private MediaPlayer? lettore;
     /// <summary>Tempi dei campioni dal primo fotogramma; dopo una pausa del telefono la linea del tempo continua senza buchi.</summary>
@@ -36,18 +38,41 @@ public sealed class AnteprimaVideo : IDisposable
     private int inAttesa;
     // Ritardo da vetro a uscita e recupero dell'attesa (sotto blocco, tranne le classi che hanno il loro).
     private readonly TracciaFotogrammi traccia = new();
-    private readonly RecuperoRitardo recupero = new();
+    private readonly CodaAdattiva adattiva = new(CodaAdattiva.ObiettivoWindows);
     private long ultimoTempo = -1;
     private long? scarto;
 
     /// <summary>Da vetro a ciò che il lettore mostra adesso (mediana di un secondo), da qualsiasi thread.</summary>
     public MisuraRitardo Ritardo { get; } = new();
 
-    /// <summary>Quanto la linea del tempo del lettore è stata accorciata (µs), per il registro.</summary>
+    /// <summary>
+    /// Qualità 14: l'attesa sul PC prima di vedersi (ms, mediana di un secondo): dall'arrivo alla consegna al lettore più
+    /// l'anticipo del campione sulla sua posizione. Da qualsiasi thread.
+    /// </summary>
+    public MisuraRitardo Attesa { get; } = new();
+
+    /// <summary>Un fotogramma in fila per il lettore, con l'istante di arrivo (orologio del PC, µs).</summary>
+    private readonly record struct InFila(FotogrammaVideo Fotogramma, ulong Arrivo);
+
+    /// <summary>Quanto la linea del tempo del lettore è stata accorciata (µs; negativo se allungata), per il registro.</summary>
     public long Recuperato
     {
-        get { lock (blocco) return recupero.Spostamento; }
+        get { lock (blocco) return adattiva.Spostamento; }
     }
+
+    /// <summary>Qualità 14: la profondità della coda adattiva (ms), per il registro.</summary>
+    public int ProfonditaMs
+    {
+        get { lock (blocco) return (int)(adattiva.Profondita / 1000); }
+    }
+
+    private int scartati;
+
+    /// <summary>
+    /// Qualità 14: i fotogrammi buttati perché il PC era indietro (meglio saltare al prossimo fotogramma chiave che
+    /// accumulare ritardo) dall'ultima lettura; poi da capo. Da qualsiasi thread.
+    /// </summary>
+    public int PrendiScartati() => Interlocked.Exchange(ref scartati, 0);
 
     /// <summary>
     /// Il fotogramma del telefono che il lettore <paramref name="lettore"/> mostra adesso (timestamp del telefono), dalla
@@ -105,7 +130,7 @@ public sealed class AnteprimaVideo : IDisposable
             IsLive = true,
             CanSeek = false,
         };
-        var coda = Channel.CreateUnbounded<FotogrammaVideo>(new UnboundedChannelOptions { SingleReader = true });
+        var coda = Channel.CreateUnbounded<InFila>(new UnboundedChannelOptions { SingleReader = true });
         nuova.SampleRequested += (origine, evento) => SuRichiesta(origine, evento, coda);
 
         var nuovo = new MediaPlayer { RealTimePlayback = true, AutoPlay = true, IsMuted = true, IsVideoFrameServerEnabled = perFotogrammi };
@@ -123,7 +148,7 @@ public sealed class AnteprimaVideo : IDisposable
             inAttesa = 0;
             tempi.Azzera();
             traccia.Azzera();
-            recupero.Azzera();
+            adattiva.Azzera();
             ultimoTempo = -1;
             attendiChiave = true;
             campioneDato = false;
@@ -139,8 +164,9 @@ public sealed class AnteprimaVideo : IDisposable
     /// </summary>
     public void Accoda(FotogrammaVideo fotogramma, long? scartoOrologi = null)
     {
-        Channel<FotogrammaVideo>? coda;
+        Channel<InFila>? coda;
         var manca = false;
+        var buttato = false;
         lock (blocco)
         {
             if (scartoOrologi is not null) scarto = scartoOrologi;
@@ -159,26 +185,28 @@ public sealed class AnteprimaVideo : IDisposable
                 {
                     attendiChiave = true;
                     manca = true;
+                    buttato = true;
                 }
                 else inAttesa++;
             }
         }
         if (manca)
         {
+            if (buttato) Interlocked.Increment(ref scartati);
             // Fuori dal blocco: chi ascolta manda un messaggio in rete.
             try { ChiaveMancante?.Invoke(); } catch (Exception) { }
             return;
         }
-        coda.Writer.TryWrite(fotogramma);
+        coda.Writer.TryWrite(new InFila(fotogramma, Orologio.Adesso()));
     }
 
     private async void SuRichiesta(MediaStreamSource origine, MediaStreamSourceSampleRequestedEventArgs evento,
-        Channel<FotogrammaVideo> coda)
+        Channel<InFila> coda)
     {
         var rinvio = evento.Request.GetDeferral();
         try
         {
-            var fotogramma = await coda.Reader.ReadAsync();
+            var (fotogramma, arrivo) = await coda.Reader.ReadAsync();
             MediaPlayer? suo;
             lock (blocco) suo = origine == sorgente ? lettore : null;
             // La posizione del lettore adesso: il tempo del fotogramma che si vede.
@@ -187,6 +215,7 @@ public sealed class AnteprimaVideo : IDisposable
             catch (Exception) { }
             TimeSpan tempo;
             long? scartoAdesso;
+            long? anticipo = null;
             lock (blocco)
             {
                 if (origine != sorgente) return;
@@ -194,16 +223,21 @@ public sealed class AnteprimaVideo : IDisposable
                 var micro = tempi.Microsecondi(fotogramma.Timestamp);
                 if (posizione is long p && p > 0)
                 {
-                    // Il campione aspetterà (micro − p) prima di vedersi: se è sempre troppo, la linea del tempo si accorcia.
-                    var corrente = micro - recupero.Spostamento;
-                    recupero.Aggiungi(corrente - p);
+                    // Il campione aspetterà (micro − p) prima di vedersi: la coda adattiva accorcia o allunga la linea del tempo.
+                    var corrente = micro - adattiva.Spostamento;
+                    adattiva.Aggiungi(corrente - p);
                 }
-                if (recupero.Spostamento > 0) micro = Math.Max(micro - recupero.Spostamento, ultimoTempo + 1);
+                if (adattiva.Spostamento != 0) micro = Math.Max(micro - adattiva.Spostamento, ultimoTempo + 1);
+                if (posizione is long q && q > 0) anticipo = micro - q;
                 ultimoTempo = micro;
                 traccia.Aggiungi(micro, fotogramma.Timestamp);
                 tempo = TimeSpan.FromTicks(micro * 10);
                 scartoAdesso = scarto;
             }
+            // L'attesa sul PC: in fila qui (dall'arrivo a adesso) più l'anticipo sul lettore.
+            var consegna = Orologio.Adesso();
+            var inFila = (long)(consegna - Math.Min(arrivo, consegna));
+            Attesa.Aggiungi((int)((inFila + Math.Max(anticipo ?? 0, 0)) / 1000), consegna);
             // Da vetro all'anteprima: il fotogramma che il lettore mostra adesso, da quando è stato catturato.
             if (posizione is long pos && scartoAdesso is long differenza && traccia.Mostrato(pos) is ulong mostrato)
             {
@@ -241,7 +275,7 @@ public sealed class AnteprimaVideo : IDisposable
     public void Ferma()
     {
         MediaPlayer? vecchio;
-        Channel<FotogrammaVideo>? vecchia;
+        Channel<InFila>? vecchia;
         lock (blocco)
         {
             vecchio = lettore;

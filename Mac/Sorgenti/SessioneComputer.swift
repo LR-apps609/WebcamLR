@@ -35,8 +35,12 @@ final class SessioneComputer: @unchecked Sendable {
         /// Il telefono è stato accettato; il `benvenuto` parte quando il Ricevitore rende attuale la sessione. `impronta`: il codice di sicurezza
         /// del telefono (1.1): è quello che dice se è «lo stesso telefono», non il nome. `via`: come è collegato (1.2).
         case ciao(Ciao, impronta: String, via: TipoCollegamento)
-        /// Il telefono non è fidato: bisogna chiedere all'utente, mostrando il codice di conferma.
-        case conferma(nome: String, codice: String)
+        /// Il telefono non è fidato: bisogna chiedere all'utente, mostrando il codice di conferma. `impronta`: per
+        /// ricordare un no (`Abbinamento.segnaRifiuto`, collaudo 37).
+        case conferma(nome: String, codice: String, impronta: String)
+        /// Rifiutato dall'utente da meno di `Abbinamento.pausaDopoRifiuto`: chiuso con l'`arrivederci` senza domanda
+        /// né codice sul telefono (collaudo 37). Solo per il registro.
+        case rifiutatoDaPoco(nome: String)
         /// La domanda non serve più (tempo scaduto): la finestra si chiude da sola.
         case confermaFinita
         /// Già collegati tutti i telefoni che il Mac tiene insieme (P21): questo riceve l'`arrivederci`
@@ -49,7 +53,10 @@ final class SessioneComputer: @unchecked Sendable {
         /// Nessun dato da 3 secondi.
         case silenzio
         case ripresa
-        case chiusa
+        /// La sessione è finita. `dalTelefono`: l'ha chiusa il telefono con l'`arrivederci` (Scollega sul telefono, un
+        /// altro computer, o il passaggio dal cavo al Wi-Fi): non è una caduta di rete (collaudo 34, come
+        /// `SessioneComputer.ChiusaDalTelefono` su Windows).
+        case chiusa(dalTelefono: Bool)
         /// Il primo fotogramma è a schermo (1.11): «Avvio: 0,9 s» e la riga con le tappe per il registro.
         case avvio(testo: String, riga: String)
         /// Il telefono (CAM 2) chiede di andare nella webcam (`usa-prospettiva`).
@@ -143,6 +150,8 @@ final class SessioneComputer: @unchecked Sendable {
     private var inSilenzio = false
     /// L'ultimo `stato` diceva pausa «sottofondo». Solo sulla coda della sessione.
     private var inSottofondo = false
+    /// È arrivato l'`arrivederci` del telefono (collaudo 34). Solo sulla coda della sessione.
+    private var arrivederciDalTelefono = false
     /// La sessione stessa, dopo `chiudi()`, finché il trasporto non è finito: il `Ricevitore` la lascia subito,
     /// ma l'evento `chiusa` deve arrivare lo stesso (il cavo USB lo aspetta per riprovare o mettersi in pausa).
     /// Solo sulla coda della sessione; si toglie in `termina()`.
@@ -399,6 +408,7 @@ final class SessioneComputer: @unchecked Sendable {
             self.formatoAudio = formatoAudio
             if mandaAlMicrofono() { microfono.imposta(formato: formatoAudio) }
         case .arrivederci:
+            arrivederciDalTelefono = true
             trasporto.annulla()
         default:
             break
@@ -466,6 +476,7 @@ final class SessioneComputer: @unchecked Sendable {
             // fidati: nei limiti prima di tutto, come su Windows (ValoriSicuri.Sanifica).
             accetta(Self.pulito(ciao), sicura: sicura)
         case .arrivederci:
+            arrivederciDalTelefono = true
             trasporto.annulla()
         default:
             // Senza prova non si accetta nient'altro; in attesa della conferma il resto
@@ -519,14 +530,22 @@ final class SessioneComputer: @unchecked Sendable {
             completaAccettazione(ciao, sicura: sicura)
             return
         }
-        // Telefono nuovo senza il QR code: lo stesso codice sui due schermi, e decide l'utente.
+        // Rifiutato da poco: niente domanda, niente codice sul telefono (collaudo 37, come Windows).
+        if abbinamento.rifiutatoDaPoco(sicura.improntaAltro) {
+            notifica(.rifiutatoDaPoco(nome: ciao.nome))
+            chiudiConArrivederci()
+            return
+        }
+        // Telefono nuovo senza il QR code: lo stesso codice sui due schermi, e decide l'utente. Se c'è già una domanda
+        // aperta per un altro telefono, il Ricevitore la mette in coda (collaudo 33): i 60 secondi contano da qui,
+        // come sul telefono, che aspetta da quando riceve l'`approvazione`.
         avvio.segnaConferma()
         invia(.approvazione(Approvazione(codice: sicura.codice)))
         ciaoInAttesa = ciao
         let scadenza = DispatchWorkItem { [weak self] in self?.concludiConferma(false) }
         scadenzaConferma = scadenza
         coda.asyncAfter(deadline: .now() + Self.attesaConferma, execute: scadenza)
-        notifica(.conferma(nome: ciao.nome, codice: sicura.codice))
+        notifica(.conferma(nome: ciao.nome, codice: sicura.codice, impronta: sicura.improntaAltro))
     }
 
     /// Sì → fidato e `benvenuto`; no, o 60 secondi senza risposta → `arrivederci` e chiusura.
@@ -688,7 +707,7 @@ final class SessioneComputer: @unchecked Sendable {
         scadenzaConferma?.cancel()
         scadenzaConferma = nil
         ciaoInAttesa = nil
-        notifica(.chiusa)
+        notifica(.chiusa(dalTelefono: arrivederciDalTelefono))
         trattenuta = nil
     }
 

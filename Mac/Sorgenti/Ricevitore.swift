@@ -24,6 +24,9 @@ final class Ricevitore {
     /// Con l'ultima pausa «sottofondo» (Protocollo.md, «Pausa intelligente»): quanto si aspetta il telefono, muto
     /// o caduto, prima di dimenticarlo. Lo stesso tempo chiude la sessione muta (`SessioneComputer.silenzioSottofondo`).
     static let attesaSottofondo: Duration = .seconds(600)
+    /// Dopo l'`arrivederci` del telefono: quanto si aspetta l'altra strada dello stesso telefono (dal cavo al Wi-Fi)
+    /// prima di toglierlo come con «Scollega» (collaudo 34, `AttesaAltraStrada` su Windows).
+    static let attesaAltraStrada: Duration = .seconds(2)
 
     /// Quanti telefoni diversi insieme (P21). Il codice regge di più; per ora due.
     nonisolated static let massimoTelefoni = 2
@@ -68,6 +71,13 @@ final class Ricevitore {
     private(set) var telefonoNonTornato: String?
     /// Quando ogni telefono rifiutato è stato annunciato: dal cavo riprova da solo, l'avviso no.
     @ObservationIgnored private var ultimiRifiuti: [String: ContinuousClock.Instant] = [:]
+    /// I telefoni (codice di sicurezza) che in questa esecuzione hanno detto di avere WebcamLR Pro (`capacita.pro`): se
+    /// uno di loro si perde e nella webcam resta un telefono gratis, rientra lo stesso, perché è lui che sblocca i due
+    /// telefoni (collaudo 31 e 46, come `ElencoTelefoni` su Windows).
+    @ObservationIgnored private var impronteConPro: Set<String> = []
+    /// I telefoni entrati come secondi mentre le capacità di un altro non erano ancora arrivate (collaudo 32): restano
+    /// solo se, arrivate tutte, almeno un telefono ha Pro (`togliInProvaSenzaPro`).
+    @ObservationIgnored private var inProva: Set<UUID> = []
     /// Chiamato quando l'utente sceglie un altro telefono, mentre quello di prima è ancora lo scelto:
     /// le Riprese chiudono e salvano la registrazione in corso (P21, come su Windows).
     @ObservationIgnored var primaDelCambioTelefono: (@MainActor () -> Void)?
@@ -432,6 +442,12 @@ final class Ricevitore {
     private var candidati: [ObjectIdentifier: SessioneComputer] = [:]
     /// Il candidato che aspetta la risposta dell'utente: una domanda alla volta.
     private var inConferma: ObjectIdentifier?
+    /// L'impronta del telefono di `inConferma`, per ricordare un no (`Abbinamento.segnaRifiuto`, collaudo 37).
+    private var improntaInConferma: String?
+    /// Le domande arrivate mentre un'altra era aperta (collaudo 33): aspettano il loro turno, una alla volta, invece
+    /// di essere rifiutate. Ognuna ha i suoi 60 secondi dall'`approvazione` (`SessioneComputer.attesaConferma`): se
+    /// finiscono in coda la sessione chiude da sé, senza ricordare un no che l'utente non ha mai visto.
+    private var confermeInCoda: [(identita: ObjectIdentifier, nome: String, codice: String, impronta: String)] = []
     private var compitoInOnda: Task<Void, Never>?
     /// Un'app sta usando la webcam virtuale.
     private(set) var webcamInUso = false
@@ -934,7 +950,11 @@ final class Ricevitore {
         switch evento {
         case .ciao(let ciao, let impronta, _):
             candidati[identita] = nil
-            if inConferma == identita { inConferma = nil }
+            if inConferma == identita {
+                inConferma = nil
+                improntaInConferma = nil
+            }
+            confermeInCoda.removeAll { $0.identita == identita }
             // Consentito: il cavo non va più in pausa se questa sessione finisce.
             pausaCavo.remove(identita)
             if let esistente = telefoni.first(where: { $0.impronta == impronta }) {
@@ -1000,8 +1020,10 @@ final class Ricevitore {
                 candidato.chiudi()
                 return true
             }
-            // WebcamLR Pro: due telefoni insieme solo se quello nella webcam l'ha sbloccato (`capacita.pro`).
-            guard telefoni.isEmpty || proAttivo else {
+            // WebcamLR Pro: due telefoni insieme solo se uno dei telefoni l'ha sbloccato (`capacita.pro`), o se l'ha
+            // questo; senza le capacità di un telefono collegato entra «in prova» e si decide dopo (`secondoConsentito`).
+            let ammesso = secondoConsentito(impronta)
+            guard ammesso.consentito else {
                 avvisaSecondoTelefonoSenzaPro(ciao.nome)
                 candidato.chiudi()
                 return true
@@ -1010,6 +1032,7 @@ final class Ricevitore {
             let nuovo = TelefonoCollegato(impronta: impronta, telefono: ciao, schermo: creaSchermo())
             nuovo.sessione = candidato
             telefoni.append(nuovo)
+            if ammesso.inAttesa { inProva.insert(nuovo.id) }
             controllaAttesaTelefono()
             aggiornaPosti()
             candidato.diventaAttuale(schermo: nuovo.schermo)
@@ -1021,25 +1044,27 @@ final class Ricevitore {
                 aggiornaUscite()
             }
             return false
-        case .conferma(let nome, let codice):
-            // C'è già una domanda aperta per un altro telefono: per sicurezza si rifiuta,
-            // così nessuno può cambiare la domanda sotto il cursore dell'utente.
+        case .conferma(let nome, let codice, let impronta):
+            // C'è già una domanda aperta per un altro telefono: questa aspetta il suo turno (collaudo 33, come
+            // Windows). Non si cambia la domanda sotto il cursore dell'utente, e il telefono, che ha già il codice,
+            // non riceve un rifiuto che nessuno ha dato.
             guard inConferma == nil else {
-                candidato.rispondi(consentito: false)
+                confermeInCoda.append((identita: identita, nome: nome, codice: codice, impronta: impronta))
+                registra(String(localized: "Telefono nuovo, «\(nome)»: aspetta che finisca la domanda per l'altro telefono"))
                 return true
             }
-            inConferma = identita
-            registra(String(localized: "Telefono nuovo, «\(nome)»: chiedo conferma con il codice"))
-            // Il cavo va in pausa solo con «Non consentire» (`rispondiConferma`). Senza risposta entro 60 secondi
-            // il client del cavo riprova con l'attesa che cresce dei rifiuti: così «Riprova» sull'iPhone fa
-            // ricomparire la domanda, invece di aspettare un cavo in pausa.
-            // Prima la notifica (solo se WebcamLR è in secondo piano), poi l'app davanti con la domanda.
-            Notifiche.condivise.richiestaConsenso(nome)
-            finestraConferma.mostra(nome: nome, codice: codice) { [weak self] consentito in
-                self?.rispondiConferma(consentito, da: identita)
-            }
+            chiediConferma(identita, nome: nome, codice: codice, impronta: impronta)
+        case .rifiutatoDaPoco(let nome):
+            registra(String(localized: "«\(nome)» è stato rifiutato da poco: per due minuti non si chiede di nuovo"))
         case .confermaFinita:
-            if inConferma == identita { chiudiConferma() }
+            if inConferma == identita {
+                // Tempo scaduto con la domanda davanti: conta come un no (collaudo 37).
+                if let impronta = improntaInConferma { abbinamento.segnaRifiuto(impronta) }
+                chiudiConferma()
+            } else {
+                // Tempo finito in coda: l'utente non l'ha mai vista, non è un rifiuto.
+                confermeInCoda.removeAll { $0.identita == identita }
+            }
         case .rifiutata(let nome):
             // Posti pieni (P21): la sessione ha già mandato l'`arrivederci` e si chiude da sola. Sul cavo
             // il client riprova con l'attesa che cresce (2, 4… 30 secondi): appena un posto si libera, entra.
@@ -1048,7 +1073,9 @@ final class Ricevitore {
             candidati[identita] = nil
             registra(String(localized: "Collegamento chiuso prima di essere accettato"))
             chiusaSessione(identita)
-            // Il telefono se n'è andato mentre si aspettava la conferma: la domanda sparisce.
+            // Il telefono se n'è andato mentre si aspettava la conferma: la domanda sparisce (e non conta come un no:
+            // può riprovare subito). Se era in coda, esce dalla coda.
+            confermeInCoda.removeAll { $0.identita == identita }
             if inConferma == identita { chiudiConferma() }
         default:
             break
@@ -1074,6 +1101,49 @@ final class Ricevitore {
         ultimiRifiuti[nome] = adesso
         mostraAvviso(String(localized: "Due telefoni insieme sono di WebcamLR Pro: sbloccalo sull'iPhone nella webcam per collegare anche «\(nome)»."),
                      registro: String(localized: "«\(nome)» non collegato: due telefoni insieme sono di WebcamLR Pro"))
+    }
+
+    /// Segna i telefoni dell'elenco che hanno WebcamLR Pro (`impronteConPro`).
+    private func ricordaPro() {
+        for telefono in telefoni where telefono.capacita?.pro == true {
+            impronteConPro.insert(telefono.impronta)
+        }
+    }
+
+    /// Un telefono nuovo può entrare come secondo? Sì senza telefoni; sì se uno dei telefoni ha Pro, o se l'ha lui (visto
+    /// prima in questa esecuzione); sì «in prova» (`inAttesa`) se un telefono collegato non ha ancora mandato le sue
+    /// capacità: non si decide «gratis» senza saperlo (collaudo 31, 32 e 46).
+    private func secondoConsentito(_ impronta: String) -> (consentito: Bool, inAttesa: Bool) {
+        guard !telefoni.isEmpty else { return (true, false) }
+        ricordaPro()
+        if impronteConPro.contains(impronta) || telefoni.contains(where: { impronteConPro.contains($0.impronta) }) {
+            return (true, false)
+        }
+        let inAttesa = telefoni.contains { $0.capacita == nil }
+        return (inAttesa, inAttesa)
+    }
+
+    /// A ogni `capacita`: i telefoni entrati «in prova» escono con l'avviso Pro se, arrivate le capacità di tutti,
+    /// nessuno ha Pro. Restano se uno ha Pro, o se sono rimasti da soli (l'altro è andato via prima delle sue capacità).
+    private func togliInProvaSenzaPro() {
+        inProva = inProva.filter { id in telefoni.contains { $0.id == id } }
+        guard !inProva.isEmpty else { return }
+        ricordaPro()
+        if telefoni.count <= 1 || telefoni.contains(where: { impronteConPro.contains($0.impronta) }) {
+            inProva.removeAll()
+            return
+        }
+        guard !telefoni.contains(where: { $0.capacita == nil }) else { return }
+        let fuori = telefoni.filter { inProva.contains($0.id) }
+        inProva.removeAll()
+        for telefono in fuori {
+            avvisaSecondoTelefonoSenzaPro(telefono.telefono.nome)
+            // Come un telefono rifiutato prima del `benvenuto`: l'`arrivederci`, e sul cavo il client riprova con l'attesa
+            // che cresce.
+            telefono.sessione?.chiudi()
+            telefono.sessione = nil
+            dimentica(telefono)
+        }
     }
 
     /// La X sul banner «… non è tornato».
@@ -2154,13 +2224,17 @@ final class Ricevitore {
         var obiettivo = profilo.obiettivo
         if let scelto = obiettivo, capacita?.obiettivi.contains(scelto) != true { obiettivo = nil }
         let manuale = profilo.esposizioneManuale && capacita?.isoMinimo != nil
-        // Stesso obiettivo: il massimo è noto. Se cambia, ci pensa il telefono con i limiti del nuovo.
+        // Le capacità sono dell'obiettivo attuale (Protocollo.md, «capacita»). Stesso obiettivo: il massimo dello zoom
+        // è noto. Se cambia, zoom e torcia del profilo vanno come sono e il telefono li porta ai limiti del nuovo: dalla
+        // frontale, senza torcia, la torcia del profilo si accende sul principale (collaudo 43, come Windows).
+        let cambiaObiettivo = obiettivo != nil && obiettivo != statoTelefono?.obiettivo
         var zoom = profilo.zoom
-        if obiettivo == nil || obiettivo == statoTelefono?.obiettivo, let massimo = capacita?.zoomMassimo {
+        if !cambiaObiettivo, let massimo = capacita?.zoomMassimo {
             zoom = min(max(zoom, 1), max(massimo, 1))
         }
+        let mandaTorcia = cambiaObiettivo || capacita?.torcia == true
         comanda(Comando(obiettivo: obiettivo, zoom: zoom,
-                        torcia: capacita?.torcia == true ? profilo.torcia : nil,
+                        torcia: mandaTorcia ? profilo.torcia : nil,
                         esposizione: profilo.esposizione,
                         bianco: profilo.biancoAutomatico ? 0 : Int(profilo.bianco),
                         iso: manuale ? profilo.iso : 0, tempo: manuale ? profilo.tempo : 0))
@@ -2169,7 +2243,7 @@ final class Ricevitore {
         nuovi.obiettivo = obiettivo
         nuovi.zoom = zoom
         // Se la torcia non è stata mandata, resta com'era.
-        if capacita?.torcia != true { nuovi.torcia = torcia }
+        if !mandaTorcia { nuovi.torcia = torcia }
         nuovi.esposizioneManuale = manuale
         controlli = nuovi
     }
@@ -2290,11 +2364,17 @@ final class Ricevitore {
             segnalaInOnda(telefono, sempre: true)
             segnalaAnteprima(telefono, sempre: true)
             chiediAudioSeServe()
-        case .conferma, .confermaFinita, .rifiutata:
+        case .conferma, .confermaFinita, .rifiutata, .rifiutatoDaPoco:
             // Solo i candidati chiedono conferma o vengono rifiutati (sopra).
             break
         case .formato(let formato):
             telefono.formatoTelefono = formato
+            // La risposta a una richiesta HEVC arriva in H.264: il telefono non sa fare HEVC (collaudo 57).
+            if !telefono.senzaHEVC, let chiesto = telefono.formatoChiesto, chiesto.codec == .hevc, formato.codec == .h264,
+               chiesto.larghezza == formato.larghezza, chiesto.altezza == formato.altezza {
+                telefono.senzaHEVC = true
+                registra(String(localized: "Il telefono non ha l'HEVC: da qui si chiede H.264"), di: telefono)
+            }
             registra(String(localized: "Formato: \(formato.codec == .hevc ? "HEVC" : "H.264") \(formato.larghezza)×\(formato.altezza) a \(formato.fps) fps"), di: telefono)
         case .stato(let stato):
             if stato.pausa != telefono.statoTelefono?.pausa {
@@ -2311,6 +2391,7 @@ final class Ricevitore {
                 telefono.inizioSottofondo = nil
             }
             let obiettivoPrima = telefono.statoTelefono?.obiettivo
+            let pausaPrima = telefono.statoTelefono?.pausa
             let temperaturaPrima = telefono.statoTelefono?.temperatura ?? .normale
             telefono.statoTelefono = stato
             // Il telefono non preferisce più il Wi-Fi: il cavo messo in pausa per lui riparte.
@@ -2350,7 +2431,16 @@ final class Ricevitore {
             let audioPrima = telefono.audioDalTelefono
             telefono.audioDalTelefono = stato.audio
             if scelto, let audio = stato.audio, let audioPrima, audio != audioPrima {
-                microfonoDalTelefono(audio, telefono: telefono)
+                if pausaPrima != nil || stato.pausa != nil {
+                    // In pausa (o appena entrato o uscito dalla pausa) il telefono smette di mandare la voce senza che
+                    // nessuno abbia spento il microfono: l'interruttore resta com'è e non si salva spento; finita la
+                    // pausa la voce torna da sola (collaudo 40, come `StatoMicrofono.DalTelefono` su Windows).
+                    if audioPrima, !audio, microfonoAcceso {
+                        registra(String(localized: "Telefono in pausa: l'audio si ferma, il microfono resta acceso"), di: telefono)
+                    }
+                } else {
+                    microfonoDalTelefono(audio, telefono: telefono)
+                }
             } else if scelto, audioPrima == nil, stato.audio == true, !microfonoAcceso, telefonoMandaAudio {
                 // Sessione nuova con il microfono che va (era rimasto chiesto sul telefono) e l'interruttore spento
                 // qui: vale l'interruttore, il telefono smette di mandare la voce.
@@ -2369,6 +2459,9 @@ final class Ricevitore {
             }
         case .capacita(let nuove):
             telefono.capacita = nuove
+            // Un telefono entrato prima delle capacità degli altri: se nessuno ha Pro, ora esce (collaudo 32).
+            togliInProvaSenzaPro()
+            guard telefoni.contains(where: { $0 === telefono }) else { return }
             // Obiettivo senza ISO manuale: l'interruttore sparisce e torna il cursore dell'esposizione.
             if nuove.isoMinimo == nil { telefono.controlli.esposizioneManuale = false }
             chiediAudioSeServe()
@@ -2431,7 +2524,7 @@ final class Ricevitore {
                         ? String(localized: "\(telefono.telefono.nome) di nuovo collegato") : nil)
             telefono.collegamento = .collegato
             aggiornaStatoInOnda(telefono)
-        case .chiusa:
+        case .chiusa(let dalTelefono):
             telefono.sessione = nil
             telefono.formatoTelefono = nil
             telefono.formatoChiesto = nil
@@ -2443,13 +2536,31 @@ final class Ricevitore {
                 microfono.ferma()
             }
             registra(String(localized: "Collegamento chiuso"), di: telefono,
-                     annuncio: scelto && !telefono.inSottofondo && telefono.collegamento != .riconnessione
+                     annuncio: scelto && !dalTelefono && !telefono.inSottofondo && telefono.collegamento != .riconnessione
                         ? String(localized: "Riconnessione in corso…") : nil)
             chiusaSessione(identita)
             telefono.collegamento = .riconnessione
-            riprendiCavoPerPreferenza(String(localized: "Il Wi-Fi non risponde: provo con il cavo USB"), di: telefono)
+            // Un telefono che se ne va da sé non si riprende dal cavo messo in pausa per la sua preferenza Wi-Fi.
+            if !dalTelefono {
+                riprendiCavoPerPreferenza(String(localized: "Il Wi-Fi non risponde: provo con il cavo USB"), di: telefono)
+            }
             telefono.statistiche.fps = 0
             telefono.statistiche.megabitAlSecondo = 0
+            telefono.compitoAttesa?.cancel()
+            if dalTelefono {
+                // L'`arrivederci` del telefono è voluto (Scollega sul telefono, un altro computer): niente 15 secondi di
+                // «Riconnessione» né «Telefono perso». Si aspetta solo un attimo l'altra strada (l'iPhone lascia il cavo
+                // per il Wi-Fi con un arrivederci), poi si toglie come con «Scollega»: con due telefoni l'altro va
+                // subito nella webcam (collaudo 34, come Windows).
+                telefono.compitoAttesa = Task { [weak self, weak telefono] in
+                    try? await Task.sleep(for: Self.attesaAltraStrada)
+                    guard let self, let telefono, !Task.isCancelled, telefono.sessione == nil,
+                          self.telefoni.contains(where: { $0 === telefono }) else { return }
+                    self.registra(String(localized: "«\(telefono.telefono.nome)» scollegato dal telefono"), di: telefono)
+                    self.dimentica(telefono)
+                }
+                return
+            }
             // In sottofondo la pausa resta a schermo (scheda, finestra, webcam) e il telefono ha 10 minuti dall'inizio
             // della pausa per tornare; altrimenti i soliti 15 secondi.
             let sottofondo = telefono.inSottofondo
@@ -2459,7 +2570,6 @@ final class Ricevitore {
                 attesa = max(Self.attesaSottofondo - passato, Self.attesaRiconnessione)
                 registra(String(localized: "Il telefono è in sottofondo: lo aspetto fino a 10 minuti"), di: telefono)
             }
-            telefono.compitoAttesa?.cancel()
             telefono.compitoAttesa = Task { [weak self, weak telefono] in
                 try? await Task.sleep(for: attesa)
                 guard let self, let telefono, !Task.isCancelled, telefono.sessione == nil else { return }
@@ -2475,21 +2585,53 @@ final class Ricevitore {
         }
     }
 
+    /// La domanda «Consentire …?» per un candidato: la notifica e il pannello davanti.
+    private func chiediConferma(_ identita: ObjectIdentifier, nome: String, codice: String, impronta: String) {
+        inConferma = identita
+        improntaInConferma = impronta
+        registra(String(localized: "Telefono nuovo, «\(nome)»: chiedo conferma con il codice"))
+        // Il cavo va in pausa solo con «Non consentire» (`rispondiConferma`). Senza risposta entro 60 secondi
+        // il client del cavo riprova con l'attesa che cresce dei rifiuti: così «Riprova» sull'iPhone fa
+        // ricomparire la domanda (dopo i due minuti del no ricordato), invece di aspettare un cavo in pausa.
+        // Prima la notifica (solo se WebcamLR è in secondo piano), poi l'app davanti con la domanda.
+        Notifiche.condivise.richiestaConsenso(nome)
+        finestraConferma.mostra(nome: nome, codice: codice) { [weak self] consentito in
+            self?.rispondiConferma(consentito, da: identita)
+        }
+    }
+
+    /// La domanda di prima è chiusa: tocca alla prima in coda il cui telefono aspetta ancora (collaudo 33).
+    private func prossimaConferma() {
+        guard inConferma == nil else { return }
+        while !confermeInCoda.isEmpty {
+            let prossima = confermeInCoda.removeFirst()
+            guard candidati[prossima.identita] != nil else { continue }
+            chiediConferma(prossima.identita, nome: prossima.nome, codice: prossima.codice, impronta: prossima.impronta)
+            return
+        }
+    }
+
     /// «Consenti» o «Non consentire»: vale solo per la sessione che l'ha chiesto.
     private func rispondiConferma(_ consentito: Bool, da identita: ObjectIdentifier) {
         Notifiche.condivise.ritiraRichiestaConsenso()
         guard inConferma == identita else { return }
         inConferma = nil
         registra(consentito ? String(localized: "Telefono consentito") : String(localized: "Telefono non consentito"))
+        // Un no si ricorda per due minuti: la stessa chiave non fa ricomparire la domanda (collaudo 37).
+        if !consentito, let impronta = improntaInConferma { abbinamento.segnaRifiuto(impronta) }
+        improntaInConferma = nil
         // Un telefono del cavo non consentito non deve ripresentarsi ogni 2 secondi: il cavo va in pausa.
         if !consentito, canaliCavo[identita] != nil { pausaCavo.insert(identita) }
         candidati[identita]?.rispondi(consentito: consentito)
+        prossimaConferma()
     }
 
     private func chiudiConferma() {
         inConferma = nil
+        improntaInConferma = nil
         finestraConferma.chiudi()
         Notifiche.condivise.ritiraRichiestaConsenso()
+        prossimaConferma()
     }
 
     /// Una riga nel registro a ogni inizio (o cambio di motivo) e fine di pausa: il motivo e, alla fine, quanto è durata.
@@ -2551,6 +2693,9 @@ final class Ricevitore {
     /// Il telefono non c'è più (scollegato o non tornato): via dall'elenco. Se era quello nella webcam,
     /// ci va l'altro, se c'è.
     private func dimentica(_ telefono: TelefonoCollegato) {
+        // Prima di toglierlo: se ha Pro, quando torna rientra anche con un telefono gratis nella webcam (collaudo 31).
+        ricordaPro()
+        inProva.remove(telefono.id)
         let eraScelto = telefono === attivo
         if eraScelto { primaDiDimenticareLoScelto?() }
         telefono.annullaInvii()

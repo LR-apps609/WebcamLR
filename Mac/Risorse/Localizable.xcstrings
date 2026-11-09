@@ -2500,6 +2500,16 @@
         }
       }
     },
+    "Il telefono non ha l'HEVC: da qui si chiede H.264" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The phone has no HEVC: asking for H.264 from now on"
+          }
+        }
+      }
+    },
     "Il telefono non manda l'audio." : {
       "localizations" : {
         "en" : {
@@ -6243,6 +6253,16 @@
         }
       }
     },
+    "Telefono in pausa: l'audio si ferma, il microfono resta acceso" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phone paused: audio stops, the microphone stays on"
+          }
+        }
+      }
+    },
     "Telefono molto caldo" : {
       "localizations" : {
         "en" : {
@@ -6279,6 +6299,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Phone no longer connected: recording saved to Movies › WebcamLR"
+          }
+        }
+      }
+    },
+    "Telefono nuovo, «%@»: aspetta che finisca la domanda per l'altro telefono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New phone, “%@”: waiting for the question about the other phone to finish"
           }
         }
       }
@@ -7734,6 +7764,16 @@
         }
       }
     },
+    "«%@» scollegato dal telefono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” disconnected on the phone"
+          }
+        }
+      }
+    },
     "«%@» usa il Grandangolo 0,5× posteriore: gira il telefono con la fotocamera posteriore verso di te." : {
       "localizations" : {
         "en" : {
@@ -7750,6 +7790,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "“%@” uses the free version."
+          }
+        }
+      }
+    },
+    "«%@» è stato rifiutato da poco: per due minuti non si chiede di nuovo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” was declined a moment ago: not asking again for two minutes"
           }
         }
       }

@@ -68,6 +68,10 @@ final class TelefonoCollegato: Identifiable {
     @ObservationIgnored var inviiInAttesa: [String: Task<Void, Never>] = [:]
     /// Il formato che il telefono dice di mandare, per la richiesta dei 60 fps (P12).
     @ObservationIgnored var formatoTelefono: FormatoVideo?
+    /// Ha risposto H.264 a una richiesta HEVC con la stessa risoluzione: non ha un codificatore HEVC (Android senza
+    /// HEVC hardware). Da qui si chiede H.264, così la stessa qualità non si richiede a ogni scelta (collaudo 57).
+    /// Vale per il telefono, anche dopo una riconnessione.
+    @ObservationIgnored var senzaHEVC = false
     /// I fps già chiesti mentre la webcam è in uso: una richiesta sola per volta.
     @ObservationIgnored var fpsChiesti: Int?
     /// Effetti sul computer nella sessione attuale (Protocollo.md, «Effetti sul computer»): nil = non ancora deciso

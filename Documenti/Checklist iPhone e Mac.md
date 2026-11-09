@@ -126,8 +126,8 @@ Più avanti, con l'account a pagamento e l'acquisto creato in App Store Connect 
 
 ## B · Ricollegamento e collegamento istantaneo
 
-- [ ] B1 · ★ Chiudi del tutto l'app sull'iPhone e riaprila: «Mi ricollego a … tra 2…», poi video **senza** codice
-- [ ] B2 · Durante «tra 2…» apri il QR o «Inserisci l'indirizzo», oppure premi «Annulla»: il conto si annulla e il Mac non mostra l'iPhone collegato
+- [ ] B1 · ★ Chiudi del tutto l'app sull'iPhone e riaprila: «In onda» si apre subito, senza conto alla rovescia, e il video arriva **senza** codice (Qualità 19, `Documenti/Avvio zero passi.md`)
+- [ ] B2 · Con «Collegati da solo all'ultimo computer» spento (Impostazioni › Collegamento) riaprendo l'app resta l'elenco dei computer e nulla parte da solo
 - [ ] B3 · ★ In onda, chiudi WebcamLR sul Mac: banner calmo «In attesa di «Nome»…», nessun errore; riaprendolo il video riparte da solo
 - [ ] B4 · Apri prima l'iPhone, con WebcamLR chiuso sul Mac: «mi collego da solo appena compare»; aprendo il Mac il video parte da solo
 - [ ] B5 · In onda, «Scollega» dal Mac: l'iPhone resta in attesa e non si ricollega da solo; «Riprova ora» funziona

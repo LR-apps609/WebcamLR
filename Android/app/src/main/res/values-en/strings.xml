@@ -287,7 +287,9 @@
     <!-- 60_computer -->
     <string name="app_e_assistenza">App and support</string>
     <string name="app_e_assistenza_nota">FAQ, guide, known computers and app info</string>
-    <string name="ricollego_tra">Reconnecting to %1$s in %2$d…</string>
+    <string name="collega_da_solo">Connect automatically to the last computer</string>
+    <string name="collega_da_solo_nota">When you open the app, it connects right away to the last computer you used, if it’s on and already known.</string>
+    <string name="collega_da_solo_spento_nota">When you open the app, you choose the computer from the list.</string>
     <string name="collega_a">Connect to %1$s</string>
     <string name="collega">Connect</string>
     <string name="collega_altro_domanda">Connect to %1$s?</string>

@@ -289,7 +289,9 @@
     <!-- 60_computer -->
     <string name="app_e_assistenza">App e assistenza</string>
     <string name="app_e_assistenza_nota">Domande frequenti, guida, computer conosciuti e informazioni</string>
-    <string name="ricollego_tra">Mi ricollego a %1$s tra %2$d…</string>
+    <string name="collega_da_solo">Collegati da solo all\'ultimo computer</string>
+    <string name="collega_da_solo_nota">Aprendo l\'app ti colleghi subito all\'ultimo computer usato, se è acceso e già conosciuto.</string>
+    <string name="collega_da_solo_spento_nota">Aprendo l\'app scegli tu il computer dall\'elenco.</string>
     <string name="collega_a">Collega a %1$s</string>
     <string name="collega">Collega</string>
     <string name="collega_altro_domanda">Collegarsi a %1$s?</string>

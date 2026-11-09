@@ -327,6 +327,11 @@ private fun ColumnScope.SezioneCollegamento(sessione: SessioneTelefono?) {
         RigaScelta(stringResource(R.string.collegamento_wifi), scelta == PreferenzeCollegamento.WIFI) { scegli(PreferenzeCollegamento.WIFI) }
         RigaScelta(stringResource(R.string.collegamento_cavo_usb), scelta == PreferenzeCollegamento.CAVO) { scegli(PreferenzeCollegamento.CAVO) }
     }
+    // Qualità 19: all'avvio subito all'ultimo computer conosciuto, senza conto alla rovescia.
+    Spacer(Modifier.size(Spazi.stretto))
+    Gruppo {
+        RigaInterruttore(stringResource(R.string.collega_da_solo), Impostazioni.collegaDaSolo) { Impostazioni.impostaCollegaDaSolo(it) }
+    }
     if (stato != null) {
         val misure = stato.strade.mapNotNull { strada -> strada.ms?.let { ms -> Strada.entries.firstOrNull { it.valore == strada.tipo }?.let { it to ms } } }.toMap()
         val veloce = if (stato.strade.size > 1) RegolaCollegamento.piuVeloce(misure) else null
@@ -347,6 +352,7 @@ private fun ColumnScope.SezioneCollegamento(sessione: SessioneTelefono?) {
         }
     }
     NotaSotto(stringResource(R.string.collegamento_nota))
+    NotaSotto(stringResource(if (Impostazioni.collegaDaSolo) R.string.collega_da_solo_nota else R.string.collega_da_solo_spento_nota))
 }
 
 /**

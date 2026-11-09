@@ -3,7 +3,7 @@ using Xunit;
 
 namespace WebcamLR.Ricevitore.Test;
 
-/// <summary>Il ritardo «da vetro a uscita» (Protocollo.md, «Latenza»): conto, mediana, fotogramma mostrato, recupero.</summary>
+/// <summary>Il ritardo «da vetro a uscita» (Protocollo.md, «Latenza»): conto, mediana, fotogramma mostrato (la coda che si adatta è in CodaAdattivaTest.cs).</summary>
 public class RitardoUscitaTest
 {
     [Fact]
@@ -79,72 +79,6 @@ public class RitardoUscitaTest
         Assert.Equal((ulong)(TracciaFotogrammi.Capacita + 9), traccia.Mostrato(long.MaxValue - TracciaFotogrammi.Tolleranza));
         traccia.Azzera();
         Assert.Null(traccia.Mostrato(long.MaxValue - TracciaFotogrammi.Tolleranza));
-    }
-
-    [Fact]
-    public void IlRecuperoTogliLAttesaCostanteAPiccoliPassi()
-    {
-        var recupero = new RecuperoRitardo();
-        // Il lettore tiene ogni fotogramma 80 ms prima di mostrarlo (il primo era arrivato tardi).
-        var anticipo = 80_000L;
-        var passi = new List<long>();
-        for (var i = 0; i < 200; i++)
-        {
-            var passo = recupero.Aggiungi(anticipo);
-            Assert.InRange(passo, 0, RecuperoRitardo.PassoMassimo);
-            passi.Add(passo);
-            anticipo -= passo;
-        }
-        // Per i primi 29 non si fa nulla: serve una finestra intera.
-        Assert.All(passi.Take(RecuperoRitardo.Finestra - 1), p => Assert.Equal(0, p));
-        // Alla fine resta solo la soglia: 60 ms recuperati, 2 ms alla volta.
-        Assert.Equal(RecuperoRitardo.Soglia, anticipo);
-        Assert.Equal(60_000, recupero.Spostamento);
-    }
-
-    [Fact]
-    public void IlRecuperoNonToccaUnLettoreGiaPuntuale()
-    {
-        var recupero = new RecuperoRitardo();
-        var casuale = new Random(7);
-        for (var i = 0; i < 300; i++)
-        {
-            // Anticipo tra -10 e +40 ms: ogni tanto sotto la soglia, quindi l'attesa non è costante.
-            var anticipo = i % 10 == 0 ? 5_000 : casuale.Next(-10_000, 40_000);
-            Assert.Equal(0, recupero.Aggiungi(anticipo));
-        }
-        Assert.Equal(0, recupero.Spostamento);
-    }
-
-    [Fact]
-    public void UnaPosizioneNonCredibileFermaIlRecupero()
-    {
-        var recupero = new RecuperoRitardo();
-        for (var i = 0; i < 40; i++)
-        {
-            // Una posizione ferma a zero (il lettore non la aggiorna): l'anticipo cresce senza fine.
-            Assert.Equal(0, recupero.Aggiungi(3_000_000 + i * 33_333L));
-        }
-        Assert.Equal(0, recupero.Spostamento);
-    }
-
-    [Fact]
-    public void IlRecuperoSegueUnaDerivaLentaPerDueOre()
-    {
-        // Collaudo 38: l'orologio del telefono corre lo 0,1% più del lettore (1 ms ogni secondo, 7,2 s in due ore).
-        // Prima il recupero si fermava a 500 ms totali e l'attesa tornava a crescere; ora resta vicino alla soglia.
-        var recupero = new RecuperoRitardo();
-        const int fotogrammi = 2 * 60 * 60 * 30;
-        long anticipo = 0;
-        for (var i = 1; i <= fotogrammi; i++)
-        {
-            anticipo = i * 1_000L / 30 - recupero.Spostamento;
-            Assert.InRange(recupero.Aggiungi(anticipo), 0, RecuperoRitardo.PassoMassimo);
-        }
-        Assert.True(recupero.Spostamento > 7_100_000, $"Spostamento {recupero.Spostamento}");
-        Assert.InRange(anticipo, 0, RecuperoRitardo.Soglia + 2 * RecuperoRitardo.PassoMassimo);
-        recupero.Azzera();
-        Assert.Equal(0, recupero.Spostamento);
     }
 
     [Fact]

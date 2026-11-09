@@ -171,61 +171,6 @@ public sealed class TracciaFotogrammi
 }
 
 /// <summary>
-/// Recupero del ritardo nel lettore di Windows. Il lettore mostra ogni fotogramma al suo tempo, contato dal primo: se il
-/// primo è arrivato tardi (un fotogramma chiave grande, il decodificatore che si avvia) tutti gli altri aspettano lo
-/// stesso ritardo per sempre. Qui si guarda quanto prima del suo momento arriva ogni campione («anticipo»: tempo del
-/// campione meno posizione del lettore): se per 30 campioni di fila resta sopra i 20 ms, la linea del tempo si accorcia di
-/// al massimo 2 ms per fotogramma (circa il 6% a 30 fps, invisibile), finché l'attesa inutile non è sparita. I tempi
-/// restano sempre crescenti. Una posizione non credibile (oltre 2 secondi di differenza) ferma il recupero.
-/// Nessun tetto al totale: la deriva lenta tra l'orologio del telefono e quello del lettore si accumula per tutta la
-/// chiamata, e con un tetto (era 500 ms) dopo circa un'ora la latenza tornava a crescere senza fine (collaudo 38).
-/// Il limite resta sul passo per fotogramma.
-/// </summary>
-public sealed class RecuperoRitardo
-{
-    public const long Soglia = 20_000;
-    public const long PassoMassimo = 2_000;
-    public const long AnticipoAssurdo = 2_000_000;
-    public const int Finestra = 30;
-
-    private readonly Queue<long> anticipi = new();
-
-    /// <summary>Quanto la linea del tempo è già stata accorciata, in µs.</summary>
-    public long Spostamento { get; private set; }
-
-    /// <summary>
-    /// L'anticipo di un campione, con la linea del tempo già accorciata di <see cref="Spostamento"/>. Restituisce di quanto
-    /// accorciarla ancora (0 se non serve); <see cref="Spostamento"/> cresce dello stesso valore.
-    /// </summary>
-    public long Aggiungi(long anticipo)
-    {
-        if (anticipo > AnticipoAssurdo || anticipo < -AnticipoAssurdo)
-        {
-            anticipi.Clear();
-            return 0;
-        }
-        anticipi.Enqueue(anticipo);
-        if (anticipi.Count > Finestra) anticipi.Dequeue();
-        if (anticipi.Count < Finestra) return 0;
-        var minimo = anticipi.Min();
-        if (minimo <= Soglia) return 0;
-        var passo = Math.Min(PassoMassimo, minimo - Soglia);
-        Spostamento += passo;
-        // Le misure già in fila valevano per la linea del tempo di prima: ora sono più corte dello stesso passo.
-        var vecchi = anticipi.ToArray();
-        anticipi.Clear();
-        foreach (var valore in vecchi) anticipi.Enqueue(valore - passo);
-        return passo;
-    }
-
-    public void Azzera()
-    {
-        anticipi.Clear();
-        Spostamento = 0;
-    }
-}
-
-/// <summary>
 /// Il ritardo dell'audio deve restare stabile (le app di chiamata odiano il ritardo che oscilla): vale il massimo delle
 /// misure degli ultimi 5 secondi. Così sale subito (meglio la voce un attimo dopo le labbra che un buco) e scende solo
 /// dopo 5 secondi di valori più bassi. Solo su un thread.

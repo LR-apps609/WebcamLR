@@ -30,6 +30,11 @@ final class Schermo: @unchecked Sendable {
     /// Da vetro alla finestra: dalla cattura sul telefono all'immagine decodificata passata al livello (mediana di un
     /// secondo, Protocollo.md «Latenza»). Da qualsiasi coda.
     let ritardo = MisuraRitardo()
+    /// Qualità 14: le parti della latenza dopo l'arrivo, per i numeri del Mac (mediane di un secondo, da qualsiasi coda).
+    /// Decodifica: dall'arrivo allo schermo all'immagine pronta (compresi gli effetti del Mac se accesi). Coda: dall'immagine
+    /// pronta a quando esce (la coda che si adatta, `CodaAdattiva`).
+    let decodifica = MisuraRitardo()
+    let attesa = MisuraRitardo()
     /// La registrazione si è chiusa da sola (formato cambiato, disco pieno): il file, il perché e quanto è salvato.
     /// Arriva con `avviaRegistrazione`; solo sulla coda.
     private var suRegistrazioneInterrotta: (@Sendable (URL, InterruzioneRegistrazione) -> Void)?
@@ -101,15 +106,17 @@ final class Schermo: @unchecked Sendable {
     private static let fotogrammaScartato: OSStatus = 1
     /// Da quando (`DispatchTime`, ns) la finestra mostra «interrotta»; 0 se no. Solo sulla coda.
     private var interrottaDa: UInt64 = 0
-    /// La riserva di riproduzione (`RiservaRiproduzione`) e le immagini che vi aspettano, in ordine, con l'istante in
-    /// cui escono (`Orologio`, µs). Solo sulla coda.
-    private var riserva = RiservaRiproduzione()
-    private var inRiserva: [(immagine: CVPixelBuffer, cattura: Int64, timestamp: UInt64, quando: UInt64)] = []
+    /// La riserva di riproduzione, cioè la coda che si adatta (`CodaAdattiva`, qualità 14), e le immagini che vi
+    /// aspettano, in ordine, con quando erano pronte e l'istante in cui escono (`Orologio`, µs). Solo sulla coda.
+    private var riserva = CodaAdattiva()
+    private var inRiserva: [(immagine: CVPixelBuffer, cattura: Int64, timestamp: UInt64, pronta: UInt64, quando: UInt64)] = []
     /// Fa uscire la prima immagine della riserva al suo istante (creato in `init`, sulla coda).
     private var timerRiserva: DispatchSourceTimer?
-    /// Per il registro (sotto `bloccoPause`): la riserva attuale (µs) e le immagini uscite in ritardo dall'ultima lettura.
+    /// Per il registro (sotto `bloccoPause`): la riserva attuale (µs), le immagini uscite in ritardo e quelle buttate
+    /// perché ce n'era già una più recente (qualità 14) dall'ultima lettura.
     private var riservaAttuale: Int64 = 0
     private var uscitePiuTardi = 0
+    private var buttate = 0
     private var registratore: Registratore?
     /// Un file chiuso da solo (`interrompiRegistrazione`) non ha ancora finito di scriversi. Solo sulla coda.
     private var chiusureInterrotteInCorso = 0
@@ -240,7 +247,7 @@ final class Schermo: @unchecked Sendable {
             self.generazione &+= 1
             // Sessione nuova: altro orologio del telefono, altra rete. La riserva riparte da zero.
             self.inRiserva.removeAll()
-            self.riserva = RiservaRiproduzione()
+            self.riserva = CodaAdattiva()
             self.timerRiserva?.schedule(deadline: .distantFuture)
             self.livello.sampleBufferRenderer.flush(removingDisplayedImage: true, completionHandler: nil)
             self.formato = nil
@@ -291,12 +298,14 @@ final class Schermo: @unchecked Sendable {
         }
     }
 
-    /// Per il registro: la riserva di riproduzione attuale (ms) e quante immagini sono uscite più tardi del loro
-    /// istante (oltre 25 ms: lì il video scatta ancora) dall'ultima lettura. Da qualsiasi coda.
-    func prendiRiserva() -> (ms: Int, inRitardo: Int) {
+    /// Per il registro: la riserva di riproduzione attuale (ms), quante immagini sono uscite più tardi del loro
+    /// istante (oltre 25 ms: lì il video scatta ancora) e quante sono state buttate perché ce n'era già una più recente
+    /// (qualità 14), dall'ultima lettura. Da qualsiasi coda.
+    func prendiRiserva() -> (ms: Int, inRitardo: Int, buttate: Int) {
         bloccoPause.withLock {
-            let lette = (ms: Int(riservaAttuale / 1000), inRitardo: uscitePiuTardi)
+            let lette = (ms: Int(riservaAttuale / 1000), inRitardo: uscitePiuTardi, buttate: buttate)
             uscitePiuTardi = 0
+            buttate = 0
             return lette
         }
     }
@@ -350,7 +359,8 @@ final class Schermo: @unchecked Sendable {
         guard let formatoAttuale = formato, !immagine.isEmpty,
               let campione = Self.campione(immagine, formato: formatoAttuale, chiave: fotogramma.chiave) else { return }
         registra(campione, formato: formatoAttuale, fotogramma: fotogramma)
-        decodificaInImmagine(campione, formato: formatoAttuale, cattura: cattura, timestamp: fotogramma.timestamp)
+        decodificaInImmagine(campione, formato: formatoAttuale, cattura: cattura, timestamp: fotogramma.timestamp,
+                             arrivo: arrivo)
     }
 
     // MARK: - Registrazione (funzione 35)
@@ -489,7 +499,7 @@ final class Schermo: @unchecked Sendable {
     // MARK: - Decodifica in immagini
 
     private func decodificaInImmagine(_ campione: CMSampleBuffer, formato: CMVideoFormatDescription, cattura: Int64?,
-                                      timestamp: UInt64) {
+                                      timestamp: UInt64, arrivo: UInt64) {
         if sessioneDecodifica == nil || !CMFormatDescriptionEqual(formato, otherFormatDescription: formatoDecodifica) {
             creaDecodifica(formato)
         }
@@ -518,10 +528,10 @@ final class Schermo: @unchecked Sendable {
             let elaborata = self.motore.elabora(immagine) { [weak self] uscita in
                 self?.coda.async {
                     guard let self, self.generazione == generazione else { return }
-                    self.accodaAlRitmo(uscita, cattura: cattura, timestamp: timestamp)
+                    self.accodaAlRitmo(uscita, cattura: cattura, timestamp: timestamp, arrivo: arrivo)
                 }
             }
-            if !elaborata { self.accodaAlRitmo(immagine, cattura: cattura, timestamp: timestamp) }
+            if !elaborata { self.accodaAlRitmo(immagine, cattura: cattura, timestamp: timestamp, arrivo: arrivo) }
         }
         // Dopo lo stop del Mac la sessione può non valere più, e il decodificatore hardware si può guastare
         // (kVTVideoDecoderMalfunctionErr, kVTVideoDecoderNotAvailableNowErr: cambio di scheda video sui Mac Intel):
@@ -562,33 +572,36 @@ final class Schermo: @unchecked Sendable {
     // MARK: - Riserva di riproduzione
 
     /// Sulla coda: l'immagine pronta (decodificata e, se ci sono effetti, elaborata) passa dalla riserva di riproduzione.
-    /// Esce all'istante di cattura sul telefono più un ritardo quasi fisso (`RiservaRiproduzione`): così finestra,
+    /// Esce all'istante di cattura sul telefono più un ritardo che si adatta (`CodaAdattiva`, qualità 14: minimo con la
+    /// rete stabile, un po' di più solo con il jitter, al massimo 100 ms): così finestra,
     /// webcam virtuale, finestra mini e registrazione ricevono le immagini al ritmo della fotocamera anche quando
     /// arrivano a gruppi dalla rete o dal motore effetti (prova di Ledion, 27 ottobre: una pausa di 110-160 ms ogni
     /// 2-3 secondi). Dopo il motore, così la riserva assorbe anche le sue variazioni. Senza l'istante di cattura
     /// (nessun `pong` ancora) l'immagine esce subito, come prima.
-    private func accodaAlRitmo(_ immagine: CVPixelBuffer, cattura: Int64?, timestamp: UInt64) {
+    /// Qualità 14: le immagini vecchie si buttano invece di accumulare ritardo (`CodaAdattiva.daScartare`).
+    private func accodaAlRitmo(_ immagine: CVPixelBuffer, cattura: Int64?, timestamp: UInt64, arrivo: UInt64) {
         let adesso = Orologio.adesso()
+        if adesso >= arrivo { decodifica.aggiungi(Int((adesso - arrivo) / 1000), adesso: adesso) }
         guard let cattura, let istante = riserva.uscita(cattura: cattura, adesso: adesso) else {
             // Prima quelle che aspettano: l'ordine non cambia.
             esciDallaRiserva(tutte: true)
-            pubblica(immagine, cattura: cattura, timestamp: timestamp)
+            pubblica(immagine, cattura: cattura, timestamp: timestamp, pronta: adesso)
             return
         }
-        bloccoPause.withLock { riservaAttuale = riserva.attuale }
+        bloccoPause.withLock { riservaAttuale = riserva.profondita }
         // Mai prima di quella davanti, e mai oltre il tetto da adesso (orologi cambiati, valori strani).
-        let limite = adesso + UInt64(RiservaRiproduzione.tetto) + Self.anticipoUscita
+        let limite = adesso + UInt64(CodaAdattiva.tetto) + Self.anticipoUscita
         let quando = max(min(istante, limite), inRiserva.last?.quando ?? 0)
         if quando + Self.ritardoVisibile < adesso { bloccoPause.withLock { uscitePiuTardi += 1 } }
         if inRiserva.isEmpty, quando <= adesso + Self.anticipoUscita {
-            pubblica(immagine, cattura: cattura, timestamp: timestamp)
+            pubblica(immagine, cattura: cattura, timestamp: timestamp, pronta: adesso)
             return
         }
-        inRiserva.append((immagine: immagine, cattura: cattura, timestamp: timestamp, quando: quando))
-        // Un guasto non deve accumulare video: oltre 8 immagini (più di 250 ms a 30 fps) la prima esce subito.
+        inRiserva.append((immagine: immagine, cattura: cattura, timestamp: timestamp, pronta: adesso, quando: quando))
+        // Un guasto non deve accumulare video: oltre 8 immagini (più di 250 ms a 30 fps) la più vecchia si butta.
         if inRiserva.count > Self.massimeInRiserva {
-            let prima = inRiserva.removeFirst()
-            pubblica(prima.immagine, cattura: prima.cattura, timestamp: prima.timestamp)
+            inRiserva.removeFirst()
+            bloccoPause.withLock { buttate += 1 }
         }
         programmaRiserva()
     }
@@ -603,9 +616,18 @@ final class Schermo: @unchecked Sendable {
     private func esciDallaRiserva(tutte: Bool = false) {
         guard !inRiserva.isEmpty else { return }
         let adesso = Orologio.adesso()
+        if !tutte {
+            // Qualità 14: arrivate a gruppo (dopo una pausa della rete o del motore), più d'una è già al suo momento:
+            // esce solo la più recente, le altre sarebbero solo ritardo in più (mostrate e coperte nello stesso istante).
+            let vecchie = CodaAdattiva.daScartare(inRiserva.map(\.quando), adesso: adesso, anticipo: Self.anticipoUscita)
+            if vecchie > 0 {
+                inRiserva.removeFirst(vecchie)
+                bloccoPause.withLock { buttate += vecchie }
+            }
+        }
         while let prima = inRiserva.first, tutte || prima.quando <= adesso + Self.anticipoUscita {
             inRiserva.removeFirst()
-            pubblica(prima.immagine, cattura: prima.cattura, timestamp: prima.timestamp)
+            pubblica(prima.immagine, cattura: prima.cattura, timestamp: prima.timestamp, pronta: prima.pronta)
         }
         programmaRiserva()
     }
@@ -623,10 +645,12 @@ final class Schermo: @unchecked Sendable {
 
     /// Sulla coda: l'immagine da mostrare (già elaborata dal motore, se ci sono effetti) a tutte le uscite: finestra,
     /// foto, webcam virtuale e finestra mini (`suImmagine`), registrazione ricompressa.
-    private func pubblica(_ immagine: CVPixelBuffer, cattura: Int64?, timestamp: UInt64) {
+    private func pubblica(_ immagine: CVPixelBuffer, cattura: Int64?, timestamp: UInt64, pronta: UInt64) {
         ultimaImmagine = immagine
         mostraNelLivello(immagine)
         let mostrata = Orologio.adesso()
+        // Qualità 14: l'attesa nella coda, da pronta a mostrata.
+        if mostrata >= pronta { attesa.aggiungi(Int((mostrata - pronta) / 1000), adesso: mostrata) }
         bloccoPause.withLock {
             if ultimaMostrata != 0, mostrata > ultimaMostrata { pause.mostrate = max(pause.mostrate, mostrata - ultimaMostrata) }
         }

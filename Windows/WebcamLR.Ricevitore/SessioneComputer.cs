@@ -12,8 +12,13 @@ namespace WebcamLR.Ricevitore;
 /// <param name="ArrivoMs">Dalla cattura all'arrivo sul computer (soprattutto la rete).</param>
 /// <param name="AnteprimaMs">Da vetro all'anteprima della finestra (decodificato e mostrato).</param>
 /// <param name="WebcamMs">Da vetro alla webcam virtuale, compresa l'attesa nella sorgente della webcam quando la dice.</param>
+/// <param name="CodaMs">Qualità 14: l'attesa sul computer prima dell'anteprima (coda che si adatta, <see cref="CodaAdattiva"/>).</param>
 public sealed record Statistiche(int Larghezza, int Altezza, int Fps, double MegabitAlSecondo, int? LatenzaMs, Codec Codec = Codec.H264,
-    int PacchettiAudio = 0, int? ArrivoMs = null, int? AnteprimaMs = null, int? WebcamMs = null);
+    int PacchettiAudio = 0, int? ArrivoMs = null, int? AnteprimaMs = null, int? WebcamMs = null, int? CodaMs = null)
+{
+    /// <summary>Qualità 14: da vetro all'anteprima meno rete (l'arrivo) e coda: decodifica e disegno.</summary>
+    public int? DecodificaMs => PartiLatenza.Decodifica(AnteprimaMs, ArrivoMs, CodaMs);
+}
 
 /// <summary>
 /// La connessione con un telefono, lato computer: la stessa logica di Mac/Sorgenti/SessioneComputer.swift.
@@ -196,6 +201,12 @@ public sealed class SessioneComputer : IAsyncDisposable
     /// nella webcam e la webcam riceve il video, webcam (ms; null se non misurati). Null = nessuna misura.
     /// </summary>
     public Func<(int? Anteprima, int? Webcam)>? MisuraUscita { get; set; }
+
+    /// <summary>
+    /// Qualità 14: l'attesa nella coda dell'anteprima di questo telefono (ms, mediana di un secondo; null se non c'è),
+    /// letta ogni secondo dal thread della sessione per dividere la latenza nelle sue parti.
+    /// </summary>
+    public Func<int?>? MisuraCoda { get; set; }
 
     private int? latenzaMostrata;
 
@@ -576,6 +587,9 @@ public sealed class SessioneComputer : IAsyncDisposable
                 (int? Anteprima, int? Webcam) uscita = default;
                 try { uscita = MisuraUscita?.Invoke() ?? default; }
                 catch (Exception) { }
+                int? attesa = null;
+                try { attesa = MisuraCoda?.Invoke(); }
+                catch (Exception) { }
                 lock (blocco)
                 {
                     var arrivo = latenza.ChiudiSecondo();
@@ -586,7 +600,7 @@ public sealed class SessioneComputer : IAsyncDisposable
                     statistiche = new Statistiche(formato?.Larghezza ?? 0, formato?.Altezza ?? 0,
                         (int)Math.Round(fotogrammiUltimoSecondo / secondi),
                         byteUltimoSecondo * 8 / 1_000_000.0 / secondi, ultima, formato?.Codec ?? Codec.H264,
-                        pacchettiAudioUltimoSecondo, arrivo, uscita.Anteprima, uscita.Webcam);
+                        pacchettiAudioUltimoSecondo, arrivo, uscita.Anteprima, uscita.Webcam, attesa);
                     pacchettiAudioUltimoSecondo = 0;
                     fotogrammiUltimoSecondo = 0;
                     byteUltimoSecondo = 0;

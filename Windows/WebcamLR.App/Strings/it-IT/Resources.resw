@@ -1286,8 +1286,14 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
   <data name="Numeri_Tappe" xml:space="preserve">
     <value>Tappe         arrivo {0} · anteprima {1} · webcam {2}</value>
   </data>
+  <data name="Numeri_Parti" xml:space="preserve">
+    <value>Parti         rete {0} · decodifica {1} · coda {2}</value>
+  </data>
   <data name="Registro_Ritardo" xml:space="preserve">
     <value>Da vetro a uscita{0}: arrivo {1} · anteprima {2} · webcam {3} (attesa nella webcam {4}, recuperati {5} ms) · audio {6}</value>
+  </data>
+  <data name="Registro_Parti" xml:space="preserve">
+    <value>Parti della latenza{0}: rete {1} · decodifica {2} · coda {3} (profondità {4} ms, fotogrammi buttati {5})</value>
   </data>
   <data name="Numeri_Media" xml:space="preserve">
     <value>Media 60 s    {0} ms (massima {1} ms)</value>

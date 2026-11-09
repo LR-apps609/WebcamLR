@@ -382,6 +382,8 @@ Con `ping` e `pong` il computer misura il tempo di andata e ritorno e la differe
 
 Per la differenza tra gli orologi si usa il `pong` con il tempo di andata e ritorno più breve tra gli ultimi 10: è quello meno disturbato dalla rete.
 
+**Coda che si adatta e parti della latenza (dal 9 novembre, Qualità 14).** Nessun campo nuovo. Obiettivo nuovo: 30 ms o meno con il cavo, 50 ms o meno in Wi-Fi, fino all'immagine nella finestra. Il computer fa aspettare ogni fotogramma il meno possibile: la sua coda di ricezione è minima con la rete stabile e si allunga solo quando il ritardo dei fotogrammi varia (jitter), al massimo di 100 ms; i fotogrammi vecchi si buttano invece di accumulare ritardo (descrizione in `Documenti/Prestazioni.md`, «Latenza da un capo all'altro»). Nei suoi numeri divide la latenza in **rete** (dalla cattura all'arrivo, compresa la codifica sul telefono), **decodifica** e **coda**. Il telefono codifica sempre senza fotogrammi B (nessun riordino), così il computer può mostrare ogni fotogramma appena decodificato.
+
 Orologi: sul telefono e sul Mac è il tempo di sistema dall'avvio (`mach_absolute_time`, lo stesso dei timestamp della fotocamera), in microsecondi.
 
 ## Fotogramma chiave su richiesta (dall'8 novembre)

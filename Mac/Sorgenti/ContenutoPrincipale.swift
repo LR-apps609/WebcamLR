@@ -1019,6 +1019,13 @@ struct PannelloNumeri: View {
                     riga("Tappe", String(localized: "arrivo \(arrivo) · finestra \(finestra) · webcam \(webcam)"))
                 }
             }
+            if statistiche.anteprimaMs != nil, statistiche.codaMs != nil {
+                // Qualità 14: la latenza della finestra nelle sue parti (rete fino all'arrivo, decodifica, coda sul Mac).
+                let rete = RitardoVetro.testo(statistiche.arrivoMs)
+                let decodifica = RitardoVetro.testo(statistiche.decodificaMs)
+                let coda = RitardoVetro.testo(statistiche.codaMs)
+                riga("Parti", String(localized: "rete \(rete) · decodifica \(decodifica) · coda \(coda)"))
+            }
             if let media {
                 riga("Media dell'ultimo minuto", "\(media) ms")
             }

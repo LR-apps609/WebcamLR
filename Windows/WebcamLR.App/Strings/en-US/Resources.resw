@@ -1286,8 +1286,14 @@ The details are in {1}: send them with “Report a bug”.</value>
   <data name="Numeri_Tappe" xml:space="preserve">
     <value>Stages        arrival {0} · preview {1} · webcam {2}</value>
   </data>
+  <data name="Numeri_Parti" xml:space="preserve">
+    <value>Breakdown     network {0} · decoding {1} · queue {2}</value>
+  </data>
   <data name="Registro_Ritardo" xml:space="preserve">
     <value>Glass to output{0}: arrival {1} · preview {2} · webcam {3} (wait in the webcam {4}, recovered {5} ms) · audio {6}</value>
+  </data>
+  <data name="Registro_Parti" xml:space="preserve">
+    <value>Latency breakdown{0}: network {1} · decoding {2} · queue {3} (depth {4} ms, frames dropped {5})</value>
   </data>
   <data name="Numeri_Media" xml:space="preserve">
     <value>60 s average  {0} ms (max {1} ms)</value>

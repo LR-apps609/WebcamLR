@@ -27,6 +27,9 @@ import java.util.concurrent.atomic.AtomicLong
  * altrimenti VBR) che si cambia al volo quando la rete rallenta. Profilo High per H.264 (Main per HEVC) se il
  * codificatore lo dichiara: a pari bitrate più qualità, e senza fotogrammi B nessun ritardo in più. Il bitrate
  * della qualità scelta viene da [BitrateVideo].
+ * Qualità 14: niente fotogrammi B anche dove KEY_MAX_B_FRAMES non c'è (Android 8 e 9): lì si preferisce Constrained High.
+ * Se comunque escono fotogrammi fuori ordine (tempi che tornano indietro), il codificatore si rifà in Constrained
+ * Baseline per il resto della vita dell'app: il computer decodifica senza riordino e li mostrerebbe sbagliati.
  * L'ingresso è una Surface (disegnata dal [Renderizzatore]): nessuna copia dei fotogrammi.
  */
 class Codificatore(
@@ -40,6 +43,8 @@ class Codificatore(
     private var superficieIngresso: Surface? = null
     @Volatile private var parametri: ByteArray? = null
     @Volatile private var primoFotogramma = true
+    /** Il tempo dell'ultimo fotogramma uscito (µs), per accorgersi dei fotogrammi B (tempi fuori ordine). */
+    @Volatile private var ultimoTempo = 0L
 
     /** Il formato effettivo, da mandare al computer con il messaggio `formato`. */
     @Volatile var formato: FormatoVideo? = null
@@ -212,14 +217,23 @@ class Codificatore(
 
     private fun limitaBitrate(bitrate: Int): Int = if (bitrateMassimo > 0) minOf(bitrate, bitrateMassimo) else bitrate
 
-    /** High per H.264, Main per HEVC, con il livello più alto che il codificatore dichiara; `null` se non lo dichiara. */
+    /**
+     * High per H.264, Main per HEVC, con il livello più alto che il codificatore dichiara; `null` se non lo dichiara.
+     * Qualità 14: senza KEY_MAX_B_FRAMES (prima di Android 10) Constrained High, che i fotogrammi B non li ha per
+     * definizione, se il codificatore lo dichiara; dopo aver visto fotogrammi B, Constrained Baseline (o Baseline).
+     */
     private fun profiloMigliore(capacita: MediaCodecInfo.CodecCapabilities?, codec: Codec): MediaCodecInfo.CodecProfileLevel? {
-        val voluto = if (codec == Codec.HEVC) {
-            MediaCodecInfo.CodecProfileLevel.HEVCProfileMain
-        } else {
-            MediaCodecInfo.CodecProfileLevel.AVCProfileHigh
+        val livelli = capacita?.profileLevels ?: return null
+        fun migliore(profilo: Int) = livelli.filter { it.profile == profilo }.maxByOrNull { it.level }
+        if (codec == Codec.HEVC) return migliore(MediaCodecInfo.CodecProfileLevel.HEVCProfileMain)
+        if (senzaFotogrammiB) {
+            return migliore(MediaCodecInfo.CodecProfileLevel.AVCProfileConstrainedBaseline)
+                ?: migliore(MediaCodecInfo.CodecProfileLevel.AVCProfileBaseline)
         }
-        return capacita?.profileLevels?.filter { it.profile == voluto }?.maxByOrNull { it.level }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            migliore(MediaCodecInfo.CodecProfileLevel.AVCProfileConstrainedHigh)?.let { return it }
+        }
+        return migliore(MediaCodecInfo.CodecProfileLevel.AVCProfileHigh)
     }
 
     fun ferma() {
@@ -360,6 +374,16 @@ class Codificatore(
         }
         fotogrammiUsciti.incrementAndGet()
         byteUsciti.addAndGet(uscita.size.toLong())
+        // Qualità 14: con i fotogrammi B l'ordine di uscita non è quello di cattura e i tempi tornano indietro di qualche
+        // fotogramma (meno di 200 ms; un salto più grande è un altro orologio, per esempio dopo un cambio di fotocamera).
+        // Una volta sola: il codificatore si rifà (SessioneTelefono.erroreCodifica) con un profilo che non li ha.
+        val indietro = ultimoTempo - info.presentationTimeUs
+        if (!primoFotogramma && info.presentationTimeUs > 0 && indietro in 1L until 200_000L && !senzaFotogrammiB) {
+            senzaFotogrammiB = true
+            Log.w(TAG, "Fotogrammi B dal codificatore (tempo ${info.presentationTimeUs} dopo $ultimoTempo): lo rifaccio in Constrained Baseline")
+            suErrore("fotogrammi-b")
+        }
+        if (info.presentationTimeUs > 0) ultimoTempo = info.presentationTimeUs
         if (primoFotogramma) {
             primoFotogramma = false
             Orologio.calibra(info.presentationTimeUs)
@@ -370,5 +394,8 @@ class Codificatore(
 
     companion object {
         private const val TAG = "WebcamLR"
+
+        /** Qualità 14: questo telefono ha mandato fotogrammi B; da qui in poi solo profili che non li hanno. */
+        @Volatile private var senzaFotogrammiB = false
     }
 }

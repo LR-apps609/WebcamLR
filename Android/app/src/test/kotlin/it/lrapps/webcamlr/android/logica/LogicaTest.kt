@@ -166,43 +166,45 @@ class LogicaTest {
 
     // Pausa
 
-    private class OrologioFinto {
-        var adesso = 0L
-        val attese = mutableListOf<Pair<Long, () -> Unit>>()
-        fun pianifica(ritardo: Long, azione: () -> Unit): Annullabile {
-            val voce = (adesso + ritardo) to azione
-            attese += voce
-            return Annullabile { attese.remove(voce) }
-        }
-        fun avanza(ms: Long) {
-            adesso += ms
-            attese.filter { it.first <= adesso }.forEach { attese.remove(it); it.second() }
-        }
-    }
-
     @Test
-    fun maiPausaNessunaApp() {
-        // Decisione del 27 ottobre: il telefono non va più in pausa perché nessuna app usa la webcam.
-        val orologio = OrologioFinto()
+    fun pausaAutomaticaDalComputer() {
+        // Qualità 18: decide il computer con `pausa-automatica`; `in-onda` vero la toglie comunque.
         var cambi = 0
-        val pausa = DecisorePausa(orologio::pianifica) { cambi++ }
+        val pausa = DecisorePausa { cambi++ }
+        pausa.pausaAutomatica(true)
+        assertNull(pausa.motivo, "Prima di avvia() non si decide nulla")
         pausa.avvia()
-        pausa.inOnda(false)
-        pausa.anteprima(false)
-        orologio.avanza(60_000)
+        pausa.pausaAutomatica(true)
+        assertEquals(MotiviPausa.NESSUNA_APP, pausa.motivo)
+        assertTrue(pausa.fotocameraSpenta)
+        pausa.pausaAutomatica(true)
+        assertEquals(1, cambi, "Lo stesso valore due volte non è un cambiamento")
+        pausa.pausaAutomatica(false)
         assertNull(pausa.motivo)
         assertFalse(pausa.fotocameraSpenta)
-        assertEquals(0, cambi)
+        pausa.pausaAutomatica(true)
+        pausa.inOnda(true)
+        assertNull(pausa.motivo, "Un'app apre la webcam: si riprende subito")
+        pausa.pausaAutomatica(true)
+        assertNull(pausa.motivo, "In onda non si va in pausa, anche se i messaggi si incrociano")
+        pausa.inOnda(false)
+        pausa.pausaAutomatica(true)
+        pausa.impostaPausaUtente(true)
+        assertEquals(MotiviPausa.UTENTE, pausa.motivo, "La pausa scelta dall'utente si dice prima")
+        assertTrue(pausa.fotocameraSpenta)
+        pausa.impostaPausaUtente(false)
+        val prima = cambi
         pausa.nuovoCollegamento()
-        pausa.anteprima(false)
-        orologio.avanza(60_000)
+        assertNull(pausa.motivo, "Collegamento nuovo: si riparte da capo")
+        assertEquals(prima, cambi, "In silenzio")
+        // Senza `pausa-automatica` (computer vecchio) `anteprima` e `in-onda` non mettono mai in pausa.
+        pausa.inOnda(false)
         assertNull(pausa.motivo)
     }
 
     @Test
     fun pausaFacciaInGiuEUtente() {
-        val orologio = OrologioFinto()
-        val pausa = DecisorePausa(orologio::pianifica) {}
+        val pausa = DecisorePausa {}
         pausa.avvia()
         pausa.gravita(0.95, 0)
         pausa.gravita(0.95, 900)
@@ -226,9 +228,8 @@ class LogicaTest {
 
     @Test
     fun pausaSottofondoEFotocameraInterrotta() {
-        val orologio = OrologioFinto()
         var cambi = 0
-        val pausa = DecisorePausa(orologio::pianifica) { cambi++ }
+        val pausa = DecisorePausa { cambi++ }
         pausa.impostaSottofondo(true)
         assertNull(pausa.motivo, "Prima di avvia() non si decide nulla")
         pausa.avvia()

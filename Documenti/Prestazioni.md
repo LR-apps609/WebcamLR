@@ -196,6 +196,56 @@ fermano al bitrate di Auto e scendono sotto solo dopo 3 secondi di fila.
 - [ ] Q10 · Telefono vecchio (versione di prima) con il computer nuovo: la sezione non compare, tutto come prima.
 - [ ] Q11 · Mentre registri sul computer, Massima chiede prima di fermare la registrazione; Alta no.
 
+## 4 quater. Pausa automatica (Qualità 18)
+
+Quando nessuna app usa la webcam il telefono spegne fotocamera e codifica: meno batteria e meno calore. Ramo
+`pausa-automatica`. Regole in `Protocollo.md`, «Pausa automatica»; in breve:
+
+- **Decide il computer** (solo lui sa se un'app usa la webcam), con il messaggio nuovo `pausa-automatica`: pausa dopo
+  **20 secondi** senza app sulla webcam, senza registrazione e senza nessuno che guarda il video; via appena serve.
+- **La finestra di WebcamLR:** conta come «guardata» solo se è **in primo piano** (Windows: la finestra attiva; Mac:
+  WebcamLR è l'app attiva con la finestra principale visibile) oppure se è aperta la **finestra mini**. Aperta ma dietro
+  altre finestre non conta. Perché: chi guarda l'anteprima per inquadrarsi ha la finestra davanti (e cliccandola il
+  video torna in meno di un secondo); chi lascia WebcamLR aperta tutto il giorno dietro il lavoro è proprio il caso
+  della batteria che si scarica. La mini è fatta apposta per essere guardata stando sopra le altre: lì niente pausa.
+- **Ripresa sotto il secondo:** durante la pausa il computer legge l'uso della webcam ogni 250 ms (invece di ogni
+  secondo); il telefono riaccende la fotocamera e riparte da un fotogramma chiave (se non lo è, il computer lo chiede).
+- **Interruttore** «Pausa quando nessuna app usa la webcam» in Impostazioni › Uscite (Mac e Windows), **acceso di serie**.
+  Senza la webcam virtuale (Mac con l'Apple ID gratuito, Windows senza la webcam installata) il computer non sa leggere
+  l'uso: la funzione resta spenta e la nota sotto l'interruttore lo dice.
+- **Telefono:** mostra «In pausa: nessuna app usa la webcam» (testi già presenti); la vecchia pausa decisa dal telefono
+  con `anteprima` (spenta il 27 ottobre) è tolta. Telefono o computer di prima: nessuna pausa, tutto come prima.
+- **Provati qui:** i tre protocolli (`PausaAutomaticaComeNelDocumento`), `RegolaPausaAutomatica` a tempi finti e il
+  telefono simulato in `WebcamLR.Ricevitore.Test` (`PausaAutomaticaTest`: nessuna app, pausa, app che apre, ripresa da
+  un fotogramma chiave sotto il secondo, anche quando la chiave va chiesta), `DecisorePausa` di Android con un banco
+  Kotlin a parte. **Non compilati qui:** Swift (iPhone, Mac), l'app WinUI, l'app Android.
+
+**Checklist sui dispositivi veri** (annota nel registro del computer le righe «Pausa automatica…» e, sul telefono,
+«Video in pausa (nessuna-app)» e «Pausa finita»):
+- [ ] A1 · (PC) iPhone collegato, nessuna app usa la webcam, finestra di WebcamLR ridotta a icona: dopo ~20 s il
+      telefono mostra «In pausa: nessuna app usa la webcam», la fotocamera si spegne (sparisce il punto verde di iOS) e
+      nel registro del PC c'è «Pausa automatica: …». Il collegamento resta (niente «Riconnessione»).
+- [ ] A2 · Apri la Fotocamera di Windows (o Zoom, Meet) con «WebcamLR»: il video arriva in **meno di circa 1 s**
+      (cronometra dal clic), già nitido (niente blocchi grigi). Chiudi l'app: dopo 20 s di nuovo in pausa.
+- [ ] A3 · In pausa, clicca la finestra di WebcamLR (o riaprila dall'icona accanto all'orologio): il video riparte
+      subito. Clicca su un'altra finestra lasciandola visibile: dopo 20 s pausa. Con la finestra mini aperta: mai pausa.
+- [ ] A4 · Registra dal PC con la finestra dietro le altre (scorciatoia): niente pausa finché registri.
+- [ ] A5 · Impostazioni › Uscite: spegni «Pausa quando nessuna app usa la webcam» con il telefono in pausa: riprende
+      subito e non si ferma più; riaccendila: pausa dopo altri 20 s. Chiudi e riapri WebcamLR: la scelta resta.
+- [ ] A6 · Batteria: 30 minuti con il telefono collegato, nessuna app e la finestra ridotta, a batteria: annota % e
+      temperatura del telefono, con la pausa accesa e poi spenta (iPhone 16 Pro Max, S22 Ultra).
+- [ ] A7 · Mac con l'**Apple ID gratuito**: la nota sotto l'interruttore dice che serve la webcam virtuale; il video non
+      si ferma mai, nessun errore nel registro.
+- [ ] A8 · Mac con l'account a pagamento e la Camera Extension: A1–A5 con FaceTime o Zoom (la «finestra in primo piano»
+      sul Mac è WebcamLR app attiva con la finestra principale visibile).
+- [ ] A9 · Android (S22 Ultra): A1 e A2; la fotocamera si richiude e si riapre senza restare incastrata (era il motivo
+      della pausa spenta il 27 ottobre): ripeti pausa e ripresa 10 volte di fila.
+- [ ] A10 · Due telefoni: con un'app sulla webcam nessuno dei due va in pausa; senza app e senza finestra tutti e due
+      in pausa; «Usa questa prospettiva» durante una chiamata resta immediato.
+- [ ] A11 · In pausa passa dal Wi-Fi al cavo (o viceversa): il telefono riprende e, senza app, torna in pausa dopo 20 s.
+- [ ] A12 · Telefono vecchio (versione di prima) con il computer nuovo, e telefono nuovo con un computer vecchio: il
+      video non si ferma mai.
+
 ## 5. Checklist per le prove sui dispositivi
 
 Da fare **prima** su `beta4` e **poi** su `prestazioni`, annotando i numeri.

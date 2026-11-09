@@ -64,6 +64,14 @@ public static class PausaIntelligente
         finestraMostrata && (mini || !ridottaAIcona);
 
     /// <summary>
+    /// Qualità 18, pausa automatica: qualcuno sta guardando l'anteprima. La finestra intera conta solo se è quella in primo
+    /// piano (attiva) e non ridotta a icona né nascosta; la finestra mini conta sempre, perché resta sopra le altre apposta
+    /// per essere guardata. Una finestra aperta ma dietro le altre non conta: cliccandola il video riparte subito.
+    /// </summary>
+    public static bool FinestraGuardata(bool finestraMostrata, bool ridottaAIcona, bool mini, bool inPrimoPiano) =>
+        finestraMostrata && (mini || (!ridottaAIcona && inPrimoPiano));
+
+    /// <summary>
     /// P21: il telefono che non è nella webcam si vede solo nel riquadro piccolo, quindi solo nella finestra intera
     /// (non mini, non ridotta a icona né nascosta) e con il riquadro aperto. La registrazione non conta: registra
     /// solo il telefono nella webcam.

@@ -11,6 +11,6 @@ public static class Servizio
 
     public const int VersioneProtocollo = 2;
 
-    /// <summary>Pausa intelligente: secondi senza app che usano la webcam e senza anteprima visibile prima di fermare il video.</summary>
-    public const int SecondiPrimaDellaPausa = 10;
+    /// <summary>Pausa automatica (Qualità 18): secondi senza app che usano la webcam e senza nessuno che guarda il video prima che il computer chieda la pausa al telefono.</summary>
+    public const int SecondiPausaAutomatica = 20;
 }

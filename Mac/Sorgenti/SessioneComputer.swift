@@ -270,6 +270,12 @@ final class SessioneComputer: @unchecked Sendable {
         coda.async { self.invia(.anteprima(Anteprima(visibile: visibile))) }
     }
 
+    /// Qualità 18, pausa automatica: chiede al telefono di fermare fotocamera e codifica (vero) o di riprendere (falso).
+    /// Chi chiama la manda subito dopo il `benvenuto` e poi solo quando cambia (`Ricevitore.segnalaPausaAutomatica`).
+    func segnalaPausaAutomatica(_ attiva: Bool) {
+        coda.async { self.invia(.pausaAutomatica(PausaAutomatica(attiva: attiva))) }
+    }
+
     /// Effetti sul computer: lo stato di specchio, sfondo e luce del motore del Mac, per i pulsanti del telefono.
     /// Chi chiama lo manda solo a un telefono a cui è andato `comando.effettiSulComputer`.
     func mandaEffetti(_ effetti: StatoEffettiComputer) {

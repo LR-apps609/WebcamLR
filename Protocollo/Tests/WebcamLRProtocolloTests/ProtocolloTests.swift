@@ -90,6 +90,7 @@ final class ProtocolloTests: XCTestCase {
             .capacita(Capacita(obiettivi: ["principale"], zoomMassimo: 5, torcia: true, specchia: true)),
             .capacita(Capacita(obiettivi: ["principale"], zoomMassimo: 5, torcia: true, pro: false)),
             .anteprima(Anteprima(visibile: true)),
+            .pausaAutomatica(PausaAutomatica(attiva: true)),
             .gobbo(Gobbo(attivo: false)),
             .gobbo(Gobbo(velocita: 3, dimensione: DimensioniGobbo.grande, posizione: 0)),
             .formatoAudio(FormatoAudio()),
@@ -240,6 +241,16 @@ final class ProtocolloTests: XCTestCase {
         XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(#"{"tipo":"chiedi-chiave"}"#.utf8)).messaggio(), .chiediChiave)
         // Un campo in più (versione futura) non cambia il messaggio.
         XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(#"{"tipo":"chiedi-chiave","motivo":"x"}"#.utf8)).messaggio(), .chiediChiave)
+    }
+
+    /// Lo stesso JSON di «PausaAutomaticaComeNelDocumento» in C# e Kotlin (Qualità 18).
+    func testPausaAutomaticaComeNelDocumento() throws {
+        XCTAssertEqual(try json(.pausaAutomatica(PausaAutomatica(attiva: true))), #"{"attiva":true,"tipo":"pausa-automatica"}"#)
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(#"{"attiva":false,"tipo":"pausa-automatica"}"#.utf8)).messaggio(),
+                       .pausaAutomatica(PausaAutomatica(attiva: false)))
+        // Un campo in più (versione futura) non cambia il messaggio.
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(#"{"attiva":true,"secondi":20,"tipo":"pausa-automatica"}"#.utf8)).messaggio(),
+                       .pausaAutomatica(PausaAutomatica(attiva: true)))
     }
 
     func testAnteprimaEFormatoAudioComeNelDocumento() throws {

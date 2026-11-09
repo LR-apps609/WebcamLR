@@ -137,6 +137,27 @@ public sealed class UscitaWebcam : IDisposable
 
     public bool InUso { get { lock (blocco) return inUso; } }
 
+    /// <summary>
+    /// Qualità 18: il PC sa dire se un'app usa la webcam (installata, con la memoria condivisa aperta: la sorgente di
+    /// Frame Server su Windows 11, l'anello locale del filtro DirectShow su Windows 10). Senza, la pausa automatica
+    /// resta spenta.
+    /// </summary>
+    public bool SaLeggereUso { get { lock (blocco) return Abilitata && memoria is not null; } }
+
+    private int periodoControlloMs = 1000;
+
+    /// <summary>
+    /// Qualità 18: ogni quanto controllare se un'app usa la webcam. Durante la pausa automatica ogni 250 ms
+    /// (RegolaPausaAutomatica.Controllo), così il video riparte in meno di un secondo; altrimenti ogni secondo, come
+    /// sempre. Da qualsiasi thread.
+    /// </summary>
+    public void ImpostaControllo(TimeSpan intervallo)
+    {
+        var ms = Math.Max(100, (int)intervallo.TotalMilliseconds);
+        if (Interlocked.Exchange(ref periodoControlloMs, ms) == ms) return;
+        try { controllo.Change(ms, ms); } catch (ObjectDisposedException) { }
+    }
+
     /// <summary>I fotogrammi al secondo del formato scelto dall'app che usa la webcam; 0 se nessuna la usa.</summary>
     public int FpsChiesti { get { lock (blocco) return fpsChiesti; } }
 

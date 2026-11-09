@@ -149,6 +149,13 @@ public sealed record InOnda(bool Attivo, string? App = null, bool? Selezionato =
 /// <summary>La finestra di anteprima del computer è visibile: qualcuno sta guardando.</summary>
 public sealed record Anteprima(bool Visibile) : Messaggio;
 
+/// <summary>
+/// Pausa automatica (Qualità 18): dal computer, nessuna app usa la webcam e nessuno guarda il video da un po'. Con
+/// <paramref name="Attiva"/> vero il telefono ferma fotocamera e codifica (motivo «nessuna-app») e tiene vivo il
+/// collegamento; con falso riprende subito, da un fotogramma chiave (Protocollo.md, «Pausa automatica»).
+/// </summary>
+public sealed record PausaAutomatica(bool Attiva) : Messaggio;
+
 /// <summary>Il gobbo: testo che scorre sullo schermo del telefono. Si applicano solo i campi presenti.</summary>
 /// <param name="Testo">Al massimo <see cref="LunghezzaMassima"/> caratteri; il telefono taglia il resto.</param>
 /// <param name="Velocita">Righe al secondo, da 0.5 a 3.</param>
@@ -396,6 +403,7 @@ public static class CodificaMessaggi
         Comando => "comando",
         InOnda => "in-onda",
         Anteprima => "anteprima",
+        PausaAutomatica => "pausa-automatica",
         Gobbo => "gobbo",
         FormatoAudio => "formato-audio",
         EffettiComputer => "effetti",
@@ -442,6 +450,7 @@ public static class CodificaMessaggi
             "comando" => nodo.Deserialize<Comando>(Opzioni)!,
             "in-onda" => nodo.Deserialize<InOnda>(Opzioni)!,
             "anteprima" => nodo.Deserialize<Anteprima>(Opzioni)!,
+            "pausa-automatica" => nodo.Deserialize<PausaAutomatica>(Opzioni)!,
             "gobbo" => nodo.Deserialize<Gobbo>(Opzioni)!,
             "formato-audio" => nodo.Deserialize<FormatoAudio>(Opzioni)!,
             "effetti" => nodo.Deserialize<EffettiComputer>(Opzioni)!,

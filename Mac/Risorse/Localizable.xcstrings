@@ -1616,6 +1616,16 @@
         }
       }
     },
+    "Dopo %lld secondi senza app che usano la webcam, senza registrazione e con WebcamLR dietro le altre app, il telefono spegne la fotocamera: meno batteria e meno calore. Il video riparte da solo, in meno di un secondo, appena un'app apre la webcam o torni su WebcamLR." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "After %lld seconds with no app using the webcam, no recording and WebcamLR behind other apps, the phone turns its camera off: less battery and less heat. Video comes back by itself, in under a second, as soon as an app opens the webcam or you go back to WebcamLR."
+          }
+        }
+      }
+    },
     "Due telefoni insieme sono di WebcamLR Pro: sbloccalo sull'iPhone nella webcam per collegare anche «%@»." : {
       "localizations" : {
         "en" : {
@@ -4528,12 +4538,42 @@
         }
       }
     },
+    "Pausa automatica finita: il video serve di nuovo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatic pause over: video is needed again"
+          }
+        }
+      }
+    },
+    "Pausa automatica: nessuna app usa la webcam da %lld secondi, il telefono spegne la fotocamera" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatic pause: no app has used the webcam for %lld seconds, the phone turns its camera off"
+          }
+        }
+      }
+    },
     "Pausa nel video: %lld ms tra due catture sul telefono · %lld ms tra due arrivi · %lld ms tra due immagini mostrate" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Video pause: %lld ms between two captures on the phone · %lld ms between two arrivals · %lld ms between two images shown"
+          }
+        }
+      }
+    },
+    "Pausa quando nessuna app usa la webcam" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause when no app is using the webcam"
           }
         }
       }
@@ -5855,6 +5895,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "A Mac administrator password is needed: try again and enter it when macOS asks."
+          }
+        }
+      }
+    },
+    "Serve la webcam virtuale di WebcamLR: senza, il Mac non sa se un'app la usa e il video non si ferma mai." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This needs the WebcamLR virtual webcam: without it the Mac can't tell whether an app is using it, and video never pauses."
           }
         }
       }

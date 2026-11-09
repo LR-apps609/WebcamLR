@@ -1,12 +1,6 @@
 package it.lrapps.webcamlr.android.logica
 
 import it.lrapps.webcamlr.protocollo.MotiviPausa
-import it.lrapps.webcamlr.protocollo.Servizio
-
-/** Un'attesa pianificata che si può annullare. */
-fun interface Annullabile {
-    fun annulla()
-}
 
 /**
  * Le pause del video senza chiudere la sessione (protocollo, *Pausa intelligente*; come GestorePausa di
@@ -20,17 +14,17 @@ fun interface Annullabile {
  *   motivo non si usa (protocollo, *Pausa intelligente*). La fotocamera si spegne; al ritorno si riaccende.
  * - `fotocamera-interrotta`: il sistema ha tolto la fotocamera (un'altra app, un criterio del telefono). Finisce
  *   quando la fotocamera torna disponibile.
- * - `nessuna-app`: DISATTIVATA (decisione del 27 ottobre, dopo la prima prova vera). Il telefono non va più in pausa
- *   da solo perché nessuna app usa la webcam o perché la finestra del computer è ridotta o coperta: il video continua
- *   finché l'app del computer è aperta e si ferma solo quando si chiude (il collegamento cade). Con l'Apple ID gratuito
- *   sul Mac nessuna app usa mai la webcam virtuale, e spegnere e riaccendere la fotocamera lasciava la sessione
- *   incastrata. `anteprima` e `in-onda` si ricevono ancora (servono altrove); qui non decidono più nulla.
+ * - `nessuna-app` (Qualità 18, pausa automatica): **decide il computer** con il messaggio `pausa-automatica`, perché
+ *   solo lui sa se un'app usa la webcam virtuale e se qualcuno guarda la sua finestra (Protocollo.md, «Pausa
+ *   automatica»). Vero: fotocamera e codifica ferme, collegamento vivo. Falso, o `in-onda` vero: si riprende subito,
+ *   da un fotogramma chiave. Il telefono non decide più da solo con `anteprima` e `in-onda` (la vecchia regola, spenta
+ *   il 27 ottobre: con l'Apple ID gratuito sul Mac nessuna app risultava mai in uso). Un computer vecchio non manda
+ *   `pausa-automatica`: il telefono non va mai in pausa per questo motivo.
  *
- * Tutto sullo stesso thread (quello principale nell'app). `pianifica(ms, azione)` esegue l'azione più tardi sullo
- * stesso thread; nei test è finta.
+ * Tutto sullo stesso thread (quello principale nell'app). Nessun tempo qui: quello della pausa automatica lo conta il
+ * computer.
  */
 class DecisorePausa(
-    private val pianifica: (Long, () -> Unit) -> Annullabile,
     private val suCambio: () -> Unit,
 ) {
     var facciaInGiu = false
@@ -79,10 +73,8 @@ class DecisorePausa(
 
     private var inFunzione = false
     private var giuDa: Long? = null
-    private var anteprimaRicevuta = false
-    private var anteprimaVisibile = false
+    /** Un'app usa la webcam con questo telefono (`in-onda` dal computer, in questo collegamento). */
     private var appInOnda = false
-    private var attesaNessunaApp: Annullabile? = null
 
     fun avvia() {
         inFunzione = true
@@ -119,62 +111,33 @@ class DecisorePausa(
         suCambio()
     }
 
-    fun anteprima(visibile: Boolean) {
-        anteprimaRicevuta = true
-        anteprimaVisibile = visibile
-        valutaNessunaApp()
+    /**
+     * Messaggio `pausa-automatica` dal computer. Vero: nessuna app usa la webcam e nessuno guarda il video da un po', la
+     * fotocamera si spegne. Falso: il video serve di nuovo, si riprende subito.
+     */
+    fun pausaAutomatica(attiva: Boolean) {
+        // Un'app che usa la webcam vince sempre: in onda non si va in pausa, anche se i messaggi si incrociano.
+        val nuova = attiva && inFunzione && !appInOnda
+        if (nuova == nessunaApp) return
+        nessunaApp = nuova
+        suCambio()
     }
 
+    /** Messaggio `in-onda`: un'app che apre la webcam toglie subito la pausa automatica. */
     fun inOnda(attivo: Boolean) {
         appInOnda = attivo
-        valutaNessunaApp()
+        if (!attivo || !nessunaApp) return
+        nessunaApp = false
+        suCambio()
     }
 
-    /** Nuovo `benvenuto`: si riparte come se il computer non avesse detto nulla (manderà la sua `anteprima`). */
+    /**
+     * Nuovo `benvenuto`: si riparte come se il computer non avesse detto nulla (dopo il `benvenuto` manda subito il suo
+     * `pausa-automatica`). In silenzio: la sessione riaccende da sé la fotocamera.
+     */
     fun nuovoCollegamento() {
-        attesaNessunaApp?.annulla()
-        attesaNessunaApp = null
-        anteprimaRicevuta = false
-        anteprimaVisibile = false
         appInOnda = false
         nessunaApp = false
-    }
-
-    private fun valutaNessunaApp() {
-        // Decisione del 27 ottobre: niente più pausa «nessuna app» (vedi sopra). Se una pausa del genere fosse
-        // rimasta da prima, la si toglie.
-        if (!PAUSA_NESSUNA_APP_ATTIVA) {
-            attesaNessunaApp?.annulla()
-            attesaNessunaApp = null
-            if (nessunaApp) {
-                nessunaApp = false
-                suCambio()
-            }
-            return
-        }
-        val nessunoGuarda = inFunzione && anteprimaRicevuta && !anteprimaVisibile && !appInOnda
-        if (!nessunoGuarda) {
-            attesaNessunaApp?.annulla()
-            attesaNessunaApp = null
-            if (nessunaApp) {
-                nessunaApp = false
-                suCambio()
-            }
-            return
-        }
-        if (nessunaApp || attesaNessunaApp != null) return
-        attesaNessunaApp = pianifica(Servizio.SECONDI_PRIMA_DELLA_PAUSA * 1000L) {
-            attesaNessunaApp = null
-            if (inFunzione && !nessunaApp) {
-                nessunaApp = true
-                suCambio()
-            }
-        }
-    }
-
-    private companion object {
-        /** Decisione del 27 ottobre: spenta. Il codice resta per poterla riaccendere se un giorno servirà. */
-        const val PAUSA_NESSUNA_APP_ATTIVA = false
     }
 
     /**

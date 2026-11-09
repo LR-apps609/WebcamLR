@@ -10,6 +10,6 @@ object Servizio {
 
     const val VERSIONE_PROTOCOLLO = 2
 
-    /** Pausa intelligente: secondi senza app che usano la webcam e senza anteprima visibile prima di fermare il video. */
-    const val SECONDI_PRIMA_DELLA_PAUSA = 10
+    /** Pausa automatica (Qualità 18): secondi senza app che usano la webcam e senza nessuno che guarda il video prima che il computer chieda la pausa al telefono. */
+    const val SECONDI_PAUSA_AUTOMATICA = 20
 }

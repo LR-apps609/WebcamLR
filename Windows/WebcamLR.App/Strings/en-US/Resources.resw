@@ -884,6 +884,27 @@ The details are in {1}: send them with “Report a bug”.</value>
   <data name="Pausa_AnteprimaNascosta" xml:space="preserve">
     <value>Preview not visible</value>
   </data>
+  <data name="InterruttorePausaAutomatica.Header" xml:space="preserve">
+    <value>Pause when no app is using the webcam</value>
+  </data>
+  <data name="InterruttorePausaAutomatica.OnContent" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="InterruttorePausaAutomatica.OffContent" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="PausaAutomatica_Nota" xml:space="preserve">
+    <value>After {0} seconds with no app using the webcam, no recording and this window behind the others, the phone turns its camera off: less battery and less heat. Video comes back by itself, in under a second, as soon as an app opens the webcam or you go back to this window.</value>
+  </data>
+  <data name="PausaAutomatica_NonLeggibile" xml:space="preserve">
+    <value>The WebcamLR webcam must be installed: without it the PC can't tell whether an app is using it, and video never pauses.</value>
+  </data>
+  <data name="PausaAutomatica_Chiesta" xml:space="preserve">
+    <value>Automatic pause: no app has used the webcam for {0} seconds, the phone turns its camera off</value>
+  </data>
+  <data name="PausaAutomatica_Tolta" xml:space="preserve">
+    <value>Automatic pause over: video is needed again</value>
+  </data>
   <data name="Pausa_InPausa" xml:space="preserve">
     <value>Paused{1}: {0}</value>
   </data>

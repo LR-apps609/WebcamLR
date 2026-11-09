@@ -36,7 +36,6 @@ import it.lrapps.webcamlr.android.dati.IdentitaTelefono
 import it.lrapps.webcamlr.android.dati.Impostazioni
 import it.lrapps.webcamlr.android.effetti.AnalisiImmagine
 import it.lrapps.webcamlr.android.effetti.GraficaEffetti
-import it.lrapps.webcamlr.android.logica.Annullabile
 import it.lrapps.webcamlr.android.logica.ControlloPostura
 import it.lrapps.webcamlr.android.logica.DecisorePausa
 import it.lrapps.webcamlr.android.logica.FormatoRichiesto
@@ -76,7 +75,6 @@ import it.lrapps.webcamlr.android.video.ParametriEffetti
 import it.lrapps.webcamlr.android.video.ParametriGeometria
 import it.lrapps.webcamlr.android.video.Renderizzatore
 import it.lrapps.webcamlr.protocollo.AdattamentoRete
-import it.lrapps.webcamlr.protocollo.Anteprima
 import it.lrapps.webcamlr.protocollo.Approvazione
 import it.lrapps.webcamlr.protocollo.Benvenuto
 import it.lrapps.webcamlr.protocollo.Capacita
@@ -99,6 +97,7 @@ import it.lrapps.webcamlr.protocollo.MotiviPausa
 import it.lrapps.webcamlr.protocollo.MotivoChiusura
 import it.lrapps.webcamlr.protocollo.NumeriQualita
 import it.lrapps.webcamlr.protocollo.PacchettoImmagine
+import it.lrapps.webcamlr.protocollo.PausaAutomatica
 import it.lrapps.webcamlr.protocollo.Piattaforma
 import it.lrapps.webcamlr.protocollo.SfondiPronti
 import it.lrapps.webcamlr.protocollo.Sicurezza
@@ -391,14 +390,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     )
     private val analisi = AnalisiImmagine(app)
     private val grafica = GraficaEffetti(app)
-    private val pausaDecisa = DecisorePausa(
-        pianifica = { ritardo, azione ->
-            val compito = Runnable { azione() }
-            principale.postDelayed(compito, ritardo)
-            Annullabile { principale.removeCallbacks(compito) }
-        },
-        suCambio = { pausaCambiata() },
-    )
+    private val pausaDecisa = DecisorePausa(suCambio = { pausaCambiata() })
     private val gravita = SensoreGravita(app) { giu, adesso -> pausaDecisa.gravita(giu, adesso) }
     private val calore = AscoltoCalore(app) { caloreCambiato() }
     private val regolatoreCalore = RegolatoreCalore()
@@ -1223,7 +1215,8 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
                 is Comando -> applica(messaggio)
                 is EffettiComputer -> effettiDalComputer(messaggio)
                 is InOnda -> inOndaArrivato(messaggio)
-                is Anteprima -> pausaDecisa.anteprima(messaggio.visibile)
+                // Qualità 18: la pausa automatica la decide il computer. `anteprima` resta per i computer di prima.
+                is PausaAutomatica -> pausaDecisa.pausaAutomatica(messaggio.attiva)
                 is FormatoVideo -> chiediFormato(messaggio)
                 // Qualità 13: il decoder del computer non può partire: il prossimo fotogramma sarà chiave.
                 is ChiediChiave -> codificatore.chiaveChiestaDalComputer()
@@ -1277,7 +1270,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         regola.collegato(stradaDi(tipoCollegamento ?: TipoCollegamento.WIFI), SystemClock.elapsedRealtime())
         registro.aggiungi(Testi.testo(R.string.registro_collegato, computer.nome, benvenuto.piattaforma.valore))
         Impostazioni.ultimoComputer = computer.nome
-        // P10: connessione nuova, la pausa «nessuna app» riparte da capo (il computer rimanda `anteprima`).
+        // Connessione nuova: la pausa automatica riparte da capo (il computer rimanda `pausa-automatica`).
         pausaDecisa.nuovoCollegamento()
         aggiornaPausa()
         attendiChiave.set(true)
@@ -1596,7 +1589,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
                 is Comando -> applica(messaggio)
                 is EffettiComputer -> effettiDalComputer(messaggio)
                 is InOnda -> inOndaArrivato(messaggio)
-                is Anteprima -> pausaDecisa.anteprima(messaggio.visibile)
+                is PausaAutomatica -> pausaDecisa.pausaAutomatica(messaggio.attiva)
                 else -> Unit
             }
             // Come i comandi: è lo stesso computer, che può mandarla prima del `benvenuto`.

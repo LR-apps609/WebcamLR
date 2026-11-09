@@ -884,6 +884,27 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
   <data name="Pausa_AnteprimaNascosta" xml:space="preserve">
     <value>Anteprima non visibile</value>
   </data>
+  <data name="InterruttorePausaAutomatica.Header" xml:space="preserve">
+    <value>Pausa quando nessuna app usa la webcam</value>
+  </data>
+  <data name="InterruttorePausaAutomatica.OnContent" xml:space="preserve">
+    <value>Sì</value>
+  </data>
+  <data name="InterruttorePausaAutomatica.OffContent" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="PausaAutomatica_Nota" xml:space="preserve">
+    <value>Dopo {0} secondi senza app che usano la webcam, senza registrazione e con questa finestra dietro le altre, il telefono spegne la fotocamera: meno batteria e meno calore. Il video riparte da solo, in meno di un secondo, appena un'app apre la webcam o torni su questa finestra.</value>
+  </data>
+  <data name="PausaAutomatica_NonLeggibile" xml:space="preserve">
+    <value>Serve la webcam di WebcamLR installata: senza, il PC non sa se un'app la usa e il video non si ferma mai.</value>
+  </data>
+  <data name="PausaAutomatica_Chiesta" xml:space="preserve">
+    <value>Pausa automatica: nessuna app usa la webcam da {0} secondi, il telefono spegne la fotocamera</value>
+  </data>
+  <data name="PausaAutomatica_Tolta" xml:space="preserve">
+    <value>Pausa automatica finita: il video serve di nuovo</value>
+  </data>
   <data name="Pausa_InPausa" xml:space="preserve">
     <value>In pausa{1}: {0}</value>
   </data>

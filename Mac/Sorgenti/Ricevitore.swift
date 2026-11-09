@@ -457,6 +457,13 @@ final class Ricevitore {
     private(set) var appWebcam: [String] = []
     /// Finché un telefono è collegato macOS non mette l'app in sospensione (App Nap, funzione 20).
     @ObservationIgnored private var attivitaCollegamento: NSObjectProtocol?
+    /// Qualità 18: la webcam virtuale risponde, quindi il Mac sa se un'app la usa e la pausa automatica può lavorare.
+    /// Falso con l'Apple ID gratuito (niente Camera Extension): la funzione resta spenta, senza errori.
+    private(set) var usoWebcamLeggibile = false
+    /// Qualità 18: i 20 secondi della pausa automatica (RegolaPausaAutomatica.swift).
+    @ObservationIgnored private var regolaPausa = RegolaPausaAutomatica()
+    /// Qualità 18: WebcamLR diventa o smette di essere l'app attiva: la pausa automatica si decide subito.
+    @ObservationIgnored private var osservatoriPrimoPiano: [NSObjectProtocol] = []
 
     /// La porta su cui il Mac ascolta, quando è visibile in rete (serve al QR code).
     var porta: UInt16? {
@@ -473,6 +480,7 @@ final class Ricevitore {
         webcamCollegata = true
         aggiornaUscite()
         compitoInOnda?.cancel()
+        osservaPrimoPiano()
         compitoInOnda = Task { [weak self] in
             while !Task.isCancelled {
                 // La lettura passa da CoreMediaIO e può richiedere tempo: fuori dalla coda principale.
@@ -493,7 +501,11 @@ final class Ricevitore {
                 if letto.2 != self.appWebcam { self.appWebcam = letto.2 }
                 self.aggiornaInOnda(letto.0)
                 self.aggiornaFormatoWebcam(letto.1)
-                try? await Task.sleep(for: .seconds(1))
+                // Qualità 18: la webcam virtuale ha risposto (o no): si sa leggere l'uso; poi la regola decide.
+                if letto.4 != self.usoWebcamLeggibile { self.usoWebcamLeggibile = letto.4 }
+                self.valutaPausaAutomatica()
+                // In pausa automatica ogni 250 ms invece che ogni secondo: il video riparte in meno di un secondo.
+                try? await Task.sleep(for: self.regolaPausa.controllo)
             }
         }
     }
@@ -616,6 +628,7 @@ final class Ricevitore {
         miniAperta = aperta
         aggiornaUscite()
         if let attivo { segnalaAnteprima(attivo) }
+        valutaPausaAutomatica()
     }
 
     /// Riempi o adatta (funzione 30): per tutti gli schermi, anche quelli dei telefoni che arriveranno.
@@ -634,6 +647,57 @@ final class Ricevitore {
         guard visibile != principaleVisibile else { return }
         principaleVisibile = visibile
         telefoni.forEach { segnalaAnteprima($0) }
+        valutaPausaAutomatica()
+    }
+
+    // MARK: - Pausa automatica (Qualità 18)
+
+    /// Qualcuno guarda l'anteprima: la finestra mini è aperta (resta sopra le altre apposta), oppure WebcamLR è l'app in
+    /// primo piano con la finestra principale visibile. Una finestra aperta ma dietro un'altra app non conta: cliccandola
+    /// il video riparte subito.
+    private var anteprimaGuardata: Bool {
+        miniAperta || (NSApp.isActive && principaleVisibile)
+    }
+
+    /// La regola decide (RegolaPausaAutomatica) e ogni telefono riceve `pausa-automatica` solo quando cambia: dal
+    /// controllo della webcam virtuale (ogni secondo, ogni 250 ms in pausa), quando un'app apre o chiude la webcam,
+    /// quando la finestra o l'app cambiano e quando parte un telefono nuovo. Senza la webcam virtuale questo controllo
+    /// non gira nemmeno (`collegaWebcamVirtuale`) e `usoWebcamLeggibile` resta falso: il video non si ferma mai.
+    func valutaPausaAutomatica() {
+        let uso = UsoVideo(interruttore: Preferenze.pausaAutomaticaAccesa, saLeggereUso: usoWebcamLeggibile,
+                           webcamInUso: webcamInUso, registra: staRegistrando?() ?? false,
+                           finestraGuardata: anteprimaGuardata)
+        let prima = regolaPausa.pausa
+        let pausa = regolaPausa.valuta(uso, adesso: ProcessInfo.processInfo.systemUptime)
+        if pausa != prima, !telefoni.isEmpty {
+            registra(pausa ? String(localized: "Pausa automatica: nessuna app usa la webcam da \(Servizio.secondiPausaAutomatica) secondi, il telefono spegne la fotocamera")
+                           : String(localized: "Pausa automatica finita: il video serve di nuovo"))
+        }
+        telefoni.forEach { segnalaPausaAutomatica($0, pausa) }
+    }
+
+    /// L'interruttore delle Impostazioni è cambiato: acceso, i 20 secondi partono da qui; spento, la pausa finisce subito.
+    func pausaAutomaticaCambiata() {
+        regolaPausa.riparti(adesso: ProcessInfo.processInfo.systemUptime)
+        valutaPausaAutomatica()
+    }
+
+    /// Manda `pausa-automatica` quando cambia; dopo un `benvenuto` (`pausaAutomaticaSegnalata` a nil) sempre.
+    private func segnalaPausaAutomatica(_ telefono: TelefonoCollegato, _ pausa: Bool) {
+        guard pausa != telefono.pausaAutomaticaSegnalata, let sessione = telefono.sessione else { return }
+        telefono.pausaAutomaticaSegnalata = pausa
+        sessione.segnalaPausaAutomatica(pausa)
+    }
+
+    /// Una volta sola: WebcamLR diventa l'app attiva o lo smette (clic su un'altra app, ⌘⇥).
+    private func osservaPrimoPiano() {
+        guard osservatoriPrimoPiano.isEmpty else { return }
+        let centro = NotificationCenter.default
+        for nome in [NSApplication.didBecomeActiveNotification, NSApplication.didResignActiveNotification] {
+            osservatoriPrimoPiano.append(centro.addObserver(forName: nome, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.valutaPausaAutomatica() }
+            })
+        }
     }
 
     /// Dall'anteprima (P21): la miniatura dell'altro telefono compare o sparisce.
@@ -664,8 +728,8 @@ final class Ricevitore {
         if cambiata { registra(visibile ? String(localized: "Anteprima di nuovo visibile") : String(localized: "Anteprima nascosta"), di: telefono) }
     }
 
-    /// Il testo calmo sopra il video quando il telefono è in pausa (`stato.pausa`). «Nessuna app» resta per i telefoni
-    /// di prima del 27 ottobre: quelli nuovi non vanno più in pausa da soli (solo faccia in giù, dall'utente, calore…).
+    /// Il testo calmo sopra il video quando il telefono è in pausa (`stato.pausa`). «Nessuna app»: la pausa automatica
+    /// chiesta dal Mac (Qualità 18), o un telefono di prima del 27 ottobre che decideva da solo.
     /// Anche fuori dalla coda principale: la schermata di attesa (`StatoAttesa.sottotitolo`) si disegna su altre code.
     nonisolated static func testoPausa(_ motivo: String) -> String {
         switch motivo {
@@ -2404,6 +2468,11 @@ final class Ricevitore {
             // andavano in pausa; quelli nuovi continuano finché il Mac è aperto.
             segnalaInOnda(telefono, sempre: true)
             segnalaAnteprima(telefono, sempre: true)
+            // Qualità 18: un telefono appena collegato (anche lo stesso, passato al cavo) fa ripartire i 20 secondi, e
+            // riceve subito `pausa-automatica` (falso): un telefono rimasto in pausa riprende.
+            telefono.pausaAutomaticaSegnalata = nil
+            regolaPausa.riparti(adesso: ProcessInfo.processInfo.systemUptime)
+            valutaPausaAutomatica()
             chiediAudioSeServe()
         case .conferma, .confermaFinita, .rifiutata, .rifiutatoDaPoco:
             // Solo i candidati chiedono conferma o vengono rifiutati (sopra).

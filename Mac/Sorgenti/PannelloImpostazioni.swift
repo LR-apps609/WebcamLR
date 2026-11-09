@@ -259,6 +259,8 @@ struct PannelloImpostazioni: View {
             Divider().overlay(Tema.lineaTenue)
             RigaAppWebcam(webcamDisponibile: fotocamera.disponibile, webcamAttiva: fotocamera.stato == .attiva,
                           firme: ricevitore.appWebcam, inUso: ricevitore.webcamInUso, conAiuto: true)
+            Divider().overlay(Tema.lineaTenue)
+            SezionePausaAutomatica(ricevitore: ricevitore)
         case .attesa:
             PaginaSchermataAttesa(ricevitore: ricevitore)
         case .gobbo:
@@ -346,6 +348,29 @@ struct Nota: View {
             .font(.stile(.nota))
             .foregroundStyle(Tema.testoSecondario)
             .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+/// Qualità 18: «Pausa quando nessuna app usa la webcam», sotto la webcam per le altre app. Senza la webcam virtuale
+/// (Apple ID gratuito) l'interruttore resta, ma la nota dice che qui non può lavorare.
+private struct SezionePausaAutomatica: View {
+    let ricevitore: Ricevitore
+    @AppStorage(Preferenze.pausaAutomatica) private var accesa = true
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
+            Toggle(isOn: $accesa) {
+                Text("Pausa quando nessuna app usa la webcam")
+                    .font(.stile(.corpo, .corpoEvidente))
+            }
+            .toggleStyle(.switch)
+            .onChange(of: accesa) { _, _ in ricevitore.pausaAutomaticaCambiata() }
+            if ricevitore.usoWebcamLeggibile {
+                Nota(testo: String(localized: "Dopo \(Servizio.secondiPausaAutomatica) secondi senza app che usano la webcam, senza registrazione e con WebcamLR dietro le altre app, il telefono spegne la fotocamera: meno batteria e meno calore. Il video riparte da solo, in meno di un secondo, appena un'app apre la webcam o torni su WebcamLR."))
+            } else {
+                Nota(testo: String(localized: "Serve la webcam virtuale di WebcamLR: senza, il Mac non sa se un'app la usa e il video non si ferma mai."))
+            }
+        }
     }
 }
 

@@ -310,7 +310,10 @@ public class ComposizioneTest(ITestOutputHelper uscita)
         });
         var cambi = new List<CambioComposizione>();
         // Ogni fotogramma con la scheda che fallisce esce comunque, uguale a quello del processore.
-        for (var i = 0; i < 40 && cambi.Count(c => !c.SullaSchedaVideo) < 2; i++)
+        // La riapertura avviene in sottofondo: su una macchina lenta (GitHub CI) può servire più di 40 giri,
+        // quindi si aspetta a tempo (fino a 10 s) e non a numero di fotogrammi.
+        var orologio = System.Diagnostics.Stopwatch.StartNew();
+        while (orologio.Elapsed < TimeSpan.FromSeconds(10) && cambi.Count(c => !c.SullaSchedaVideo) < 2)
         {
             var r = RendiFinche(compositore, _ => true);
             Assert.Equal(atteso.Dati, r.Dati);

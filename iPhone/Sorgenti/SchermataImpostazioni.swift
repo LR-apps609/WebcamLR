@@ -30,6 +30,8 @@ struct SchermataImpostazioni: View {
     @AppStorage(GestorePausa.Chiave.facciaInGiu) private var facciaInGiu = true
     /// Interfaccia finale: la strada preferita. La sessione segue `UserDefaults` e lo dice al computer nello `stato`.
     @AppStorage(PreferenzaCollegamento.chiave) private var collegamento: PreferenzaCollegamento = .automatico
+    /// Qualità 19: all'avvio ci si collega subito all'ultimo computer conosciuto (`Ricollegamento`), di serie sì.
+    @AppStorage(Ricollegamento.chiaveDaSolo) private var collegaDaSolo = true
     /// G1.2: «Lingua» in diretta chiede prima di aprire le Impostazioni di iOS.
     @State private var domandaImpostazioniIOS = false
     /// Aperte da «In onda»: le righe delle funzioni solo del telefono che aprono un foglio della sessione.
@@ -178,10 +180,12 @@ struct SchermataImpostazioni: View {
                 Label("Usa", systemImage: "point.topleft.down.to.point.bottomright.curvepath")
             }
             .listRowBackground(Tema.pannello)
+            Toggle("Collegati da solo all'ultimo computer", isOn: $collegaDaSolo)
+                .listRowBackground(Tema.pannello)
         } header: {
             EtichettaSezione(String(localized: "Collegamento"))
         } footer: {
-            nota(testoCollegamento)
+            nota(testoCollegamento + Text(" ") + testoDaSolo)
         }
     }
 
@@ -364,6 +368,13 @@ struct SchermataImpostazioni: View {
     private var motivoRiduzione: String? {
         guard testoQualitaInviata != nil else { return nil }
         return sessione?.testoRiduzione
+    }
+
+    /// Qualità 19: cosa fa «Collegati da solo all'ultimo computer», in una frase.
+    private var testoDaSolo: Text {
+        collegaDaSolo
+            ? Text("Aprendo l'app ti colleghi subito all'ultimo computer usato, se è acceso e già conosciuto.")
+            : Text("Aprendo l'app scegli tu il computer dall'elenco.")
     }
 
     /// Cosa fa la scelta, in una frase. La stessa scelta si fa anche dal computer.

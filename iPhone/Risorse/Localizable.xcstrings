@@ -715,6 +715,40 @@
         }
       }
     },
+    "Aprendo l'app scegli tu il computer dall'elenco." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When you open the app, you choose the computer from the list."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aprendo l'app scegli tu il computer dall'elenco."
+          }
+        }
+      }
+    },
+    "Aprendo l'app ti colleghi subito all'ultimo computer usato, se è acceso e già conosciuto." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When you open the app, it connects right away to the last computer you used, if it’s on and already known."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aprendo l'app ti colleghi subito all'ultimo computer usato, se è acceso e già conosciuto."
+          }
+        }
+      }
+    },
     "Apri" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1935,6 +1969,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Collegati al Wi-Fi o usa il cavo"
+          }
+        }
+      }
+    },
+    "Collegati da solo all'ultimo computer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect automatically to the last computer"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collegati da solo all'ultimo computer"
           }
         }
       }
@@ -4298,23 +4349,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Messa a fuoco manuale"
-          }
-        }
-      }
-    },
-    "Mi ricollego a %@ tra %lld…" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reconnecting to %@ in %lld…"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mi ricollego a %@ tra %lld…"
           }
         }
       }

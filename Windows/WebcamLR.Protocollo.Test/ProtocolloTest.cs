@@ -251,6 +251,17 @@ public class ProtocolloTest
         Assert.Equal(new ChiediChiave(), CodificaMessaggi.Decodifica("""{"tipo":"chiedi-chiave","motivo":"x"}"""u8));
     }
 
+    /// <summary>Lo stesso JSON di «testPausaAutomaticaComeNelDocumento» (Swift) e «pausaAutomaticaComeNelDocumento» (Kotlin).</summary>
+    [Fact]
+    public void PausaAutomaticaComeNelDocumento()
+    {
+        ComeSwift("""{"attiva":true,"tipo":"pausa-automatica"}""", new PausaAutomatica(true));
+        Assert.Equal(new PausaAutomatica(false), CodificaMessaggi.Decodifica("""{"attiva":false,"tipo":"pausa-automatica"}"""u8));
+        // Un campo in più (versione futura) non cambia il messaggio.
+        Assert.Equal(new PausaAutomatica(true),
+            CodificaMessaggi.Decodifica("""{"attiva":true,"secondi":20,"tipo":"pausa-automatica"}"""u8));
+    }
+
     [Fact]
     public void AnteprimaEFormatoAudioComeNelDocumento()
     {

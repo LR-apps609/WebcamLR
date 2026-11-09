@@ -426,6 +426,17 @@ public struct Anteprima: Codable, Equatable, Sendable {
     }
 }
 
+/// Pausa automatica (Qualità 18): dal computer, nessuna app usa la webcam e nessuno guarda il video da un po'. Con
+/// `attiva` vero il telefono ferma fotocamera e codifica (motivo `nessuna-app`) e tiene vivo il collegamento; con falso
+/// riprende subito, da un fotogramma chiave. Vedi «Pausa automatica» nel documento.
+public struct PausaAutomatica: Codable, Equatable, Sendable {
+    public var attiva: Bool
+
+    public init(attiva: Bool) {
+        self.attiva = attiva
+    }
+}
+
 /// Il gobbo: testo che scorre sullo schermo del telefono. Si applicano solo i campi presenti.
 public struct Gobbo: Codable, Equatable, Sendable {
     /// Al massimo `Gobbo.lunghezzaMassima` caratteri; il telefono taglia il resto.
@@ -715,6 +726,8 @@ public enum Messaggio: Equatable, Sendable {
     case comando(Comando)
     case inOnda(InOnda)
     case anteprima(Anteprima)
+    /// Dal computer: fermare o riprendere il video quando nessuna app usa la webcam (Qualità 18).
+    case pausaAutomatica(PausaAutomatica)
     case gobbo(Gobbo)
     case formatoAudio(FormatoAudio)
     /// Effetti sul computer: lo stato dal computer e le richieste dal telefono.
@@ -744,6 +757,7 @@ public enum Messaggio: Equatable, Sendable {
         case .comando: "comando"
         case .inOnda: "in-onda"
         case .anteprima: "anteprima"
+        case .pausaAutomatica: "pausa-automatica"
         case .gobbo: "gobbo"
         case .formatoAudio: "formato-audio"
         case .effetti: "effetti"
@@ -778,6 +792,7 @@ extension Messaggio: Codable {
         case "comando": self = .comando(try Comando(from: decoder))
         case "in-onda": self = .inOnda(try InOnda(from: decoder))
         case "anteprima": self = .anteprima(try Anteprima(from: decoder))
+        case "pausa-automatica": self = .pausaAutomatica(try PausaAutomatica(from: decoder))
         case "gobbo": self = .gobbo(try Gobbo(from: decoder))
         case "formato-audio": self = .formatoAudio(try FormatoAudio(from: decoder))
         case "effetti": self = .effetti(try StatoEffettiComputer(from: decoder))
@@ -807,6 +822,7 @@ extension Messaggio: Codable {
         case .comando(let m): try m.encode(to: encoder)
         case .inOnda(let m): try m.encode(to: encoder)
         case .anteprima(let m): try m.encode(to: encoder)
+        case .pausaAutomatica(let m): try m.encode(to: encoder)
         case .gobbo(let m): try m.encode(to: encoder)
         case .formatoAudio(let m): try m.encode(to: encoder)
         case .effetti(let m): try m.encode(to: encoder)

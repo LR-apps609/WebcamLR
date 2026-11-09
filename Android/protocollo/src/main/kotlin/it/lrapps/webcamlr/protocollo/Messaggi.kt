@@ -261,6 +261,15 @@ data class Anteprima(val visibile: Boolean) : Messaggio {
     override val tipo get() = "anteprima"
 }
 
+/**
+ * Pausa automatica (Qualità 18): dal computer, nessuna app usa la webcam e nessuno guarda il video da un po'. Con
+ * [attiva] vero il telefono ferma fotocamera e codifica (motivo `nessuna-app`) e tiene vivo il collegamento; con falso
+ * riprende subito, da un fotogramma chiave (Protocollo.md, «Pausa automatica»).
+ */
+data class PausaAutomatica(val attiva: Boolean) : Messaggio {
+    override val tipo get() = "pausa-automatica"
+}
+
 /** Il gobbo: testo che scorre sullo schermo del telefono. Si applicano solo i campi presenti. */
 data class Gobbo(
     /** Al massimo [LUNGHEZZA_MASSIMA] caratteri; il telefono taglia il resto. */
@@ -555,6 +564,7 @@ object CodificaMessaggi {
             )
             is InOnda -> mapOf("attivo" to messaggio.attivo, "app" to messaggio.app, "selezionato" to messaggio.selezionato)
             is Anteprima -> mapOf("visibile" to messaggio.visibile)
+            is PausaAutomatica -> mapOf("attiva" to messaggio.attiva)
             is EffettiComputer -> mapOf(
                 "specchia" to messaggio.specchia, "sfondo" to messaggio.sfondo, "luceVolto" to messaggio.luceVolto,
             )
@@ -699,6 +709,7 @@ object CodificaMessaggi {
             )
             "in-onda" -> InOnda(campi.booleano("attivo"), campi.testoOpzionale("app"), campi.booleanoOpzionale("selezionato"))
             "anteprima" -> Anteprima(campi.booleano("visibile"))
+            "pausa-automatica" -> PausaAutomatica(campi.booleano("attiva"))
             "effetti" -> EffettiComputer(campi.booleano("specchia"), campi.testo("sfondo"), campi.booleano("luceVolto"))
             "chiedi-effetto" -> ChiediEffetto(
                 specchia = campi.booleanoOpzionale("specchia"),

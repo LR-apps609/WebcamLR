@@ -156,6 +156,7 @@ class ProtocolloTest {
                 scritta = true, postura = true, gobbo = true, formati = listOf(FormatoSupportato(1280, 720, 60)),
             ),
             Anteprima(true),
+            PausaAutomatica(true),
             Gobbo(attivo = false),
             Gobbo(velocita = 3.0, dimensione = DimensioniGobbo.GRANDE, posizione = 0.0),
             FormatoAudio(),
@@ -309,6 +310,15 @@ class ProtocolloTest {
         assertEquals(ChiediChiave, decodifica("""{"tipo":"chiedi-chiave"}"""))
         // Un campo in più (versione futura) non cambia il messaggio.
         assertEquals(ChiediChiave, decodifica("""{"tipo":"chiedi-chiave","motivo":"x"}"""))
+    }
+
+    /** Lo stesso JSON di «testPausaAutomaticaComeNelDocumento» (Swift) e «PausaAutomaticaComeNelDocumento» (C#). */
+    @Test
+    fun pausaAutomaticaComeNelDocumento() {
+        assertEquals("""{"attiva":true,"tipo":"pausa-automatica"}""", json(PausaAutomatica(true)))
+        assertEquals(PausaAutomatica(false), decodifica("""{"attiva":false,"tipo":"pausa-automatica"}"""))
+        // Un campo in più (versione futura) non cambia il messaggio.
+        assertEquals(PausaAutomatica(true), decodifica("""{"attiva":true,"secondi":20,"tipo":"pausa-automatica"}"""))
     }
 
     @Test

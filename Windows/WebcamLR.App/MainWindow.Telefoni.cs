@@ -67,6 +67,16 @@ public sealed partial class MainWindow
     // MARK: arrivo di un telefono
 
     /// <summary>
+    /// I cavi lasciati per il Wi-Fi tornano (Qualità 17: quello dell'iPhone e quello di Android): la scelta è cambiata
+    /// o la strada in uso si è staccata.
+    /// </summary>
+    private void RiprendiCaviScelti()
+    {
+        cavo.RiprendiScelti();
+        cavoAndroid.RiprendiScelti();
+    }
+
+    /// <summary>
     /// Chiamata sul thread di rete (o del cavo): qui niente controlli della finestra, solo SuInterfaccia.
     /// Un collegamento nuovo resta in attesa finché non è accettato (stretta di mano, prova, fiducia): solo allora entra
     /// nell'elenco. Così nessuno sulla rete può far cadere un telefono collegato.
@@ -137,7 +147,7 @@ public sealed partial class MainWindow
                     _ = ChiudiSessioneAsync(nuova);
                     // In «Automatico» il cavo è stato solo rimandato (i 30 secondi dopo un cambio): poi si riprova.
                     if (esito.Telefono?.Regola.Preferenza == PreferenzaCollegamento.Automatico)
-                        _ = Task.Delay(RegolaCollegamento.PausaDopoCambio).ContinueWith(_ => cavo.RiprendiScelti(), TaskScheduler.Default);
+                        _ = Task.Delay(RegolaCollegamento.PausaDopoCambio).ContinueWith(_ => RiprendiCaviScelti(), TaskScheduler.Default);
                     return;
                 case EsitoArrivo.Pieno:
                     // Due telefoni arrivati insieme con un posto solo: entra il primo.
@@ -181,7 +191,7 @@ public sealed partial class MainWindow
             // Le strade che il telefono conosce e la sua preferenza, per l'etichetta sul video. Se il telefono l'ha cambiata
             // da sé, il cavo lasciato per il Wi-Fi torna, quando ora serve.
             if (collegato.AggiornaStrade(stato, telefoni.Orologio()) && collegato.Regola.Preferenza != PreferenzaCollegamento.WiFi)
-                cavo.RiprendiScelti();
+                RiprendiCaviScelti();
             var avvisoPrima = collegato.Avvisi.Attuale;
             var avviso = collegato.Avvisi.Aggiorna(stato);
             // Caldo e batteria: una riga nel registro all'inizio e alla fine, detta anche dall'Assistente vocale (windows.md N4).
@@ -357,17 +367,27 @@ public sealed partial class MainWindow
         // Chiusa dal computer (Scollega, rifiutato, sostituito, terzo telefono): sul cavo non si ricollega
         // da sola finché l'iPhone non viene staccato e ricollegato.
         // Lasciata per la strada scelta (resta il Wi-Fi): il cavo torna quando la scelta cambia o il Wi-Fi si stacca.
-        if (viaCavo) nuova.Chiusa += () => { if (nuova.ChiusaDalComputer) cavo.Sospendi(presa, perScelta: nuova.LasciataPerScelta); };
+        if (viaCavo) nuova.Chiusa += () =>
+        {
+            if (!nuova.ChiusaDalComputer) return;
+            // Qualità 17: ogni cavo riconosce solo le sue prese (iPhone con usbmux, Android con adb).
+            cavo.Sospendi(presa, perScelta: nuova.LasciataPerScelta);
+            cavoAndroid.Sospendi(presa, perScelta: nuova.LasciataPerScelta);
+        };
         // Accettata: il cavo funziona. Senza, una chiusura prima del «ciao» (il telefono rifiuta il cavo)
         // allunga l'attesa del prossimo tentativo, invece di riprovare ogni 2 secondi per sempre.
-        if (viaCavo) nuova.Salutato += _ => cavo.StrettaRiuscita(presa);
+        if (viaCavo) nuova.Salutato += _ =>
+        {
+            cavo.StrettaRiuscita(presa);
+            cavoAndroid.StrettaRiuscita(presa);
+        };
         nuova.Chiusa += () =>
         {
             // Solo se era la sessione attuale del suo telefono (non sostituita, non scollegata dal PC): il telefono
             // resta nell'elenco in riconnessione, e viene dimenticato se non torna.
             if (telefoni.Perso(nuova) is not { } collegato) return;
             // La strada in uso si è staccata: il cavo lasciato per il Wi-Fi torna, così il video non si perde.
-            cavo.RiprendiScelti();
+            RiprendiCaviScelti();
             var perdita = collegato.Perdite;
             // L'arrivederci del telefono è voluto (Scollega sul telefono, un altro computer): si toglie come «Scollega»,
             // dopo una breve attesa per l'altra strada (l'iPhone lascia il cavo per il Wi-Fi con un arrivederci).

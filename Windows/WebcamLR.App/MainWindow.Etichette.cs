@@ -96,7 +96,7 @@ public sealed partial class MainWindow
         scelto.Regola.Imposta(preferenza, telefoni.Orologio());
         registro.Aggiungi(Testi.T("Registro_StradaScelta", scelto.Nome, PreferenzaCollegamento.Testo(preferenza)));
         _ = ComandaAsync(attiva, comando);
-        if (preferenza != PreferenzaCollegamento.WiFi) cavo.RiprendiScelti();
+        if (preferenza != PreferenzaCollegamento.WiFi) RiprendiCaviScelti();
         vociStradaMostrate = [];
         AggiornaChip();
     }

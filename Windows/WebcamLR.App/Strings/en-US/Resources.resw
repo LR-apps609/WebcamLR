@@ -1343,8 +1343,8 @@ The details are in {1}: send them with “Report a bug”.</value>
   <data name="Connessione_ApriApp" xml:space="preserve">
     <value>Open the app</value>
   </data>
-  <data name="Connessione_NessunIPhone" xml:space="preserve">
-    <value>No iPhone</value>
+  <data name="Connessione_NessunTelefono" xml:space="preserve">
+    <value>No phone</value>
   </data>
   <data name="Registro_Diagnosi" xml:space="preserve">
     <value>Diagnostics: {0}</value>
@@ -2122,5 +2122,32 @@ The details are in {1}: send them with “Report a bug”.</value>
   </data>
   <data name="Effetti_IntensitaMosaico" xml:space="preserve">
     <value>How big the squares are</value>
+  </data>
+  <data name="Registro_CavoAndroidCollegato" xml:space="preserve">
+    <value>Android USB cable: connected</value>
+  </data>
+  <data name="Registro_CavoAndroidInAscolto" xml:space="preserve">
+    <value>Android USB cable: adb server listening</value>
+  </data>
+  <data name="Registro_CavoAndroidServizioAssente" xml:space="preserve">
+    <value>Android USB cable: adb server missing</value>
+  </data>
+  <data name="Connessione_InUsoAndroid" xml:space="preserve">
+    <value>In use · Android</value>
+  </data>
+  <data name="Connessione_ConsentiSulTelefono" xml:space="preserve">
+    <value>Allow on the phone</value>
+  </data>
+  <data name="Dati_CavoAndroid" xml:space="preserve">
+    <value>Android USB cable</value>
+  </data>
+  <data name="Dati_ServerAdbPresente" xml:space="preserve">
+    <value>adb server present</value>
+  </data>
+  <data name="Dati_ServerAdbAssente" xml:space="preserve">
+    <value>adb server missing</value>
+  </data>
+  <data name="Dati_AdbMancante" xml:space="preserve">
+    <value>adb not installed</value>
   </data>
 </root>

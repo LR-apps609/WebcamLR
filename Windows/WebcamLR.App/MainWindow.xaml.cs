@@ -31,6 +31,8 @@ public sealed partial class MainWindow : Window
     private readonly Ascoltatore ascoltatore;
     /// <summary>Il cavo USB (1.7), attraverso il servizio di Apple dell'app «Dispositivi Apple».</summary>
     private readonly ClienteUsbmux cavo = new();
+    /// <summary>Il cavo USB di Android (Qualità 17), attraverso il server di adb e il debug USB del telefono.</summary>
+    private readonly ClienteAdb cavoAndroid = new();
     /// Vero dopo che l'utente ha chiuso il suggerimento per il cavo: non torna fino al prossimo avvio.
     private bool suggerimentoCavoChiuso;
     /// <summary>Registro del collegamento (1.5): gli ultimi 50 eventi, solo in memoria, dal pulsante a sinistra.</summary>
@@ -123,6 +125,29 @@ public sealed partial class MainWindow : Window
                 _ = AggiornaDiagnosiAsync();
             });
         };
+        // Qualità 17: il cavo di Android dà connessioni come quelle dell'iPhone, con la stessa accettazione.
+        cavoAndroid.TelefonoViaCavo += presa => Accetta(presa, viaCavo: true, Orologio.Adesso());
+        cavoAndroid.StatoCambiato += stato =>
+        {
+            registro.Aggiungi(stato switch
+            {
+                StatoCavo.Collegato => Testi.T("Registro_CavoAndroidCollegato"),
+                StatoCavo.InAscolto => Testi.T("Registro_CavoAndroidInAscolto"),
+                _ => Testi.T("Registro_CavoAndroidServizioAssente"),
+            });
+            coda.TryEnqueue(() =>
+            {
+                AggiornaConnessione();
+                _ = AggiornaDiagnosiAsync();
+            });
+        };
+        cavoAndroid.Evento += testo => registro.Aggiungi(testo);
+        // Un telefono da autorizzare (domanda del debug USB) o adb che manca: riga del cavo e diagnosi.
+        cavoAndroid.ElencoCambiato += () => coda.TryEnqueue(() =>
+        {
+            AggiornaConnessione();
+            _ = AggiornaDiagnosiAsync();
+        });
         cavo.Evento += testo =>
         {
             registro.Aggiungi(testo);
@@ -158,6 +183,7 @@ public sealed partial class MainWindow : Window
         controlloRisveglio.Tick += (_, _) => { if (sorveglianzaRisveglio.Controlla(DateTime.UtcNow)) SuRisveglio(); };
         controlloRisveglio.Start();
         cavo.Avvia();
+        cavoAndroid.Avvia();
         annuncio = new AnnuncioWindows((ushort)ascoltatore.Porta);
         _ = MostraQRAsync();
         _ = MostraQRAppAsync();
@@ -235,6 +261,7 @@ public sealed partial class MainWindow : Window
                 annuncio.Dispose();
                 ascoltatore.Dispose();
                 await cavo.DisposeAsync();
+                await cavoAndroid.DisposeAsync();
                 uscitaWebcam.Dispose();
                 motoreVideo.Dispose();
                 ChiudiMicrofono();
@@ -758,14 +785,20 @@ public sealed partial class MainWindow : Window
             : Testi.T("Connessione_Pronto");
         MostraRiga(RigaWifi, IconaWifi, NomeWifi, StatoWifi, statoWifi, wifi);
         var usb = inUso.Contains(TipoCollegamento.CavoUsb);
-        var statoCavo = usb ? Testi.T("Connessione_InUso")
-            : !cavo.Verificato ? "…"
-            : cavo.Stato switch
-            {
-                StatoCavo.Collegato => Testi.T("Connessione_Collegato"),
-                StatoCavo.ServizioAssente => Testi.T("Connessione_NonDisponibile"),
-                _ => cavo.IPhoneAlCavo ? Testi.T("Connessione_ApriApp") : Testi.T("Connessione_NessunIPhone"),
-            };
+        // Qualità 17: «In uso · Android» quando sul cavo c'è un telefono Android (debug USB o Tethering USB).
+        var usbAndroid = telefoni.Telefoni.Any(t => !t.InRiconnessione && t.Collegamento == TipoCollegamento.CavoUsb
+            && t.Ciao.Piattaforma == Piattaforma.Android);
+        var statoCavo = RigaCavo.Stato(usb, usbAndroid, SituazioneCavo.Di(cavo), SituazioneCavo.Di(cavoAndroid)) switch
+        {
+            StatoRigaCavo.InUso => Testi.T("Connessione_InUso"),
+            StatoRigaCavo.InUsoAndroid => Testi.T("Connessione_InUsoAndroid"),
+            StatoRigaCavo.Verifica => "…",
+            StatoRigaCavo.Collegato => Testi.T("Connessione_Collegato"),
+            StatoRigaCavo.DaAutorizzare => Testi.T("Connessione_ConsentiSulTelefono"),
+            StatoRigaCavo.ApriApp => Testi.T("Connessione_ApriApp"),
+            StatoRigaCavo.NonDisponibile => Testi.T("Connessione_NonDisponibile"),
+            _ => Testi.T("Connessione_NessunTelefono"),
+        };
         MostraRiga(RigaCavo, IconaCavo, NomeCavo, StatoCavoTesto, statoCavo, usb);
         RigaCavoRete.Visibility = Visibile(inUso.Contains(TipoCollegamento.CavoDiRete));
     }
@@ -802,7 +835,8 @@ public sealed partial class MainWindow : Window
             });
             if (richiesta != richiesteDiagnosi) return;
             var nuovi = Diagnosi.Problemi(new SituazioneRete(haRete, profilo, firewall,
-                cavo.Verificato ? cavo.Stato : null, cavo.IPhoneAlCavo, tethering));
+                cavo.Verificato ? cavo.Stato : null, cavo.IPhoneAlCavo, tethering,
+                cavoAndroid.Verificato ? SituazioneCavo.Di(cavoAndroid) : null));
             foreach (var nuovo in nuovi.Where(n => n.Grave && problemi.All(p => p.Id != n.Id)))
                 registro.Aggiungi(Testi.T("Registro_Diagnosi", nuovo.Titolo));
             problemi = nuovi;
@@ -935,6 +969,7 @@ public sealed partial class MainWindow : Window
         registro.Aggiungi(Testi.T("Registro_Risveglio"));
         ascoltatore.Controlla();
         cavo.Riprendi();
+        cavoAndroid.Riprendi();
         _ = Task.Run(Collegamenti.AggiornaSchede);
         _ = RiannunciaAsync();
         _ = MostraQRAsync();
@@ -1204,6 +1239,12 @@ public sealed partial class MainWindow : Window
             StatoCavo.Collegato => Testi.T("Dati_Collegato"),
             StatoCavo.InAscolto => Testi.T("Dati_ServizioApplePresente"),
             _ => Testi.T("Dati_ServizioAppleAssente"),
+        }));
+        dati.Add((Testi.T("Dati_CavoAndroid"), cavoAndroid.Stato switch
+        {
+            StatoCavo.Collegato => Testi.T("Dati_Collegato"),
+            StatoCavo.InAscolto => Testi.T("Dati_ServerAdbPresente"),
+            _ => cavoAndroid.AdbMancante ? Testi.T("Dati_AdbMancante") : Testi.T("Dati_ServerAdbAssente"),
         }));
         if (statistiche is { } s)
         {

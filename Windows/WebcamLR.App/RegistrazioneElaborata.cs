@@ -39,6 +39,13 @@ public sealed class RegistrazioneElaborata : IRegistrazione
     private long tempoScritto;
     private TimeSpan ultimoTempo = TimeSpan.MinValue;
     private bool videoCambiato;
+    /// <summary>
+    /// Qualità 16: le immagini di un'altra misura saltate prima della prima giusta. Con un'app sulla webcam il motore può
+    /// lavorare a un'altra misura (quella della webcam) e cambia alla misura del file appena la registrazione c'è: le poche
+    /// immagini già nel motore non chiudono il file.
+    /// </summary>
+    private int saltateAllInizio;
+    private bool primaArrivata;
     private int frammentata = -1;
 
     /// <summary>MFTranscodeContainerType_FMPEG4 (mfidl.h): MP4 frammentato.</summary>
@@ -48,6 +55,9 @@ public sealed class RegistrazioneElaborata : IRegistrazione
     public bool? Frammentata => Volatile.Read(ref frammentata) switch { 1 => true, 0 => false, _ => null };
 
     public string File { get; }
+
+    /// <summary>La misura del video nel file: il motore la tiene finché si registra (Qualità 16).</summary>
+    public (int Larghezza, int Altezza) Misura => (larghezza, altezza);
 
     /// <summary>Circa: il file cresce mentre il codificatore scrive.</summary>
     public long Byte
@@ -83,14 +93,23 @@ public sealed class RegistrazioneElaborata : IRegistrazione
 
     /// <summary>
     /// Dal motore, per ogni immagine elaborata: si copia e si mette in coda, senza aspettare. Un'immagine di un'altra
-    /// misura (altro obiettivo, telefono girato) chiude il file: è un video solo.
+    /// misura (altro obiettivo, telefono girato) chiude il file: è un video solo. Prima della prima immagine giusta se ne
+    /// saltano al massimo <see cref="MassimoInAttesa"/> (vedi <see cref="saltateAllInizio"/>).
     /// </summary>
     public void Accoda(ImmagineBgra immagine)
     {
         if (immagine.Larghezza < larghezza || immagine.Altezza < altezza
             || (immagine.Larghezza & ~1) != larghezza || (immagine.Altezza & ~1) != altezza)
         {
-            lock (blocco) videoCambiato = true;
+            lock (blocco)
+            {
+                if (!primaArrivata && saltateAllInizio < MassimoInAttesa)
+                {
+                    saltateAllInizio++;
+                    return;
+                }
+                videoCambiato = true;
+            }
             coda.Writer.TryComplete();
             return;
         }
@@ -98,6 +117,7 @@ public sealed class RegistrazioneElaborata : IRegistrazione
         TimeSpan tempo;
         lock (blocco)
         {
+            primaArrivata = true;
             if (!orologio.IsRunning) orologio.Start();
             tempo = orologio.Elapsed;
             if (tempo <= ultimoTempo) return;

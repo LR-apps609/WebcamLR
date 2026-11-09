@@ -499,12 +499,13 @@ final class Ricevitore {
     }
 
     /// Il formato scelto dall'app che usa la webcam virtuale (P12), nil se nessuna la usa.
-    /// - 4K: l'estensione riceve 3840×2160 solo se l'app la usa in 4K e il telefono manda il 4K.
+    /// - Misura (Qualità 16): l'estensione riceve le immagini già alla misura dell'app (720p, 1080p o 4K): il video del
+    ///   telefono si scala una volta sola, in UscitaWebcam, anche quando arriva in 4K o a 60 fps con «Massima».
     /// - 60 fps: se l'app li vuole e il telefono ne manda meno, glieli chiede una volta con `formato`
     ///   (dal computer è una richiesta, Documenti/Protocollo.md), con la stessa risoluzione e lo stesso codec.
     ///   Il telefono può non seguirla: allora l'estensione ripete le immagini e il ritmo dell'uscita resta 60.
     private func aggiornaFormatoWebcam(_ formato: UscitaWebcam.Formato?) {
-        uscitaWebcam.imposta(quattroK: (formato?.altezza ?? 0) >= 2160)
+        uscitaWebcam.imposta(formatoApp: formato)
         guard let formato else {
             telefoni.forEach { $0.fpsChiesti = nil }
             return

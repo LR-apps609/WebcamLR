@@ -27,8 +27,13 @@ manda anche quello che c'è scritto nella colonna «Cosa mandare».
 |---|---|---|
 | 16:9 a 30 fps | 1920×1080, 1280×720 | 1920×1080, 1280×720, 960×540, 640×360 |
 | 16:9 a 60 fps | 1920×1080, 1280×720 | 1920×1080, 1280×720 |
-| 4K | 3840×2160 a 30 fps | 3840×2160 a 30 fps |
+| 4K | 3840×2160 a 30 fps | 3840×2160 a 30 fps (su Windows 10 dalla Qualità 16) |
 | 4:3, 15 fps | non offerti | non offerti |
+
+Dalla **Qualità 16** il video del telefono si scala **una volta sola** verso il formato scelto dall'app: sul Mac lo adatta
+WebcamLR (scheda video) e la webcam virtuale lo passa com'è; su Windows lo fa la scheda video nella copia (o, se il telefono
+manda meno del formato, la conversione in NV12 alla fine), anche con gli effetti sul computer, che prima si fermavano a 1080p.
+Per avere un 4K vero serve anche il telefono in 4K: «Massima» nel menu della qualità, o 4K scelto a mano.
 
 Un'app che vuole il **4:3** (640×480, 1280×960) o i **15 fps** non trova quel formato e deve prenderne uno 16:9 e adattarlo da sé
 (ritaglio ai lati o bande, fotogrammi saltati). È il comportamento atteso, ma va verificato: se un'app mostra un errore o
@@ -104,6 +109,30 @@ Prima: in WebcamLR, colonna Uscite, la webcam è «installata». Su Windows 11 l
 | R3 | Come R2, ma muovi il telefono in Wi-Fi lontano dal router per un minuto e poi torna vicino | la voce non fa salti né eco; il ritardo dell'audio nella riga del registro cambia al massimo una volta ogni 5 secondi | le righe «Da vetro a uscita» di quel minuto |
 | R4 | Su Windows, con OBS o Zoom aperti da 5 minuti | «recuperati» nella riga del registro resta piccolo (0–100 ms) e il numero «webcam» non sale col tempo | le righe «Da vetro a uscita» all'inizio e dopo 5 minuti |
 | R5 | Su Mac, con un'app a 60 fps e il telefono a 30 (o il contrario) | movimento regolare, nessun «saltello» ogni qualche secondo | un video fatto col telefono dello schermo, se riesci, e il `log stream` |
+
+## Oltre 1080p30 (Qualità 16)
+
+Telefono con WebcamLR Pro, cavo se puoi. Su ogni computer: Mac (account a pagamento) e Windows 11 (W10 se hai un PC con
+Windows 10). Per il 4K scegli **Massima** nel menu della qualità (il telefono passa a 4K 30 HEVC); per il 60 lascia che sia
+l'app a chiederlo (riga «Un'app usa la webcam a 60 fps…» nel registro) o scegli «1080p · 60 fps» a mano.
+Il formato scelto dall'app lo leggi come in «Formati che la webcam offre»; il formato del telefono nell'etichetta sopra il video.
+
+| Codice | App e formato | Cosa deve succedere | Cosa mandare se non va |
+|---|---|---|---|
+| Q16-1 | **Zoom**, «HD» acceso, telefono a 1080p 60 | l'anteprima è fluida e nitida; nel registro webcam (Windows) «Video dall'app: 1920×1080 → 1920×1080 a …» | le righe del registro e il formato dell'etichetta |
+| Q16-2 | **Zoom** con il telefono in 4K (Massima) | immagine nitida, nessun errore: Zoom prende 1080p o 720p e WebcamLR riduce il 4K una volta; nel registro webcam (Windows) le due misure sono uguali («1920×1080 → 1920×1080 a 30 fps») | come Q16-1, più «Fotogrammi» dei numeri |
+| Q16-3 | **Google Meet** in Chrome, telefono a 1080p 60 e poi in 4K | Meet si apre senza «Fotocamera occupata» e senza nero; il bordo dei capelli non ha scalini | il registro webcam, la versione di Chrome |
+| Q16-4 | **Microsoft Teams** (app nuova), telefono a 1080p 60 e poi in 4K | anteprima e chiamata vera: l'altra persona ti vede nitido | versione di Teams, registri |
+| Q16-5 | **OBS**, Dispositivo di cattura video a 1920×1080 **60 fps**, telefono a 1080p 60 | in OBS (Statistiche) 60 fps senza fotogrammi saltati, movimento fluido | le Statistiche di OBS, la riga «Da vetro a uscita» |
+| Q16-6 | **OBS** a **3840×2160** 30 fps, telefono in 4K (Massima) | dettaglio vero del 4K (testo piccolo leggibile, non sfocato come un 1080p ingrandito) | uno screenshot di OBS a schermo intero |
+| Q16-7 | Come Q16-6, ma telefono a 1080p | immagine pulita, ingrandita una volta: un po' più morbida del 4K vero, senza scalini né doppi bordi | screenshot, Mac Intel o Apple |
+| Q16-8 | (Windows) Q16-6 con **effetti sul PC** accesi (sfondo sfocato) | ancora 4K vero, non 1080p ingrandito; annota i ms del motore e i fps nei numeri (il 4K sul processore pesa) | la riga «Effetti sul PC» del registro |
+| Q16-9 | (Windows) Q16-8 mentre registri sul PC | la registrazione non si chiude quando l'app apre la webcam in 4K; il file resta a 1080p | il file e il registro |
+| Q16-10 | Cambia formato in OBS a metà (1080p 60 → 4K 30 → 720p 30) | per un attimo (al massimo un secondo sul Mac) l'immagine si adatta, poi nitida; nessun nero | il `log stream` (Mac) o il registro webcam |
+
+Limiti noti delle app, non errori di WebcamLR: Zoom manda al massimo 1080p (spesso 720p) a 30 fps, anche se apre la webcam
+più grande; Meet manda di solito 720p (1080p solo in alcuni piani Workspace) e non usa i 60 fps; Teams arriva a 1080p 30. Il
+4K e i 60 fps servono soprattutto a OBS, alle registrazioni e alle app che li chiedono esplicitamente.
 
 ## Cosa mandare a Claude
 

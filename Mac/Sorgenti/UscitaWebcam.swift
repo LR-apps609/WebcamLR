@@ -9,10 +9,13 @@ import Stile
 import SwiftUI
 import WebcamLRProtocollo
 
-/// Manda le immagini del telefono alla webcam virtuale (round 2): le adatta a 1920×1080 con bande scure
-/// (fondo di Stile) e le mette nel flusso «ingresso» dell'estensione (Mac/FotocameraVirtuale/Fotocamera.swift).
-/// Dalla P12 anche a 3840×2160, ma solo se un'app usa la webcam in 4K
-/// e il telefono manda davvero il 4K: altrimenti l'estensione ingrandisce l'immagine 1920×1080.
+/// Manda le immagini del telefono alla webcam virtuale (round 2): le adatta con bande scure (fondo di Stile) e le mette
+/// nel flusso «ingresso» dell'estensione (Mac/FotocameraVirtuale/Fotocamera.swift).
+/// Qualità 16: la misura è quella del formato scelto dall'app di chiamata (1280×720, 1920×1080 o 3840×2160, proprietà «fmto»),
+/// così il video del telefono si scala una volta sola, qui, sulla scheda video (Lanczos), sia che si ingrandisca (telefono a
+/// 1080p, app in 4K) sia che si riduca (telefono in 4K, app a 720p). L'estensione riceve un'immagine che ha già la misura
+/// dell'uscita e la passa alle app così com'è, senza copie (lo stesso IOSurface); ridimensiona da sé solo nel secondo dopo
+/// un cambio di formato, prima che qui arrivi la proprietà nuova. Nessuna app in onda: 1920×1080, come prima.
 /// Serve l'account sviluppatore a pagamento: senza, la webcam virtuale non c'è e questa classe non trova nulla
 /// (e non disegna nulla: la schermata di attesa parte con `avvia()`, quando il Ricevitore trova la webcam virtuale).
 ///
@@ -31,9 +34,11 @@ final class UscitaWebcam: @unchecked Sendable {
 
     /// L'identificativo del dispositivo creato dall'estensione (idDispositivo in Fotocamera.swift).
     private static let uidDispositivo = "6F1D2C64-1B8E-4C5A-9E0A-57C3B1A4D2E1"
-    /// Le due misure che l'estensione accetta nel flusso di ingresso (formatiIngresso in Fotocamera.swift).
+    /// La misura quando nessuna app usa la webcam (o con un'estensione che non dice il formato).
     private static let normale = (larghezza: 1920, altezza: 1080)
-    private static let quattroK = (larghezza: 3840, altezza: 2160)
+    /// Le misure dei formati dell'uscita (formatiUscita in Fotocamera.swift): solo queste si mandano già pronte.
+    /// L'estensione accetta nel flusso di ingresso qualsiasi misura in BGRA.
+    private static let misureUscita = [(larghezza: 1280, altezza: 720), (larghezza: 1920, altezza: 1080), (larghezza: 3840, altezza: 2160)]
 
     private let registro = Logger(subsystem: "it.lrapps.webcamlr.mac", category: "uscita-webcam")
     private let contesto = CIContext()
@@ -42,10 +47,10 @@ final class UscitaWebcam: @unchecked Sendable {
     /// La descrizione delle immagini adattate, rifatta solo quando cambia la misura (come in `UscitaMini`).
     /// Solo sotto `bloccoSorgente` (video e attesa).
     private var descrizioneUscita: CMVideoFormatDescription?
-    /// Si può mandare il 4K (un'app usa la webcam in 4K): lo decide il `Ricevitore`
-    /// dalla coda principale, lo legge `invia` dalla coda dello `Schermo`.
+    /// Il formato scelto dall'app che usa la webcam (nil se nessuna): lo scrive il `Ricevitore`
+    /// dalla coda principale, lo leggono `invia` (dalla coda dello `Schermo`) e l'attesa (dalla sua coda).
     private let blocco = NSLock()
-    private var permesso4K = false
+    private var formatoApp: Formato?
     private var dispositivo: CMIOObjectID = 0
     private var flusso: CMIOStreamID = 0
     private var codaIngresso: CMSimpleQueue?
@@ -91,10 +96,11 @@ final class UscitaWebcam: @unchecked Sendable {
     private var ultimaViva: CVPixelBuffer?
     private var ultimoInvioAttesa: UInt64 = 0
 
-    /// Dal `Ricevitore`, ogni secondo: se vero e il telefono manda il 4K, l'estensione riceve 3840×2160.
-    func imposta(quattroK: Bool) {
+    /// Dal `Ricevitore`, ogni secondo: il formato dell'app in onda (proprietà «fmto»), nil se nessuna usa la webcam.
+    /// Vale dalla prossima immagine.
+    func imposta(formatoApp formato: Formato?) {
         blocco.lock()
-        permesso4K = quattroK
+        formatoApp = formato
         blocco.unlock()
     }
 
@@ -212,7 +218,7 @@ final class UscitaWebcam: @unchecked Sendable {
         return codaIngresso
     }
 
-    /// Mette un'immagine già pronta (1920×1080 o 3840×2160, BGRA) nella coda verso l'estensione.
+    /// Mette un'immagine già pronta (alla misura dell'uscita, BGRA) nella coda verso l'estensione.
     /// Vero se l'immagine è entrata nella coda.
     @discardableResult
     private func accoda(_ buffer: CVPixelBuffer, in codaIngresso: CMSimpleQueue) -> Bool {
@@ -354,16 +360,24 @@ final class UscitaWebcam: @unchecked Sendable {
         return flussi.count > 1 ? flussi[1] : nil
     }
 
-    // MARK: - Adattamento a 1920×1080 (o 3840×2160)
+    // MARK: - Adattamento alla misura dell'uscita (Qualità 16)
 
-    /// 3840×2160 solo se è permesso e il telefono manda il 4K (anche in verticale): ingrandire qui
-    /// un'immagine più piccola sposterebbe solo più dati verso l'estensione, che sa ingrandire da sola.
-    private func misura(per immagine: CVPixelBuffer) -> (larghezza: Int, altezza: Int) {
+    /// La misura delle immagini per l'estensione: quella del formato scelto dall'app di chiamata, se è uno dei formati
+    /// dell'uscita, altrimenti 1920×1080. Con il telefono più piccolo si ingrandisce qui (una volta, sulla scheda video)
+    /// invece che nell'estensione (sul processore, con vImage): passano più byte, ma in un IOSurface, senza copie.
+    static func misuraIngresso(per formato: Formato?) -> (larghezza: Int, altezza: Int) {
+        guard let formato,
+              let misura = misureUscita.first(where: { $0.larghezza == formato.larghezza && $0.altezza == formato.altezza })
+        else { return normale }
+        return misura
+    }
+
+    /// La misura attuale (vedi `misuraIngresso`), da qualsiasi coda.
+    private var misuraAttuale: (larghezza: Int, altezza: Int) {
         blocco.lock()
-        let permesso = permesso4K
+        let formato = formatoApp
         blocco.unlock()
-        let latoLungo = max(CVPixelBufferGetWidth(immagine), CVPixelBufferGetHeight(immagine))
-        return permesso && latoLungo >= Self.quattroK.larghezza ? Self.quattroK : Self.normale
+        return Self.misuraIngresso(per: formato)
     }
 
     private func riserva(larghezza: Int, altezza: Int) -> CVPixelBufferPool? {
@@ -382,7 +396,7 @@ final class UscitaWebcam: @unchecked Sendable {
 
     /// `sopra`: durante il ritorno dall'attesa, l'attesa che svanisce sopra il video (progresso da 0 a 1).
     private func adatta(_ immagine: CVPixelBuffer, sopra: (immagine: CIImage, progresso: Double)? = nil) -> CVPixelBuffer? {
-        let (larghezza, altezza) = misura(per: immagine)
+        let (larghezza, altezza) = misuraAttuale
         guard let destinazione = nuovoBuffer(larghezza: larghezza, altezza: altezza) else { return nil }
 
         // Adatta senza tagliare: un video verticale resta intero, con bande scure ai lati. Il video com'è arrivato,
@@ -510,10 +524,10 @@ final class UscitaWebcam: @unchecked Sendable {
         ultimoInvioAttesa = adesso
     }
 
-    /// L'attesa disegnata una volta per stato, stile e misura (la misura dell'ultima immagine mandata: 1080p o 4K).
+    /// L'attesa disegnata una volta per stato, stile e misura (quella dell'uscita, come il video: l'estensione la passa
+    /// com'è, senza ridimensionarla 5 volte al secondo).
     private func attesaPronta(_ stato: StatoAttesa, istantanea: AttesaWebcam.Istantanea) -> CVPixelBuffer? {
-        let larghezza = ultimaViva.map { CVPixelBufferGetWidth($0) } ?? Self.normale.larghezza
-        let altezza = ultimaViva.map { CVPixelBufferGetHeight($0) } ?? Self.normale.altezza
+        let (larghezza, altezza) = misuraAttuale
         if let attesa, attesa.stato == stato, attesa.versione == istantanea.versione, attesa.larghezza == larghezza {
             return attesa.buffer
         }

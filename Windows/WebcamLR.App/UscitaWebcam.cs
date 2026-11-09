@@ -19,6 +19,8 @@ namespace WebcamLR;
 /// scrive nella memoria condivisa, tutto fuori dal thread dell'interfaccia. La misura è quella del formato che l'app
 /// ha scelto (da 640×360 al 4K, P12), letta a ogni fotogramma: un cambio di formato vale dal fotogramma dopo. La
 /// frequenza (30 o 60 fps) la tiene la sorgente, che ripete l'ultimo fotogramma quando serve.
+/// Qualità 16: il video si scala una volta sola (<see cref="ScalaUnaVolta"/>): qui dalla scheda video, con gli effetti sul
+/// computer nella copia del motore (o, se il telefono manda meno del formato, nella conversione in NV12 alla fine).
 /// </summary>
 public sealed class UscitaWebcam : IDisposable
 {
@@ -137,6 +139,26 @@ public sealed class UscitaWebcam : IDisposable
 
     /// <summary>I fotogrammi al secondo del formato scelto dall'app che usa la webcam; 0 se nessuna la usa.</summary>
     public int FpsChiesti { get { lock (blocco) return fpsChiesti; } }
+
+    /// <summary>
+    /// Qualità 16: il formato scelto dall'app che usa la webcam (misura letta dalla memoria condivisa, come a ogni
+    /// fotogramma), null se nessuna la usa. Il motore effetti lavora alla misura che serve a questo formato
+    /// (<see cref="ScalaUnaVolta.MisuraLavoro"/>), così il video si scala una volta sola. Da qualsiasi thread.
+    /// </summary>
+    public FormatoWebcam? FormatoInUso
+    {
+        get
+        {
+            var m = memoria;
+            if (m is null || !InUso) return null;
+            try
+            {
+                var (larghezza, altezza, _) = m.Anello.Richiesta();
+                return FormatiWebcam.Trova(larghezza, altezza, (uint)Math.Max(0, m.Anello.FpsChiesti), 1);
+            }
+            catch (Exception) { return null; }
+        }
+    }
 
     public UscitaWebcam()
     {
@@ -365,8 +387,9 @@ public sealed class UscitaWebcam : IDisposable
     }
 
     /// <summary>
-    /// Dal motore effetti (<see cref="DaMotore"/>), su un suo thread: l'immagine (alla misura del video) portata al formato
-    /// che l'app ha scelto e scritta nella memoria condivisa, subito (l'immagine torna in giro appena finito). Non fa
+    /// Dal motore effetti (<see cref="DaMotore"/>), su un suo thread: l'immagine (alla misura di lavoro del motore, che con
+    /// un'app sulla webcam è già quella del formato o quella del telefono, Qualità 16) portata al formato che l'app ha
+    /// scelto e scritta nella memoria condivisa, subito (l'immagine torna in giro appena finito). Non fa
     /// niente se nessuna app usa la webcam. <paramref name="scarto"/>: per il ritardo da vetro a uscita.
     /// </summary>
     public void Scrivi(ImmagineBgra immagine, long? scarto)

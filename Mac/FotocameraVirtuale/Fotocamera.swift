@@ -12,7 +12,8 @@ import VideoToolbox
 // - «video», in uscita: quello che vedono Zoom, FaceTime e le altre app: 1920×1080 e 1280×720 a 30 o 60 fps,
 //   3840×2160 a 30 fps (P12);
 // - «ingresso», in entrata: l'app WebcamLR ci mette le immagini dell'iPhone (UscitaWebcam.swift),
-//   già adattate a 1920×1080 (o 3840×2160, se il telefono manda il 4K) con le bande scure ai lati.
+//   già adattate con le bande scure ai lati alla misura del formato scelto qui dalle app (proprietà «fmto», Qualità 16):
+//   di solito escono così come sono, senza ridimensionarle né copiarle.
 // Il ritmo dell'uscita segue il formato scelto dall'app di chiamata (30 o 60 volte al secondo), anche se
 // il telefono manda meno immagini: l'ultima si ripete, già adattata. Il ritmo si aggancia alle immagini dell'app
 // (`riallinea`): ogni immagine nuova aspetta al massimo mezzo fotogramma, di solito un quarto, ed esce sempre la più
@@ -40,8 +41,8 @@ private struct Formato {
 }
 
 /// I primi due restano ai loro posti (indici 0 e 1, come prima della P12): le app ricordano il formato scelto.
-/// Il 4K è sempre in elenco (decidono le app); l'app gli manda immagini 4K solo quando il telefono manda il 4K,
-/// altrimenti qui si ingrandisce l'immagine 1920×1080.
+/// Il 4K è sempre in elenco (decidono le app). Dalla Qualità 16 l'app manda le immagini già alla misura del formato
+/// scelto (anche ingrandite, se il telefono manda meno): qui si ridimensiona solo nel secondo dopo un cambio di formato.
 private let formatiUscita = [
     Formato(larghezza: 1920, altezza: 1080, fps: 30),
     Formato(larghezza: 1280, altezza: 720, fps: 30),
@@ -49,8 +50,9 @@ private let formatiUscita = [
     Formato(larghezza: 1280, altezza: 720, fps: 60),
     Formato(larghezza: 3840, altezza: 2160, fps: 30)
 ]
-/// L'app manda 1920×1080 fino a 60 fps, oppure 3840×2160 a 30 fps (UscitaWebcam).
-/// Qui si accetta qualsiasi dimensione in BGRA: le immagini si adattano al formato dell'uscita.
+/// I formati dichiarati per il flusso di ingresso (restano questi, come prima: l'app non sceglie un formato d'ingresso).
+/// Qui si accetta qualsiasi dimensione in BGRA: l'app manda la misura del formato dell'uscita (1280×720, 1920×1080 o
+/// 3840×2160, UscitaWebcam.misuraIngresso), e un'immagine di un'altra misura si adatta al formato dell'uscita.
 private let formatiIngresso = [
     Formato(larghezza: 1920, altezza: 1080, fps: 60),
     Formato(larghezza: 3840, altezza: 2160, fps: 30)
@@ -532,8 +534,9 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
         return destinazione
     }
 
-    /// L'immagine dell'app è 1920×1080 o 3840×2160: si manda com'è se ha già la misura del formato,
-    /// altrimenti si riduce (720p, o 1080p da un 4K) o si ingrandisce (4K da 1080p).
+    /// L'immagine dell'app ha già la misura del formato (Qualità 16) e si manda com'è, lo stesso buffer senza copie.
+    /// Solo subito dopo un cambio di formato (l'app lo legge ogni secondo), o con un'app di prima della Qualità 16,
+    /// si riduce o si ingrandisce qui, una volta per immagine.
     private func adatta(_ immagine: CVPixelBuffer, indice: Int) -> CVPixelBuffer? {
         let formato = formatiUscita[indice]
         guard CVPixelBufferGetPixelFormatType(immagine) == formatoPixel else { return nil }

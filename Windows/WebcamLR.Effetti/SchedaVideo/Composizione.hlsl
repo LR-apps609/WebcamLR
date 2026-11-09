@@ -12,7 +12,7 @@
 
 Texture2D<float4> Sorgente : register(t0);        // il fotogramma, piena misura
 Texture2D<float> Alfa : register(t1);             // maschera rifinita, metà o un quarto
-Texture2D<float4> Fondo : register(t2);           // sostituito: piena misura; sfocato: piccolo
+Texture2D<float4> Fondo : register(t2);           // sostituito: piena misura; sfocato: piccolo; mosaico: un pixel per quadretto
 Texture2D<float4> ColorePersona : register(t3);   // bordo pulito: colore dell'interno, piccolo
 Texture2D<float4> SfondoMorbido : register(t4);   // light wrap: sfondo nuovo sfocato, piccolo
 Texture2D<float> MascheraMorbida : register(t5);  // light wrap: maschera sfocata, piccola
@@ -31,6 +31,7 @@ cbuffer Parametri : register(b0)
 static const uint PULITO = 1u;
 static const uint LUCE = 2u;
 static const uint CALORE = 4u;
+static const uint QUADRETTI = 8u;                 // mosaico: il fondo «al più vicino», come Righe(vicino) sul processore
 
 // RegoleBordo.Fiducia
 float Fiducia(float alfa) { return saturate(2.5 * alfa - 1.5); }
@@ -50,7 +51,19 @@ void Componi(uint3 id : SV_DispatchThreadID)
     float2 uv = (float2(id.xy) + 0.5) / float2(Larghezza, Altezza);
     float3 p = Sorgente.Load(int3(id.xy, 0)).rgb * 255.0;
     float alfa = Alfa.SampleLevel(Lineare, uv, 0);
-    float3 fondo = Fondo.SampleLevel(Lineare, uv, 0).rgb * 255.0;
+    float3 fondo;
+    if (Opzioni & QUADRETTI)
+    {
+        // Il quadretto ⌊x · colonne / L⌋, ⌊y · righe / A⌋: gli stessi interi del processore.
+        uint colonne, righe;
+        Fondo.GetDimensions(colonne, righe);
+        uint2 q = min(id.xy * uint2(colonne, righe) / uint2(Larghezza, Altezza), uint2(colonne - 1, righe - 1));
+        fondo = Fondo.Load(int3(q, 0)).rgb * 255.0;
+    }
+    else
+    {
+        fondo = Fondo.SampleLevel(Lineare, uv, 0).rgb * 255.0;
+    }
 
     if (Opzioni & PULITO)
     {

@@ -241,15 +241,32 @@ public sealed class Compositore : IDisposable
         }
         if (alfa.Length != lw * aw) alfa = new byte[lw * aw];
         var sostituito = imp.Sfondo == ModiSfondo.Sostituito;
+        // Qualità 8: il verde pieno per il chroma key è uno sfondo sostituito con il bordo netto e senza light wrap.
+        var verde = sostituito && imp.ImmagineSfondo == SfondoVerde.Id;
         var intensita = Math.Clamp(imp.IntensitaSfondo, 0, 1);
         // Con «sostituito» e intensità alta il bordo è più netto (larghezza della soglia da 0,8 a 0,2), come sul Mac; con lo
-        // sfocato la soglia 0,3–0,7 del banco di qualità (variante D*).
-        if (sostituito) Elaborazione.SogliaMorbida(rifinita, alfa, (float)(0.8 - 0.6 * intensita));
+        // sfocato la soglia 0,3–0,7 del banco di qualità (variante D*); con il verde la più stretta.
+        if (verde) Elaborazione.SogliaMorbida(rifinita, alfa, SfondoVerde.LarghezzaSoglia);
+        else if (sostituito) Elaborazione.SogliaMorbida(rifinita, alfa, (float)(0.8 - 0.6 * intensita));
         else Elaborazione.SogliaMorbida(rifinita, alfa, Elaborazione.LarghezzaSogliaSfocato, Elaborazione.CentroSogliaSfocato);
 
         // Il fondo: l'immagine scelta alla misura del video, o lo sfondo sfocato senza alone (piccolo).
         PianoComposizione piano;
-        if (sostituito)
+        if (verde)
+        {
+            // Il verde pieno alla misura del video (sale sulla scheda video una volta sola). Il bordo pulito resta (toglie il
+            // vecchio sfondo dai capelli, che il chroma key vedrebbe come un alone), il light wrap no: niente verde sfocato
+            // che entra nella persona.
+            var fondoVerde = Verde(l, a);
+            piano = new PianoComposizione
+            {
+                Sorgente = src, Alfa = alfa, LarghezzaAlfa = lw, AltezzaAlfa = aw, Calore = calore,
+                FondoPieno = fondoVerde.Immagine, ChiaveFondo = fondoVerde.Chiave,
+                ColorePersona = livello.ConBordoBilineare() ? null
+                    : ColorePersona(quarto, AlfaAlQuarto(alfa, lw, aw, lq, aq), RegoleBordo.SigmaColorePersona * Math.Min(l, a) / 1080.0 * lq / l),
+            };
+        }
+        else if (sostituito)
         {
             // Come il Mac (personaSuSfondoNuovo): bordo pulito dal vecchio sfondo (non al livello bilineare) e light wrap
             // del nuovo. Tutto in piccolo, a un quarto: il passo a piena risoluzione lo fa la composizione.
@@ -268,13 +285,81 @@ public sealed class Compositore : IDisposable
         }
         else
         {
+            // Qualità 7 e 8: lo stile della sfocatura, con quello che regge il livello (il bokeh ai livelli veloci torna normale).
+            var stile = StiliSfocatura.AlLivello(imp.Sfocatura, livello);
             piano = new PianoComposizione
             {
                 Sorgente = src, Alfa = alfa, LarghezzaAlfa = lw, AltezzaAlfa = aw, Calore = calore,
-                FondoPiccolo = SfocataSenzaAlone(quarto, maschera, intensita, calore, l, a),
+                FondoPiccolo = stile switch
+                {
+                    StiliSfocatura.Bokeh => SfocataBokeh(quarto, maschera, intensita, calore, l, a, StiliSfocatura.GradinoBokeh(livello)),
+                    StiliSfocatura.Mosaico => SfondoAMosaico(quarto, maschera, intensita, calore, l, a),
+                    _ => SfocataSenzaAlone(quarto, maschera, intensita, calore, l, a),
+                },
+                FondoAQuadretti = stile == StiliSfocatura.Mosaico,
             };
         }
         ComponiConLaMigliore(piano, destinazione);
+    }
+
+    // MARK: bokeh, mosaico e verde (Qualità 7 e 8)
+
+    private readonly RicetteSfondo.LavagnaBokeh lavagnaBokeh = new();
+    private ImmagineBgra? bokehPronto, mosaicoPronto;
+    private float[] personaPiccola = [];
+    private (string Chiave, ImmagineBgra Immagine)? verdePronto;
+
+    /// <summary>
+    /// Il bokeh (<see cref="RicetteSfondo.Bokeh"/>) a un quarto (gradino 0) o a un ottavo (gradino 1) della misura, più in
+    /// piccolo se il disco è grande (<see cref="RicetteSfondo.GradinoDisco"/>), con il disco di
+    /// <see cref="RicetteSfondo.RaggioBokeh"/> portato a quella misura.
+    /// </summary>
+    private ImmagineBgra SfocataBokeh(ImmagineBgra quarto, MascheraPersona maschera, double intensita, byte[][]? calore,
+        int larghezzaPiena, int altezzaPiena, int gradino)
+    {
+        var raggioPieno = RicetteSfondo.RaggioBokeh(intensita, Math.Min(larghezzaPiena, altezzaPiena));
+        gradino = RicetteSfondo.GradinoDisco(raggioPieno, gradino);
+        var livello = quarto;
+        while (piramide.Count < gradino) piramide.Add(null!);
+        for (var i = 0; i < gradino; i++)
+        {
+            piramide[i] = Elaborazione.Dimezza(livello, piramide[i]);
+            livello = piramide[i];
+        }
+        var raggio = raggioPieno * livello.Larghezza / larghezzaPiena;
+        personaPiccola = Elaborazione.Campiona(maschera.Valori, maschera.Larghezza, maschera.Altezza, livello.Larghezza, livello.Altezza,
+            personaPiccola);
+        bokehPronto = RicetteSfondo.Bokeh(livello, personaPiccola, raggio, calore, bokehPronto, lavagnaBokeh);
+        return bokehPronto;
+    }
+
+    /// <summary>Il mosaico (<see cref="RicetteSfondo.Mosaico"/>) contato sul quarto: un pixel per quadretto.</summary>
+    private ImmagineBgra SfondoAMosaico(ImmagineBgra quarto, MascheraPersona maschera, double intensita, byte[][]? calore,
+        int larghezzaPiena, int altezzaPiena)
+    {
+        var (colonne, righe) = RicetteSfondo.Griglia(larghezzaPiena, altezzaPiena, intensita);
+        personaPiccola = Elaborazione.Campiona(maschera.Valori, maschera.Larghezza, maschera.Altezza, quarto.Larghezza, quarto.Altezza,
+            personaPiccola);
+        mosaicoPronto = RicetteSfondo.Mosaico(quarto, personaPiccola, colonne, righe, calore, mosaicoPronto);
+        return mosaicoPronto;
+    }
+
+    /// <summary>Il verde pieno (#00B140) alla misura del video, fatto una volta per misura, con la sua chiave.</summary>
+    private (ImmagineBgra Immagine, string Chiave) Verde(int l, int a)
+    {
+        var chiave = $"{SfondoVerde.Id}-{l}x{a}";
+        if (verdePronto is { } pronto && pronto.Chiave == chiave) return (pronto.Immagine, chiave);
+        var immagine = new ImmagineBgra(l, a);
+        var (r, g, b) = SfondoVerde.Colore;
+        for (var i = 0; i < l * a; i++)
+        {
+            immagine.Dati[i * 4] = b;
+            immagine.Dati[i * 4 + 1] = g;
+            immagine.Dati[i * 4 + 2] = r;
+            immagine.Dati[i * 4 + 3] = 255;
+        }
+        verdePronto = (chiave, immagine);
+        return (immagine, chiave);
     }
 
     // MARK: composizione sulla scheda video o sul processore (Qualità 5)

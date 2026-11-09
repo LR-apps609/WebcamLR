@@ -29,6 +29,13 @@ public sealed class PianoComposizione
     /// <summary>Sfondo sfocato: lo sfondo senza la persona, sfocato, piccolo (null con il sostituito).</summary>
     public ImmagineBgra? FondoPiccolo { get; init; }
 
+    /// <summary>
+    /// Mosaico (Qualità 8): <see cref="FondoPiccolo"/> ha un pixel per quadretto e si ingrandisce «al più vicino», non
+    /// bilineare: il pixel x della misura piena prende la colonna ⌊x · colonne / L⌋ (e così le righe), come
+    /// <see cref="RicetteSfondo.Mosaico"/> conta i quadretti. Così i quadretti restano netti.
+    /// </summary>
+    public bool FondoAQuadretti { get; init; }
+
     /// <summary>Le tabelle del calore per R, G, B (null = niente calore), da applicare alla persona.</summary>
     public byte[][]? Calore { get; init; }
 
@@ -144,7 +151,7 @@ public sealed unsafe class ComposizioneProcessore : IComposizione
         var rifinita = piano.ColorePersona is not null || piano.SfondoMorbido is not null;
         var colore = piano.ColorePersona is { } cp ? new Righe(cp, l, a) : null;
         var morbido = piano.SfondoMorbido is { } sm ? new Righe(sm, l, a) : null;
-        var piccolo = fondoPiccolo is not null ? new Righe(fondoPiccolo, l, a) : null;
+        var piccolo = fondoPiccolo is not null ? new Righe(fondoPiccolo, l, a, piano.FondoAQuadretti) : null;
         var (mx0, mx1, mfx) = piano.MascheraMorbida is not null ? Campionamento8(l, piano.LarghezzaMorbida) : ([], [], []);
         var (my0, my1, mfy) = piano.MascheraMorbida is not null ? Campionamento8(a, piano.AltezzaMorbida) : ([], [], []);
         Elaborazione.PerRighe(a, (inizio, fine) =>
@@ -282,11 +289,19 @@ public sealed unsafe class ComposizioneProcessore : IComposizione
         private readonly ImmagineBgra immagine;
         private readonly int[] x0, x1, wx, y0, y1, wy;
 
-        public Righe(ImmagineBgra immagine, int l, int a)
+        /// <param name="vicino">«Al più vicino» (mosaico): ogni punto prende un pixel solo, ⌊x · lp / l⌋, peso zero.</param>
+        public Righe(ImmagineBgra immagine, int l, int a, bool vicino = false)
         {
             this.immagine = immagine;
-            (x0, x1, wx) = Campionamento8(l, immagine.Larghezza);
-            (y0, y1, wy) = Campionamento8(a, immagine.Altezza);
+            (x0, x1, wx) = vicino ? Vicini(l, immagine.Larghezza) : Campionamento8(l, immagine.Larghezza);
+            (y0, y1, wy) = vicino ? Vicini(a, immagine.Altezza) : Campionamento8(a, immagine.Altezza);
+        }
+
+        private static (int[], int[], int[]) Vicini(int destinazione, int sorgente)
+        {
+            var indici = new int[destinazione];
+            for (var i = 0; i < destinazione; i++) indici[i] = Math.Min(sorgente - 1, (int)((long)i * sorgente / destinazione));
+            return (indici, indici, new int[destinazione]);
         }
 
         public int Larghezza => immagine.Larghezza;
@@ -332,7 +347,8 @@ public sealed record CambioComposizione(bool SullaSchedaVideo, string Descrizion
 /// </summary>
 public static class PianoDiProva
 {
-    public static PianoComposizione Crea(int l, int a, bool sostituito)
+    /// <param name="quadretti">Con lo sfocato: il fondo piccolo come un mosaico (11×7 quadretti, «al più vicino»).</param>
+    public static PianoComposizione Crea(int l, int a, bool sostituito, bool quadretti = false)
     {
         var src = Immagine(l, a, (x, y) => ((byte)(40 + x * 180 / l), (byte)(30 + y * 200 / a), (byte)((x * 7 + y * 3) % 256)));
         int lw = Math.Max(1, l / 2), aw = Math.Max(1, a / 2);
@@ -352,7 +368,10 @@ public static class PianoDiProva
             return new PianoComposizione
             {
                 Sorgente = src, Alfa = alfa, LarghezzaAlfa = lw, AltezzaAlfa = aw,
-                FondoPiccolo = Immagine(Math.Max(1, l / 8), Math.Max(1, a / 8), (x, y) => ((byte)(200 - x * 9), (byte)(60 + y * 11), 90)),
+                FondoPiccolo = quadretti
+                    ? Immagine(11, 7, (x, y) => ((byte)(30 + x * 20), (byte)(220 - y * 30), (byte)((x * 53 + y * 97) % 256)))
+                    : Immagine(Math.Max(1, l / 8), Math.Max(1, a / 8), (x, y) => ((byte)(200 - x * 9), (byte)(60 + y * 11), 90)),
+                FondoAQuadretti = quadretti,
                 Calore = tabelle,
             };
         }

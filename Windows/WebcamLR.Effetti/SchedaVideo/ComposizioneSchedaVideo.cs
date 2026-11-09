@@ -30,7 +30,7 @@ public sealed class ComposizioneSchedaVideo : IComposizione
     public const double DifferenzaMediaMassima = 0.6;
 
     private const int Gruppo = 16;
-    private const uint Pulito = 1, Luce = 2, ConCalore = 4;
+    private const uint Pulito = 1, Luce = 2, ConCalore = 4, Quadretti = 8;
 
     private readonly ID3D11Device dispositivo;
     private readonly ID3D11DeviceContext contesto;
@@ -143,23 +143,24 @@ public sealed class ComposizioneSchedaVideo : IComposizione
     }
 
     /// <summary>
-    /// Due fotogrammi di prova (<see cref="PianoDiProva"/>: sfocato; sostituito con bordo pulito, light wrap e calore)
+    /// Tre fotogrammi di prova (<see cref="PianoDiProva"/>: sfocato; sostituito con bordo pulito, light wrap e calore;
+    /// mosaico, con il fondo «al più vicino»)
     /// sulla scheda video e sul processore: se differiscono più di <see cref="DifferenzaMassima"/> o in media più di
     /// <see cref="DifferenzaMediaMassima"/>, errore. Così uno shader sbagliato o un driver strano non arrivano mai al video.
     /// </summary>
     public void Verifica()
     {
         var processore = new ComposizioneProcessore();
-        foreach (var sostituito in new[] { false, true })
+        foreach (var (sostituito, quadretti) in new[] { (false, false), (true, false), (false, true) })
         {
-            var piano = PianoDiProva.Crea(200, 112, sostituito);
+            var piano = PianoDiProva.Crea(200, 112, sostituito, quadretti);
             var attesa = new ImmagineBgra(200, 112);
             var ottenuta = new ImmagineBgra(200, 112);
             processore.Componi(piano, attesa);
             Componi(piano, ottenuta);
             var (massima, media) = PianoDiProva.Differenza(attesa, ottenuta);
             if (massima > DifferenzaMassima || media > DifferenzaMediaMassima)
-                throw new InvalidDataException($"risultato diverso dal processore ({(sostituito ? "sostituito" : "sfocato")}: " +
+                throw new InvalidDataException($"risultato diverso dal processore ({(sostituito ? "sostituito" : quadretti ? "mosaico" : "sfocato")}: " +
                                                $"differenza massima {massima}, media {media:0.00})");
         }
         // La prova non deve lasciare il suo fondo come «già caricato».
@@ -181,7 +182,7 @@ public sealed class ComposizioneSchedaVideo : IComposizione
             Carica(fondo, fondoImmagine.Dati, fondoImmagine.Larghezza, fondoImmagine.Altezza, fondoImmagine.Passo);
             chiaveFondo = piano.FondoPieno is null ? null : piano.ChiaveFondo;
         }
-        var opzioni = 0u;
+        var opzioni = piano.FondoAQuadretti ? Quadretti : 0u;
         if (piano.ColorePersona is { } cp)
         {
             Carica(colore, cp.Dati, cp.Larghezza, cp.Altezza, cp.Passo);

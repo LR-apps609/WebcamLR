@@ -21,8 +21,14 @@ public sealed record ImpostazioniMotore
     /// <summary>Sfocato: quanto sfocare (Poco 0,25, Medio 0,55, Tanto 1). Sostituito: quanto è netto il bordo.</summary>
     public double IntensitaSfondo { get; init; } = 0.5;
 
-    /// <summary>Con lo sfondo sostituito: uno degli <see cref="SfondiPronti"/> o <see cref="SfondiPronti.Personale"/>.</summary>
+    /// <summary>
+    /// Con lo sfondo sostituito: uno degli <see cref="SfondiPronti"/>, <see cref="SfondiPronti.Personale"/> o il verde per
+    /// il chroma key (<see cref="SfondoVerde.Id"/>).
+    /// </summary>
     public string? ImmagineSfondo { get; init; }
+
+    /// <summary>Con lo sfondo sfocato: uno degli <see cref="StiliSfocatura"/> (normale, bokeh, mosaico). Solo del computer.</summary>
+    public string Sfocatura { get; init; } = StiliSfocatura.Normale;
 
     public double Pelle { get; init; }
     public bool LuceVolto { get; init; }

@@ -19,7 +19,7 @@
 :root {
   --margine: var(--spazio-medio);
   --ombra: 0 24px 60px rgba(5, 10, 9, .45);
-  /* Le superfici velate del sito (striscia «Compatibile con», piede, chip sopra la sfumatura) */
+  /* Le superfici velate del sito (striscia «Pensata per», piede, chip sopra la sfumatura) */
   --velo-sito: color-mix(in srgb, var(--sfumatura-scura) 35%, transparent);
   color-scheme: dark;
 }
@@ -164,7 +164,7 @@ p { margin: 0; }
 /* Apertura fuori dallo schermo (pagina.js): animazioni in pausa, riprendono da dove erano. */
 .apertura-fuori-vista .onda, .apertura-fuori-vista .punto-in-onda { animation-play-state: paused; }
 
-/* «Compatibile con» */
+/* «Pensata per» */
 .compatibili { border-top: 1px solid var(--linea-tenue); border-bottom: 1px solid var(--linea-tenue); background: var(--velo-sito); }
 .compatibili .contenitore { display: flex; flex-direction: column; gap: var(--spazio-medio); padding-top: var(--spazio-largo); padding-bottom: var(--spazio-largo); }
 .chip-elenco { display: flex; flex-wrap: wrap; gap: var(--spazio-stretto); margin: 0; padding: 0; list-style: none; }

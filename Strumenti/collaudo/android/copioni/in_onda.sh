@@ -13,6 +13,8 @@ attendi_testo "Impostazioni" 20 || fallisci "la schermata principale non compare
 
 # --- Collegamento a mano e codice di conferma.
 collega_indirizzo || fallisci "non riesco a scrivere l'indirizzo in «Collega a mano»"
+attendi 2
+schermata "dopo-collega"
 if attendi_testo "Conferma sul computer" 15; then
     schermata "conferma-codice"
     codice=$(codice_computer)
@@ -26,7 +28,11 @@ else
 fi
 
 # --- In onda.
-attendi_computer video 45 || fallisci "il computer finto non riceve il video"
+if ! attendi_computer video 45; then
+    schermata "senza-video"
+    testi_visibili
+    fallisci "il computer finto non riceve il video"
+fi
 attendi 3
 schermata "in-onda-inizio"
 testi_visibili

@@ -23,6 +23,8 @@ adb shell svc power stayon true
 adb shell input keyevent KEYCODE_WAKEUP
 adb shell wm dismiss-keyguard 2>/dev/null || adb shell input keyevent 82
 adb shell settings put secure show_ime_with_hard_keyboard 1
+# Niente fumetto di sistema «Viewing full screen» sopra «In onda» (a schermo intero): coprirebbe l'app nei dump.
+adb shell settings put secure immersive_mode_confirmations confirmed
 adb logcat -G 16M 2>/dev/null || true
 annota "Emulatore: $(adb shell getprop ro.product.model | tr -d '\r'), Android $(adb shell getprop ro.build.version.release | tr -d '\r') (API $(adb shell getprop ro.build.version.sdk | tr -d '\r')), schermo $(adb shell wm size | tail -1 | tr -d '\r')"
 

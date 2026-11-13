@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Il telefono finto del collaudo (Strumenti/collaudo/windows/LEGGIMI.md): un iPhone simulato che parla il protocollo
+       vero con WebcamLR su questa macchina. Gira su Windows, Linux e macOS. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>WebcamLR.Collaudo</RootNamespace>
+    <AssemblyName>TelefonoFinto</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Lettura del QR code dalle schermate (Apache 2.0). Solo nello strumento di collaudo, mai nelle app. -->
+    <PackageReference Include="ZXing.Net" Version="0.16.9" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Windows\WebcamLR.Protocollo\WebcamLR.Protocollo.csproj" />
+  </ItemGroup>
+
+</Project>

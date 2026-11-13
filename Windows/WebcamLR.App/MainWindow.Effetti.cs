@@ -280,7 +280,37 @@ public sealed partial class MainWindow
         PulsanteAzzeraRegolazioni.IsEnabled = attivi && !effetti.Valori.RegolazioniNeutre;
         PulsanteCaloreNeutro.IsEnabled = attivi && effetti.Valori.Calore > 0;
         AggiornaPro();
+        MostraSfondoSoloFrontale();
     }
+
+    /// <summary>
+    /// Collaudo 20 (t06 B2): con la fotocamera posteriore lo sfondo non si applica (il telefono lo spegne, il motore del PC
+    /// pure: SoloFrontale, RegoleMotore). Il pulsante «Sfondo» sotto il video era grigio, ma nella colonna «Effetti» e nella
+    /// pagina si poteva scegliere «Sfocato» e il video restava nitido. Ora anche qui le scelte dello sfondo sono grigie, con
+    /// la nota scritta sotto; la scelta resta salvata e torna con la frontale.
+    /// </summary>
+    private void MostraSfondoSoloFrontale()
+    {
+        if (NotaSfondoSoloFrontale is null) return;
+        var bloccato = EffettiAttivi && SoloFrontaleBloccati;
+        if (bloccato)
+        {
+            SceltaSfondo.IsEnabled = false;
+            SceltaStileSfocatura.IsEnabled = false;
+            CursoreIntensitaSfondo.IsEnabled = false;
+        }
+        else if (EffettiAttivi && !SceltaSfondo.IsEnabled)
+        {
+            SceltaSfondo.IsEnabled = true;
+            SceltaStileSfocatura.IsEnabled = true;
+            CursoreIntensitaSfondo.IsEnabled = true;
+        }
+        NotaSfondoSoloFrontale.Visibility = Visibile(bloccato);
+        AutomationProperties.SetHelpText(SceltaSfondo, bloccato ? Testi.T("Comandi_SoloFrontale") : "");
+    }
+
+    /// <summary>L'ultima volta si era sulla fotocamera posteriore (per dire una volta che lo sfondo si è spento).</summary>
+    private bool eraPosteriore;
 
     // MARK: «Specchia» e «Sfondo» (1.14)
 
@@ -298,6 +328,11 @@ public sealed partial class MainWindow
         // frontale» sulla copertura (un pulsante spento non mostra l'aiuto), e il menu di «Sfondo» non si apre.
         var posteriore = SoloFrontaleBloccati;
         var bloccati = inAttesa || posteriore;
+        // Collaudo 20 (t06 B3): passando alla posteriore con lo sfondo acceso, il video tornava nitido senza dire nulla.
+        if (posteriore && !eraPosteriore && v.SfondoAcceso && capacitaEffetti?.Sfondo == true)
+            MostraAvvisoRiprese(Testi.T("Effetti_SfondoSpentoPosteriore"));
+        eraPosteriore = posteriore;
+        MostraSfondoSoloFrontale();
         ContenitoreSpecchia.Visibility = Visibile(inAttesa || capacitaEffetti?.Specchia == true);
         ContenitoreSfondoVideo.Visibility = Visibile(inAttesa || capacitaEffetti?.Sfondo == true);
         PulsanteSpecchia.IsEnabled = !bloccati;

@@ -972,6 +972,9 @@
                                                     <ComboBoxItem x:Uid="VoceSfondoSfocato" Tag="sfocato" />
                                                     <ComboBoxItem x:Name="VoceSfondoSostituito" x:Uid="VoceSfondoSostituito" Tag="sostituito" />
                                                 </ComboBox>
+                                                <!-- Collaudo 20 (t06 B2): con la fotocamera posteriore lo sfondo non si applica; si dice qui, come sotto il video. -->
+                                                <TextBlock x:Name="NotaSfondoSoloFrontale" x:Uid="NotaSfondoSoloFrontale" TextWrapping="Wrap" FontSize="{StaticResource MisuraNota}"
+                                                           Foreground="{ThemeResource TestoSecondario}" Visibility="Collapsed" />
                                                 <!-- Qualità 7 e 8: con lo sfondo sfocato (e gli effetti sul PC) lo stile: Normale, Obiettivo (bokeh), Mosaico. Gratis. -->
                                                 <ComboBox x:Name="SceltaStileSfocatura" x:Uid="SceltaStileSfocatura" HorizontalAlignment="Stretch" SelectionChanged="SuStileSfocatura" Visibility="Collapsed">
                                                     <ComboBoxItem x:Uid="VoceStileNormale" Tag="normale" />

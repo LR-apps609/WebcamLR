@@ -2171,4 +2171,19 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
   <data name="Bug_BozzaAccorciata" xml:space="preserve">
     <value>La bozza era troppo lunga: restano i primi {0:N0} caratteri. Il registro del collegamento si allega da sé, qui sotto.</value>
   </data>
+  <data name="NotaSfondoSoloFrontale.Text" xml:space="preserve">
+    <value>Lo sfondo funziona solo con la fotocamera frontale: scegli «Frontale» in Fotocamera. La scelta resta e torna da sola.</value>
+  </data>
+  <data name="Effetti_SfondoSpentoPosteriore" xml:space="preserve">
+    <value>Sfondo spento: funziona solo con la fotocamera frontale. Torna da solo con la Frontale.</value>
+  </data>
+  <data name="Effetti_AvvisoSemplificato" xml:space="preserve">
+    <value>Sfondo semplificato: questo PC fa fatica, così il video resta fluido.</value>
+  </data>
+  <data name="Effetti_AvvisoSemplificatoProcessore" xml:space="preserve">
+    <value>Sfondo semplificato: questo PC non usa la scheda video per gli effetti, così il video resta fluido.</value>
+  </data>
+  <data name="Effetti_MotivoSchedaVideo" xml:space="preserve">
+    <value>la scheda video non si è potuta usare</value>
+  </data>
 </root>

@@ -345,6 +345,7 @@ public sealed partial class MainWindow
             NascondiElaborata();
         }
         secondiMotore = 0;
+        avvisoSemplificatoDetto = false;
         AggiornaMotore();
     }
 
@@ -359,6 +360,14 @@ public sealed partial class MainWindow
         if (!SulComputer) return;
         foreach (var nota in motoreVideo.PrendiNote())
         {
+            // Collaudo 20 (t06 B6): la prima discesa si dice anche a schermo, in parole semplici, una volta per telefono
+            // (prima solo nel registro, in termini tecnici).
+            if (nota is MotoreEffetti.Nota.Livello { Salita: false } && !avvisoSemplificatoDetto)
+            {
+                avvisoSemplificatoDetto = true;
+                MostraAvvisoRiprese(misureMotore?.Fonte is (Acceleratore.Processore, _)
+                    ? Testi.T("Effetti_AvvisoSemplificatoProcessore") : Testi.T("Effetti_AvvisoSemplificato"), registra: false);
+            }
             registro.Aggiungi(nota switch
             {
                 // Qualità 6: una riga a ogni cambio, giù (il PC non regge) o su (c'è margine).
@@ -373,7 +382,7 @@ public sealed partial class MainWindow
                     ? Testi.T("Registro_EffettiComposizioneGpu", c.Descrizione)
                     : Testi.T("Registro_EffettiComposizioneCpu", c.Motivo ?? c.Descrizione),
                 MotoreEffetti.Nota.Fonte f => f.Motivo is { } motivo
-                    ? Testi.T("Registro_EffettiFonteMotivo", NomeFonte(f.InUso, f.Modello), motivo)
+                    ? Testi.T("Registro_EffettiFonteMotivo", NomeFonte(f.InUso, f.Modello), MotivoRipiego(motivo))
                     : Testi.T("Registro_EffettiFonte", NomeFonte(f.InUso, f.Modello)),
                 _ => "",
             });
@@ -390,6 +399,25 @@ public sealed partial class MainWindow
         registro.Aggiungi(Testi.T("Registro_EffettiMotore", DiChi(collegato), ms, Millisecondi(misure.MascheraMs), Millisecondi(misure.ResaMs),
             NomeLivello(misure.Livello), misure.Fonte is { } fonte ? NomeFonte(fonte.InUso, fonte.Modello) : "—", misure.Scartati, misure.SenzaMaschera,
             RitardoNelRegistro.Testo(motoreVideo.RitardoAnteprima.Valore(Orologio.Adesso()))));
+    }
+
+    /// <summary>Vero dopo l'avviso a schermo «sfondo semplificato» (si azzera quando cambia il telefono nella webcam).</summary>
+    private bool avvisoSemplificatoDetto;
+
+    /// <summary>I motivi del ripiego già scritti per intero nel registro: dalla seconda volta solo la frase semplice.</summary>
+    private readonly HashSet<string> motiviDetti = [];
+
+    /// <summary>
+    /// Il motivo per cui il ritaglio non usa la scheda video, per il registro: una frase semplice e, la prima volta, la prima
+    /// riga dell'errore accorciata (collaudo 20, t06 B6: l'eccezione intera di onnxruntime a ogni riapertura della fonte).
+    /// </summary>
+    private string MotivoRipiego(string motivo)
+    {
+        var semplice = Testi.T("Effetti_MotivoSchedaVideo");
+        if (!motiviDetti.Add(motivo)) return semplice;
+        var riga = motivo.Split('\n', 2)[0].Trim();
+        if (riga.Length > 120) riga = riga[..119] + "…";
+        return $"{semplice}: {riga}";
     }
 
     /// <summary>Le ultime misure del motore, per la riga «Effetti» nei numeri.</summary>

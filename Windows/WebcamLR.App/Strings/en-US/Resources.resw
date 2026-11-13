@@ -2165,4 +2165,19 @@ The details are in {1}: send them with “Report a bug”.</value>
   <data name="Bug_BozzaAccorciata" xml:space="preserve">
     <value>The draft was too long: the first {0:N0} characters are kept. The connection log is attached on its own, below.</value>
   </data>
+  <data name="NotaSfondoSoloFrontale.Text" xml:space="preserve">
+    <value>The background works only with the front camera: choose “Front” in Camera. Your choice stays and comes back on its own.</value>
+  </data>
+  <data name="Effetti_SfondoSpentoPosteriore" xml:space="preserve">
+    <value>Background off: it works only with the front camera. It comes back on its own with the Front camera.</value>
+  </data>
+  <data name="Effetti_AvvisoSemplificato" xml:space="preserve">
+    <value>Background simplified: this PC is struggling, so the video stays smooth.</value>
+  </data>
+  <data name="Effetti_AvvisoSemplificatoProcessore" xml:space="preserve">
+    <value>Background simplified: this PC doesn't use the graphics card for effects, so the video stays smooth.</value>
+  </data>
+  <data name="Effetti_MotivoSchedaVideo" xml:space="preserve">
+    <value>the graphics card could not be used</value>
+  </data>
 </root>

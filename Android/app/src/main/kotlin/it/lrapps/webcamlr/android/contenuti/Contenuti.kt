@@ -105,7 +105,7 @@ object DomandeFrequenti {
         ),
         DomandaFrequente(
             "privacy", "Il mio video passa da Internet?",
-            "No. Il video va dal telefono al computer solo sulla tua rete o sul cavo, cifrato con chiavi nuove a ogni collegamento. WebcamLR non ha account, non registra e non raccoglie dati. Google Play serve solo per comprare WebcamLR Pro.",
+            "No. Il video va dal telefono al computer solo sulla tua rete o sul cavo, cifrato con chiavi nuove a ogni collegamento. WebcamLR non ha account, non registra e non ci manda dati. Gli effetti usano MediaPipe, una libreria di Google che manda a Google statistiche d’uso anonime: mai il video, le immagini o dati che ti identificano. Google Play serve solo per comprare WebcamLR Pro.",
             listOf("privacy", "sicuro", "internet", "cloud", "dati", "google"),
         ),
         DomandaFrequente(
@@ -203,7 +203,7 @@ object DomandeFrequenti {
         ),
         DomandaFrequente(
             "privacy", "Does my video go over the Internet?",
-            "No. The video goes from the phone to the computer only over your network or the cable, encrypted with new keys at every connection. WebcamLR has no accounts, doesn’t record and doesn’t collect data. Google Play is only used to buy WebcamLR Pro.",
+            "No. The video goes from the phone to the computer only over your network or the cable, encrypted with new keys at every connection. WebcamLR has no accounts, doesn’t record and sends us no data. The effects use MediaPipe, a Google library that sends anonymous usage statistics to Google: never your video, images or data that identifies you. Google Play is only used to buy WebcamLR Pro.",
             listOf("privacy", "secure", "internet", "cloud", "data", "google"),
         ),
         DomandaFrequente(

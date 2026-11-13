@@ -442,6 +442,70 @@ public class ValoriSicuriTest
     }
 
     [Fact]
+    public void ProfiloRovinatoNeiLimiti()
+    {
+        // Collaudo 20 (t13 B9): un profilo con ISO −5 e tempo int.MinValue arrivava così al telefono, anche senza Pro.
+        Assert.Null(RegolePro.SenzaPro(new Comando(Iso: -5)).Iso);
+        Assert.Null(RegolePro.SenzaPro(new Comando(Tempo: int.MinValue)).Tempo);
+        Assert.Null(RegolePro.SenzaPro(new Comando(Bianco: -3000)).Bianco);
+        Assert.Null(RegolePro.SenzaPro(new Comando(Iso: double.NaN)).Iso);
+        Assert.Equal(0, RegolePro.SenzaPro(new Comando(Iso: 0, Tempo: 0, Bianco: 0)).Iso);
+
+        Assert.Equal(32, ValoriSicuri.IsoManuale(-5, 32, 3200));
+        Assert.Equal(3200, ValoriSicuri.IsoManuale(1e9, 32, 3200));
+        Assert.Equal(400, ValoriSicuri.IsoManuale(400.4, 32, 3200));
+        Assert.Null(ValoriSicuri.IsoManuale(double.NaN, 32, 3200));
+        Assert.Null(ValoriSicuri.IsoManuale(400, null, null));
+        Assert.Equal(ValoriSicuri.TempoPredefinito, ValoriSicuri.TempoManuale(int.MinValue));
+        Assert.Equal(ValoriSicuri.TempoPredefinito, ValoriSicuri.TempoManuale(0));
+        Assert.Equal(100, ValoriSicuri.TempoManuale(100));
+        Assert.Equal(2500, ValoriSicuri.BiancoManuale(-1));
+        Assert.Equal(0, ValoriSicuri.BiancoManuale(double.PositiveInfinity));
+    }
+
+    [Fact]
+    public void NomiConCaratteriDiControllo()
+    {
+        // Collaudo 20 (t13 B8): «<b>Elena</b> U+202E olleh U+202C» si leggeva «hello» nella domanda «Consentire …?».
+        var nome = ValoriSicuri.Sanifica(new Ciao(2, "<b>Elena</b> \u202Eolleh\u202C di prova", Piattaforma.Android, "1")).Nome;
+        Assert.Equal("<b>Elena</b> olleh di prova", nome);
+        // Tutti i comandi di direzione e gli invisibili di formato.
+        foreach (var invisibile in new[] { '\u202A', '\u202B', '\u202D', '\u2066', '\u2067', '\u2068', '\u2069', '\u200E', '\u200F', '\u061C', '\u200B', '\uFEFF', '\u00AD' })
+            Assert.Equal("ab", ValoriSicuri.Testo($"a{invisibile}b", 40));
+        // A capo e tabulazioni: uno spazio (prima «Elenaseconda rigacon tab»).
+        Assert.Equal("Elena seconda riga con tab", ValoriSicuri.NomeTelefono("Elena\nseconda riga\r\n\tcon tab\u2028"));
+        // Le emoji composte restano intere (U+200D), le bandiere con i tag pure.
+        Assert.Equal("Famiglia 👨‍👩‍👧", ValoriSicuri.NomeTelefono("Famiglia 👨‍👩‍👧"));
+        Assert.Equal("🏴󠁧󠁢󠁳󠁣󠁴󠁿", ValoriSicuri.NomeTelefono("🏴󠁧󠁢󠁳󠁣󠁴󠁿"));
+        // Surrogati spaiati via; solo invisibili: «Telefono».
+        Assert.Equal("ab", ValoriSicuri.Testo("a\uD800b", 40));
+        Assert.Equal("Telefono", ValoriSicuri.NomeTelefono("\u202E\u202C \t"));
+        // I telefoni fidati salvati da una versione di prima si puliscono all'apertura.
+        using var identita = IdentitaDispositivo.Nuova();
+        var abbinamento = new Abbinamento(identita, new Dictionary<string, string> { ["x"] = "Mario\u202Eolleh" });
+        Assert.Equal("Marioolleh", abbinamento.Fidati.Single().Nome);
+    }
+
+    [Fact]
+    public void NomiLunghiConIPuntini()
+    {
+        // Collaudo 20 (t13 B11): tagliato a metà parola senza «…» sembrava un errore di battitura.
+        var lungo = string.Concat(Enumerable.Repeat("Elena la tester puntigliosa ", 6));
+        var nome = ValoriSicuri.NomeTelefono(lungo);
+        Assert.Equal(ValoriSicuri.NomeMassimo, nome.Length);
+        Assert.EndsWith("…", nome);
+        Assert.StartsWith("Elena la tester", nome);
+        // Un'emoji composta sul bordo non si spezza.
+        var conEmoji = new string('a', ValoriSicuri.NomeMassimo - 3) + "👨‍👩‍👧 fine";
+        var tagliato = ValoriSicuri.NomeTelefono(conEmoji);
+        Assert.Equal(new string('a', ValoriSicuri.NomeMassimo - 3) + "…", tagliato);
+        // Corto: com'è.
+        Assert.Equal("Pixel di Luca", ValoriSicuri.NomeTelefono("Pixel di Luca"));
+        // Un testo enorme non si scorre tutto.
+        Assert.Equal(ValoriSicuri.NomeMassimo, ValoriSicuri.NomeTelefono(new string('x', 1_000_000)).Length);
+    }
+
+    [Fact]
     public void NomeEFormato()
     {
         var ciao = ValoriSicuri.Sanifica(new Ciao(2, null!, Piattaforma.Android, null!));

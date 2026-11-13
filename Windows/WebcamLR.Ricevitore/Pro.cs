@@ -53,9 +53,10 @@ public static class RegolePro
         Inquadratura = comando.Inquadratura == true ? null : comando.Inquadratura,
         Scritta = comando.Scritta is { } scritta && !string.IsNullOrWhiteSpace(scritta.Nome) ? null : comando.Scritta,
         DoppiaVista = comando.DoppiaVista == true ? null : comando.DoppiaVista,
-        Iso = comando.Iso is > 0 ? null : comando.Iso,
-        Tempo = comando.Tempo is > 0 ? null : comando.Tempo,
-        Bianco = comando.Bianco is > 0 ? null : comando.Bianco,
+        // Solo lo 0 (automatico) passa: un valore negativo o non finito (profilo rovinato, collaudo 20 t13 B9) non arriva al telefono.
+        Iso = comando.Iso is double iso && iso != 0 ? null : comando.Iso,
+        Tempo = comando.Tempo is int tempo && tempo != 0 ? null : comando.Tempo,
+        Bianco = comando.Bianco is int bianco && bianco != 0 ? null : comando.Bianco,
     };
 
     /// <summary>Vero se il comando non porta più nessun campo (allora non si manda).</summary>

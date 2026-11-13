@@ -277,6 +277,9 @@ public sealed partial class MainWindow : Window
     /// </summary>
     private Task<bool> ChiediConfermaAsync(string nomeTelefono, string codice, CancellationToken scaduto)
     {
+        // È la domanda di sicurezza: il nome senza comandi di direzione o a capo, anche se arrivasse da un'altra strada
+        // (collaudo 20, t13 B8; di solito l'ha già pulito ValoriSicuri.Sanifica).
+        nomeTelefono = ValoriSicuri.NomeTelefono(nomeTelefono);
         var risposta = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         // Da quando la sessione aspetta la risposta: per distinguere il tempo scaduto dal telefono andato via.
         var aperta = System.Diagnostics.Stopwatch.StartNew();

@@ -22,7 +22,7 @@ public static class ValoriSicuri
     /// <summary>Nome e versione del telefono: mai nulli, mai lunghissimi, senza caratteri di controllo.</summary>
     public static Ciao Sanifica(Ciao ciao) => ciao with
     {
-        Nome = Testo(ciao.Nome, NomeMassimo) is { Length: > 0 } nome ? nome : TestiRicevitore.T("Telefono_NomePredefinito"),
+        Nome = NomeTelefono(ciao.Nome),
         VersioneApp = Testo(ciao.VersioneApp, VoceMassima),
     };
 
@@ -107,13 +107,110 @@ public static class ValoriSicuri
             : null,
     };
 
-    /// <summary>Un testo dalla rete: nullo diventa vuoto, i caratteri di controllo spariscono, al massimo <paramref name="massimo"/> caratteri.</summary>
+    /// <summary>Il tempo manuale se un profilo non ne ha uno valido: 1/50 di secondo, senza bande con le luci a 50 Hz.</summary>
+    public const int TempoPredefinito = 50;
+
+    /// <summary>
+    /// ISO di un profilo salvato, entro i limiti dell'obiettivo (Protocollo.md, «iso»); null se il telefono non dice i
+    /// limiti o il valore non è un numero (allora l'esposizione resta automatica). Collaudo 20, t13 B9: ISO −5 arrivava così.
+    /// </summary>
+    public static double? IsoManuale(double iso, double? minimo, double? massimo)
+    {
+        if (!double.IsFinite(iso) || minimo is not double min || !double.IsFinite(min) || min <= 0) return null;
+        var max = massimo is double m && double.IsFinite(m) && m >= min ? m : min;
+        return Math.Round(Math.Clamp(iso, min, max));
+    }
+
+    /// <summary>Tempo di posa di un profilo (denominatore, 50 = 1/50 s): fuori da 1–100 000, quello predefinito.</summary>
+    public static int TempoManuale(int tempo) => tempo is >= 1 and <= 100_000 ? tempo : TempoPredefinito;
+
+    /// <summary>Temperatura del bianco di un profilo (K), 2500–7500; un valore non finito torna all'automatico (0).</summary>
+    public static int BiancoManuale(double bianco) => double.IsFinite(bianco) ? (int)Math.Clamp(bianco, 2500, 7500) : 0;
+
+    /// <summary>
+    /// Il nome di un telefono da mostrare (domanda «Consentire …?», scheda, telefoni fidati): pulito come
+    /// <see cref="Testo"/>, accorciato con «…» oltre <see cref="NomeMassimo"/> caratteri, «Telefono» se resta vuoto.
+    /// </summary>
+    public static string NomeTelefono(string? nome) =>
+        Nome(nome, NomeMassimo) is { Length: > 0 } pulito ? pulito : TestiRicevitore.T("Telefono_NomePredefinito");
+
+    /// <summary>
+    /// Un nome da mostrare (telefono, profilo): pulito come <see cref="Testo"/>; se è più lungo di <paramref name="massimo"/>
+    /// caratteri si accorcia tra due caratteri interi e finisce con «…» (collaudo 20, t13 B11: «…che p»?» sembrava un
+    /// errore di battitura).
+    /// </summary>
+    public static string Nome(string? nome, int massimo)
+    {
+        var pulito = Pulisci(nome, massimo + 16);
+        if (pulito.Length <= massimo) return pulito;
+        return Accorcia(pulito, Math.Max(0, massimo - 1)).TrimEnd() + "…";
+    }
+
+    /// <summary>
+    /// Un testo dalla rete: nullo diventa vuoto, al massimo <paramref name="massimo"/> caratteri. I caratteri di controllo
+    /// e di formato spariscono (collaudo 20, t13 B8): a capo e tabulazioni diventano uno spazio (prima «Elenaseconda riga»),
+    /// e i comandi di direzione del testo (U+202E e simili) non girano più il nome nella domanda «Consentire …?», dove un
+    /// telefono estraneo poteva presentarsi con un nome che si legge come un altro.
+    /// </summary>
     public static string Testo(string? testo, int massimo)
     {
+        var pulito = Pulisci(testo, massimo + 16);
+        return pulito.Length <= massimo ? pulito : Accorcia(pulito, massimo).TrimEnd();
+    }
+
+    /// <summary>
+    /// Toglie i caratteri invisibili che cambiano come si legge un testo: controllo (Cc) e formato (Cf), tra cui i comandi
+    /// bidirezionali (U+202A–U+202E, U+2066–U+2069, U+200E, U+200F, U+061C), e i surrogati spaiati. Restano i due
+    /// «joiner» (U+200C, U+200D), che servono alle emoji composte e ad alcune lingue, e i tag delle bandiere
+    /// (U+E0020–U+E007F). Gli spazi (a capo, tabulazioni, separatori di riga) diventano uno spazio solo.
+    /// </summary>
+    /// <param name="limite">Si smette dopo tanti caratteri puliti (un testo da un megabyte non si scorre tutto).</param>
+    public static string Pulisci(string? testo, int limite = int.MaxValue)
+    {
         if (string.IsNullOrEmpty(testo)) return "";
-        var pulito = new string(testo.Where(c => !char.IsControl(c)).Take(massimo).ToArray()).Trim();
-        // Un surrogato tagliato a metà non resta in fondo.
-        return pulito.Length > 0 && char.IsHighSurrogate(pulito[^1]) ? pulito[..^1] : pulito;
+        var risultato = new System.Text.StringBuilder(Math.Min(testo.Length, 4096));
+        Span<char> lettera = stackalloc char[2];
+        var resto = testo.AsSpan();
+        var spazio = false;
+        while (resto.Length > 0 && risultato.Length <= limite)
+        {
+            var stato = System.Text.Rune.DecodeFromUtf16(resto, out var punto, out var usati);
+            resto = resto[usati..];
+            // Un surrogato spaiato sparisce.
+            if (stato != System.Buffers.OperationStatus.Done) continue;
+            var categoria = System.Text.Rune.GetUnicodeCategory(punto);
+            if (System.Text.Rune.IsWhiteSpace(punto)
+                || categoria is System.Globalization.UnicodeCategory.LineSeparator or System.Globalization.UnicodeCategory.ParagraphSeparator)
+            {
+                spazio = risultato.Length > 0;
+                continue;
+            }
+            if (categoria == System.Globalization.UnicodeCategory.Control) continue;
+            if (categoria == System.Globalization.UnicodeCategory.Format
+                && punto.Value is not (0x200C or 0x200D) and not (>= 0xE0020 and <= 0xE007F))
+                continue;
+            if (spazio)
+            {
+                risultato.Append(' ');
+                spazio = false;
+            }
+            risultato.Append(lettera[..punto.EncodeToUtf16(lettera)]);
+        }
+        return risultato.ToString();
+    }
+
+    /// <summary>I primi <paramref name="massimo"/> caratteri, senza spezzare una lettera con accenti o un'emoji composta.</summary>
+    private static string Accorcia(string testo, int massimo)
+    {
+        var fine = 0;
+        var elementi = System.Globalization.StringInfo.GetTextElementEnumerator(testo);
+        while (elementi.MoveNext())
+        {
+            var dopo = elementi.ElementIndex + ((string)elementi.Current).Length;
+            if (dopo > massimo) break;
+            fine = dopo;
+        }
+        return testo[..fine];
     }
 
     private static List<string> Elenco(IReadOnlyList<string>? voci, int massimo) =>

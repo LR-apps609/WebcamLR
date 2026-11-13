@@ -514,5 +514,7 @@ public sealed class ElencoTelefoni
 
     /// <summary>Il nome tra virgolette, o «Il telefono» se manca: il soggetto dei messaggi di rifiuto.</summary>
     internal static string NomeInFrase(string? nome) =>
-        string.IsNullOrWhiteSpace(nome) ? TestiRicevitore.T("Telefoni_IlTelefono") : TestiRicevitore.T("Telefoni_NomeTraVirgolette", nome.Trim());
+        ValoriSicuri.Nome(nome, ValoriSicuri.NomeMassimo) is { Length: > 0 } pulito
+            ? TestiRicevitore.T("Telefoni_NomeTraVirgolette", pulito)
+            : TestiRicevitore.T("Telefoni_IlTelefono");
 }

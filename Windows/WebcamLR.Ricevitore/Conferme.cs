@@ -96,7 +96,9 @@ public static class Conferme
     private static List<string> Nomi(IReadOnlyList<string> appInUso) =>
         appInUso.Where(n => !string.IsNullOrWhiteSpace(n)).Select(n => n.Trim()).Distinct().ToList();
 
-    private static string Nome(string nome) => string.IsNullOrWhiteSpace(nome) ? TestiRicevitore.T("Conferma_IlTelefono") : nome.Trim();
+    /// <summary>Il nome nella domanda: pulito e accorciato con «…» (ValoriSicuri.Nome, collaudo 20 t13 B8 e B11).</summary>
+    private static string Nome(string nome) =>
+        ValoriSicuri.Nome(nome, ValoriSicuri.NomeMassimo) is { Length: > 0 } pulito ? pulito : TestiRicevitore.T("Conferma_IlTelefono");
 }
 
 /// <summary>

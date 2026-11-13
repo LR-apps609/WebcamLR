@@ -418,7 +418,7 @@ public sealed partial class MainWindow
         var profili = Preferenze.Profili;
         foreach (var nome in profili.Keys.Order())
         {
-            var voce = new MenuFlyoutItem { Text = nome };
+            var voce = VoceProfilo(nome);
             voce.Click += (_, _) => ApplicaProfilo(profili[nome]);
             // Passo 8 (windows.md 2.9): clic destro con Applica ed Elimina… (MainWindow.Menu.cs).
             voce.ContextFlyout = MenuProfiloSalvato(nome, () => ApplicaProfilo(profili[nome]));
@@ -437,12 +437,33 @@ public sealed partial class MainWindow
         var elimina = new MenuFlyoutSubItem { Text = Testi.T("Elimina") };
         foreach (var nome in profili.Keys.Order())
         {
-            var voce = new MenuFlyoutItem { Text = nome };
+            var voce = VoceProfilo(nome);
             voce.Click += (_, _) => ChiediEliminaProfilo(nome);
             elimina.Items.Add(voce);
         }
         MenuProfili.Items.Add(elimina);
     }
+
+    /// <summary>
+    /// La voce di un profilo nel menu: il nome pulito e, se è lungo (un profili.json di prima o scritto a mano: collaudo 20,
+    /// t13 B11, il menu usciva dalla finestra), accorciato con «…» come nella casella del nome (40 caratteri). Il nome intero
+    /// nel suggerimento e per l'accessibilità.
+    /// </summary>
+    private static MenuFlyoutItem VoceProfilo(string nome)
+    {
+        var mostrato = ValoriSicuri.Nome(nome, NomeProfiloMassimo);
+        var voce = new MenuFlyoutItem { Text = mostrato.Length > 0 ? mostrato : "—" };
+        if (mostrato != nome)
+        {
+            var intero = ValoriSicuri.Nome(nome, 400);
+            ToolTipService.SetToolTip(voce, intero);
+            AutomationProperties.SetName(voce, intero);
+        }
+        return voce;
+    }
+
+    /// <summary>I caratteri del nome di un profilo (la casella «Nuovo profilo» non ne accetta di più).</summary>
+    private const int NomeProfiloMassimo = 40;
 
     /// <summary>
     /// Elimina un profilo salvato, dal sottomenu «Elimina» o dal clic destro. Passo 4 (windows.md 1.8): prima la domanda,
@@ -463,7 +484,7 @@ public sealed partial class MainWindow
     private async Task ChiediNomeProfiloAsync()
     {
         await PreparaDialogoAsync();
-        var casella = new TextBox { PlaceholderText = Testi.T("Profili_NomeEsempio"), MaxLength = 40 };
+        var casella = new TextBox { PlaceholderText = Testi.T("Profili_NomeEsempio"), MaxLength = NomeProfiloMassimo };
         var finestra = new ContentDialog
         {
             XamlRoot = Content.XamlRoot,
@@ -511,16 +532,19 @@ public sealed partial class MainWindow
 
     private void ApplicaProfilo(ProfiloFotocamera profilo, TelefonoCollegato scelto, Capacita capacita, string? obiettivo)
     {
-        var manuale = profilo.EsposizioneManuale && ManualeDisponibile && capacita.IsoMinimo is not null;
+        // ISO e tempo nei limiti (un profilo rovinato o di una versione vecchia, collaudo 20 t13 B9); senza limiti, automatica.
+        var iso = ValoriSicuri.IsoManuale(profilo.Iso, capacita.IsoMinimo, capacita.IsoMassimo);
+        var manuale = profilo.EsposizioneManuale && ManualeDisponibile && iso is not null;
         // Le capacità sono dell'obiettivo attuale (Protocollo.md, «capacita»): con un altro obiettivo zoom e torcia del
         // profilo vanno come sono, e il telefono li porta ai limiti di quello nuovo (collaudo 43 e 45).
         var cambiaObiettivo = obiettivo is not null && obiettivo != statoTelefono?.Obiettivo;
         var comando = new Comando(Obiettivo: obiettivo,
-            Zoom: cambiaObiettivo ? Math.Max(1, profilo.Zoom) : Math.Clamp(profilo.Zoom, 1, Math.Max(1, capacita.ZoomMassimo)),
+            Zoom: !double.IsFinite(profilo.Zoom) ? 1
+                : cambiaObiettivo ? Math.Clamp(profilo.Zoom, 1, ValoriSicuri.ZoomMassimo) : Math.Clamp(profilo.Zoom, 1, Math.Max(1, capacita.ZoomMassimo)),
             Torcia: cambiaObiettivo || capacita.Torcia ? profilo.Torcia : null,
-            Esposizione: Math.Clamp(Math.Round(profilo.Esposizione, 1), -2, 2),
-            Bianco: profilo.BiancoAutomatico ? 0 : (int)profilo.Bianco,
-            Iso: manuale ? Math.Round(profilo.Iso) : 0, Tempo: manuale ? profilo.Tempo : 0);
+            Esposizione: double.IsFinite(profilo.Esposizione) ? Math.Clamp(Math.Round(profilo.Esposizione, 1), -2, 2) : 0,
+            Bianco: profilo.BiancoAutomatico ? 0 : ValoriSicuri.BiancoManuale(profilo.Bianco),
+            Iso: manuale ? iso : 0, Tempo: manuale ? ValoriSicuri.TempoManuale(profilo.Tempo) : 0);
         if (cambiaObiettivo) obiettivoInAttesa = obiettivo;
         Comanda(comando);
         // I controlli come il telefono li avrà (Comanda ha già tolto le parti Pro con un telefono gratis).

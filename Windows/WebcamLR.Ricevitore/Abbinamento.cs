@@ -21,7 +21,8 @@ public sealed class Abbinamento
         Action<IReadOnlyDictionary<string, string>>? salva = null)
     {
         Identita = identita;
-        this.fidati = new Dictionary<string, string>(fidati ?? new Dictionary<string, string>());
+        // I nomi salvati da una versione di prima possono avere caratteri di controllo o di direzione (collaudo 20, t13 B8).
+        this.fidati = (fidati ?? new Dictionary<string, string>()).ToDictionary(f => f.Key, f => ValoriSicuri.NomeTelefono(f.Value));
         this.salva = salva;
     }
 

@@ -86,7 +86,7 @@ function Segnala-Problema {
     Scrivi-Log "PROBLEMA: $Testo"
 }
 
-function Problemi { , $script:Problemi.ToArray() }
+function Problemi { $script:Problemi.ToArray() }
 
 function Passo {
     <#
@@ -140,9 +140,10 @@ function Avvia-App {
     Avvia WebcamLR.exe e aspetta la finestra. La lingua (Lingua-Inglese / Lingua-Italiana) passa con un «startup hook» di
     .NET (GancioAvvio.dll): l'app la legge dalla lingua dell'interfaccia, che sul runner è l'inglese. Lo stesso gancio
     aggira l'errore di HighContrastChanged delle macchine Windows Server (vedi LEGGIMI, «Limiti»); gancio.log dice cosa fa.
-    -Azzera: prima Azzera-Dati (primo avvio). -Argomenti: riga di comando in più.
+    -Azzera: prima Azzera-Dati (primo avvio). -Argomenti: riga di comando in più. -SenzaAggiramenti: senza l'aggiramento
+    di HighContrastChanged (su Windows Server l'app allora non parte).
     #>
-    param([switch]$Azzera, [string]$Argomenti = '', [int]$Attesa = 60)
+    param([switch]$Azzera, [string]$Argomenti = '', [int]$Attesa = 60, [switch]$SenzaAggiramenti)
     if ($Azzera) { Azzera-Dati }
     if (-not (Test-Path $script:Exe)) { throw "WebcamLR.exe non trovato: $script:Exe" }
     $info = New-Object System.Diagnostics.ProcessStartInfo $script:Exe
@@ -153,7 +154,7 @@ function Avvia-App {
         $info.EnvironmentVariables['DOTNET_STARTUP_HOOKS'] = $script:Gancio
         $info.EnvironmentVariables['WEBCAMLR_COLLAUDO_LINGUA'] = $script:Lingua
         $info.EnvironmentVariables['WEBCAMLR_COLLAUDO_REGISTRO'] = (Join-Path $script:Uscita 'gancio.log')
-        if ($script:AggiraContrasto) { $info.EnvironmentVariables['WEBCAMLR_COLLAUDO_CONTRASTO'] = '1' }
+        if ($script:AggiraContrasto -and -not $SenzaAggiramenti) { $info.EnvironmentVariables['WEBCAMLR_COLLAUDO_CONTRASTO'] = '1' }
     } else {
         Scrivi-Log "Attenzione: $script:Gancio non c'è, la lingua resta quella di Windows"
     }
@@ -195,12 +196,12 @@ function Finestre-App {
     if (-not $script:Processo) { return @() }
     $condizione = New-Object System.Windows.Automation.PropertyCondition($AE::ProcessIdProperty, $script:Processo.Id)
     $tutte = $AE::RootElement.FindAll($TS::Children, $condizione)
-    , @($tutte | ForEach-Object { $_ })
+    $tutte | ForEach-Object { $_ }
 }
 
 function Finestra-App {
     <# La finestra principale di WebcamLR (la più grande del processo), o $null. #>
-    $finestre = Finestre-App
+    $finestre = @(Finestre-App)
     if ($finestre.Count -eq 0) { return $null }
     $finestre | Sort-Object { - ($_.Current.BoundingRectangle.Width * $_.Current.BoundingRectangle.Height) } | Select-Object -First 1
 }
@@ -278,37 +279,63 @@ function Descrivi-Rettangolo($r) {
     '{0},{1} {2}×{3}' -f [int]$r.X, [int]$r.Y, [int]$r.Width, [int]$r.Height
 }
 
+function Vista-Completa {
+    <#
+    Le ricerche di UI Automation guardano di serie la «vista dei controlli», che salta per esempio le immagini senza nome
+    (il QR code). Dentro Vista-Completa { ... } guardano tutto.
+    #>
+    param([Parameter(Mandatory)][scriptblock]$Blocco)
+    $richiesta = New-Object System.Windows.Automation.CacheRequest
+    $richiesta.TreeFilter = [System.Windows.Automation.Automation]::RawViewCondition
+    $richiesta.AutomationElementMode = [System.Windows.Automation.AutomationElementMode]::Full
+    $richiesta.Add($AE::NameProperty)
+    $richiesta.Add($AE::AutomationIdProperty)
+    $attiva = $richiesta.Activate()
+    try { & $Blocco } finally { $attiva.Dispose() }
+}
+
 function Tutti-Elementi {
-    $risultato = New-Object System.Collections.ArrayList
-    foreach ($finestra in (Finestre-App)) {
-        [void]$risultato.Add($finestra)
-        foreach ($e in $finestra.FindAll($TS::Descendants, [System.Windows.Automation.Condition]::TrueCondition)) {
-            [void]$risultato.Add($e)
+    <# Tutti gli elementi delle finestre dell'app (vista completa), o solo quelli dentro l'elemento -Dentro. #>
+    param($Dentro)
+    $radici = @(Finestre-App)
+    if ($Dentro) { $radici = @($Dentro) }
+    Vista-Completa {
+        foreach ($radice in $radici) {
+            $radice
+            foreach ($e in $radice.FindAll($TS::Descendants, [System.Windows.Automation.Condition]::TrueCondition)) { $e }
         }
     }
-    , $risultato
 }
 
 function Trova-Elemento {
     <#
     Cerca in tutte le finestre dell'app un elemento per AutomationId esatto (in WinUI è il x:Name), poi per nome esatto,
     poi per nome che contiene il testo. Preferisce gli elementi a schermo. $null se non c'è.
+    -Dentro <id>: solo dentro quell'elemento (es. 'ScorrimentoImpostazioni' per le voci delle impostazioni, che hanno lo
+    stesso nome di altri pulsanti), anche se fuori schermo (più in basso nell'elenco).
     #>
-    param([Parameter(Mandatory)][string]$Chi, [switch]$AncheNascosti)
-    $finestre = Finestre-App
+    param([Parameter(Mandatory)][string]$Chi, [string]$Dentro, [switch]$AncheNascosti)
+    $radici = @(Finestre-App)
+    if ($Dentro) {
+        $contenitore = Trova-Elemento $Dentro -AncheNascosti
+        if (-not $contenitore) { return $null }
+        $radici = @($contenitore)
+        $AncheNascosti = $true
+    }
     # Prima le ricerche esatte, che UI Automation fa dentro il processo (veloci); poi il nome che contiene il testo.
     foreach ($proprieta in @($AE::AutomationIdProperty, $AE::NameProperty)) {
         $condizione = New-Object System.Windows.Automation.PropertyCondition($proprieta, $Chi)
-        $trovati = @()
-        foreach ($f in $finestre) {
-            if ($f.Current.AutomationId -eq $Chi -or $f.Current.Name -eq $Chi) { $trovati += $f }
-            $trovati += @($f.FindAll($TS::Descendants, $condizione) | ForEach-Object { $_ })
-        }
+        $trovati = @(Vista-Completa {
+                foreach ($r in $radici) {
+                    if ($r.Current.AutomationId -eq $Chi -or $r.Current.Name -eq $Chi) { if (-not $Dentro) { $r } }
+                    foreach ($e in $r.FindAll($TS::Descendants, $condizione)) { $e }
+                }
+            })
         $visibili = @($trovati | Where-Object { try { -not $_.Current.IsOffscreen } catch { $false } })
         if ($visibili.Count -gt 0) { return $visibili[0] }
         if ($AncheNascosti -and $trovati.Count -gt 0) { return $trovati[0] }
     }
-    $simili = @(Tutti-Elementi | Where-Object {
+    $simili = @(@(foreach ($r in $radici) { Tutti-Elementi -Dentro $r }) | Where-Object {
             try { $_.Current.Name -and $_.Current.Name.IndexOf($Chi, [StringComparison]::OrdinalIgnoreCase) -ge 0 } catch { $false } })
     $visibili = @($simili | Where-Object { try { -not $_.Current.IsOffscreen } catch { $false } })
     if ($visibili.Count -gt 0) { return $visibili[0] }
@@ -316,15 +343,26 @@ function Trova-Elemento {
     $null
 }
 
+function Elenco-Visibili {
+    <# Una riga con gli elementi a schermo che hanno un AutomationId o un nome (per capire perché qualcosa manca). #>
+    $voci = @(Tutti-Elementi | Where-Object { try { -not $_.Current.IsOffscreen -and ($_.Current.AutomationId -or $_.Current.Name) } catch { $false } } |
+        ForEach-Object {
+            $c = $_.Current
+            if ($c.AutomationId -and $c.AutomationId -notmatch '^\d+$') { $c.AutomationId } else { '«' + $c.Name + '»' }
+        } | Select-Object -Unique)
+    ($voci | Select-Object -First 80) -join ' '
+}
+
 function Attendi-Elemento {
-    <# Aspetta fino a <secondi> che l'elemento ci sia e sia a schermo; lo restituisce, oppure errore. #>
-    param([Parameter(Mandatory)][string]$Chi, [double]$Secondi = 10)
+    <# Aspetta fino a <secondi> che l'elemento ci sia (e sia a schermo, salvo -Dentro); lo restituisce, oppure errore. #>
+    param([Parameter(Mandatory)][string]$Chi, [double]$Secondi = 10, [string]$Dentro)
     $limite = (Get-Date).AddSeconds($Secondi)
     do {
-        $e = Trova-Elemento $Chi
+        $e = Trova-Elemento $Chi -Dentro $Dentro
         if ($e) { return $e }
         Start-Sleep -Milliseconds 300
     } while ((Get-Date) -lt $limite)
+    Scrivi-Log "  a schermo adesso: $(Elenco-Visibili)"
     throw "Elemento «$Chi» non trovato in $Secondi s"
 }
 
@@ -344,8 +382,8 @@ function Clicca {
     Clicca un elemento (AutomationId o nome). Usa il comportamento dell'elemento (Invoke, Toggle, selezione, apri/chiudi);
     con -Mouse, o se non ne ha, un clic vero del mouse al centro.
     #>
-    param([Parameter(Mandatory)][string]$Chi, [switch]$Mouse, [double]$Attesa = 10)
-    $e = Attendi-Elemento $Chi $Attesa
+    param([Parameter(Mandatory)][string]$Chi, [switch]$Mouse, [double]$Attesa = 10, [string]$Dentro)
+    $e = Attendi-Elemento $Chi $Attesa -Dentro $Dentro
     $descrizione = Descrivi-Elemento $e
     if (-not $Mouse) {
         foreach ($schema in @(
@@ -444,8 +482,8 @@ function Tasto {
 
 function Testi-Visibili {
     <# Tutti i nomi a schermo nelle finestre dell'app (per cercare un testo). #>
-    , @(Tutti-Elementi | Where-Object { try { $_.Current.Name -and -not $_.Current.IsOffscreen } catch { $false } } |
-        ForEach-Object { $_.Current.Name })
+    Tutti-Elementi | Where-Object { try { $_.Current.Name -and -not $_.Current.IsOffscreen } catch { $false } } |
+        ForEach-Object { $_.Current.Name }
 }
 
 function Attendi-Testo {
@@ -453,7 +491,7 @@ function Attendi-Testo {
     param([Parameter(Mandatory)][string]$Testo, [double]$Secondi = 10, [switch]$Obbligatorio)
     $limite = (Get-Date).AddSeconds($Secondi)
     do {
-        $trovato = Testi-Visibili | Where-Object { $_.IndexOf($Testo, [StringComparison]::OrdinalIgnoreCase) -ge 0 } | Select-Object -First 1
+        $trovato = @(Testi-Visibili) | Where-Object { $_.IndexOf($Testo, [StringComparison]::OrdinalIgnoreCase) -ge 0 } | Select-Object -First 1
         if ($trovato) {
             Scrivi-Log "Attendi-Testo «$Testo»: c'è («$trovato»)"
             return $true
@@ -553,7 +591,7 @@ function Albero-UI {
             $figlio = $camminatore.GetNextSibling($figlio)
         }
     }
-    $finestre = Finestre-App
+    $finestre = @(Finestre-App)
     if ($finestre.Count -eq 0) { $righe.Add('(nessuna finestra di WebcamLR)') }
     foreach ($f in $finestre) { Visita $f 0 }
     [System.IO.File]::WriteAllLines($file, $righe, (New-Object System.Text.UTF8Encoding $true))
@@ -604,7 +642,7 @@ function Registro-Telefono {
     param([string]$Nome = 'iPhone finto')
     $t = $script:Telefoni[$Nome]
     if (-not $t -or -not (Test-Path $t.Registro)) { return @() }
-    , @(Get-Content -LiteralPath $t.Registro -Encoding UTF8)
+    Get-Content -LiteralPath $t.Registro -Encoding UTF8
 }
 
 function Attendi-Telefono {
@@ -615,7 +653,7 @@ function Attendi-Telefono {
     param([Parameter(Mandatory)][string]$Testo, [double]$Secondi = 30, [string]$Nome = 'iPhone finto', [switch]$Obbligatorio)
     $limite = (Get-Date).AddSeconds($Secondi)
     do {
-        $riga = Registro-Telefono $Nome | Where-Object { $_ -like "*$Testo*" } | Select-Object -Last 1
+        $riga = @(Registro-Telefono $Nome) | Where-Object { $_ -like "*$Testo*" } | Select-Object -Last 1
         if ($riga) {
             Scrivi-Log "Telefono «$Nome»: $riga"
             return $riga

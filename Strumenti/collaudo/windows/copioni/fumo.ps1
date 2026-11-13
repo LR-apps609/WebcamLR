@@ -4,7 +4,7 @@
 Avvia-App -Azzera | Out-Null
 Start-Sleep -Seconds 4
 Fotografa 'primo-avvio'
-Scrivi-Log "Testi a schermo: $((Testi-Visibili) -join ' | ')"
+Scrivi-Log "A schermo: $(Elenco-Visibili)"
 
 Passo 'Impostazioni: il pannello' {
     Clicca 'PulsanteImpostazioni'
@@ -17,8 +17,10 @@ $voci = 'Fotocamera', 'Effetti', 'Sfondo', 'Profili', 'Qualita', 'Schermo', 'Mic
 foreach ($voce in $voci) {
     $nome = Testo-App "Impostazioni_$voce"
     Passo "Impostazioni › $nome" {
-        if (-not (Esiste 'PulsanteIndietroImpostazioni') -and -not (Esiste $nome)) { Clicca 'PulsanteImpostazioni' }
-        Clicca $nome
+        # Le voci hanno lo stesso nome di altri pulsanti («Sfondo», «Schermo»): si cercano dentro il pannello.
+        if (-not (Trova-Elemento 'ScorrimentoImpostazioni')) { Clicca 'PulsanteImpostazioni' }
+        if (Esiste 'PulsanteIndietroImpostazioni') { Clicca 'PulsanteIndietroImpostazioni' }
+        Clicca $nome -Dentro 'ScorrimentoImpostazioni'
         Start-Sleep -Milliseconds 800
         Fotografa "impostazioni-$voce"
         Clicca 'PulsanteIndietroImpostazioni'

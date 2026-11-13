@@ -98,5 +98,11 @@ c'è ffmpeg, decodifica il video).
   Spegnere la scheda di rete del runner non si può (GitHub perderebbe la macchina). Per una connessione chiusa di colpo:
   `--interrompi-dopo <s> --modo-interruzione chiusura`.
 - Lo schermo del runner è 1024×768 al 100%: niente prove di DPI alti o di più schermi.
-- La lingua passa con un «startup hook» di .NET (`LinguaAvvio`), non con la lingua di Windows (sul runner è l'inglese
+- La lingua passa con un «startup hook» di .NET (`GancioAvvio`), non con la lingua di Windows (sul runner è l'inglese
   e cambiarla richiede di uscire dalla sessione).
+- **Windows Server.** Le macchine di GitHub sono Windows Server (2025 su `windows-latest`, anche 2022): lì
+  `AccessibilitySettings.HighContrastChanged` fallisce con 0x80070490 e WebcamLR non parte (messaggio «avvio non
+  riuscito», `MainWindow.PreparaFinestra`). Lo stesso `GancioAvvio` ignora quell'errore con Harmony, solo nel banco
+  (`gancio.log` lo dice); l'app parte senza l'avviso di cambio del contrasto elevato. Per vedere l'app com'è davvero:
+  `Avvia-App -SenzaAggiramenti`.
+- Media Foundation su Windows Server non c'è di serie: il workflow la installa (serve al lettore video di WinUI).

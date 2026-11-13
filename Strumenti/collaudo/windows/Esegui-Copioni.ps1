@@ -41,7 +41,7 @@ foreach ($nome in $nomi) {
         try { Raccogli-Registri } catch { Scrivi-Log "Raccogli-Registri: $($_.Exception.Message)" }
         Chiudi-Tutto
     }
-    $problemi = Problemi
+    $problemi = @(Problemi)
     if ($esito -eq 'OK' -and $problemi.Count -gt 0) { $esito = 'PROBLEMI' }
     $durata = [int]((Get-Date) - $inizio).TotalSeconds
     $testo = @("Copione: $nome", "Esito: $esito", "Durata: $durata s", "Problemi: $($problemi.Count)")

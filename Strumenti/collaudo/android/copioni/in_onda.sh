@@ -16,13 +16,14 @@ collega_indirizzo || fallisci "non riesco a scrivere l'indirizzo in «Collega a 
 attendi 2
 schermata "dopo-collega"
 if attendi_testo "Conferma sul computer" 15; then
-    schermata "conferma-codice"
+    # Subito, prima della fotografia: la schermata del codice dura solo --attesa-conferma secondi.
     codice=$(codice_computer)
     if [ -n "$codice" ] && c_e_testo "$codice"; then
         passo "Il telefono mostra lo stesso codice del computer: $codice"
-    else
-        nota "il codice del computer ($codice) non si trova nella schermata del telefono"
+    elif c_e_testo "Conferma sul computer"; then
+        nota "il codice del computer ($codice) non si trova nella schermata «Conferma sul computer»"
     fi
+    schermata "conferma-codice"
 else
     nota "nessuna schermata «Conferma sul computer» (il computer era già conosciuto?)"
 fi

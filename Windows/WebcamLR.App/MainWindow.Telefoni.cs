@@ -666,6 +666,9 @@ public sealed partial class MainWindow
         Dimentica(collegato);
         Notifica(Testi.T("Notifica_TelefonoPerso"), Testi.T("Notifica_TelefonoPersoTesto", collegato.Nome));
         // Anche con la finestra davanti, dove la notifica non arriva: un banner fisso sopra il video (come il Mac nel passo 2).
+        // Collaudo 20 (t08 B5): diceva «non è tornato. Riapri WebcamLR sul telefono», ma il telefono riprova da solo (con la
+        // rete assente aspetta senza fine) e torna nella webcam appena può. Ora dice che si aspetta; la domanda frequente
+        // del banner resta per chi non lo vede tornare.
         MostraTelefonoPerso(collegato.Nome);
     }
 

@@ -1056,10 +1056,10 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
     <value>«{0}» non è tornato in {1:0} secondi</value>
   </data>
   <data name="Notifica_TelefonoPerso" xml:space="preserve">
-    <value>Telefono perso</value>
+    <value>Telefono scollegato</value>
   </data>
   <data name="Notifica_TelefonoPersoTesto" xml:space="preserve">
-    <value>{0} non risponde più. Riapri WebcamLR sul telefono per ricollegarlo.</value>
+    <value>{0} si è scollegato. Aspetto che torni: di solito si ricollega da solo appena ritrova la rete.</value>
   </data>
   <data name="Telefoni_MiRicollegoA" xml:space="preserve">
     <value>Mi ricollego a {0}…</value>
@@ -1980,7 +1980,7 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
     <comment>Nel menu dell'icona accanto all'orologio, solo mentre si registra</comment>
   </data>
   <data name="TelefonoPerso_Banner" xml:space="preserve">
-    <value>{0} non è tornato. Riapri WebcamLR sul telefono.</value>
+    <value>{0} si è scollegato. Aspetto che torni: di solito si ricollega da solo appena ritrova la rete.</value>
     <comment>Banner fisso sopra il video quando il telefono non torna; {0} il nome del telefono</comment>
   </data>
   <data name="RispostaTelefonoPerso.Content" xml:space="preserve">

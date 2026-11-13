@@ -458,6 +458,22 @@ th, td { text-align: left; padding: var(--spazio-piccolo) var(--spazio-medio); b
 tr:last-child td { border-bottom: 0; }
 th { font: 500 12px var(--numeri); letter-spacing: .06em; text-transform: uppercase; color: var(--testo-tenue); }
 td + td { color: var(--testo-chiaro); }
+/* Sul telefono la tabella dei permessi non sta in tre colonne: ogni riga diventa un blocco, il permesso sopra e le
+   altre due colonne sotto, ciascuna con il suo titolo (i titoli della testata, ripetuti qui nelle due lingue). */
+@media (max-width: 560px) {
+  table { min-width: 0; }
+  .tabella thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .tabella tr { display: block; padding: var(--spazio-piccolo) var(--spazio-medio); border-bottom: 1px solid var(--linea); }
+  .tabella tr:last-child { border-bottom: 0; }
+  .tabella td { display: block; padding: 0; border: 0; }
+  .tabella td:first-child { font-weight: 600; color: var(--testo); }
+  .tabella td + td { margin-top: var(--spazio-stretto); }
+  .tabella td + td::before { display: block; font: 500 12px var(--numeri); letter-spacing: .06em; text-transform: uppercase; color: var(--testo-tenue); }
+  .tabella td:nth-child(2)::before { content: "A cosa serve"; }
+  .tabella td:nth-child(3)::before { content: "Dove va"; }
+  .tabella:lang(en) td:nth-child(2)::before { content: "What it’s for"; }
+  .tabella:lang(en) td:nth-child(3)::before { content: "Where it goes"; }
+}
 .avviso { padding: var(--spazio-medio) var(--spazio-medio); border-radius: var(--raggio-controllo); background: var(--ambra-tenue); color: var(--ambra-testo); font-size: 16px; }
 .indice { display: flex; flex-wrap: wrap; gap: var(--spazio-stretto); }
 .indice a { padding: var(--spazio-stretto) var(--spazio-piccolo); border: 1px solid var(--contorno-controllo); border-radius: var(--raggio-capsula); color: var(--testo-chiaro); text-decoration: none; font-size: 15px; }

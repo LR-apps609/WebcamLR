@@ -68,6 +68,15 @@ jobs:
           dotnet test Strumenti/collaudo/TelefonoFinto.Prova --nologo --logger "console;verbosity=normal" 2>&1 \
             | tee registri/dotnet-test-telefono.log
 
+      # Windows Server non ha Media Foundation di serie: senza, il lettore video di WinUI (MediaPlayer) non decodifica
+      # l'H.264 del telefono. Su un PC con Windows 10/11 c'è sempre.
+      - name: Media Foundation (Windows Server)
+        shell: powershell
+        continue-on-error: true
+        run: |
+          $esito = Install-WindowsFeature Server-Media-Foundation
+          $esito | Format-List | Out-String
+
       - name: La macchina (schermo, Media Foundation)
         shell: powershell
         continue-on-error: true
@@ -76,7 +85,6 @@ jobs:
           "Schermo: " + [System.Windows.Forms.SystemInformation]::VirtualScreen
           "Sessione interattiva: " + [Environment]::UserInteractive
           (Get-CimInstance Win32_OperatingSystem).Caption
-          try { Get-WindowsFeature Server-Media-Foundation | Format-Table -AutoSize | Out-String } catch { "Get-WindowsFeature non c'è" }
           Test-Path "$env:WINDIR\System32\mfplat.dll"
           Test-Path "$env:WINDIR\System32\msmpeg2vdec.dll"
 
@@ -86,8 +94,8 @@ jobs:
         env:
           COPIONI: ${{ github.event.inputs.copioni }}
         run: |
-          powershell -NoProfile -ExecutionPolicy Bypass -File Strumenti\collaudo\windows\Esegui-Copioni.ps1 `
-            -Copioni "$env:COPIONI" -Uscita risultati-collaudo
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+          & .\Strumenti\collaudo\windows\Esegui-Copioni.ps1 -Copioni ([string]$env:COPIONI) -Uscita risultati-collaudo
           exit 0
 
       - name: Riassunto

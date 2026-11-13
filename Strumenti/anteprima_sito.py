@@ -50,7 +50,7 @@ def logo(d: ImageDraw.ImageDraw, x: float, y: float, lato: float, fondo: bool) -
 
 
 TESTI = {
-    "anteprima.png": ("CAVO USB · WI-FI · SENZA FILIGRANA", "L'iPhone come webcam per Mac e Windows"),
+    "anteprima.png": ("CAVO USB · WI-FI · SENZA FILIGRANA", "Il telefono come webcam per Mac e Windows"),
     "anteprima-en.png": ("USB CABLE · WI-FI · NO WATERMARK", "Your phone as a webcam for Mac and Windows"),
 }
 

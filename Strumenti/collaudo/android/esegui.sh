@@ -39,6 +39,8 @@ if ! adb install -r "$APK" > "$RISULTATI/installazione.txt" 2>&1; then
     exit 0
 fi
 annota "APK installato: $(basename "$APK")"
+mkdir -p "$RISULTATI/avvio"
+USCITA="$RISULTATI/avvio" bash -c 'source "$1"; sistema_calmo 150' calma "$QUI/lib.sh" </dev/null
 
 nomi="${COPIONI:-}"
 if [ -z "${nomi// /}" ]; then

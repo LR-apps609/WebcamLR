@@ -40,20 +40,42 @@ adb_sh() { adb shell "$@" </dev/null; }
 # Un dialogo di sistema «… isn't responding» di un'ALTRA app (sull'emulatore capita al Pixel Launcher) si chiude con
 # «Wait» e si annota; se è WebcamLR a non rispondere, il dialogo resta: è un bug da vedere (fotografato in schermate/).
 _dump() {
-    local destinazione="$1" prova
-    for prova in 1 2 3 4; do
+    local destinazione="$1" prova=0 dialoghi=0
+    while [ "$prova" -lt 4 ]; do
         rm -f "$destinazione"
         if adb_sh uiautomator dump /sdcard/finestra.xml >/dev/null 2>&1 \
             && adb pull /sdcard/finestra.xml "$destinazione" >/dev/null 2>&1 \
             && grep -q '<hierarchy' "$destinazione"; then
-            if grep -q 'android:id/aerr_wait' "$destinazione"; then
-                _dialogo_anr "$destinazione" && continue
+            # Un dialogo chiuso non conta come tentativo (al massimo 10 di fila).
+            if grep -q 'android:id/aerr_wait' "$destinazione" && [ "$dialoghi" -lt 10 ] && _dialogo_anr "$destinazione"; then
+                dialoghi=$((dialoghi + 1))
+                continue
             fi
             return 0
         fi
+        prova=$((prova + 1))
         sleep 1
     done
     return 1
+}
+
+# sistema_calmo [secondi=150]: aspetta che per 3 dump di fila (5 s l'uno dall'altro) non compaiano dialoghi
+# «… isn't responding» (appena acceso, l'emulatore fa andare in ANR il Pixel Launcher per un paio di minuti).
+sistema_calmo() {
+    local secondi="${1:-150}" fine calmi=0 f="$USCITA/.attesa.xml"
+    fine=$(( $(date +%s) + secondi ))
+    while [ "$(date +%s)" -lt "$fine" ] && [ "$calmi" -lt 3 ]; do
+        rm -f "$f"
+        if adb_sh uiautomator dump /sdcard/finestra.xml >/dev/null 2>&1 && adb pull /sdcard/finestra.xml "$f" >/dev/null 2>&1; then
+            if grep -q 'android:id/aerr_wait' "$f"; then
+                _dialogo_anr "$f"; calmi=0
+            else
+                calmi=$((calmi + 1))
+            fi
+        fi
+        sleep 5
+    done
+    passo "SISTEMA CALMO ($calmi controlli senza dialoghi)"
 }
 
 _dialogo_anr() {

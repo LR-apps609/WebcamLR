@@ -619,8 +619,18 @@ function Controlla-Video {
     param([string]$Chi, [double]$Secondi = 1.5, [switch]$Obbligatorio)
     $e = $null
     foreach ($id in @($Chi, 'VideoElaborato', 'Video') | Where-Object { $_ }) { $e = Trova-Elemento $id; if ($e) { break } }
-    if (-not $e) { throw 'Nessun elemento video a schermo (Video o VideoElaborato)' }
+    $nomeArea = ''
+    if ($e) { $nomeArea = $e.Current.AutomationId }
+    else {
+        # Il lettore video di WinUI non sempre compare in UI Automation: allora il centro della finestra.
+        $e = Finestra-App
+        if (-not $e) { throw 'Nessuna finestra di WebcamLR' }
+        $nomeArea = 'centro della finestra'
+    }
     $r = $e.Current.BoundingRectangle
+    if ($nomeArea -eq 'centro della finestra') {
+        $r = New-Object System.Windows.Rect ($r.X + $r.Width * 0.25), ($r.Y + $r.Height * 0.25), ($r.Width * 0.5), ($r.Height * 0.5)
+    }
     $prima = Impronta-Area ([int]$r.X) ([int]$r.Y) ([int]$r.Width) ([int]$r.Height)
     Start-Sleep -Milliseconds ([int]($Secondi * 1000))
     $dopo = Impronta-Area ([int]$r.X) ([int]$r.Y) ([int]$r.Width) ([int]$r.Height)
@@ -631,7 +641,7 @@ function Controlla-Video {
     $percento = [Math]::Round(100.0 * $cambiati / $prima.Length, 1)
     $scorre = $percento -ge 2 -and $varieta -gt 30
     Scrivi-Log ("Controlla-Video {0} {1}: {2}% dei punti cambiati in {3} s, luminosità media {4:0}, escursione {5} → {6}" -f `
-            $e.Current.AutomationId, (Descrivi-Rettangolo $r), $percento, $Secondi, $media, $varieta, $(if ($scorre) { 'SCORRE' } else { 'FERMO' }))
+            $nomeArea, (Descrivi-Rettangolo $r), $percento, $Secondi, $media, $varieta, $(if ($scorre) { 'SCORRE' } else { 'FERMO' }))
     if ($Obbligatorio -and -not $scorre) { throw "Il video non scorre ($percento% dei punti cambiati, escursione $varieta)" }
     $scorre
 }

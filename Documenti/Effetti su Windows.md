@@ -162,14 +162,16 @@ Con lo sfondo sostituito il bordo pulito si salta ai livelli `Veloce` e `Minimo`
 wrap resta.
 
 - **Misura**: finestre di 2 s (almeno 10 fotogrammi resi) con le medie di maschera e resa: sono due code in parallelo,
-  conta la più lenta. Il **tempo di un fotogramma** è la media della metà centrale degli ultimi 30 intervalli d'arrivo,
-  mai sotto quello dei fps dichiarati dal telefono nel messaggio `formato` (33 ms a 30 fps, 17 ms a 60;
-  `MotoreVideo.Formato` → `MotoreEffetti.Fps`), né sotto 1/60 s se non li dice. I primi 5 fotogrammi dopo un azzeramento
+  conta la più lenta. Il **tempo di un fotogramma** è quello dei fps dichiarati dal telefono nel messaggio `formato`
+  (33 ms a 30 fps, 17 ms a 60; `MotoreVideo.Formato` → `MotoreEffetti.Fps`); solo se non li dice, la media della metà
+  centrale degli ultimi 30 intervalli d'arrivo, mai sotto 1/60 s. Collaudo 20 (t06 B1): prima valeva il più lungo dei due,
+  e con il processore al 100% gli arrivi radi (165 ms) facevano risalire la qualità. I primi 5 fotogrammi dopo un azzeramento
   o una fonte nuova non contano (riscaldamento di DirectML); un buco di più di 1 s apre una finestra nuova.
 - **Scende** appena una finestra supera l'**85%** del fotogramma (a 30 fps: 28 ms), di un gradino che alleggerisce la
   coda più lenta: maschera lenta → maschera alterna (o subito il veloce se anche dimezzata non ci starebbe); resa lenta
   → bordo leggero, poi il veloce; dal veloce il minimo; dal minimo niente (si saltano fotogrammi).
-- **Risale** di un gradino dopo **5 finestre di fila (circa 10 s) sotto il 50%** del fotogramma. Se ricade dal gradino
+- **Risale** di un gradino dopo **5 finestre di fila (circa 10 s) sotto il 50%** del fotogramma, e mai mentre i
+  fotogrammi arrivano più radi di 1,5 volte quelli dichiarati (PC o rete indietro, non margine). Se ricade dal gradino
   appena preso entro 30 s, la prossima risalita aspetta il doppio (20, 40, 80, al massimo 160 s); tenuto 30 s, si torna a
   10 s. Tra il 50% e l'85% resta dov'è.
 - **Maschera alterna**: il fotogramma «in mezzo» passa comunque dalla coda di analisi (l'ordine non cambia, le riduzioni

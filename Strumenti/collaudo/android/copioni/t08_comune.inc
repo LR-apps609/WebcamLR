@@ -6,10 +6,7 @@ t08_in_onda() {
     lingua_italiana
     permessi_concedi
     avvia_app
-    attendi_testo "Salta" 30 || fallisci "la presentazione non compare"
-    tocca_testo "Salta"
-    tocca_testo "Inizia" || fallisci "manca «Inizia»"
-    attendi_testo "Impostazioni" 20 || fallisci "la schermata principale non compare"
+    t08_salta_presentazione || fallisci "la schermata principale non compare"
     collega_qr || fallisci "link del QR code non aperto"
     attendi_computer video 60 || { schermata "senza-video"; testi_visibili; registro_telefono; fallisci "niente video al computer"; }
     attendi 3
@@ -48,3 +45,16 @@ t08_ritorno() {
 
 # t08_risveglia: se «In onda» è oscurato, doppio tocco per vedere i pulsanti.
 t08_risveglia() { c_e_testo "Tocca due volte per riaccendere lo schermo" && tocca_due_volte; return 0; }
+
+# t08_salta_presentazione: «Salta» e «Inizia» con l'emulatore lento (tocchi persi, dialoghi ANR del launcher): riprova.
+t08_salta_presentazione() {
+    local i
+    sistema_calmo 60
+    for i in 1 2 3 4 5 6; do
+        if c_e_testo "Cerco il tuo computer" || c_e_testo "Non trovo nessun computer" || c_e_testo "Collega a mano"; then return 0; fi
+        if c_e_testo "Inizia"; then tocca_testo "Inizia"; sleep 3; continue; fi
+        if c_e_testo "Salta"; then tocca_testo "Salta"; sleep 3; continue; fi
+        sleep 3
+    done
+    attendi_testo "Collega a mano" 15
+}

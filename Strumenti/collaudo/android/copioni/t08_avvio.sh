@@ -5,9 +5,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/t08_comune.inc"
 # --- 1. Rete spenta durante «Conferma sul computer» (il computer consentirebbe dopo 25 s).
 avvia_computer_finto --nome "PC di Luca" --attesa-conferma 25 || fallisci "il computer finto non parte"
 cancella_dati_app; lingua_italiana; permessi_concedi; avvia_app
-attendi_testo "Salta" 30 || fallisci "la presentazione non compare"
-tocca_testo "Salta"; tocca_testo "Inizia"
-attendi_testo "Impostazioni" 20 || fallisci "la schermata principale non compare"
+t08_salta_presentazione || fallisci "la schermata principale non compare"
 collega_indirizzo || fallisci "Collega a mano non riesce"
 attendi_testo "Conferma sul computer" 20 && schermata "conferma"
 rete_spenta

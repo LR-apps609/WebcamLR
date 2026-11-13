@@ -18,6 +18,31 @@ public static class CollaudoNativo
     [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
     [DllImport("user32.dll")] public static extern void mouse_event(uint azione, uint x, uint y, uint dati, UIntPtr extra);
     [DllImport("user32.dll")] public static extern void keybd_event(byte tasto, byte scan, uint azione, UIntPtr extra);
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct DEVMODE
+    {
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] public string dmDeviceName;
+        public short dmSpecVersion, dmDriverVersion, dmSize, dmDriverExtra;
+        public int dmFields, dmPositionX, dmPositionY, dmDisplayOrientation, dmDisplayFixedOutput;
+        public short dmColor, dmDuplex, dmYResolution, dmTTOption, dmCollate;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] public string dmFormName;
+        public short dmLogPixels;
+        public int dmBitsPerPel, dmPelsWidth, dmPelsHeight, dmDisplayFlags, dmDisplayFrequency;
+        public int dmICMMethod, dmICMIntent, dmMediaType, dmDitherType, dmReserved1, dmReserved2, dmPanningWidth, dmPanningHeight;
+    }
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern bool EnumDisplaySettings(string dispositivo, int modo, ref DEVMODE impostazioni);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int ChangeDisplaySettings(ref DEVMODE impostazioni, int opzioni);
+    /// Cambia la risoluzione dello schermo principale: 0 = riuscito (DISP_CHANGE_SUCCESSFUL).
+    public static int Risoluzione(int larghezza, int altezza)
+    {
+        var modo = new DEVMODE();
+        modo.dmSize = (short)Marshal.SizeOf(typeof(DEVMODE));
+        if (!EnumDisplaySettings(null, -1, ref modo)) return -100;
+        modo.dmPelsWidth = larghezza;
+        modo.dmPelsHeight = altezza;
+        modo.dmFields = 0x80000 | 0x100000;
+        return ChangeDisplaySettings(ref modo, 0);
+    }
     [DllImport("ntdll.dll")] public static extern int NtSuspendProcess(IntPtr processo);
     [DllImport("ntdll.dll")] public static extern int NtResumeProcess(IntPtr processo);
     public static void Clic(int x, int y)
@@ -231,6 +256,18 @@ function Chiudi-App {
     $script:Processo = $null
 }
 
+function Imposta-Schermo {
+    <#
+    Cambia la risoluzione dello schermo del runner (di serie 1024×768, dove la vista Completo non ci sta). Esegui-Copioni
+    la porta a 1920×1080 prima di ogni copione; un copione può provarne altre (es. Imposta-Schermo 1366 768).
+    #>
+    param([Parameter(Mandatory)][int]$Larghezza, [Parameter(Mandatory)][int]$Altezza)
+    $esito = [CollaudoNativo]::Risoluzione($Larghezza, $Altezza)
+    Start-Sleep -Milliseconds 800
+    $ora = [System.Windows.Forms.SystemInformation]::VirtualScreen
+    Scrivi-Log "Imposta-Schermo ${Larghezza}×${Altezza}: esito $esito, ora $($ora.Width)×$($ora.Height)"
+}
+
 function Ridimensiona-Finestra {
     <# Porta la finestra a larghezza × altezza (pixel dello schermo), in alto a sinistra. #>
     param([Parameter(Mandatory)][int]$Larghezza, [Parameter(Mandatory)][int]$Altezza, [int]$X = 0, [int]$Y = 0)
@@ -355,10 +392,10 @@ function Elenco-Visibili {
 
 function Attendi-Elemento {
     <# Aspetta fino a <secondi> che l'elemento ci sia (e sia a schermo, salvo -Dentro); lo restituisce, oppure errore. #>
-    param([Parameter(Mandatory)][string]$Chi, [double]$Secondi = 10, [string]$Dentro)
+    param([Parameter(Mandatory)][string]$Chi, [double]$Secondi = 10, [string]$Dentro, [switch]$AncheNascosti)
     $limite = (Get-Date).AddSeconds($Secondi)
     do {
-        $e = Trova-Elemento $Chi -Dentro $Dentro
+        $e = Trova-Elemento $Chi -Dentro $Dentro -AncheNascosti:$AncheNascosti
         if ($e) { return $e }
         Start-Sleep -Milliseconds 300
     } while ((Get-Date) -lt $limite)
@@ -382,8 +419,8 @@ function Clicca {
     Clicca un elemento (AutomationId o nome). Usa il comportamento dell'elemento (Invoke, Toggle, selezione, apri/chiudi);
     con -Mouse, o se non ne ha, un clic vero del mouse al centro.
     #>
-    param([Parameter(Mandatory)][string]$Chi, [switch]$Mouse, [double]$Attesa = 10, [string]$Dentro)
-    $e = Attendi-Elemento $Chi $Attesa -Dentro $Dentro
+    param([Parameter(Mandatory)][string]$Chi, [switch]$Mouse, [double]$Attesa = 10, [string]$Dentro, [switch]$AncheNascosti)
+    $e = Attendi-Elemento $Chi $Attesa -Dentro $Dentro -AncheNascosti:$AncheNascosti
     $descrizione = Descrivi-Elemento $e
     if (-not $Mouse) {
         foreach ($schema in @(

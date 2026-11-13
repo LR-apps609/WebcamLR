@@ -18,7 +18,7 @@ foreach ($voce in $voci) {
     $nome = Testo-App "Impostazioni_$voce"
     Passo "Impostazioni › $nome" {
         # Le voci hanno lo stesso nome di altri pulsanti («Sfondo», «Schermo»): si cercano dentro il pannello.
-        if (-not (Trova-Elemento 'ScorrimentoImpostazioni')) { Clicca 'PulsanteImpostazioni' }
+        if (-not (Trova-Elemento 'ScorrimentoImpostazioni' -AncheNascosti)) { Clicca 'PulsanteImpostazioni' }
         if (Esiste 'PulsanteIndietroImpostazioni') { Clicca 'PulsanteIndietroImpostazioni' }
         Clicca $nome -Dentro 'ScorrimentoImpostazioni'
         Start-Sleep -Milliseconds 800
@@ -26,7 +26,10 @@ foreach ($voce in $voci) {
         Clicca 'PulsanteIndietroImpostazioni'
     }
 }
-Passo 'Impostazioni: chiusura' { Clicca 'PulsanteChiudiImpostazioni' }
+Passo 'Impostazioni: chiusura' {
+    if (Esiste 'PulsanteIndietroImpostazioni') { Clicca 'PulsanteIndietroImpostazioni' }
+    Clicca 'PulsanteChiudiImpostazioni'
+}
 
 Passo 'Menu account' {
     Clicca 'PulsanteAccount'
@@ -69,8 +72,8 @@ Passo 'Schermo intero' {
     Start-Sleep -Seconds 1
 }
 Passo 'Ritorno alla vista Essenziale' {
-    Clicca 'PulsanteSchermo'
-    Clicca 'PulsanteVistaEssenziale'
+    Clicca 'PulsanteSchermo' -AncheNascosti
+    Clicca 'PulsanteVistaEssenziale' -AncheNascosti
     Tasto 'Esc'
     Start-Sleep -Seconds 1
     Fotografa 'vista-essenziale'

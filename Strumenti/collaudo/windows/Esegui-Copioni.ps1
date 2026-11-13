@@ -4,7 +4,9 @@
 #   powershell -File Strumenti\collaudo\windows\Esegui-Copioni.ps1 -Copioni "fumo, altro" -Uscita risultati
 param(
     [string]$Copioni = '',
-    [string]$Uscita = (Join-Path $PSScriptRoot '..\..\..\risultati-collaudo')
+    [string]$Uscita = (Join-Path $PSScriptRoot '..\..\..\risultati-collaudo'),
+    [int]$LarghezzaSchermo = 1920,
+    [int]$AltezzaSchermo = 1080
 )
 
 $ErrorActionPreference = 'Stop'
@@ -29,6 +31,7 @@ foreach ($nome in $nomi) {
     Import-Module (Join-Path $PSScriptRoot 'Collaudo.psm1') -DisableNameChecking -Force
     try {
         Inizia-Copione -Nome $nome -Cartella $cartella
+        if ($LarghezzaSchermo -gt 0) { Imposta-Schermo $LarghezzaSchermo $AltezzaSchermo }
         if (-not (Test-Path $file)) { throw "Copione non trovato: $file" }
         & $file
     } catch {

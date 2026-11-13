@@ -1,5 +1,6 @@
 // Ricerca nelle domande frequenti, come nell'app: una domanda corrisponde se contiene
-// tutte le parole cercate, senza badare a maiuscole e accenti. Senza JavaScript le domande
+// tutte le parole cercate, senza badare a maiuscole e accenti, con le parole ridotte alla radice
+// e senza le parole vuote («quanto», «come», «how»…). Senza JavaScript le domande
 // restano tutte visibili e la casella di ricerca non compare. Italiano o inglese secondo <html lang>.
 (function () {
   var inglese = (document.documentElement.lang || "").slice(0, 2) === "en";
@@ -19,8 +20,23 @@
     testi.push(normalizza(domande[i].textContent + " " + (domande[i].getAttribute("data-parole") || "")));
   }
 
+  // Parole che da sole non dicono cosa si cerca: si ignorano se c'è almeno un'altra parola («quanto costa»).
+  var VUOTE = ("a ad al alla allo che chi come con cosa cos da dal del della di e ed il in la le lo ma mi ne nel non o per " +
+    "perche quale quali quando quanto quanta quanti quante se si su sul sulla un una uno " +
+    "an and are can do does for how i in is it me much my of on or the to what when where which why with").split(" ");
+  // Radice semplice, perché le parole delle domande non sono sempre nella stessa forma: «costa» trova «costo»,
+  // «prezzi» trova «prezzo», «costs» e «cables» trovano «cost» e «cable». Solo sulle parole di almeno 4 lettere.
+  function radice(parola) {
+    if (parola.length < 4) return parola;
+    if (/[^s]s$/.test(parola)) parola = parola.slice(0, -1);        // inglese: costs, prices, cables
+    else if (/[aeiou]$/.test(parola)) parola = parola.slice(0, -1); // italiano: costa, prezzi, cavi
+    return parola;
+  }
+
   function filtra() {
-    var parti = normalizza(campo.value).split(/\s+/).filter(Boolean);
+    var tutte = normalizza(campo.value).split(/\s+/).filter(Boolean);
+    var piene = tutte.filter(function (p) { return VUOTE.indexOf(p) === -1; });
+    var parti = (piene.length ? piene : tutte).map(radice);
     var trovate = 0, ultima = null;
     for (var i = 0; i < domande.length; i++) {
       var ok = parti.every(function (p) { return testi[i].indexOf(p) !== -1; });

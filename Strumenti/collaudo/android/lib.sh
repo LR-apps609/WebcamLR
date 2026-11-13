@@ -37,6 +37,8 @@ _nome_file() {
 adb_sh() { adb shell "$@" </dev/null; }
 
 # Il dump dell'interfaccia in un file locale. uiautomator a volte risponde «could not get idle state»: si riprova.
+# Un dialogo di sistema «… isn't responding» di un'ALTRA app (sull'emulatore capita al Pixel Launcher) si chiude con
+# «Wait» e si annota; se è WebcamLR a non rispondere, il dialogo resta: è un bug da vedere (fotografato in schermate/).
 _dump() {
     local destinazione="$1" prova
     for prova in 1 2 3 4; do
@@ -44,11 +46,31 @@ _dump() {
         if adb_sh uiautomator dump /sdcard/finestra.xml >/dev/null 2>&1 \
             && adb pull /sdcard/finestra.xml "$destinazione" >/dev/null 2>&1 \
             && grep -q '<hierarchy' "$destinazione"; then
+            if grep -q 'android:id/aerr_wait' "$destinazione"; then
+                _dialogo_anr "$destinazione" && continue
+            fi
             return 0
         fi
         sleep 1
     done
     return 1
+}
+
+_dialogo_anr() {
+    local f="$1" titolo centro
+    titolo=$(python3 -I "$_NODO" "$f" elenca | grep -m1 -i "responding")
+    if printf '%s' "$titolo" | grep -q "WebcamLR"; then
+        passo "ANR DI WEBCAMLR: «$titolo»"
+        _prossimo; adb exec-out screencap -p > "$USCITA/schermate/$_n-anr-webcamlr.png" 2>/dev/null
+        printf '%s\n' "ANR di WebcamLR: $titolo" >> "$USCITA/note.txt"
+        return 1
+    fi
+    centro=$(python3 -I "$_NODO" "$f" id "android:id/aerr_wait") || return 1
+    # shellcheck disable=SC2086
+    adb_sh input tap $centro
+    passo "SISTEMA: chiuso con «Wait» il dialogo «$titolo» (non è WebcamLR)"
+    sleep 1
+    return 0
 }
 
 # ---------------------------------------------------------------- fotografie

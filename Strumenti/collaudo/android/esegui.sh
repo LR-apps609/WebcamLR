@@ -19,6 +19,8 @@ for _ in $(seq 1 120); do
     [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = 1 ] && break
     sleep 2
 done
+# Appena acceso l'emulatore è lentissimo (Pixel Launcher «isn't responding»): un po' di respiro prima dei copioni.
+sleep 20
 adb shell svc power stayon true
 adb shell input keyevent KEYCODE_WAKEUP
 adb shell wm dismiss-keyguard 2>/dev/null || adb shell input keyevent 82

@@ -34,7 +34,12 @@ lingua_italiana
 permessi_concedi
 avvia_app
 attendi_testo "Salta" 30 || fallisci "la presentazione non compare"
-tocca_testo "Salta"
+# Il «Pixel Launcher isn't responding» dell'emulatore a volte si mangia il tocco: si riprova.
+for _ in 1 2 3 4; do
+    c_e_testo "Inizia" && break
+    tocca_testo "Salta"
+    attendi 3
+done
 tocca_testo "Inizia" || fallisci "manca «Inizia»"
 attendi_testo "Impostazioni" 20 || fallisci "la schermata principale non compare"
 

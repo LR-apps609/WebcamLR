@@ -45,7 +45,7 @@ defaults:
 jobs:
   collaudo:
     name: collaudo (iPhone simulatore e Mac)
-    runs-on: macos-latest
+    runs-on: macos-15
     timeout-minutes: 150
     env:
       WEBCAMLR_TEAM: ""

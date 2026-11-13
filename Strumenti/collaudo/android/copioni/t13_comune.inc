@@ -7,7 +7,13 @@ t13_prepara() {
     permessi_concedi
     avvia_app
     attendi_testo "Salta" 30 || fallisci "la presentazione non compare"
-    tocca_testo "Salta"
+    # Il tocco su «Salta» a volte si perde (dialogo ANR del Pixel Launcher appena acceso): si riprova.
+    local i
+    for i in 1 2 3 4 5; do
+        c_e_testo "Inizia" && break
+        tocca_testo "Salta"
+        attendi 2
+    done
     tocca_testo "Inizia" || fallisci "manca «Inizia»"
     attendi_testo "Impostazioni" 20 || fallisci "la schermata principale non compare"
 }

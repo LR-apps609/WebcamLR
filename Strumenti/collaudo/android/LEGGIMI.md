@@ -24,8 +24,8 @@ gh run download <id> -R LR-apps609/WebcamLR -n collaudo-android -D risultati-<id
 
 Se `gh run download` risponde «Forbidden» (la rete blocca il dominio degli artifact, `*.blob.core.windows.net`):
 `bash Strumenti/collaudo/android/scarica.sh <id>` prova l'artifact e altrimenti ricostruisce i risultati dal
-registro del lavoro (stampati in base64 dal passo «Risultati nel registro»): stesse cartelle, schermate in JPEG a
-metà risoluzione, senza `logcat-completo.txt.gz`.
+registro del lavoro (stampati in base64 dal passo «Risultati nel registro»): stesse cartelle (schermate PNG, o JPEG
+ridotti se la macchina ha ImageMagick), senza `logcat-completo.txt.gz`.
 
 Dentro: `riepilogo.txt` (un rigo per copione) e una cartella per copione con
 
@@ -80,8 +80,28 @@ Note:
 - Nessun computer con WebcamLR in rete: «In onda» non si raggiunge; la fotocamera è quella emulata di Android.
 - `scrivi` non sa scrivere lettere accentate (limite di `adb shell input text`).
 
+## Schermate e pulsanti (dal copione fumo)
+
+- Presentazione (4 pagine): «Avanti», «Salta» in alto; l'ultima, «Goditi l'esperienza», ha «Inizia», che apre i
+  dialoghi di sistema per fotocamera, microfono e notifiche.
+- Principale: «Cerco il tuo computer…», dopo ~10 s senza computer «Non trovo nessun computer» con «Altre risposte
+  nelle domande frequenti»; pulsanti «Inquadra il QR code del computer», «Usa il cavo USB» (dialogo con «Come
+  funziona», «Oppure con il debug USB (più veloce)», «Apri il tethering», «Chiudi»), «Mandami il link per il
+  computer», «Collega a mano (indirizzo)» (dialogo con campo, «Collega», «Annulla»). In cima: «WebcamLR Pro,
+  Sblocca», «App e assistenza» (icona ?), «Impostazioni» (ingranaggio).
+- Lettore QR: fotocamera emulata, chiude con Indietro.
+- Impostazioni: WebcamLR Pro, Video › Qualità, Fotocamera (Griglia dei terzi, Livella), Collegamento (Automatico,
+  Wi-Fi, Cavo USB, «Collegati da solo all'ultimo computer»), Schermo e batteria (interruttori), Altro («App e
+  assistenza», «Segnala un bug», «Lingua», «Registro del collegamento»).
+- App e assistenza: riga WebcamLR Pro (toccate «1080p, 4K, 60 fps»), «Simula Pro» / «Torna all'acquisto vero» (solo
+  APK di debug: Pro acceso senza comprare), «Domande frequenti», «Guida», «Segnala un bug», computer conosciuti,
+  versione, «Privacy», «Sito di WebcamLR».
+- WebcamLR Pro: sull'emulatore «Google Play non è pronto per i pagamenti» con «Riprova» e «Ripristina acquisti».
+- Segnala un bug: campo «Descrizione del problema», «Includi i dati tecnici», «Includi il registro…», «Invia la
+  segnalazione» (attivo solo con del testo).
+
 ## Tempi tipici
 
-Compilazione dell'APK 4–7 minuti, accensione dell'emulatore 2–4, il copione `fumo` circa 4 minuti: un run con un
-copione dura 12–18 minuti. Più copioni nello stesso run costano solo il loro tempo; run lanciati insieme girano in
+Compilazione dell'APK 2–4 minuti, accensione dell'emulatore 1–3, il copione `fumo` circa 4 minuti: un run con un
+copione dura 9–12 minuti. Più copioni nello stesso run costano solo il loro tempo; run lanciati insieme girano in
 parallelo su macchine diverse.

@@ -66,9 +66,9 @@ public sealed partial class MainWindow
         {
             accessibilita.HighContrastChanged += (_, _) => DispatcherQueue.TryEnqueue(ColoraBarraDelTitolo);
         }
-        catch (Exception errore)
+        catch (Exception)
         {
-            App.ScriviErrore(errore);
+            // Non in Errori.txt: su Windows Server succede a ogni avvio e non è un errore dell'app.
             Activated += (_, evento) =>
             {
                 if (evento.WindowActivationState != WindowActivationState.Deactivated) ColoraBarraDelTitolo();

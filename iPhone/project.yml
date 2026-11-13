@@ -92,6 +92,25 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         PRODUCT_NAME: WebcamLR
         TARGETED_DEVICE_FAMILY: "1"
+  # Banco di prova (collaudo): i copioni XCUITest dei tester sul simulatore. Sorgenti in CollaudoUI/ più la libreria
+  # comune Strumenti/collaudo/apple/Collaudo.swift (la stessa del Mac). Si lancia con lo schema «CollaudoUI»
+  # e su GitHub con .github/workflows/collaudo-apple.yml (Strumenti/collaudo/apple/LEGGIMI.md).
+  CollaudoUI-iPhone:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - CollaudoUI
+      - path: ../Strumenti/collaudo/apple/Collaudo.swift
+        group: CollaudoUI
+    dependencies:
+      - target: WebcamLR
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: it.lrapps.webcamlr.iphone.collaudoui
+        TEST_TARGET_NAME: WebcamLR
+        GENERATE_INFOPLIST_FILE: YES
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_EMIT_LOC_STRINGS: NO
 schemes:
   WebcamLR:
     build:
@@ -108,3 +127,13 @@ schemes:
       storeKitConfiguration: WebcamLR.storekit
     archive:
       config: Release
+  # Banco di prova: solo i copioni del collaudo (CollaudoUI-iPhone), sul simulatore.
+  CollaudoUI:
+    build:
+      targets:
+        WebcamLR: all
+        CollaudoUI-iPhone: [test]
+    test:
+      config: Debug
+      targets:
+        - CollaudoUI-iPhone

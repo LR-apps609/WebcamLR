@@ -216,7 +216,8 @@ function Chiudi-App {
     try { Start-Process -FilePath $script:Exe -ArgumentList '--esci' -WorkingDirectory (Split-Path $script:Exe) | Out-Null } catch { }
     if (-not $script:Processo.WaitForExit(15000)) {
         Segnala-Problema 'WebcamLR non si è chiusa con --esci entro 15 s: terminata'
-        $script:Processo.Kill()
+        try { $script:Processo.Kill() } catch { }
+        [void]$script:Processo.WaitForExit(5000)
     }
     Scrivi-Log "WebcamLR chiusa (codice $($script:Processo.ExitCode))"
     $script:Processo = $null
@@ -700,7 +701,9 @@ function Raccogli-Registri {
 function Chiudi-Tutto {
     Ferma-TelefonoFinto
     try { Chiudi-App } catch { Scrivi-Log "Chiudi-App: $($_.Exception.Message)" }
-    Get-Process -Name WebcamLR -ErrorAction SilentlyContinue | ForEach-Object { $_.Kill() }
+    Get-Process -Name WebcamLR -ErrorAction SilentlyContinue | ForEach-Object {
+        try { $_.Kill() } catch { Scrivi-Log "WebcamLR $($_.Exception.Message)" }
+    }
 }
 
 Export-ModuleMember -Function *-*, Passo, Problemi, Esiste, Clicca, Scrivi, Tasto, Schermata, Fotografa

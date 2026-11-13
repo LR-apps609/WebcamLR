@@ -41,6 +41,10 @@ t08_giro() {
     if [ "$visto_errore" = si ] || [ "$(stato_computer)" != video ]; then
         nota "giro $n (attesa $attesa s): NON in onda; codice visto $visto_codice, «non confermato» $visto_errore"
         schermata "giro$n-errore"
+        # Cosa faceva la rete del telefono intanto (il logcat-app.txt tiene solo le righe con il nome dell'app).
+        adb logcat -d -v threadtime 2>/dev/null | grep -E -i "ConnectivityService|NetworkMonitor|netd|destroy|WifiClientModeImpl|WifiConnectivityManager|DhcpClient|NetworkAgent|linger|webcamlr" \
+            | grep -v -E "BillingClient|EGL_emulation|mediapipe|\tat " | tail -n 400 > "$USCITA/rete-giro$n.txt"
+        passo "giro $n: righe di rete del logcat in rete-giro$n.txt ($(wc -l < "$USCITA/rete-giro$n.txt"))"
         testi_visibili
         registro_telefono
     else

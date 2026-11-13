@@ -128,6 +128,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import it.lrapps.webcamlr.android.R
 import it.lrapps.webcamlr.android.dati.Impostazioni
 import it.lrapps.webcamlr.android.logica.ControlloPostura
+import it.lrapps.webcamlr.android.logica.RegolaRiconnessione
 import it.lrapps.webcamlr.android.sessione.SessioneTelefono
 import it.lrapps.webcamlr.android.sistema.Permessi
 import it.lrapps.webcamlr.android.sistema.RegistroCollegamento
@@ -1276,8 +1277,11 @@ private fun BannerRiconnessione(sessione: SessioneTelefono) {
         }
     }
     val secondi = ((adesso - inizio) / 1000).coerceAtLeast(0).toInt()
+    val tentativo = (sessione.stato as? Stato.Riconnessione)?.tentativo ?: 0
     val testo = when {
         !sessione.reteDisponibile -> stringResource(R.string.riconnessione_nessuna_rete)
+        // Collaudo 20 (t08 B1): dopo i primi tentativi si continua a riprovare da soli, e lo si dice.
+        sessione.giaCollegato && tentativo > RegolaRiconnessione.TENTATIVI_FITTI -> stringResource(R.string.riconnessione_computer_non_torna)
         sessione.giaCollegato -> stringResource(R.string.riconnessione_computer_perso)
         else -> stringResource(R.string.riconnessione_non_riesco, sessione.computer.nome)
     }

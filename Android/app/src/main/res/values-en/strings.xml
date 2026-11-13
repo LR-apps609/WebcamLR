@@ -180,6 +180,7 @@
     <string name="pausa_nessuna_app_spiegazione">Camera off to save battery: it restarts by itself when an app uses the webcam.</string>
     <string name="riconnessione_nessuna_rete">No network: reconnecting as soon as Wi-Fi is back…</string>
     <string name="riconnessione_computer_perso">Computer lost, reconnecting…</string>
+    <string name="riconnessione_computer_non_torna">The computer doesn’t answer: check that WebcamLR is open on the computer. Trying again on my own…</string>
     <string name="riconnessione_non_riesco">Can’t connect to %1$s, trying again…</string>
     <string name="da_un_secondo">for 1 second</string>
     <string name="da_secondi">for %1$d seconds</string>
@@ -280,6 +281,7 @@
     <string name="nessuna_app_invio">No app to send the text: copy it and send it by email.</string>
     <string name="descrizione_problema">Description of the problem</string>
     <string name="segnala_domanda">What happened? What were you doing?</string>
+    <string name="segnala_troppo_lungo">The description stops at 20,000 characters: anything beyond that wasn’t kept.</string>
     <string name="includi_dati">Include technical data</string>
     <string name="invia_segnalazione">Send the report</string>
     <string name="segnala_nota">No video or images are sent: only the text above.</string>
@@ -299,10 +301,18 @@
     <string name="indirizzo_titolo">Computer address</string>
     <string name="indirizzo_testo">You’ll find it in the WebcamLR window on the computer, under the QR code.</string>
     <string name="indirizzo_non_valido">Type four numbers separated by dots, for example 192.168.1.20.</string>
+    <string name="indirizzo_vuoto">Type the computer’s address, for example 192.168.1.20.</string>
+    <string name="indirizzo_con_protocollo">Type only the address, without “http://”: for example 192.168.1.20.</string>
+    <string name="indirizzo_ipv6">IPv6 addresses don’t work: type the one with four numbers separated by dots, for example 192.168.1.20.</string>
+    <string name="indirizzo_nome">The computer’s name isn’t enough: type its address, four numbers separated by dots, for example 192.168.1.20.</string>
+    <string name="indirizzo_non_di_un_computer">That isn’t a computer’s address: type the one WebcamLR shows on the computer, for example 192.168.1.20.</string>
+    <string name="indirizzo_porta_non_valida">The address is fine, the port isn’t: after the colon goes a number from 1 to 65535, for example 192.168.1.20:52740. Without a port, 52740 is used.</string>
     <string name="qr_titolo">Scan the computer’s QR code</string>
     <string name="qr_istruzioni">Point at the QR code in the WebcamLR window on the computer. The connection starts as soon as the code is in focus.</string>
     <string name="qr_nessuna_fotocamera">The phone has no usable camera: type the computer’s address by hand.</string>
     <string name="qr_altro">This QR code isn’t from WebcamLR: scan the one on the computer’s screen.</string>
+    <string name="link_non_valido_titolo">WebcamLR link not valid</string>
+    <string name="link_non_valido">This link or QR code is incomplete or damaged: it doesn’t lead to a computer. Scan the QR code in the WebcamLR window on the computer again.</string>
     <string name="qr_fotocamera_spenta">The camera didn’t turn on: close and try again.</string>
 
     <!-- 70_unione -->
@@ -320,7 +330,11 @@
     <string name="errore_interrotto">Connection lost</string>
     <string name="errore_non_mi_collego">Can’t connect to %1$s</string>
     <string name="errore_non_confermato_titolo">Connection not confirmed</string>
-    <string name="errore_non_confermato">The connection wasn’t allowed on %1$s. Tap “Try again” and confirm on the computer.</string>
+    <string name="errore_non_confermato">“Don’t allow” was tapped on %1$s. If it was this phone, scan the computer’s QR code, or tap “Try again” in two minutes and allow it on the computer.</string>
+    <string name="errore_senza_risposta_titolo">No answer from the computer</string>
+    <string name="errore_senza_risposta">Nobody answered the question on %1$s within a minute. Scan the computer’s QR code to connect right away, or tap “Try again” in two minutes and allow it on the computer.</string>
+    <string name="errore_non_accettato_titolo">%1$s didn’t accept this phone</string>
+    <string name="errore_non_accettato">The computer turned this phone down. Check WebcamLR on the computer for a notice (for example, another phone already connected). If you tapped “Don’t allow” a moment ago, scan the computer’s QR code, or tap “Try again” in two minutes.</string>
     <string name="errore_chiuso_dal_computer">%1$s closed the connection. Tap “Try again” to reconnect.</string>
     <string name="errore_aggiorna_titolo">Update WebcamLR on the computer</string>
     <string name="errore_aggiorna">%1$s has a version of WebcamLR without a secure connection. Update it from the WebcamLR website, then tap “Try again”.</string>
@@ -375,6 +389,7 @@
     <string name="registro_microfono_spento">Microphone to computer off</string>
     <string name="registro_collegamento_a">Connecting to %1$s…</string>
     <string name="registro_nuovo_tentativo">Attempt %1$d/%2$d with %3$s</string>
+    <string name="registro_nuovo_tentativo_ancora">Attempt %1$d with %2$s (trying until it’s back)</string>
     <string name="registro_collegamento_sicuro">Secure connection established, security code %1$s</string>
     <string name="registro_collegamento_via">Connected via %1$s</string>
     <string name="registro_chiede_codice">The computer asks to confirm the code</string>

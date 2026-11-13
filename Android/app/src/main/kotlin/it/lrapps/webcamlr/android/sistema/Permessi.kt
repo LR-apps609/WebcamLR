@@ -37,11 +37,13 @@ object Permessi {
         fotocameraNegata = !concessa
     }
 
-    /** Di nuovo nell'app (per esempio da Impostazioni): si rileggono permesso della fotocamera e batteria. */
+    /**
+     * Di nuovo nell'app (per esempio da Impostazioni): si rileggono permesso della fotocamera e batteria.
+     * Collaudo 20 (t02 B1): il permesso si legge sempre, non solo per togliere la scheda. Negato nella presentazione o
+     * prima di chiudere l'app, la schermata dei computer lo dice subito, senza aspettare il tocco sul QR code.
+     */
     fun aggiorna(context: Context) {
-        if (fotocameraNegata && ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-            fotocameraNegata = false
-        }
+        fotocameraNegata = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED
         senzaLimitiBatteria = leggiSenzaLimiti(context)
     }
 

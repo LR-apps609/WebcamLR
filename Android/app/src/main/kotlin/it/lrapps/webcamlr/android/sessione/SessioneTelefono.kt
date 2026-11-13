@@ -48,6 +48,7 @@ import it.lrapps.webcamlr.android.logica.MotivoRiduzione
 import it.lrapps.webcamlr.android.logica.PreferenzeCollegamento
 import it.lrapps.webcamlr.android.logica.Prestazioni
 import it.lrapps.webcamlr.android.logica.RegolaCollegamento
+import it.lrapps.webcamlr.android.logica.RegolaRiconnessione
 import it.lrapps.webcamlr.android.logica.RegolatoreCalore
 import it.lrapps.webcamlr.android.logica.RicetteFiltri
 import it.lrapps.webcamlr.android.logica.RiduzioneCalore
@@ -244,6 +245,10 @@ class SessioneTelefono(
     /** Il computer chiede di consentire questo telefono: il codice di conferma, uguale sui due schermi. */
     var codiceConferma by mutableStateOf<String?>(null)
         private set
+    /** Collaudo 20: quando (SystemClock.elapsedRealtime) il computer ha chiesto il codice, per leggere la chiusura. */
+    private var codiceChiestoAlle = 0L
+    /** Collaudo 20: il `benvenuto` del collegamento attuale è arrivato (un `arrivederci` prima vuol dire «non accettato»). */
+    private var accoltoQuesto = false
     var titoloErrore by mutableStateOf(Testi.testo(R.string.errore_interrotto))
         private set
     /** Riprovare non serve (identità del computer cambiata): si torna ai computer e si usa il QR code. */
@@ -480,7 +485,7 @@ class SessioneTelefono(
     /** Il vecchio collegamento chiuso durante un passaggio: si decide cosa fare quando il nuovo finisce. */
     private var chiusuraRinviata: ChiusuraRinviata? = null
 
-    private class ChiusuraRinviata(val errore: ErroreCollegamento?, val motivo: MotivoChiusura, val inAttesaDiConferma: Boolean)
+    private class ChiusuraRinviata(val errore: ErroreCollegamento?, val motivo: MotivoChiusura, val lettura: RegolaRiconnessione.Lettura)
 
     private var bloccoSveglia: PowerManager.WakeLock? = null
     private var bloccoWiFi: WifiManager.WifiLock? = null
@@ -1157,9 +1162,11 @@ class SessioneTelefono(
         stato = if (tentativi == 0) Stato.Collegamento else Stato.Riconnessione(tentativi)
         registro.aggiungi(
             if (tentativi == 0) Testi.testo(R.string.registro_collegamento_a, computer.nome)
-            else Testi.testo(R.string.registro_nuovo_tentativo, tentativi, TENTATIVI_MASSIMI, computer.nome),
+            else if (tentativi <= TENTATIVI_MASSIMI) Testi.testo(R.string.registro_nuovo_tentativo, tentativi, TENTATIVI_MASSIMI, computer.nome)
+            else Testi.testo(R.string.registro_nuovo_tentativo_ancora, tentativi, computer.nome),
         )
         codiceConferma = null
+        accoltoQuesto = false
         improntaComputer = null
         interfacciaAttiva = null
         chiudiCandidato()
@@ -1231,6 +1238,7 @@ class SessioneTelefono(
             is EventoCollegamento.Ricevuto -> when (val messaggio = evento.messaggio) {
                 is Approvazione -> {
                     codiceConferma = messaggio.codice
+                    codiceChiestoAlle = SystemClock.elapsedRealtime()
                     registro.aggiungi(Testi.testo(R.string.registro_chiede_codice))
                 }
                 is Benvenuto -> accolto(da, messaggio)
@@ -1252,21 +1260,27 @@ class SessioneTelefono(
             }
             is EventoCollegamento.Immagine -> riceviImmagine(evento.immagine)
             is EventoCollegamento.Chiuso -> {
-                val inAttesaDiConferma = codiceConferma != null
+                // Collaudo 20 (t08 B2–B3, t13 B5–B6): un no, un tempo scaduto e una rete persa non sono la stessa cosa.
+                val lettura = RegolaRiconnessione.leggi(
+                    dalComputer = evento.motivo == MotivoChiusura.DAL_COMPUTER,
+                    tempoScaduto = evento.errore == ErroreCollegamento.IN_RITARDO,
+                    accolto = accoltoQuesto,
+                    msDallaRichiestaDelCodice = if (codiceConferma != null) SystemClock.elapsedRealtime() - codiceChiestoAlle else null,
+                )
                 if (candidato != null) {
                     // Durante un passaggio il computer chiude il vecchio collegamento quando accetta il nuovo: si
                     // decide quando il nuovo finisce, intanto il video resta com'è.
-                    chiusuraRinviata = ChiusuraRinviata(evento.errore, evento.motivo, inAttesaDiConferma)
+                    chiusuraRinviata = ChiusuraRinviata(evento.errore, evento.motivo, lettura)
                     registro.aggiungi(Testi.testo(R.string.registro_vecchio_chiuso_nel_passaggio))
                     return
                 }
-                collegamentoChiuso(evento.errore, evento.motivo, inAttesaDiConferma)
+                collegamentoChiuso(evento.errore, evento.motivo, lettura)
             }
         }
     }
 
     /** Il collegamento in uso si è chiuso (e nessun passaggio lo sostituisce): video fermo, poi si riprova o ci si ferma. */
-    private fun collegamentoChiuso(errore: ErroreCollegamento?, motivo: MotivoChiusura, inAttesaDiConferma: Boolean) {
+    private fun collegamentoChiuso(errore: ErroreCollegamento?, motivo: MotivoChiusura, lettura: RegolaRiconnessione.Lettura) {
         codiceConferma = null
         collegamento = null
         destinazione = null
@@ -1279,11 +1293,12 @@ class SessioneTelefono(
         tipoCollegamento = null
         statoCollegamento = null
         aggiornaAudioInviato()
-        gestisciChiusura(errore, motivo, inAttesaDiConferma)
+        gestisciChiusura(errore, motivo, lettura)
     }
 
     private fun accolto(da: Collegamento, benvenuto: Benvenuto) {
         codiceConferma = null
+        accoltoQuesto = true
         // Qualità 17, cavo con adb: il nome del computer arriva ora. Un computer conosciuto deve avere lo stesso codice di
         // sicurezza di sempre (come iPhone/Sorgenti/SessioneTelefono.swift sul cavo); altrimenti ci si ferma.
         if (computer.viaAdb) {
@@ -1343,15 +1358,29 @@ class SessioneTelefono(
     }
 
     /** Il collegamento si è chiuso: si riprova, oppure ci si ferma dicendo perché e cosa fare. */
-    private fun gestisciChiusura(tipoErrore: ErroreCollegamento?, motivo: MotivoChiusura, inAttesaDiConferma: Boolean) {
+    private fun gestisciChiusura(tipoErrore: ErroreCollegamento?, motivo: MotivoChiusura, lettura: RegolaRiconnessione.Lettura) {
         val errore = tipoErrore?.let { descrizioneErrore(it) }
         registro.aggiungi(Testi.testo(R.string.registro_chiuso, motivo.perRegistro) + (errore?.let { " ($it)" } ?: ""))
         val nome = computer.nome
-        // Chiuso mentre si aspettava la conferma: il computer ha detto no, o nessuno ha risposto.
-        if (inAttesaDiConferma && (motivo == MotivoChiusura.RETE || motivo == MotivoChiusura.DAL_COMPUTER)) {
-            fermaConErrore(Testi.testo(R.string.errore_non_confermato_titolo),
-                Testi.testo(R.string.errore_non_confermato, nome), domanda = "codice")
-            return
+        // Collaudo 20: il foglio d'errore solo per i no veri e per la domanda rimasta senza risposta. Una rete persa
+        // mentre si aspetta la conferma (t08 B2–B3) segue la strada di sempre: «mi ricollego» e un nuovo tentativo.
+        when (lettura) {
+            RegolaRiconnessione.Lettura.RIFIUTATO_IN_CONFERMA -> {
+                fermaConErrore(Testi.testo(R.string.errore_non_confermato_titolo),
+                    Testi.testo(R.string.errore_non_confermato, nome), domanda = "codice")
+                return
+            }
+            RegolaRiconnessione.Lettura.CONFERMA_SENZA_RISPOSTA -> {
+                fermaConErrore(Testi.testo(R.string.errore_senza_risposta_titolo),
+                    Testi.testo(R.string.errore_senza_risposta, nome), domanda = "codice")
+                return
+            }
+            RegolaRiconnessione.Lettura.NON_ACCETTATO -> {
+                fermaConErrore(Testi.testo(R.string.errore_non_accettato_titolo, nome),
+                    Testi.testo(R.string.errore_non_accettato))
+                return
+            }
+            RegolaRiconnessione.Lettura.ALTRO -> Unit
         }
         when (motivo) {
             MotivoChiusura.RETE -> Unit
@@ -1389,20 +1418,16 @@ class SessioneTelefono(
             principale.postDelayed(controlloCavo, 3_000)
             return
         }
-        if (tentativi < TENTATIVI_MASSIMI) {
+        if (RegolaRiconnessione.continua(tentativi, giaCollegato)) {
             if (inizioRiconnessione == null) inizioRiconnessione = SystemClock.elapsedRealtime()
             tentativi++
             stato = Stato.Riconnessione(tentativi)
             // Il primo tentativo quasi subito (spesso è solo un attimo di Wi-Fi), il secondo dopo 1 secondo, poi ogni 2
-            // e l'ultimo dopo 3 (Qualità 19: più fitti nei primi secondi, in tutto gli stessi 8,5 secondi di prima).
+            // e il quinto dopo 3 (Qualità 19: più fitti nei primi secondi, in tutto gli stessi 8,5 secondi di prima).
+            // Collaudo 20 (t08 B1): se il telefono era collegato non ci si arrende più: 5, 10 e poi ogni 15 secondi,
+            // finché il computer torna o l'utente tocca «Scollega»; «Riprova ora» resta la scorciatoia.
             principale.removeCallbacks(riprovaCollegamento)
-            val attesa = when (tentativi) {
-                1 -> 500L
-                2 -> 1_000L
-                TENTATIVI_MASSIMI -> 3_000L
-                else -> 2_000L
-            }
-            principale.postDelayed(riprovaCollegamento, attesa)
+            principale.postDelayed(riprovaCollegamento, RegolaRiconnessione.attesaMs(tentativi))
         } else if (!giaCollegato && computer.annunciato) {
             fermaConErrore(Testi.testo(R.string.errore_rete_separata_titolo), Testi.testo(R.string.errore_rete_separata), domanda = "rete-ospiti")
         } else {
@@ -1727,7 +1752,7 @@ class SessioneTelefono(
         if (chiusaDallUtente) return
         // Il computer aveva lasciato il collegamento vecchio per il nuovo, che poi non è riuscito: non è una chiusura voluta.
         val motivo = if (rinviata.motivo == MotivoChiusura.DAL_COMPUTER && dopoStretta) MotivoChiusura.RETE else rinviata.motivo
-        collegamentoChiuso(rinviata.errore, motivo, rinviata.inAttesaDiConferma)
+        collegamentoChiuso(rinviata.errore, motivo, if (motivo == rinviata.motivo) rinviata.lettura else RegolaRiconnessione.Lettura.ALTRO)
     }
 
     /**
@@ -2671,7 +2696,7 @@ class SessioneTelefono(
     }
 
     companion object {
-        const val TENTATIVI_MASSIMI = 5
+        const val TENTATIVI_MASSIMI = RegolaRiconnessione.TENTATIVI_FITTI
         /** Qualità 17: quanto si aspetta il computer sul cavo con adb prima di dire «Cavo USB scollegato». */
         const val ATTESA_CAVO_MS = 30_000L
         /** Riaperture automatiche della fotocamera dopo un'interruzione, prima di aspettare il ritorno in primo piano. */

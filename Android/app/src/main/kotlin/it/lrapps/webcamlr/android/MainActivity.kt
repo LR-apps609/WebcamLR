@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import it.lrapps.webcamlr.android.dati.Impostazioni
+import it.lrapps.webcamlr.android.logica.Indirizzi
 import it.lrapps.webcamlr.android.rete.AscoltoCavoAdb
 import it.lrapps.webcamlr.android.rete.ComputerTrovato
 import it.lrapps.webcamlr.android.sessione.SessioneTelefono
@@ -50,7 +51,6 @@ import it.lrapps.webcamlr.android.ui.SchermataSegnala
 import it.lrapps.webcamlr.android.ui.Stili
 import it.lrapps.webcamlr.android.ui.TemaWebcamLR
 import it.lrapps.webcamlr.android.ui.VoceAltro
-import it.lrapps.webcamlr.protocollo.Associazione
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.net.Socket
 
@@ -78,6 +78,8 @@ class MainActivity : ComponentActivity() {
     private var richiestaScollega by mutableStateOf(false)
     /** Collaudo 55: un `webcamlr://collega` di un altro computer arrivato durante una sessione, da confermare. */
     private var collegamentoDaConfermare by mutableStateOf<ComputerTrovato?>(null)
+    /** Collaudo 20 (t13 B4): un `webcamlr://` rovinato o incompleto; prima si ignorava in silenzio. */
+    private var linkNonValido by mutableStateOf(false)
 
     /**
      * Qualità 17: il cavo USB con il debug USB. Il computer apre la connessione attraverso adb sulla porta 52741 del
@@ -217,7 +219,17 @@ class MainActivity : ComponentActivity() {
     /** `webcamlr://collega?…` aperto dalla fotocamera di sistema o da un altro lettore di QR code. */
     private fun gestisciCollegamento(intent: Intent?) {
         val testo = intent?.dataString ?: return
-        val associazione = Associazione.leggi(testo) ?: return
+        // Collaudo 20 (t13 B7): anche gli indirizzi impossibili (0.0.0.0, 255.255.255.255) e una porta non valida
+        // fanno un link non valido, prima di accendere la fotocamera.
+        val associazione = Indirizzi.leggiLink(testo)
+        if (associazione == null) {
+            if (Indirizzi.sembraUnLink(testo)) {
+                intent.data = null
+                android.util.Log.i("WebcamLR", "Link webcamlr:// non valido: lo dico")
+                linkNonValido = true
+            }
+            return
+        }
         intent.data = null
         val nuovo = ComputerTrovato.da(associazione)
         val attuale = Sessioni.attuale
@@ -231,6 +243,20 @@ class MainActivity : ComponentActivity() {
         }
         if (!Impostazioni.benvenutoVisto) Impostazioni.impostaBenvenutoVisto(true)
         apriSessione(nuovo)
+    }
+
+    /** Collaudo 20 (t13 B4): il link non porta a nessun computer; si dice cosa fare invece di non fare niente. */
+    @Composable
+    private fun AvvisoLinkNonValido() {
+        if (!linkNonValido) return
+        AlertDialog(
+            onDismissRequest = { linkNonValido = false },
+            title = { Text(stringResource(R.string.link_non_valido_titolo)) },
+            text = { Text(stringResource(R.string.link_non_valido), style = Stili.corpo, color = Colori.testoChiaro) },
+            confirmButton = {
+                PulsanteSecondario(stringResource(R.string.chiudi), compatto = true) { linkNonValido = false }
+            },
+        )
     }
 
     /** La domanda per [collegamentoDaConfermare]: con il sì si chiude la sessione attuale e si apre quella nuova. */
@@ -343,6 +369,7 @@ class MainActivity : ComponentActivity() {
             Schermata.Segnala -> SchermataSegnala(ultimaLatenzaMs = sessione?.ultimaLatenzaMs ?: ultimaLatenza, indietro = { indietro() })
         }
         DomandaAltroComputer()
+        AvvisoLinkNonValido()
     }
 
     private var ultimaLatenza: Int? = null

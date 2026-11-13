@@ -182,6 +182,7 @@
     <string name="pausa_nessuna_app_spiegazione">Fotocamera spenta per risparmiare batteria: riparte da sola quando un\'app usa la webcam.</string>
     <string name="riconnessione_nessuna_rete">Nessuna rete: mi ricollego appena torna il Wi-Fi…</string>
     <string name="riconnessione_computer_perso">Computer perso, mi ricollego…</string>
+    <string name="riconnessione_computer_non_torna">Il computer non risponde: controlla che WebcamLR sia aperto sul computer. Riprovo da solo…</string>
     <string name="riconnessione_non_riesco">Non riesco a collegarmi a %1$s, riprovo…</string>
     <string name="da_un_secondo">da 1 secondo</string>
     <string name="da_secondi">da %1$d secondi</string>
@@ -282,6 +283,7 @@
     <string name="nessuna_app_invio">Nessuna app per inviare il testo: copialo e mandalo per email.</string>
     <string name="descrizione_problema">Descrizione del problema</string>
     <string name="segnala_domanda">Cosa è successo? Cosa stavi facendo?</string>
+    <string name="segnala_troppo_lungo">La descrizione si ferma a 20 000 caratteri: il testo oltre non è stato tenuto.</string>
     <string name="includi_dati">Includi i dati tecnici</string>
     <string name="invia_segnalazione">Invia la segnalazione</string>
     <string name="segnala_nota">Nessun video e nessuna immagine vengono inviati: solo il testo qui sopra.</string>
@@ -301,10 +303,18 @@
     <string name="indirizzo_titolo">Indirizzo del computer</string>
     <string name="indirizzo_testo">Lo trovi nella finestra di WebcamLR sul computer, sotto il QR code.</string>
     <string name="indirizzo_non_valido">Scrivi quattro numeri separati da punti, per esempio 192.168.1.20.</string>
+    <string name="indirizzo_vuoto">Scrivi l\'indirizzo del computer, per esempio 192.168.1.20.</string>
+    <string name="indirizzo_con_protocollo">Scrivi solo l\'indirizzo, senza «http://»: per esempio 192.168.1.20.</string>
+    <string name="indirizzo_ipv6">Gli indirizzi IPv6 non funzionano: scrivi quello con quattro numeri separati da punti, per esempio 192.168.1.20.</string>
+    <string name="indirizzo_nome">Il nome del computer non basta: scrivi il suo indirizzo, quattro numeri separati da punti, per esempio 192.168.1.20.</string>
+    <string name="indirizzo_non_di_un_computer">Questo non è l\'indirizzo di un computer: scrivi quello che mostra WebcamLR sul computer, per esempio 192.168.1.20.</string>
+    <string name="indirizzo_porta_non_valida">L\'indirizzo va bene, la porta no: dopo i due punti va un numero da 1 a 65535, per esempio 192.168.1.20:52740. Senza porta si usa 52740.</string>
     <string name="qr_titolo">Inquadra il QR code del computer</string>
     <string name="qr_istruzioni">Inquadra il QR code nella finestra di WebcamLR sul computer. Il collegamento parte appena il codice è a fuoco.</string>
     <string name="qr_nessuna_fotocamera">Il telefono non ha una fotocamera utilizzabile: scrivi l\'indirizzo del computer a mano.</string>
     <string name="qr_altro">Questo QR code non è di WebcamLR: inquadra quello sullo schermo del computer.</string>
+    <string name="link_non_valido_titolo">Link di WebcamLR non valido</string>
+    <string name="link_non_valido">Questo link o QR code è incompleto o rovinato: non porta a nessun computer. Inquadra di nuovo il QR code nella finestra di WebcamLR sul computer.</string>
     <string name="qr_fotocamera_spenta">La fotocamera non si è accesa: chiudi e riprova.</string>
 
     <!-- 70_unione -->
@@ -322,7 +332,11 @@
     <string name="errore_interrotto">Collegamento interrotto</string>
     <string name="errore_non_mi_collego">Non riesco a collegarmi a %1$s</string>
     <string name="errore_non_confermato_titolo">Collegamento non confermato</string>
-    <string name="errore_non_confermato">Il collegamento non è stato consentito su %1$s. Tocca «Riprova» e conferma sul computer.</string>
+    <string name="errore_non_confermato">Su %1$s è stato toccato «Non consentire». Se era questo telefono, inquadra il QR code del computer, oppure tocca «Riprova» tra due minuti e consenti sul computer.</string>
+    <string name="errore_senza_risposta_titolo">Nessuna risposta dal computer</string>
+    <string name="errore_senza_risposta">Su %1$s nessuno ha risposto alla domanda entro un minuto. Inquadra il QR code del computer per collegarti subito, oppure tocca «Riprova» tra due minuti e consenti sul computer.</string>
+    <string name="errore_non_accettato_titolo">%1$s non ha accettato il telefono</string>
+    <string name="errore_non_accettato">Il computer ha rifiutato questo telefono. Guarda su WebcamLR del computer se c\'è un avviso (per esempio un altro telefono già collegato). Se poco fa hai toccato «Non consentire», inquadra il QR code del computer, oppure tocca «Riprova» tra due minuti.</string>
     <string name="errore_chiuso_dal_computer">%1$s ha chiuso il collegamento. Tocca «Riprova» per collegarti di nuovo.</string>
     <string name="errore_aggiorna_titolo">Aggiorna WebcamLR sul computer</string>
     <string name="errore_aggiorna">Su %1$s c\'è una versione di WebcamLR senza collegamento sicuro. Aggiornala dal sito di WebcamLR, poi tocca «Riprova».</string>
@@ -377,6 +391,7 @@
     <string name="registro_microfono_spento">Microfono al computer spento</string>
     <string name="registro_collegamento_a">Collegamento a %1$s…</string>
     <string name="registro_nuovo_tentativo">Nuovo tentativo %1$d/%2$d con %3$s</string>
+    <string name="registro_nuovo_tentativo_ancora">Nuovo tentativo %1$d con %2$s (riprovo finché torna)</string>
     <string name="registro_collegamento_sicuro">Collegamento sicuro riuscito, codice di sicurezza %1$s</string>
     <string name="registro_collegamento_via">Collegamento via %1$s</string>
     <string name="registro_chiede_codice">Il computer chiede di confermare il codice</string>

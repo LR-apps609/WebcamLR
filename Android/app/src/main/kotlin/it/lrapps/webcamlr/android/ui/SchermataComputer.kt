@@ -86,6 +86,7 @@ import it.lrapps.webcamlr.android.R
 import it.lrapps.webcamlr.android.contenuti.InfoApp
 import it.lrapps.webcamlr.android.dati.ComputerConosciuti
 import it.lrapps.webcamlr.android.dati.Impostazioni
+import it.lrapps.webcamlr.android.logica.Indirizzi
 import it.lrapps.webcamlr.android.rete.CercaComputer
 import it.lrapps.webcamlr.android.rete.ComputerTrovato
 import it.lrapps.webcamlr.android.rete.RicercaCavo
@@ -560,21 +561,36 @@ private fun apriTethering(context: Context) {
 }
 
 @Composable
+private fun testoErroreIndirizzo(errore: Indirizzi.Errore): String = stringResource(
+    when (errore) {
+        Indirizzi.Errore.VUOTO -> R.string.indirizzo_vuoto
+        Indirizzi.Errore.CON_PROTOCOLLO -> R.string.indirizzo_con_protocollo
+        Indirizzi.Errore.IPV6 -> R.string.indirizzo_ipv6
+        Indirizzi.Errore.NOME -> R.string.indirizzo_nome
+        Indirizzi.Errore.NUMERI -> R.string.indirizzo_non_valido
+        Indirizzi.Errore.NON_DI_UN_COMPUTER -> R.string.indirizzo_non_di_un_computer
+        Indirizzi.Errore.PORTA -> R.string.indirizzo_porta_non_valida
+    },
+)
+
+@Composable
 private fun DialogoIndirizzo(chiudi: () -> Unit, collega: (Associazione) -> Unit) {
     // P6: l'ultimo indirizzo valido torna proposto (salvato in Impostazioni), con il cursore in fondo.
     var testo by rememberSaveable(stateSaver = TextFieldValue.Saver) {
         val ultimo = Impostazioni.ultimoIndirizzo
         mutableStateOf(TextFieldValue(ultimo, TextRange(ultimo.length)))
     }
-    var nonValido by remember { mutableStateOf(false) }
+    // Collaudo 20 (t13 B3, B7): l'errore dice la cosa sbagliata (porta, nome, «http://», IPv6, indirizzo impossibile).
+    var errore by remember { mutableStateOf<Indirizzi.Errore?>(null) }
+    val nonValido = errore != null
     // Il pulsante «Collega» e il tasto Invio della tastiera fanno la stessa cosa.
-    val prova = {
-        val associazione = Associazione.daIndirizzoScritto(testo.text)
-        if (associazione != null) {
-            Impostazioni.ultimoIndirizzo = testo.text.trim()
-            collega(associazione)
-        } else {
-            nonValido = true
+    val prova: () -> Unit = {
+        when (val esito = Indirizzi.leggiScritto(testo.text)) {
+            is Indirizzi.Esito.Valido -> {
+                Impostazioni.ultimoIndirizzo = testo.text.trim()
+                collega(esito.associazione)
+            }
+            is Indirizzi.Esito.NonValido -> errore = esito.errore
         }
     }
     AlertDialog(
@@ -585,7 +601,7 @@ private fun DialogoIndirizzo(chiudi: () -> Unit, collega: (Associazione) -> Unit
                 Text(stringResource(R.string.indirizzo_testo), style = Stili.corpo, color = Colori.testoChiaro)
                 OutlinedTextField(
                     value = testo,
-                    onValueChange = { testo = it; nonValido = false },
+                    onValueChange = { testo = it; errore = null },
                     placeholder = { Text("192.168.1.20") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Go),
@@ -594,7 +610,7 @@ private fun DialogoIndirizzo(chiudi: () -> Unit, collega: (Associazione) -> Unit
                     textStyle = Stili.numeriCorpo,
                     colors = coloriCampo(),
                 )
-                if (nonValido) Text(stringResource(R.string.indirizzo_non_valido), style = Stili.nota, color = Colori.ambraTesto)
+                errore?.let { Text(testoErroreIndirizzo(it), style = Stili.nota, color = Colori.ambraTesto) }
             }
         },
         confirmButton = {

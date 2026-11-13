@@ -70,6 +70,8 @@ public sealed partial class MainWindow
     private int giroImpostazioni;
     private readonly TranslateTransform spostamentoPagine = new();
     private StackPanel? paginaSfondo;
+    /// <summary>Nella pagina «Uscite»: la riga delle app (come sotto il video) e l'aiuto scritto; null fuori dalla pagina.</summary>
+    private TextBlock? paginaAppInUso, paginaAiutoApp;
     private string statoPaginaSfondo = "";
 
     /// <summary>Un controllo spostato dalla sua colonna: come rimetterlo dov'era.</summary>
@@ -408,6 +410,7 @@ public sealed partial class MainWindow
         RestituisciPagina();
         ContenutoPagina.Children.Clear();
         paginaSfondo = null;
+        paginaAppInUso = paginaAiutoApp = null;
         var pagina = PaginaAttuale;
         var elenco = pagina == PaginaImpostazioni.Elenco;
         ElencoImpostazioni.Visibility = Visibile(elenco);
@@ -526,9 +529,13 @@ public sealed partial class MainWindow
                 // La webcam per le altre app, il microfono del telefono, NDI (in arrivo); sotto, la riga delle app con l'aiuto scritto.
                 Nascondi(EtichettaUscite);
                 Prendi(SezioneUscite);
-                Prendi(PannelloAppInUso);
-                PannelloAppInUso.HorizontalAlignment = HorizontalAlignment.Left;
-                AiutoAppWebcam.Visibility = Visibility.Visible;
+                // La riga delle app («Disponibile per…», «In uso da…») con l'aiuto scritto sotto: una copia della pagina.
+                // Collaudo 20 (t06 B5): prima si spostava qui PannelloAppInUso, dalla riga sotto il video; rimesso al suo
+                // posto, UI Automation perdeva la colonna di destra e il pannello Impostazioni (a schermo c'erano).
+                paginaAppInUso = new TextBlock { FontSize = Token.MisuraNota, TextWrapping = TextWrapping.Wrap };
+                paginaAiutoApp = new TextBlock { FontSize = Token.MisuraNota, TextWrapping = TextWrapping.Wrap, Foreground = Pennello("TestoSecondario") };
+                ContenutoPagina.Children.Add(new StackPanel { Spacing = Token.SpazioFine, Children = { paginaAppInUso, paginaAiutoApp } });
+                MostraAppInUsoInPagina();
                 // Passo 8: la schermata di attesa (WebcamLR Pro), quello che vedono le app senza video.
                 Prendi(SezioneAttesa);
                 // Qualità 18: «Pausa quando nessuna app usa la webcam».
@@ -631,8 +638,6 @@ public sealed partial class MainWindow
         prestitiPagina.Clear();
         ContenutoRegistro.Width = 380;
         ContenutoCollegamento.Visibility = Visibility.Visible;
-        PannelloAppInUso.HorizontalAlignment = HorizontalAlignment.Center;
-        AiutoAppWebcam.Visibility = Visibility.Collapsed;
         // «Effetti» e «Regole fini» tornano aperte o chiuse come le aveva lasciate l'utente.
         MostraSezioni();
     }

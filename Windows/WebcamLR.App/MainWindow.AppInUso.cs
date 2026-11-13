@@ -182,5 +182,17 @@ public sealed partial class MainWindow
         };
         ToolTipService.SetToolTip(RigaApp, aiuto);
         AiutoAppWebcam.Text = aiuto;
+        MostraAppInUsoInPagina();
+    }
+
+    /// <summary>La copia della riga delle app nella pagina «Uscite» (MainWindow.Viste.cs), se è aperta.</summary>
+    private void MostraAppInUsoInPagina()
+    {
+        if (paginaAppInUso is null || paginaAiutoApp is null) return;
+        var inUso = RigaAppInUso.Visibility == Visibility.Visible;
+        paginaAppInUso.Text = inUso ? TestoAppInUso.Text
+            : Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(RigaAppDisponibili);
+        paginaAppInUso.Foreground = Pennello(inUso ? "TallyTesto" : "TestoSecondario");
+        paginaAiutoApp.Text = AiutoAppWebcam.Text;
     }
 }

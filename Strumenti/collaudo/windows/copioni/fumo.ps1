@@ -125,7 +125,7 @@ Passo 'Vista Completo (Ctrl+2)' {
     Scrivi-Log "A schermo: $(Elenco-Visibili)"
     foreach ($id in 'PulsanteSchermo', 'VideoElaborato', 'ChipQualita', 'PannelloDestroScorrimento', 'SezioneFotocamera') {
         $e = Trova-Elemento $id -AncheNascosti
-        if ($e) { Scrivi-Log "  $id: c'è, fuori schermo $($e.Current.IsOffscreen), $(Descrivi-Rettangolo $e.Current.BoundingRectangle)" }
+        if ($e) { Scrivi-Log "  ${id}: c'è, fuori schermo $($e.Current.IsOffscreen), $(Descrivi-Rettangolo $e.Current.BoundingRectangle)" }
         else { Scrivi-Log "  ${id}: non c'è" }
     }
     if ($collegato) { Controlla-Video -Obbligatorio | Out-Null }

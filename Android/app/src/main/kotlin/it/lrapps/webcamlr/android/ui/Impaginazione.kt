@@ -3,6 +3,7 @@ package it.lrapps.webcamlr.android.ui
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -125,21 +126,34 @@ fun DialogoSopraLaTastiera(
     contenuto: @Composable ColumnScope.() -> Unit,
 ) {
     Dialog(onDismissRequest = chiudi, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
-        Box(
+        BoxWithConstraints(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(Spazi.medio)
+            modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)
                 .pointerInput(chiudi) { detectTapGestures { chiudi() } },
         ) {
+            // Poco spazio sopra la tastiera (orizzontale con il carattere grande): margini stretti e i pulsanti
+            // scorrono con il resto, così resta in vista il campo che si sta scrivendo (il tasto → della tastiera
+            // fa lo stesso di «Collega»).
+            val stretto = maxHeight < ALTEZZA_DIALOGO_STRETTO
+            val margine = if (stretto) Spazi.piccolo else Spazi.largo
+            val riga = @Composable {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(Spazi.stretto, Alignment.End),
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().padding(top = if (stretto) Spazi.stretto else Spazi.largo),
+                ) { pulsanti() }
+            }
             Surface(
                 shape = AlertDialogDefaults.shape,
                 color = AlertDialogDefaults.containerColor,
                 tonalElevation = AlertDialogDefaults.TonalElevation,
-                modifier = Modifier.widthIn(min = 280.dp, max = 560.dp)
+                modifier = Modifier.padding(horizontal = Spazi.medio, vertical = if (stretto) 0.dp else Spazi.medio)
+                    .widthIn(min = 280.dp, max = 560.dp)
                     // Un tocco sul riquadro non lo chiude.
                     .pointerInput(Unit) { detectTapGestures { } }
                     .semantics { paneTitle = titolo },
             ) {
-                Column(Modifier.padding(Spazi.largo)) {
+                Column(Modifier.padding(horizontal = Spazi.largo, vertical = margine)) {
                     Column(
                         Modifier.weight(1f, fill = false).fillMaxWidth().verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(Spazi.stretto),
@@ -149,14 +163,14 @@ fun DialogoSopraLaTastiera(
                             modifier = Modifier.padding(bottom = Spazi.piccolo).semantics { heading() },
                         )
                         contenuto()
+                        if (stretto) riga()
                     }
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(Spazi.stretto, Alignment.End),
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().padding(top = Spazi.largo),
-                    ) { pulsanti() }
+                    if (!stretto) riga()
                 }
             }
         }
     }
 }
+
+/** Sotto questa altezza libera il [DialogoSopraLaTastiera] stringe i margini e fa scorrere anche i pulsanti. */
+private val ALTEZZA_DIALOGO_STRETTO = 220.dp

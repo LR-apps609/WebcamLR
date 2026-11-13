@@ -388,7 +388,10 @@
                 </ScrollViewer>
                 <!-- In fondo, sempre: il QR per collegare un telefono con l'app WebcamLR (iPhone o Android). Sotto, l'indirizzo da
                      scrivere a mano e il QR della pagina per scaricare l'app (non è quello per collegarsi). -->
-                <Border x:Name="BloccoQR" Grid.Row="1" Margin="{StaticResource MargineRiquadroQR}" Background="{ThemeResource Fondo}" BorderBrush="{ThemeResource Linea}" BorderThickness="1" CornerRadius="{StaticResource RaggioRiquadro}" Padding="{StaticResource PaddingRiquadroQR}">
+                <!-- Collaudo 20 (t06 B5): il QR sta in un contenitore suo. Spostato da e verso la griglia della colonna (pagina
+                     «Telefoni», menu della pillola), UI Automation perdeva poi il centro e la colonna di destra. -->
+                <StackPanel x:Name="PostoBloccoQR" Grid.Row="1">
+                <Border x:Name="BloccoQR" Margin="{StaticResource MargineRiquadroQR}" Background="{ThemeResource Fondo}" BorderBrush="{ThemeResource Linea}" BorderThickness="1" CornerRadius="{StaticResource RaggioRiquadro}" Padding="{StaticResource PaddingRiquadroQR}">
                     <StackPanel Spacing="{StaticResource SpazioStretto}" HorizontalAlignment="Center">
                         <TextBlock x:Name="TitoloQR" FontFamily="{StaticResource CorpoForte}" FontSize="{StaticResource MisuraCorpo}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
                         <Border x:Name="CorniceQR" Background="{StaticResource Bianco}" CornerRadius="{StaticResource RaggioStretto}" Padding="{StaticResource MargineStretto}" HorizontalAlignment="Center">
@@ -416,6 +419,7 @@
                         </HyperlinkButton>
                     </StackPanel>
                 </Border>
+                </StackPanel>
             </Grid>
 
             <!-- ===== Centro: il video più largo, i tasti sotto e le app che usano la webcam. ===== -->

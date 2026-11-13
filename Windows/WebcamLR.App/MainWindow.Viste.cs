@@ -260,7 +260,7 @@ public sealed partial class MainWindow
     private void SuAperturaPillolaTelefono(object? sender, object e)
     {
         RestituisciPillola();
-        if (BloccoQR.Parent != PannelloSinistro) return;
+        if (BloccoQR.Parent != PostoBloccoQR) return;
         var prestito = Togli(BloccoQR);
         PostoQR.Children.Add(BloccoQR);
         prestitiPillola.Add(new Prestito(BloccoQR, () =>

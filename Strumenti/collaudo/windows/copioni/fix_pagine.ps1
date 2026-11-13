@@ -10,13 +10,18 @@ function Chiudi-Impostazioni {
     Start-Sleep -Milliseconds 600
 }
 function Controlla([string]$Quando) {
-    $mancano = @('PulsanteSchermo', 'PannelloDestroScorrimento', 'TitoloFotocamera', 'IntestazioneEffetti', 'EtichettaTelefoni') |
+    $mancano = @('PulsanteSchermo', 'TitoloFotocamera', 'IntestazioneEffetti', 'EtichettaTelefoni', 'ChipQualita') |
         Where-Object { -not (Trova-Elemento $_ -AncheNascosti) }
     Scrivi-Log "  CONTROLLO ${Quando}: $(if ($mancano) { 'mancano ' + ($mancano -join ', ') } else { 'tutto' })"
     return $mancano.Count
 }
 
 Avvia-App -Azzera | Out-Null
+Chiudi-App
+# Con un telefono collegato (dal QR, poi fidato): il chip e il video ci sono.
+Avvia-App | Out-Null
+Avvia-TelefonoFinto -DalQR --nome 'iPhone delle pagine' --durata 900 --riconnetti-sempre | Out-Null
+Attendi-Telefono 'ACCETTATO' 30 -Nome 'iPhone delle pagine' | Out-Null
 Chiudi-App
 $voci = 'Fotocamera', 'Effetti', 'Sfondo', 'Profili', 'Qualita', 'Schermo', 'Microfono', 'Telefoni', 'Gobbo', 'Avvio', 'Registro', 'Uscite'
 foreach ($voce in $voci) {

@@ -7,6 +7,8 @@ telefono_piccolo_testo_grande() {
     adb_sh settings put system font_scale "${1:-2.0}"
     passo "TELEFONO PICCOLO 720x1280 @320dpi, carattere ${1:-2.0}x"
     sleep 3
+    # Il cambio di densità fa andare in ANR il Pixel Launcher per un po': si aspetta che si calmi.
+    sistema_calmo 90
 }
 
 # Le righe di testo dell'ultimo albero salvato, per capire se lo scorrimento ha cambiato qualcosa.
@@ -55,8 +57,9 @@ giro_completo() {
         attendi 1
         schermata "$p-collega-a-mano"
         testi_visibili
-        tocca_classe android.widget.EditText && { attendi 1; schermata "$p-collega-a-mano-tastiera"; testi_visibili; indietro; }
-        c_e_testo "Annulla" && tocca_testo "Annulla" || indietro
+        tocca_classe android.widget.EditText && { attendi 1; schermata "$p-collega-a-mano-tastiera"; testi_visibili; indietro; attendi 1; }
+        schermata "$p-collega-a-mano-dopo-indietro"
+        if c_e_testo "Annulla"; then tocca_testo "Annulla"; else indietro; c_e_testo "Annulla" && tocca_testo "Annulla"; fi
     else
         nota "$p: «Collega a mano (indirizzo)» non raggiungibile"
     fi

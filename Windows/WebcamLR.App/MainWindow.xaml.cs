@@ -1451,6 +1451,12 @@ public sealed partial class MainWindow : Window
     private bool InMini => AppWindow.Presenter.Kind == AppWindowPresenterKind.CompactOverlay;
 
     /// <summary>Il video in una finestrella sempre in primo piano (sovrapposizione compatta di Windows).</summary>
+    /// <summary>Vero dalla richiesta della finestra mini al ritorno alla normale: la misura minima non vale.</summary>
+    private bool minimaSospesa;
+
+    /// <summary>La larghezza della finestra mini (DIP), 16:9.</summary>
+    private const int LarghezzaMini = 480;
+
     private void ImpostaMini(bool mini)
     {
         if (mini == InMini) return;
@@ -1461,7 +1467,12 @@ public sealed partial class MainWindow : Window
             massimizzataPrimaDelMini = AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Maximized };
             var presentatore = CompactOverlayPresenter.Create();
             presentatore.InitialSize = CompactOverlaySize.Medium;
+            minimaSospesa = true;
             AppWindow.SetPresenter(presentatore);
+            // Una finestrella 16:9 (come CompactOverlaySize.Medium), con la scala dello schermo.
+            var scala = ScalaFinestra.Di(WinRT.Interop.WindowNative.GetWindowHandle(this));
+            try { AppWindow.Resize(new SizeInt32(PosizioneFinestra.InPixel(LarghezzaMini, scala), PosizioneFinestra.InPixel(LarghezzaMini * 9 / 16, scala))); }
+            catch (Exception) { }
         }
         else
         {
@@ -1469,6 +1480,7 @@ public sealed partial class MainWindow : Window
             // e SuCambioFinestra ricorderebbe quella al posto della finestra di prima.
             var prima = ultimaPosizione;
             AppWindow.SetPresenter(AppWindowPresenterKind.Overlapped);
+            minimaSospesa = false;
             // Si torna alla finestra normale di prima, massimizzata se lo era.
             if (prima is { } r) AppWindow.MoveAndResize(new RectInt32(r.X, r.Y, r.Larghezza, r.Altezza));
             if (massimizzataPrimaDelMini && AppWindow.Presenter is OverlappedPresenter presentatore) presentatore.Maximize();
@@ -1681,7 +1693,9 @@ public sealed partial class MainWindow : Window
     {
         var finestra = WinRT.Interop.WindowNative.GetWindowHandle(this);
         // Solo la finestra normale: la finestra mini (sempre in primo piano) è piccola di proposito.
-        misuraMinima = new MisuraMinimaFinestra(finestra, () => AppWindow.Presenter.Kind == AppWindowPresenterKind.Overlapped);
+        // Collaudo 20 (t09 B11): mentre il presentatore cambia, Kind diceva ancora Overlapped e la misura minima restava sul
+        // mini (960×600 DIP): ora la si sospende prima del cambio.
+        misuraMinima = new MisuraMinimaFinestra(finestra, () => !minimaSospesa && AppWindow.Presenter.Kind == AppWindowPresenterKind.Overlapped);
         if (Preferenze.Finestra is { } salvata)
         {
             // La scala dello schermo dove torna la barra del titolo.

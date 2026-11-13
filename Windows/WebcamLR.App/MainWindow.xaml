@@ -399,7 +399,9 @@
                                    TextAlignment="Center" TextWrapping="Wrap" />
                         <!-- Passo 7 (windows.md 2.14): «Il PC non è collegato a una rete» con la strada per risolverlo, sotto il QR. -->
                         <Button x:Name="PulsanteWiFi" x:Uid="PulsanteApriWiFi" Style="{StaticResource PulsanteSecondario}" Click="SuApriWiFi" HorizontalAlignment="Center" Visibility="Collapsed" />
+                        <!-- Collaudo 20 (t09 B13): il testo va a capo, invece di finire tagliato («Non hai ancora l'app? Sca»). -->
                         <HyperlinkButton x:Name="PulsanteScaricaApp" x:Uid="PulsanteScaricaApp" Style="{StaticResource PulsanteLink}" HorizontalAlignment="Center" Click="SuApriMenuAllegato">
+                            <TextBlock x:Uid="TestoScaricaApp" TextWrapping="Wrap" TextAlignment="Center" />
                             <FlyoutBase.AttachedFlyout>
                                 <Flyout Placement="Right">
                                     <StackPanel Width="230" Spacing="{StaticResource SpazioMezzo}">
@@ -552,7 +554,7 @@
                                     </Button.Flyout>
                                 </Button>
                                 <StackPanel x:Name="ChipVideo" Orientation="Horizontal" Spacing="{StaticResource SpazioStretto}" Visibility="Collapsed">
-                                    <Button x:Name="ChipQualita" x:Uid="ChipQualita" Style="{StaticResource ChipInformativo}">
+                                    <Button ToolTipService.Placement="Bottom" x:Name="ChipQualita" x:Uid="ChipQualita" Style="{StaticResource ChipInformativo}">
                                         <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpazioFine}">
                                             <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpazioMinuscolo}" VerticalAlignment="Center">
                                                 <Rectangle x:Name="Tacca1" Width="3" Height="5" RadiusX="1" RadiusY="1" VerticalAlignment="Bottom" />
@@ -1123,7 +1125,7 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <Button x:Name="PulsanteIndietroImpostazioni" x:Uid="PulsanteIndietroImpostazioni" Click="SuIndietroImpostazioni" Style="{StaticResource PulsanteDiscreto}"
+                    <Button ToolTipService.Placement="Bottom" x:Name="PulsanteIndietroImpostazioni" x:Uid="PulsanteIndietroImpostazioni" Click="SuIndietroImpostazioni" Style="{StaticResource PulsanteDiscreto}"
                             Padding="{StaticResource PaddingIcona}" CornerRadius="{StaticResource RaggioStretto}" Visibility="Collapsed">
                         <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpazioFine}">
                             <FontIcon Glyph="&#xE72B;" FontSize="{StaticResource MisuraCorpoPiccolo}" Foreground="{ThemeResource Accento}" />

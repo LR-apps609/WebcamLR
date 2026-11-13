@@ -77,6 +77,22 @@ public sealed record PosizioneFinestra(Rettangolo Rettangolo, bool Massimizzata,
     }
 
     /// <summary>
+    /// La misura minima in pixel con la scala dello schermo, mai più grande della sua area di lavoro (collaudo 20, t09 B10):
+    /// su un portatile 1366×768 al 125% 600 DIP sono 750 px e l'area 708; sotto, le colonne scorrono.
+    /// </summary>
+    public static (int Larghezza, int Altezza) MinimaInPixel(double scala, Rettangolo? area)
+    {
+        var larghezza = InPixel(LarghezzaMinima, scala);
+        var altezza = InPixel(AltezzaMinima, scala);
+        if (area is { Larghezza: > 0, Altezza: > 0 } a)
+        {
+            larghezza = Math.Min(larghezza, a.Larghezza);
+            altezza = Math.Min(altezza, a.Altezza);
+        }
+        return (larghezza, altezza);
+    }
+
+    /// <summary>
     /// La prima apertura: 1360×840 DIP con la scala dello schermo, al centro della sua area di lavoro; più piccola se lo
     /// schermo non basta (mai sotto la misura minima, se lo schermo la contiene). In pixel.
     /// </summary>

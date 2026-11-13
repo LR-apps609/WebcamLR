@@ -126,4 +126,16 @@ public class PosizioneFinestraTest
         var posizione = new PosizioneFinestra(new Rettangolo(1700, 100, 1280, 1500), false);
         Assert.Equal(new Rettangolo(1700, 0, 1280, 1400), posizione.Su([Principale, Secondo], 1));
     }
+
+    [Fact]
+    public void LaMinimaStaNelloSchermo()
+    {
+        // Collaudo 20 (t09 B10): 1366×768 al 125%, area di lavoro 1366×708: 960×600 DIP sarebbero 1200×750.
+        Assert.Equal((1200, 708), PosizioneFinestra.MinimaInPixel(1.25, new Rettangolo(0, 0, 1366, 708)));
+        // Al 150% anche la larghezza (1440) supera lo schermo.
+        Assert.Equal((1366, 708), PosizioneFinestra.MinimaInPixel(1.5, new Rettangolo(0, 0, 1366, 708)));
+        // Uno schermo grande o sconosciuto: la minima di sempre.
+        Assert.Equal((960, 600), PosizioneFinestra.MinimaInPixel(1, new Rettangolo(0, 0, 1920, 1040)));
+        Assert.Equal((1200, 750), PosizioneFinestra.MinimaInPixel(1.25, null));
+    }
 }

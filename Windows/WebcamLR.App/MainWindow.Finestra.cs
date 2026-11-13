@@ -127,9 +127,12 @@ public sealed partial class MainWindow
     /// </summary>
     private void AggiornaZoneTitolo()
     {
-        if (!barraPersonalizzabile || !ExtendsContentIntoTitleBar || Intestazione.XamlRoot is not { } radice) return;
+        // Uscendo la finestra si chiude, ma SizeChanged, LayoutUpdated e AppWindow.Changed possono arrivare ancora: allora
+        // ExtendsContentIntoTitleBar lancia 0x800710DD (collaudo 20, t09 B12, in Errori.txt alla chiusura).
+        if (!barraPersonalizzabile || chiudiDavvero) return;
         try
         {
+            if (!ExtendsContentIntoTitleBar || Intestazione.XamlRoot is not { } radice) return;
             var scala = radice.RasterizationScale;
             if (scala <= 0) return;
             var barra = AppWindow.TitleBar;

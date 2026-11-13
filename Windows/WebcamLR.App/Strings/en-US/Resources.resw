@@ -1526,7 +1526,7 @@ The details are in {1}: send them with “Report a bug”.</value>
   <data name="InquadraloConApp.Text" xml:space="preserve">
     <value>Scan it with the WebcamLR app on your phone: iPhone or Android</value>
   </data>
-  <data name="PulsanteScaricaApp.Content" xml:space="preserve">
+  <data name="TestoScaricaApp.Text" xml:space="preserve">
     <value>Don’t have the app yet? Get it</value>
   </data>
   <data name="PulsanteScaricaApp.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">

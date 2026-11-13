@@ -1528,7 +1528,7 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
   <data name="InquadraloConApp.Text" xml:space="preserve">
     <value>Inquadralo con l'app WebcamLR sul telefono: iPhone o Android</value>
   </data>
-  <data name="PulsanteScaricaApp.Content" xml:space="preserve">
+  <data name="TestoScaricaApp.Text" xml:space="preserve">
     <value>Non hai ancora l'app? Scaricala</value>
   </data>
   <data name="PulsanteScaricaApp.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">

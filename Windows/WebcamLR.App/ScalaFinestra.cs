@@ -87,13 +87,52 @@ internal sealed class MisuraMinimaFinestra
             if (!attiva()) return risultato;
             var scala = ScalaFinestra.Di(finestra);
             var info = Marshal.PtrToStructure<MinMaxInfo>(lParam);
-            info.MinimaLarghezza = Math.Max(info.MinimaLarghezza, PosizioneFinestra.InPixel(PosizioneFinestra.LarghezzaMinima, scala));
-            info.MinimaAltezza = Math.Max(info.MinimaAltezza, PosizioneFinestra.InPixel(PosizioneFinestra.AltezzaMinima, scala));
+            // Mai più grande dell'area di lavoro dello schermo (collaudo 20, t09 B10: a 1366×768 al 125% la minima di
+            // 600 DIP era 750 px, sotto la barra delle applicazioni; al 150% più grande dello schermo).
+            var (larghezza, altezza) = PosizioneFinestra.MinimaInPixel(scala, AreaDiLavoro(finestra));
+            info.MinimaLarghezza = Math.Max(info.MinimaLarghezza, larghezza);
+            info.MinimaAltezza = Math.Max(info.MinimaAltezza, altezza);
             Marshal.StructureToPtr(info, lParam, false);
         }
         catch (Exception) { }
         return IntPtr.Zero;
     }
+
+    /// <summary>L'area di lavoro (senza la barra delle applicazioni) dello schermo della finestra, in pixel; null se non si sa.</summary>
+    private static Rettangolo? AreaDiLavoro(IntPtr finestra)
+    {
+        try
+        {
+            var schermo = MonitorFromWindow(finestra, 2); // MONITOR_DEFAULTTONEAREST
+            var info = new InfoSchermo { Dimensione = Marshal.SizeOf<InfoSchermo>() };
+            if (schermo == IntPtr.Zero || !GetMonitorInfo(schermo, ref info)) return null;
+            return new Rettangolo(info.Lavoro.Sinistra, info.Lavoro.Alto, info.Lavoro.Destra - info.Lavoro.Sinistra,
+                info.Lavoro.Basso - info.Lavoro.Alto);
+        }
+        catch (Exception) { return null; }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct Rett
+    {
+        public int Sinistra, Alto, Destra, Basso;
+    }
+
+    /// <summary>MONITORINFO.</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    private struct InfoSchermo
+    {
+        public int Dimensione;
+        public Rett Schermo;
+        public Rett Lavoro;
+        public uint Opzioni;
+    }
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr MonitorFromWindow(IntPtr finestra, uint opzioni);
+
+    [DllImport("user32.dll")]
+    private static extern bool GetMonitorInfo(IntPtr schermo, ref InfoSchermo info);
 
     /// <summary>MINMAXINFO: cinque coppie di interi; qui serve solo ptMinTrackSize.</summary>
     [StructLayout(LayoutKind.Sequential)]

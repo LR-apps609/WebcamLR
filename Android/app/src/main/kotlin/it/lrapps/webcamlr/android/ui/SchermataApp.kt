@@ -71,6 +71,7 @@ import it.lrapps.webcamlr.android.contenuti.InfoApp
 import it.lrapps.webcamlr.android.dati.ComputerConosciuti
 import it.lrapps.webcamlr.android.dati.IdentitaTelefono
 import it.lrapps.webcamlr.android.dati.Impostazioni
+import it.lrapps.webcamlr.android.logica.TestoLibero
 import it.lrapps.webcamlr.android.sistema.RegistroCollegamento
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -281,7 +282,11 @@ fun SchermataGuida(indietro: () -> Unit) {
 fun SchermataSegnala(ultimaLatenzaMs: Int?, indietro: () -> Unit) {
     val context = LocalContext.current
     // Passo 9: la bozza resta in Impostazioni finché non si invia (Indietro non la perde).
-    var descrizione by rememberSaveable { mutableStateOf(Impostazioni.bozzaDaRiprendere()) }
+    // Collaudo 20 (t13 B1): un tetto ai caratteri. Una bozza già enorme si apre con i suoi primi caratteri (e lo si dice):
+    // senza tetto il campo superava l'altezza che Compose sa rappresentare e la pagina andava in crash a ogni apertura.
+    // Le preferenze restano com'erano finché non si scrive.
+    var descrizione by rememberSaveable { mutableStateOf(TestoLibero.taglia(Impostazioni.bozzaDaRiprendere(), TestoLibero.MASSIMO_SEGNALAZIONE)) }
+    var tagliata by rememberSaveable { mutableStateOf(Impostazioni.bozzaSegnalazione.length > TestoLibero.MASSIMO_SEGNALAZIONE) }
     var conDati by rememberSaveable { mutableStateOf(true) }
     var conRegistro by rememberSaveable { mutableStateOf(Impostazioni.segnalazioneConRegistro) }
     // Solo dati tecnici utili: niente nome del telefono né del computer, niente indirizzi.
@@ -304,15 +309,22 @@ fun SchermataSegnala(ultimaLatenzaMs: Int?, indietro: () -> Unit) {
         OutlinedTextField(
             value = descrizione,
             onValueChange = {
-                descrizione = it
-                Impostazioni.bozzaSegnalazione = it
+                val nuovo = TestoLibero.taglia(it, TestoLibero.MASSIMO_SEGNALAZIONE)
+                if (nuovo.length < it.length) tagliata = true
+                descrizione = nuovo
+                Impostazioni.bozzaSegnalazione = nuovo
                 Impostazioni.bozzaSegnalazioneInviata = false
             },
             minLines = 5,
+            // Un testo lungo scorre dentro il campo: «Invia la segnalazione» resta sempre a portata di dito.
+            maxLines = 14,
             textStyle = Stili.corpo,
             colors = coloriCampo(),
-            modifier = Modifier.fillMaxWidth().heightIn(min = 140.dp).semantics { contentDescription = etichettaCampo },
+            modifier = Modifier.fillMaxWidth().heightIn(min = 140.dp, max = 380.dp).semantics { contentDescription = etichettaCampo },
         )
+        if (tagliata || descrizione.length >= TestoLibero.MASSIMO_SEGNALAZIONE) {
+            Text(stringResource(R.string.segnala_troppo_lungo), style = Stili.nota, color = Colori.ambraTesto, modifier = Modifier.padding(top = Spazi.minimo))
+        }
         Spacer(Modifier.height(Spazi.piccolo))
         Gruppo {
             RigaInterruttore(stringResource(R.string.includi_dati), conDati) { conDati = it }

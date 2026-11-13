@@ -87,11 +87,18 @@ _dialogo_anr() {
         printf '%s\n' "ANR di WebcamLR: $titolo" >> "$USCITA/note.txt"
         return 1
     fi
-    centro=$(python3 -I "$_NODO" "$f" id "android:id/aerr_wait") || return 1
+    # Collaudo 20: con «Wait» il Pixel Launcher resta bloccato e il dialogo torna ogni 7 s, mangiando i tocchi del
+    # copione. Dal secondo dialogo si sceglie «Close app»: il launcher riparte da capo (non è l'app in prova).
+    # Il conto sta in un file: _dump gira anche dentro $(…).
+    local conto="$USCITA/.anr_altre" volte
+    volte=$(( $(cat "$conto" 2>/dev/null || echo 0) + 1 )); echo "$volte" > "$conto"
+    local bottone="android:id/aerr_wait" scelta="Wait"
+    if [ "$volte" -ge 2 ] && grep -q 'android:id/aerr_close' "$f"; then bottone="android:id/aerr_close"; scelta="Close app"; fi
+    centro=$(python3 -I "$_NODO" "$f" id "$bottone") || centro=$(python3 -I "$_NODO" "$f" id "android:id/aerr_wait") || return 1
     # shellcheck disable=SC2086
     adb_sh input tap $centro
-    passo "SISTEMA: chiuso con «Wait» il dialogo «$titolo» (non è WebcamLR)"
-    sleep 1
+    passo "SISTEMA: chiuso con «$scelta» il dialogo «$titolo» (non è WebcamLR)"
+    if [ "$scelta" = "Close app" ]; then sleep 3; else sleep 1; fi
     return 0
 }
 

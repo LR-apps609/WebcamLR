@@ -12,6 +12,7 @@ import com.google.zxing.NotFoundException
 import com.google.zxing.PlanarYUVLuminanceSource
 import com.google.zxing.common.HybridBinarizer
 import com.google.zxing.qrcode.QRCodeReader
+import it.lrapps.webcamlr.android.logica.Indirizzi
 import it.lrapps.webcamlr.protocollo.Associazione
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -73,7 +74,8 @@ class LettoreQR(larghezza: Int, altezza: Int, private val suLetto: (Associazione
         } finally {
             decodificatore.reset()
         }
-        val associazione = Associazione.leggi(testo)
+        // Collaudo 20 (t13 B7): un QR code con indirizzi impossibili o una porta non valida non è da usare.
+        val associazione = Indirizzi.leggiLink(testo)
         if (associazione != null) {
             if (trovato.compareAndSet(false, true)) suLetto(associazione)
         } else if (System.currentTimeMillis() - ultimoAvvisoAltroQR > 3_000) {

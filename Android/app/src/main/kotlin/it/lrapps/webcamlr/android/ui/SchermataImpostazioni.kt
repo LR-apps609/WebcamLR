@@ -47,6 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -170,8 +171,12 @@ fun FoglioImpostazioni(sessione: SessioneTelefono, chiudi: () -> Unit, azioni: A
             indietro = if (pagine.size > 1) ({ pagine.removeAt(pagine.lastIndex) }) else null,
             fine = chiudi,
         )
-        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = Spazi.medio).padding(bottom = Spazi.largo)) {
-            ContenutoPaginaImpostazioni(attuale, sessione = sessione, apri = { pagine.add(it) }, azioni = azioni)
+        // Collaudo 20 (t04 B1): uno scorrimento per pagina. Con uno solo il Registro si apriva già scorso quanto
+        // le Impostazioni, senza «Copia» e senza le righe più nuove.
+        key(attuale) {
+            Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = Spazi.medio).padding(bottom = Spazi.largo)) {
+                ContenutoPaginaImpostazioni(attuale, sessione = sessione, apri = { pagine.add(it) }, azioni = azioni)
+            }
         }
     }
 }

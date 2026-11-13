@@ -62,6 +62,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -78,6 +79,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.TextStyle
 import it.lrapps.webcamlr.android.R
+import it.lrapps.webcamlr.android.sistema.Permessi
 
 /**
  * La presentazione alla prima apertura, come quella dell'iPhone (PresentazioneVista.swift): quattro pagine con scene
@@ -88,6 +90,7 @@ import it.lrapps.webcamlr.android.R
  */
 @Composable
 fun Presentazione(fine: () -> Unit) {
+    val context = LocalContext.current
     val ridotte = ricordaAnimazioniRidotte()
     var pagina by rememberSaveable { mutableIntStateOf(0) }
     var chiedendo by remember { mutableStateOf(false) }
@@ -95,8 +98,10 @@ fun Presentazione(fine: () -> Unit) {
     val ultima = DURATE.lastIndex
 
     val permessi = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-        // Qualsiasi risposta va bene: senza fotocamera l'app lo dice al primo collegamento e la richiede.
+        // Qualsiasi risposta va bene. Collaudo 20 (t02 B1): senza fotocamera la schermata dei computer lo dice subito,
+        // con «Apri Impostazioni» (prima solo dopo il tocco sul QR code).
         chiedendo = false
+        Permessi.aggiorna(context)
         fine()
     }
     fun inizia() {

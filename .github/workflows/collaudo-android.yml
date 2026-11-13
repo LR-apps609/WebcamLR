@@ -1,0 +1,117 @@
+# Banco di prova Android per il collaudo: compila l'APK di debug, accende un emulatore (API 34, x86_64, KVM),
+# installa l'APK ed esegue i copioni di Strumenti/collaudo/android/copioni/. Il «computer finto» (ComputerFinto, il
+# cuore del ricevitore Windows) gira sulla stessa macchina: il telefono lo raggiunge a 10.0.2.2 e va «in onda». Per ogni copione l'artifact
+# «collaudo-android» contiene schermate PNG numerate, alberi XML dell'interfaccia, passi.log, logcat dell'app,
+# crash.txt ed esito.txt (OK / FALLITO e motivo). Un copione che trova un bug non fa fallire il lavoro.
+# Guida: Strumenti/collaudo/android/LEGGIMI.md
+name: Collaudo Android
+
+on:
+  push:
+    branches: ["collaudo-20*"]
+    paths:
+      - "Android/**"
+      - "Strumenti/collaudo/android/**"
+      - "Strumenti/collaudo/ComputerFinto/**"
+      - ".github/workflows/collaudo-android.yml"
+  workflow_dispatch:
+    inputs:
+      copioni:
+        description: "Copioni da eseguire, separati da spazi (vuoto = tutti)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  emulatore:
+    name: emulatore (API 34) · ${{ inputs.copioni || 'tutti i copioni' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # Come il lavoro android di compila.yml: l'Android SDK è già in ANDROID_HOME.
+      - name: assembleDebug
+        working-directory: Android
+        run: |
+          mkdir -p ../risultati
+          ./gradlew --no-daemon :app:assembleDebug 2>&1 | tee ../risultati/gradle-assemble.log
+          apk=$(find app/build/outputs/apk/debug -name '*.apk' | head -1)
+          test -n "$apk"
+          echo "APK=$GITHUB_WORKSPACE/Android/$apk" >> "$GITHUB_ENV"
+
+      # Il computer finto (Strumenti/collaudo/ComputerFinto): il cuore del ricevitore Windows per portare il telefono
+      # «in onda»; ffmpeg decodifica i fotogrammi che salva.
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Computer finto
+        run: |
+          dotnet publish Strumenti/collaudo/ComputerFinto -c Release -o "$RUNNER_TEMP/computer-finto" --nologo 2>&1 | tee -a risultati/computer-finto-compila.log
+          test -f "$RUNNER_TEMP/computer-finto/ComputerFinto.dll"
+          echo "COMPUTER_FINTO=$RUNNER_TEMP/computer-finto/ComputerFinto.dll" >> "$GITHUB_ENV"
+          command -v ffmpeg >/dev/null || (sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null)
+          ffmpeg -version | head -1
+
+      - name: KVM per l'emulatore
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Emulatore e copioni
+        uses: reactivecircus/android-emulator-runner@v2.33.0
+        env:
+          COPIONI: ${{ inputs.copioni }}
+          RISULTATI: risultati
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          cores: 4
+          ram-size: 4096M
+          disk-size: 6000M
+          emulator-boot-timeout: 900
+          emulator-options: -no-window -no-snapshot -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back emulated -camera-front emulated
+          disable-animations: true
+          script: bash Strumenti/collaudo/android/esegui.sh
+
+      - name: Riepilogo
+        if: ${{ !cancelled() }}
+        run: |
+          {
+            echo "## Collaudo Android"
+            echo '```'
+            cat risultati/riepilogo.txt 2>/dev/null || echo "nessun riepilogo"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          cat risultati/riepilogo.txt 2>/dev/null || true
+
+      # Gli stessi risultati (schermate ridotte) nel registro: scarica.sh li ricostruisce se l'artifact è bloccato.
+      - name: Risultati nel registro
+        if: ${{ !cancelled() }}
+        run: bash Strumenti/collaudo/android/nel_registro.sh risultati
+
+      - name: Carica i risultati
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: collaudo-android
+          path: risultati/
+          if-no-files-found: warn
+          retention-days: 14

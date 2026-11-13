@@ -17,13 +17,14 @@ gh run download <id> -R LR-apps609/WebcamLR -n collaudo-windows -D risultati
 
 Nell'artifact `collaudo-windows` c'è una cartella per copione:
 
-- `NN-<nome>.png` schermate (tutto lo schermo del runner, 1024×768) e `NN-<nome>.txt` alberi dell'interfaccia
+- `NN-<nome>.png` schermate (tutto lo schermo del runner, portato a 1920×1080) e `NN-<nome>.txt` alberi dell'interfaccia
   (tipo, «Name», `id=` AutomationId, stato, posizione);
 - `passi.log` ogni passo, `telefono-<nome>.log` il telefono finto;
 - `dati-app/` i file di `%LOCALAPPDATA%\WebcamLR` (preferenze, `Errori.txt` se l'app ne ha scritti);
 - `esito.txt`: OK, PROBLEMI (con l'elenco) o INTERROTTO (con l'errore). Il lavoro resta verde anche con dei bug.
 
-`riassunto.txt` in cima riassume tutti i copioni. Tempi tipici: 8–10 minuti di compilazione, poi il fumo circa 5 minuti.
+`riassunto.txt` in cima riassume tutti i copioni. Tempi tipici: 6–8 minuti di preparazione (compilazione, Media
+Foundation), poi il fumo circa 2 minuti e mezzo; in tutto 10–12 minuti.
 
 ## Scrivere un copione
 
@@ -49,16 +50,23 @@ Segnala-Problema 'Il video non scorre'   # un bug trovato a occhio o con un cont
 | `Azzera-Dati` | cancella `%LOCALAPPDATA%\WebcamLR` (solo su GitHub Actions, altrove serve `-Forza`) |
 | `Schermata <nome> [-Finestra]`, `Schermata-Elemento <id> <nome>` | PNG di schermo, finestra o elemento |
 | `Albero-UI <nome> [-Tutto]` | l'albero UI Automation di tutte le finestre dell'app (`-Tutto`: anche fuori schermo) |
-| `Clicca <id o nome> [-Mouse]` | Invoke/Toggle/Select/Expand, o un clic vero del mouse |
+| `Clicca <id o nome> [-Mouse] [-Dentro <id>] [-AncheNascosti]` | Invoke/Toggle/Select/Expand, o un clic vero del mouse; `-Dentro` cerca solo in un contenitore |
 | `Scrivi <testo> [-In <id>]` | scrive nella casella o nel controllo con il fuoco |
 | `Tasto 'Tab'`, `'Invio'`, `'Esc'`, `'Ctrl+S'`, `'Maiusc+Tab'` | tasti |
 | `Attendi-Testo <testo> <s> [-Obbligatorio]`, `Attendi-Elemento <id> <s>`, `Esiste <id>` | attese e controlli |
-| `Ridimensiona-Finestra <l> <a>`, `Ingrandisci-Finestra` | misura della finestra |
+| `Ridimensiona-Finestra <l> <a>`, `Ingrandisci-Finestra` | misura della finestra (l'app non scende sotto 960 di larghezza) |
+| `Imposta-Schermo <l> <a>` | risoluzione dello schermo del runner (Esegui-Copioni parte da 1920×1080) |
+| `Controlla-Video [-Obbligatorio]` | il video scorre? confronta due campionature del riquadro video (SCORRE / FERMO nel registro) |
+| `Confronta-Finestra <descrizione> { … }` | quanto cambia la finestra con un'azione (quando UI Automation non vede una cosa) |
+| `Elenco-Visibili`, `Trova-Elemento <id> [-AncheNascosti]` | cosa c'è a schermo, per capire perché un elemento manca |
 | `Lingua-Inglese [-Riavvia]`, `Lingua-Italiana` | lingua dell'app dal prossimo avvio (di serie: italiano) |
 | `Avvia-TelefonoFinto [-DalQR] <opzioni>`, `Attendi-Telefono <riga>`, `Ferma-TelefonoFinto` | il telefono finto |
 | `Leggi-QR` | salva il QR mostrato dall'app (per `--qr`) |
 | `Rete-Spenta`, `Rete-Accesa` | la rete tra telefono e PC cade e torna (vedi limiti) |
 | `Segnala-Problema`, `Passo`, `Scrivi-Log` | esito e registro |
+
+Scorciatoie dell'app utili nei copioni: `Tasto 'Ctrl+1'` Essenziale, `'Ctrl+2'` Completo, `'F11'` schermo intero,
+`'Ctrl+Maiusc+P'` vista pulita, `'Ctrl+Maiusc+M'` finestra mini, `'Ctrl+,'` impostazioni.
 
 Gli AutomationId sono i `x:Name` di `Windows/WebcamLR.App/MainWindow.xaml` (WinUI li usa da soli). Le voci create da
 codice (le voci di Impostazioni, i pulsanti dei ContentDialog) si trovano per nome: `Testo-App` dà il nome giusto in

@@ -404,8 +404,8 @@ public sealed partial class MainWindow
     /// <summary>Vero dopo l'avviso a schermo «sfondo semplificato» (si azzera quando cambia il telefono nella webcam).</summary>
     private bool avvisoSemplificatoDetto;
 
-    /// <summary>I motivi del ripiego già scritti per intero nel registro: dalla seconda volta solo la frase semplice.</summary>
-    private readonly HashSet<string> motiviDetti = [];
+    /// <summary>Il motivo del ripiego è già stato scritto con il dettaglio dell'errore: dalla seconda volta solo la frase semplice.</summary>
+    private bool motivoDettagliato;
 
     /// <summary>
     /// Il motivo per cui il ritaglio non usa la scheda video, per il registro: una frase semplice e, la prima volta, la prima
@@ -414,7 +414,9 @@ public sealed partial class MainWindow
     private string MotivoRipiego(string motivo)
     {
         var semplice = Testi.T("Effetti_MotivoSchedaVideo");
-        if (!motiviDetti.Add(motivo)) return semplice;
+        // Una volta per sessione dell'app: il testo dell'errore cambia un poco a ogni riapertura della fonte.
+        if (motivoDettagliato) return semplice;
+        motivoDettagliato = true;
         var riga = motivo.Split('\n', 2)[0].Trim();
         if (riga.Length > 120) riga = riga[..119] + "…";
         return $"{semplice}: {riga}";

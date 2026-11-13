@@ -22,6 +22,11 @@ gh run watch <id> -R LR-apps609/WebcamLR                              # aspetta 
 gh run download <id> -R LR-apps609/WebcamLR -n collaudo-android -D risultati-<id>
 ```
 
+Se `gh run download` risponde «Forbidden» (la rete blocca il dominio degli artifact, `*.blob.core.windows.net`):
+`bash Strumenti/collaudo/android/scarica.sh <id>` prova l'artifact e altrimenti ricostruisce i risultati dal
+registro del lavoro (stampati in base64 dal passo «Risultati nel registro»): stesse cartelle, schermate in JPEG a
+metà risoluzione, senza `logcat-completo.txt.gz`.
+
 Dentro: `riepilogo.txt` (un rigo per copione) e una cartella per copione con
 
 - `esito.txt`: `OK` oppure `FALLITO` e il motivo (il copione ha chiamato `fallisci`, è uscito con errore, è

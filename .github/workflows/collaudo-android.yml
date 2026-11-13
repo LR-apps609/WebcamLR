@@ -86,6 +86,11 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
           cat risultati/riepilogo.txt 2>/dev/null || true
 
+      # Gli stessi risultati (schermate ridotte) nel registro: scarica.sh li ricostruisce se l'artifact è bloccato.
+      - name: Risultati nel registro
+        if: ${{ !cancelled() }}
+        run: bash Strumenti/collaudo/android/nel_registro.sh risultati
+
       - name: Carica i risultati
         if: ${{ always() }}
         uses: actions/upload-artifact@v4

@@ -23,9 +23,10 @@ passo() {
 
 attendi() { sleep "${1:-1}"; }
 
+# Il numero del passo in $_n (niente $(...): in una sottoshell il contatore non crescerebbe).
 _prossimo() {
     _numero=$((_numero + 1))
-    printf '%03d' "$_numero"
+    printf -v _n '%03d' "$_numero"
 }
 
 _nome_file() {
@@ -55,7 +56,7 @@ _dump() {
 # schermata <nome>: PNG e albero dell'interfaccia con lo stesso numero.
 schermata() {
     local n nome
-    n=$(_prossimo); nome="$n-$(_nome_file "${1:-schermata}")"
+    _prossimo; n=$_n; nome="$n-$(_nome_file "${1:-schermata}")"
     adb exec-out screencap -p > "$USCITA/schermate/$nome.png" 2>/dev/null
     _dump "$USCITA/albero/$nome.xml" || echo "dump non riuscito" > "$USCITA/albero/$nome.xml.errore"
     passo "SCHERMATA $nome"
@@ -64,7 +65,7 @@ schermata() {
 # albero <nome>: solo il dump XML dell'interfaccia.
 albero() {
     local n nome
-    n=$(_prossimo); nome="$n-$(_nome_file "${1:-albero}")"
+    _prossimo; n=$_n; nome="$n-$(_nome_file "${1:-albero}")"
     _dump "$USCITA/albero/$nome.xml" || echo "dump non riuscito" > "$USCITA/albero/$nome.xml.errore"
     passo "ALBERO $nome"
 }
@@ -87,7 +88,7 @@ tocca_xy() {
 # Il dump «prima del tocco» resta in albero/ con il numero del passo: è l'albero a ogni passo.
 _tocca() {
     local modo="$1" valore="$2" indice="${3:-1}" prova n nome f centro
-    n=$(_prossimo); nome="$n-prima-di-tocca-$(_nome_file "$valore")"
+    _prossimo; n=$_n; nome="$n-prima-di-tocca-$(_nome_file "$valore")"
     f="$USCITA/albero/$nome.xml"
     for prova in 0 1 2 3 4; do
         if _dump "$f" && centro=$(python3 -I "$_NODO" "$f" "$modo" "$valore" "$indice"); then

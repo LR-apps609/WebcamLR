@@ -26,6 +26,9 @@ Nell'artifact `collaudo-windows` c'è una cartella per copione:
 `riassunto.txt` in cima riassume tutti i copioni. Tempi tipici: 6–8 minuti di preparazione (compilazione, Media
 Foundation), poi il fumo circa 2 minuti e mezzo; in tutto 10–12 minuti.
 
+Copioni pronti: `fumo` (primo avvio, le 12 pagine di Impostazioni, menu, telefono dal QR, video, rete che cade, viste,
+inglese) e `viste` (Essenziale e Completo con e senza telefono, colonne raggiungibili, video che scorre).
+
 ## Scrivere un copione
 
 Un file `copioni/<nome>.ps1` (UTF-8 **con BOM**, per le lettere accentate in PowerShell 5.1). Le funzioni sono già

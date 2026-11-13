@@ -141,7 +141,8 @@ Passo 'Finestra piccola 900×600 e di nuovo grande' {
     Ingrandisci-Finestra
     Start-Sleep -Seconds 1
     Fotografa 'finestra-ingrandita'
-    if (-not (Esiste 'PulsanteSchermo')) { Segnala-Problema "Vista Completo dopo 900×600 e Ingrandisci: la barra sotto il video (PulsanteSchermo) non c'è" }
+    # Nel copione «viste» (senza passare da Impostazioni › Uscite) la barra c'è sempre.
+    if (-not (Esiste 'PulsanteSchermo')) { Segnala-Problema "Vista Completo (dopo Impostazioni › Uscite, 900×600 e Ingrandisci): la barra sotto il video (PulsanteSchermo) e la colonna di destra non sono raggiungibili con UI Automation" }
 }
 Passo 'Schermo intero (F11)' {
     Tasto 'F11'

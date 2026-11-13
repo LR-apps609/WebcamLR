@@ -90,17 +90,18 @@ function Passo {
     <#
     Esegue un blocco come passo con nome: se fallisce, il problema si annota (con una schermata) e il copione va avanti.
     Esempio: Passo 'Apri le impostazioni' { Clicca 'PulsanteImpostazioni' }
+    Con -Esito restituisce vero o falso: if (Passo 'Collego il telefono' { ... } -Esito) { ... }
     #>
-    param([Parameter(Mandatory)][string]$Nome, [Parameter(Mandatory)][scriptblock]$Blocco)
+    param([Parameter(Mandatory)][string]$Nome, [Parameter(Mandatory)][scriptblock]$Blocco, [switch]$Esito)
     $script:Passi++
     Scrivi-Log "── $Nome"
     try {
         & $Blocco | Out-Null
-        return $true
+        if ($Esito) { return $true }
     } catch {
         Segnala-Problema "$Nome · $($_.Exception.Message)"
-        try { Schermata ('errore-' + ($Nome -replace '[^\w]+', '-')) } catch { }
-        return $false
+        try { [void](Schermata ('errore-' + ($Nome -replace '[^\w]+', '-'))) } catch { }
+        if ($Esito) { return $false }
     }
 }
 
@@ -153,18 +154,33 @@ function Avvia-App {
     }
     $script:Processo = [System.Diagnostics.Process]::Start($info)
     Scrivi-Log "Avvia-App: processo $($script:Processo.Id), lingua $script:Lingua"
+    # La finestra vera: la prima che compare può essere un'altra (un messaggio d'errore, una finestra di servizio).
     $finestra = $null
     $limite = (Get-Date).AddSeconds($Attesa)
-    while (-not $finestra -and (Get-Date) -lt $limite) {
+    while ((Get-Date) -lt $limite) {
         Start-Sleep -Milliseconds 500
         if ($script:Processo.HasExited) { throw "WebcamLR è uscita subito (codice $($script:Processo.ExitCode))" }
         $finestra = Finestra-App
+        if ($finestra -and $finestra.Current.BoundingRectangle.Width -ge 500) { break }
     }
-    if (-not $finestra) { throw "La finestra di WebcamLR non è comparsa in $Attesa s" }
     Start-Sleep -Seconds 2
+    Descrivi-Finestre
+    $finestra = Finestra-App
+    if (-not $finestra) { throw "La finestra di WebcamLR non è comparsa in $Attesa s" }
+    if ($finestra.Current.BoundingRectangle.Width -lt 500) {
+        Segnala-Problema "La finestra di WebcamLR è piccola ($(Descrivi-Rettangolo $finestra.Current.BoundingRectangle)): testi «$((Testi-Visibili) -join ' | ')»"
+    }
     Porta-Davanti
     Scrivi-Log "Finestra: «$($finestra.Current.Name)» $(Descrivi-Rettangolo $finestra.Current.BoundingRectangle)"
     $finestra
+}
+
+function Descrivi-Finestre {
+    <# Nel registro: le finestre del processo dell'app, con classe, nome e misura. #>
+    foreach ($f in (Finestre-App)) {
+        $c = $f.Current
+        Scrivi-Log "  finestra dell'app: classe=$($c.ClassName) «$($c.Name)» $(Descrivi-Rettangolo $c.BoundingRectangle)"
+    }
 }
 
 function Finestre-App {
@@ -675,6 +691,8 @@ function Raccogli-Registri {
             Copy-Item -Destination $destinazione -Force
         if (Test-Path (Join-Path $script:DatiApp 'Errori.txt')) {
             Segnala-Problema "L'app ha scritto Errori.txt (vedi dati-app/Errori.txt)"
+            Get-Content -LiteralPath (Join-Path $script:DatiApp 'Errori.txt') -Encoding UTF8 -TotalCount 40 |
+                ForEach-Object { Scrivi-Log "  Errori.txt: $_" }
         }
     }
 }

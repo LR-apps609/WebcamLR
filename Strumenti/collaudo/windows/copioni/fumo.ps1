@@ -4,6 +4,7 @@
 Avvia-App -Azzera | Out-Null
 Start-Sleep -Seconds 4
 Fotografa 'primo-avvio'
+Scrivi-Log "Testi a schermo: $((Testi-Visibili) -join ' | ')"
 
 Passo 'Impostazioni: il pannello' {
     Clicca 'PulsanteImpostazioni'
@@ -77,7 +78,7 @@ Passo 'Ritorno alla vista Essenziale' {
 $collegato = Passo 'Telefono finto dal QR code' {
     Avvia-TelefonoFinto -DalQR --nome 'iPhone di collaudo' --durata 300 --riconnetti-sempre | Out-Null
     Attendi-Telefono 'ACCETTATO' 30 -Nome 'iPhone di collaudo' -Obbligatorio | Out-Null
-}
+} -Esito
 if (-not $collegato) {
     Ferma-TelefonoFinto
     $collegato = Passo 'Telefono finto con la conferma sul PC' {
@@ -87,7 +88,7 @@ if (-not $collegato) {
         Fotografa 'conferma-telefono'
         Clicca (Testo-App 'Conferma_Consenti')
         Attendi-Telefono 'ACCETTATO' 20 -Nome 'iPhone di collaudo' -Obbligatorio | Out-Null
-    }
+    } -Esito
 }
 if ($collegato) {
     Passo 'Video in onda' {

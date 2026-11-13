@@ -82,6 +82,20 @@ public static class SegnalazioneBug
 {
     public static string Oggetto => TestiRicevitore.T("Bug_Oggetto");
 
+    /// <summary>
+    /// I caratteri che la descrizione accetta (collaudo 20, t13 B2: con 300 000 caratteri incollati la casella cresceva
+    /// senza fine, il pulsante spariva sotto e riaprire la scheda costava 72 s). Il registro si allega a parte.
+    /// </summary>
+    public const int DescrizioneMassima = 20_000;
+
+    /// <summary>La bozza salvata, al massimo <see cref="DescrizioneMassima"/> caratteri (senza spezzare un'emoji).</summary>
+    public static string Bozza(string? testo)
+    {
+        if (string.IsNullOrEmpty(testo) || testo.Length <= DescrizioneMassima) return testo ?? "";
+        var fine = char.IsHighSurrogate(testo[DescrizioneMassima - 1]) ? DescrizioneMassima - 1 : DescrizioneMassima;
+        return testo[..fine];
+    }
+
     /// <param name="registro">Il registro del collegamento come testo, una riga per evento (passo 9); null o vuoto se non va allegato.</param>
     public static string Testo(string descrizione, IReadOnlyList<(string Nome, string Valore)>? datiTecnici, string? registro = null)
     {

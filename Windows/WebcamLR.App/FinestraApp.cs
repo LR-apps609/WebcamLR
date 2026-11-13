@@ -252,17 +252,49 @@ public static class FinestraApp
         return pannello;
     }
 
+    /// <summary>L'altezza massima della descrizione in «Segnala un bug» (oltre, scorre dentro la casella).</summary>
+    private const double AltezzaMassimaDescrizione = 260;
+
     private static UIElement ContenutoSegnalazione(IReadOnlyList<(string Nome, string Valore)> datiTecnici)
     {
         var pannello = new StackPanel { Spacing = Token.SpazioMezzo };
         // La bozza (passo 9): il testo resta se la finestra si chiude o se arriva la domanda di un telefono.
+        // Collaudo 20 (t13 B2): un tetto ai caratteri e all'altezza, con la barra di scorrimento dentro la casella, così
+        // il pulsante resta sotto gli occhi; una bozza enorme di prima si accorcia all'apertura.
+        var salvata = Preferenze.BozzaSegnalazione;
+        var bozza = SegnalazioneBug.Bozza(salvata);
         var descrizione = new TextBox
         {
             Header = Testi.T("Bug_CosaESuccesso"),
             AcceptsReturn = true,
             TextWrapping = TextWrapping.Wrap,
             MinHeight = 120,
-            Text = Preferenze.BozzaSegnalazione,
+            MaxHeight = AltezzaMassimaDescrizione,
+            MaxLength = SegnalazioneBug.DescrizioneMassima,
+            Text = bozza,
+        };
+        ScrollViewer.SetVerticalScrollBarVisibility(descrizione, ScrollBarVisibility.Auto);
+        // Quanti caratteri restano, solo vicino al tetto (o se la bozza è stata accorciata).
+        var limite = Testo("", "TestoSecondario", Token.MisuraNota);
+        void MostraLimite(bool accorciata)
+        {
+            var lunghezza = descrizione.Text.Length;
+            limite.Text = accorciata ? Testi.T("Bug_BozzaAccorciata", SegnalazioneBug.DescrizioneMassima)
+                : Testi.T("Bug_Limite", lunghezza, SegnalazioneBug.DescrizioneMassima);
+            limite.Visibility = accorciata || lunghezza >= SegnalazioneBug.DescrizioneMassima * 9 / 10 ? Visibility.Visible : Visibility.Collapsed;
+        }
+        var avvisoAccorciata = bozza.Length < salvata.Length;
+        MostraLimite(avvisoAccorciata);
+        // La bozza si scrive su disco un momento dopo l'ultima battuta, non a ogni carattere sul thread dell'interfaccia.
+        var salvataggio = descrizione.DispatcherQueue.CreateTimer();
+        salvataggio.Interval = TimeSpan.FromMilliseconds(800);
+        salvataggio.IsRepeating = false;
+        salvataggio.Tick += (_, _) => Preferenze.BozzaSegnalazione = descrizione.Text;
+        descrizione.Unloaded += (_, _) =>
+        {
+            if (!salvataggio.IsRunning) return;
+            salvataggio.Stop();
+            Preferenze.BozzaSegnalazione = descrizione.Text;
         };
         var includi = new CheckBox { Content = Testi.T("Bug_IncludiDati"), IsChecked = true };
         var dati = Testo(string.Join("\n", datiTecnici.Select(d => $"{d.Nome}: {d.Valore}")), "TestoSecondario", Token.MisuraNota);
@@ -288,8 +320,18 @@ public static class FinestraApp
         };
         descrizione.TextChanged += (_, _) =>
         {
-            invia.IsEnabled = descrizione.Text.Trim().Length > 0;
-            Preferenze.BozzaSegnalazione = descrizione.Text;
+            // MaxLength vale per chi scrive o incolla, non per un testo messo da fuori (UI Automation, ValuePattern).
+            if (descrizione.Text.Length > SegnalazioneBug.DescrizioneMassima)
+            {
+                descrizione.Text = SegnalazioneBug.Bozza(descrizione.Text);
+                descrizione.SelectionStart = descrizione.Text.Length;
+                return;
+            }
+            invia.IsEnabled = !string.IsNullOrWhiteSpace(descrizione.Text);
+            if (descrizione.Text != bozza) avvisoAccorciata = false;
+            MostraLimite(avvisoAccorciata);
+            salvataggio.Stop();
+            salvataggio.Start();
         };
         invia.Click += async (_, _) =>
         {
@@ -303,12 +345,14 @@ public static class FinestraApp
                     && await Windows.System.Launcher.LaunchUriAsync(mail))
                 {
                     // Partita: la bozza non serve più (il testo resta nella casella finché la finestra è aperta).
+                    salvataggio.Stop();
                     Preferenze.BozzaSegnalazione = "";
                     return;
                 }
                 var contenuto = new DataPackage();
                 contenuto.SetText(testo);
                 Clipboard.SetContent(contenuto);
+                salvataggio.Stop();
                 Preferenze.BozzaSegnalazione = "";
                 esito.Text = Testi.T("Bug_Copiata");
             }
@@ -319,6 +363,7 @@ public static class FinestraApp
         };
 
         pannello.Children.Add(descrizione);
+        pannello.Children.Add(limite);
         pannello.Children.Add(includi);
         pannello.Children.Add(dati);
         pannello.Children.Add(includiRegistro);

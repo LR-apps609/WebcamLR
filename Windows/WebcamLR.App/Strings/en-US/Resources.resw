@@ -2159,4 +2159,10 @@ The details are in {1}: send them with “Report a bug”.</value>
   <data name="Numeri_ColpaDelPc" xml:space="preserve">
     <value>The delay is on this PC, not the network: close heavy programs or choose a lower quality.</value>
   </data>
+  <data name="Bug_Limite" xml:space="preserve">
+    <value>{0:N0} of {1:N0} characters: you can't type more. The connection log is attached on its own, below.</value>
+  </data>
+  <data name="Bug_BozzaAccorciata" xml:space="preserve">
+    <value>The draft was too long: the first {0:N0} characters are kept. The connection log is attached on its own, below.</value>
+  </data>
 </root>

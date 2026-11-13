@@ -610,6 +610,23 @@ function Impronta-Area([int]$X, [int]$Y, [int]$L, [int]$A) {
     }
 }
 
+function Confronta-Finestra {
+    <#
+    Esegue il blocco e dice quanto è cambiata a schermo la finestra dell'app (percentuale dei punti campionati): utile
+    quando UI Automation non vede una cosa che forse si vede. Restituisce la percentuale e la scrive nel registro.
+    #>
+    param([Parameter(Mandatory)][string]$Descrizione, [Parameter(Mandatory)][scriptblock]$Blocco)
+    $r = (Finestra-App).Current.BoundingRectangle
+    $prima = Impronta-Area ([int]$r.X) ([int]$r.Y) ([int]$r.Width) ([int]$r.Height)
+    & $Blocco | Out-Null
+    $dopo = Impronta-Area ([int]$r.X) ([int]$r.Y) ([int]$r.Width) ([int]$r.Height)
+    $cambiati = 0
+    for ($k = 0; $k -lt $prima.Length; $k++) { if ([Math]::Abs($prima[$k] - $dopo[$k]) -gt 12) { $cambiati++ } }
+    $percento = [Math]::Round(100.0 * $cambiati / $prima.Length, 1)
+    Scrivi-Log "Confronta-Finestra «$Descrizione»: $percento% della finestra è cambiato"
+    $percento
+}
+
 function Controlla-Video {
     <#
     Guarda se il video nell'elemento <Chi> (di serie il primo tra 'VideoElaborato' e 'Video' a schermo) scorre: due

@@ -24,7 +24,8 @@ Passo 'Impostazioni: il pannello' {
 }
 # Le voci del pannello, con i nomi dell'app nella lingua scelta (stesso ordine di MainWindow.Viste.cs). Hanno lo stesso
 # nome di altri pulsanti («Sfondo», «Schermo»): si cercano dentro l'elenco del pannello.
-$voci = 'Fotocamera', 'Effetti', 'Sfondo', 'Profili', 'Qualita', 'Schermo', 'Microfono', 'Telefoni', 'Uscite', 'Gobbo', 'Avvio', 'Registro'
+# «Uscite» per ultima: nelle prove di novembre dopo quella pagina il pannello non si riapriva più (controllo qui sotto).
+$voci = 'Fotocamera', 'Effetti', 'Sfondo', 'Profili', 'Qualita', 'Schermo', 'Microfono', 'Telefoni', 'Gobbo', 'Avvio', 'Registro', 'Uscite'
 foreach ($voce in $voci) {
     $nome = Testo-App "Impostazioni_$voce"
     Passo "Impostazioni › $nome" {
@@ -37,6 +38,18 @@ foreach ($voce in $voci) {
         }
         Chiudi-Impostazioni
     }
+}
+
+Passo 'Impostazioni di nuovo dopo «Uscite»' {
+    $cambio = Confronta-Finestra 'clic su Impostazioni' { Clicca 'PulsanteImpostazioni'; Start-Sleep -Seconds 1 }
+    Fotografa 'impostazioni-dopo-uscite'
+    $vede = [bool](Trova-Elemento 'ScorrimentoImpostazioni' -AncheNascosti)
+    Scrivi-Log "  dopo «Uscite»: elenco delle impostazioni per UI Automation $vede, finestra cambiata $cambio%"
+    if (-not $vede) {
+        Segnala-Problema "Dopo Impostazioni › Uscite il pannello Impostazioni non si riapre (UI Automation non lo vede; a schermo è cambiato il $cambio% della finestra: guarda impostazioni-dopo-uscite.png)"
+    }
+    Chiudi-Impostazioni
+    if (Trova-Elemento 'ScorrimentoImpostazioni' -AncheNascosti) { Clicca 'PulsanteImpostazioni' }
 }
 
 # ---------------------------------------------------------------- menu dell'intestazione
@@ -110,6 +123,11 @@ Passo 'Vista Completo (Ctrl+2)' {
     Start-Sleep -Seconds 2
     Fotografa 'vista-completo'
     Scrivi-Log "A schermo: $(Elenco-Visibili)"
+    foreach ($id in 'PulsanteSchermo', 'VideoElaborato', 'ChipQualita', 'PannelloDestroScorrimento', 'SezioneFotocamera') {
+        $e = Trova-Elemento $id -AncheNascosti
+        if ($e) { Scrivi-Log "  $id: c'è, fuori schermo $($e.Current.IsOffscreen), $(Descrivi-Rettangolo $e.Current.BoundingRectangle)" }
+        else { Scrivi-Log "  ${id}: non c'è" }
+    }
     if ($collegato) { Controlla-Video -Obbligatorio | Out-Null }
 }
 Passo 'Registro del collegamento (colonna di sinistra)' {

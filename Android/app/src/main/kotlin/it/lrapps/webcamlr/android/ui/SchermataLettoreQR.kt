@@ -6,16 +6,20 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FlashlightOff
@@ -29,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -94,40 +99,67 @@ fun SchermataLettoreQR(letto: (Associazione) -> Unit, chiudi: () -> Unit) {
 
     Box(Modifier.fillMaxSize().background(Color.Black)) {
         AnteprimaVideo(renderizzatore, Modifier.fillMaxSize())
-        // Il mirino: un quadrato chiaro al centro.
-        Box(
-            Modifier.align(Alignment.Center).size(240.dp)
-                .border(3.dp, Colori.testo, RoundedCornerShape(Raggi.pannello)),
-        )
-        Column(
-            Modifier.fillMaxSize().safeDrawingPadding().padding(Spazi.medio),
-            verticalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.qr_titolo), style = Stili.titoloGrande, color = Colori.testo, modifier = Modifier.weight(1f))
-                if (torciaDisponibile) {
-                    PulsanteTondo(
-                        if (torciaAccesa) Icons.Filled.FlashlightOn else Icons.Filled.FlashlightOff,
-                        stringResource(R.string.torcia),
-                        attivo = torciaAccesa,
-                        stato = stringResource(if (torciaAccesa) R.string.acceso else R.string.spento),
-                    ) {
-                        torciaAccesa = !torciaAccesa
-                        cattura.impostaTorcia(torciaAccesa)
+        // Collaudo 20 (t09 B5): il titolo su un velo scuro, leggibile su qualunque immagine; il mirino al centro dello
+        // spazio libero fra il titolo e le istruzioni, che non lo coprono più (in orizzontale stanno a destra).
+        BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding().padding(Spazi.medio)) {
+            val orizzontale = maxWidth > maxHeight
+            val altezzaMassimaIstruzioni = maxHeight * 0.35f
+            val larghezzaMassimaIstruzioni = maxWidth * 0.45f
+            Column(Modifier.fillMaxSize()) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spazi.stretto)) {
+                    Box(Modifier.weight(1f)) {
+                        Text(
+                            stringResource(R.string.qr_titolo), style = Stili.titoloGrande, color = Colori.testo,
+                            modifier = Modifier.clip(RoundedCornerShape(Raggi.controllo)).background(Veli.coloreMedio)
+                                .padding(horizontal = Spazi.stretto, vertical = Spazi.minimo),
+                        )
                     }
-                    Spacer(Modifier.width(Spazi.stretto))
+                    if (torciaDisponibile) {
+                        PulsanteTondo(
+                            if (torciaAccesa) Icons.Filled.FlashlightOn else Icons.Filled.FlashlightOff,
+                            stringResource(R.string.torcia),
+                            attivo = torciaAccesa,
+                            stato = stringResource(if (torciaAccesa) R.string.acceso else R.string.spento),
+                        ) {
+                            torciaAccesa = !torciaAccesa
+                            cattura.impostaTorcia(torciaAccesa)
+                        }
+                    }
+                    PulsanteTondo(Icons.Filled.Close, stringResource(R.string.chiudi), azione = chiudi)
                 }
-                PulsanteTondo(Icons.Filled.Close, stringResource(R.string.chiudi), azione = chiudi)
-            }
-            Spacer(Modifier.weight(1f))
-            // TalkBack legge l'avviso quando cambia («Questo QR code non è di WebcamLR…»).
-            Scheda(sfondo = Veli.coloreMedio, bordo = null, modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite }) {
-                Text(
-                    avviso ?: stringResource(R.string.qr_istruzioni),
-                    style = Stili.corpo,
-                    color = if (avviso != null) Colori.ambraTesto else Colori.testoChiaro,
-                )
+                if (orizzontale) {
+                    Row(Modifier.weight(1f).fillMaxWidth().padding(top = Spazi.piccolo), horizontalArrangement = Arrangement.spacedBy(Spazi.medio)) {
+                        Mirino(Modifier.weight(1f).fillMaxHeight())
+                        IstruzioniQR(avviso, Modifier.widthIn(max = larghezzaMassimaIstruzioni).align(Alignment.Bottom))
+                    }
+                } else {
+                    Mirino(Modifier.weight(1f).fillMaxWidth().padding(vertical = Spazi.piccolo))
+                    IstruzioniQR(avviso, Modifier.fillMaxWidth().heightIn(max = altezzaMassimaIstruzioni))
+                }
             }
         }
+    }
+}
+
+/** Il mirino: un quadrato chiaro da 240 dp, più piccolo se lo spazio libero non basta, al centro di quello spazio. */
+@Composable
+private fun Mirino(modifier: Modifier) {
+    BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
+        val lato = minOf(240.dp, maxWidth, maxHeight)
+        Box(Modifier.size(lato).border(3.dp, Colori.testo, RoundedCornerShape(Raggi.pannello)))
+    }
+}
+
+/** Le istruzioni (o l'avviso) sul velo; con il carattere grande scorrono invece di salire sul mirino. */
+@Composable
+private fun IstruzioniQR(avviso: String?, modifier: Modifier) {
+    // TalkBack legge l'avviso quando cambia («Questo QR code non è di WebcamLR…»).
+    Scheda(sfondo = Veli.coloreMedio, bordo = null, modifier = modifier.semantics { liveRegion = LiveRegionMode.Polite }) {
+        Text(
+            avviso ?: stringResource(R.string.qr_istruzioni),
+            style = Stili.corpo,
+            color = if (avviso != null) Colori.ambraTesto else Colori.testoChiaro,
+            modifier = Modifier.verticalScroll(rememberScrollState()),
+        )
     }
 }

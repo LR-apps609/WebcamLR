@@ -214,8 +214,10 @@ private fun ColumnScope.ContenutoImpostazioni(
                 .semantics(mergeDescendants = true) { stateDescription = stato }.padding(horizontal = Spazi.medio, vertical = Spazi.stretto),
         ) {
             SegnoPro()
-            Text("WebcamLR Pro", style = Stili.comando, color = Colori.testo, modifier = Modifier.weight(1f))
-            Text(stato, style = Stili.comando, color = if (pro) Colori.accentoChiaro else Colori.accento, maxLines = 1)
+            // Collaudo 20 (t09 B7): «Sblocca» sotto il nome quando non stanno accanto, mai «Webca/mLR/Pro».
+            AcapoSeServe(Modifier.weight(1f), primo = { Text("WebcamLR Pro", style = Stili.comando, color = Colori.testo) }) {
+                Text(stato, style = Stili.comando, color = if (pro) Colori.accentoChiaro else Colori.accento)
+            }
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Colori.testoSecondario)
         }
     }
@@ -261,8 +263,10 @@ private fun ColumnScope.ContenutoImpostazioni(
                 verticalArrangement = Arrangement.spacedBy(Spazi.stretto),
             ) {
                 Text(stringResource(R.string.batteria_limitata), style = Stili.nota, color = Colori.ambraTesto)
-                Row(horizontalArrangement = Arrangement.spacedBy(Spazi.stretto), verticalAlignment = Alignment.CenterVertically) {
+                // Collaudo 20 (t09 B7): il link sotto il pulsante quando non stanno accanto, mai «Per/ché/suc/ced/e?».
+                AcapoSeServe(spazio = Spazi.stretto, secondoAllaFine = false, primo = {
                     PulsantePieno(stringResource(R.string.apri_impostazioni), piccolo = true) { Permessi.apriBatteria(context) }
+                }) {
                     // I consigli per marca (Samsung, Xiaomi, Huawei…) nella risposta «Il video si ferma quando spengo lo schermo».
                     PulsanteLink(stringResource(R.string.perche_succede)) { azioni.apriDomanda("schermo-spento") }
                 }

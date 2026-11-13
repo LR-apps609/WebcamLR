@@ -90,7 +90,6 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import it.lrapps.webcamlr.android.R
@@ -372,7 +371,8 @@ fun PaginaComputer(ridotte: Boolean, avanti: () -> Unit) {
             ) {
                 Icon(Icons.Filled.Language, contentDescription = null, tint = Colori.accento)
                 SelectionContainer {
-                    Text(InfoApp.INDIRIZZO_BREVE, style = Stili.numeriCorpo, color = Colori.testo, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    // Collaudo 20 (t09 B8): l'indirizzo va a capo invece di essere troncato, è l'informazione che serve.
+                    Text(InfoApp.INDIRIZZO_BREVE, style = Stili.numeriCorpo, color = Colori.testo)
                 }
             }
             PulsanteSecondario(titoloCondividi, icona = Icons.Filled.Share) {

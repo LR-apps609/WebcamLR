@@ -20,18 +20,22 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -50,8 +54,10 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Usb
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -59,6 +65,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -68,6 +75,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -82,6 +90,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import it.lrapps.webcamlr.android.R
 import it.lrapps.webcamlr.android.contenuti.InfoApp
 import it.lrapps.webcamlr.android.dati.ComputerConosciuti
@@ -174,8 +183,9 @@ fun SchermataComputer(
         Column(Modifier.widthIn(max = 560.dp).fillMaxSize().padding(horizontal = Spazi.largo, vertical = Spazi.piccolo)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spazi.stretto)) {
                 LogoWebcamLR(30.dp)
-                MarchioWebcamLR()
-                Spacer(Modifier.weight(1f))
+                // Collaudo 20 (t09 B1): il nome prende solo lo spazio che avanza e, se non ci sta intero, lascia il
+                // logo da solo. PRO, «?» e l'ingranaggio restano sempre interi, da 48 dp.
+                SoloSeCiSta(Modifier.weight(1f)) { MarchioWebcamLR() }
                 // WebcamLR Pro sempre in vista: «PRO» (o «PRO ✓» se è attivo) apre la pagina Pro.
                 PulsantePro { annullaRicollegamento(); apriPro() }
                 // Le azioni della barra in alto come in Material 3: icone da 48 dp, senza fondo.
@@ -236,16 +246,42 @@ private fun PulsantePro(azione: () -> Unit) {
     }
 }
 
-/** Il contenuto che scorre sopra, i pulsanti fermi in fondo. */
+/**
+ * Il contenuto che scorre sopra, i pulsanti fermi in fondo. Collaudo 20 (t09 B2): quando i pulsanti si prenderebbero
+ * più di [QUOTA_PULSANTI_FERMI] dell'altezza (testo grande, telefono piccolo, orizzontale) scorre tutto insieme,
+ * titolo e pulsanti compresi: prima il contenuto si riduceva a una striscia e «Collega a mano» finiva fuori schermo.
+ * Con lo spazio che basta l'aspetto è quello di sempre (i pulsanti restano in fondo anche quando scorre tutto).
+ */
 @Composable
 private fun ColumnScope.Pagina(contenuto: @Composable ColumnScope.() -> Unit, pulsanti: @Composable ColumnScope.() -> Unit) {
-    Column(
-        Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(Spazi.medio),
-        content = contenuto,
-    )
-    Column(Modifier.fillMaxWidth().padding(top = Spazi.piccolo), verticalArrangement = Arrangement.spacedBy(Spazi.piccolo), content = pulsanti)
+    BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+        val altezza = maxHeight
+        var altezzaPulsanti by remember { mutableIntStateOf(0) }
+        val tuttoScorre = altezzaPulsanti > constraints.maxHeight * QUOTA_PULSANTI_FERMI
+        val misuraPulsanti = Modifier.fillMaxWidth().padding(top = Spazi.piccolo).onSizeChanged { altezzaPulsanti = it.height }
+        if (tuttoScorre) {
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                Column(Modifier.fillMaxWidth().heightIn(min = altezza)) {
+                    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spazi.medio), content = contenuto)
+                    Spacer(Modifier.weight(1f))
+                    Column(misuraPulsanti, verticalArrangement = Arrangement.spacedBy(Spazi.piccolo), content = pulsanti)
+                }
+            }
+        } else {
+            Column(Modifier.fillMaxSize()) {
+                Column(
+                    Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(Spazi.medio),
+                    content = contenuto,
+                )
+                Column(misuraPulsanti, verticalArrangement = Arrangement.spacedBy(Spazi.piccolo), content = pulsanti)
+            }
+        }
+    }
 }
+
+/** Oltre questa parte dell'altezza i pulsanti in fondo non restano fermi: scorrono con il contenuto. */
+private const val QUOTA_PULSANTI_FERMI = 0.4f
 
 /**
  * Le strade per collegarsi quando la ricerca non basta, uguali in «Cerco» e in «Non trovo nessun computer», con un
@@ -528,7 +564,8 @@ private fun DialogoCavo(chiudi: () -> Unit, apriDomanda: (String) -> Unit) {
         icon = { Icon(Icons.Filled.Usb, contentDescription = null, tint = Colori.accento) },
         title = { Text(stringResource(R.string.usa_cavo_usb)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(Spazi.piccolo)) {
+            // Collaudo 20 (t09 B3): con il carattere grande i passi e i due collegamenti scorrono, i pulsanti restano.
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Spazi.piccolo)) {
                 listOf(R.string.cavo_passo_1, R.string.cavo_passo_2, R.string.cavo_passo_3).forEachIndexed { indice, passo ->
                     Row(horizontalArrangement = Arrangement.spacedBy(Spazi.piccolo)) {
                         Text("${indice + 1}", style = Stili.numeriEvidenti, color = Colori.accento)
@@ -577,11 +614,20 @@ private fun DialogoIndirizzo(chiudi: () -> Unit, collega: (Associazione) -> Unit
             nonValido = true
         }
     }
+    // Collaudo 20 (t09 B4): il dialogo sta sopra la tastiera (riceve i suoi margini) e il titolo scorre con il testo e
+    // il campo, così con il carattere grande, anche in orizzontale, restano in vista il campo che si sta scrivendo e
+    // «Collega»; il campo con il fuoco si porta da solo in vista dentro lo scorrimento.
     AlertDialog(
         onDismissRequest = chiudi,
-        title = { Text(stringResource(R.string.indirizzo_titolo)) },
+        modifier = Modifier.windowInsetsPadding(WindowInsets.safeDrawing),
+        properties = DialogProperties(decorFitsSystemWindows = false),
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(Spazi.stretto)) {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Spazi.stretto)) {
+                Text(
+                    stringResource(R.string.indirizzo_titolo), style = MaterialTheme.typography.headlineSmall,
+                    color = AlertDialogDefaults.titleContentColor,
+                    modifier = Modifier.padding(bottom = Spazi.piccolo).semantics { heading() },
+                )
                 Text(stringResource(R.string.indirizzo_testo), style = Stili.corpo, color = Colori.testoChiaro)
                 OutlinedTextField(
                     value = testo,

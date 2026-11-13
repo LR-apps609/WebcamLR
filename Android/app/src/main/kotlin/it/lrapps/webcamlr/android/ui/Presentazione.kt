@@ -45,8 +45,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -59,6 +61,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -117,26 +120,32 @@ fun Presentazione(fine: () -> Unit) {
         riempimento.animateTo(1f, tween(DURATE[pagina] * 1000, easing = LinearEasing))
     }
 
+    // Collaudo 20 (t09 B8): l'intestazione (barrette e «Salta») cresce con il carattere; le pagine lasciano in cima
+    // la sua altezza vera, fuori dallo scorrimento, così il testo che scorre non le passa più sotto.
+    val densita = LocalDensity.current
+    var altezzaIntestazione by remember { mutableStateOf(SPAZIO_INTESTAZIONE) }
     Box(Modifier.fillMaxSize().background(Colori.sfondoSchermata).safeDrawingPadding(), contentAlignment = Alignment.TopCenter) {
-        AnimatedContent(
-            targetState = pagina,
-            transitionSpec = {
-                if (ridotte) {
-                    fadeIn(tween(350)) togetherWith fadeOut(tween(350))
-                } else if (targetState > initialState) {
-                    (slideInHorizontally { it } + fadeIn()) togetherWith (slideOutHorizontally { -it } + fadeOut())
-                } else {
-                    (slideInHorizontally { -it } + fadeIn()) togetherWith (slideOutHorizontally { it } + fadeOut())
+        CompositionLocalProvider(LocalSpazioIntestazione provides maxOf(SPAZIO_INTESTAZIONE, altezzaIntestazione)) {
+            AnimatedContent(
+                targetState = pagina,
+                transitionSpec = {
+                    if (ridotte) {
+                        fadeIn(tween(350)) togetherWith fadeOut(tween(350))
+                    } else if (targetState > initialState) {
+                        (slideInHorizontally { it } + fadeIn()) togetherWith (slideOutHorizontally { -it } + fadeOut())
+                    } else {
+                        (slideInHorizontally { -it } + fadeIn()) togetherWith (slideOutHorizontally { it } + fadeOut())
+                    }
+                },
+                label = "pagina",
+                modifier = Modifier.widthIn(max = 640.dp).fillMaxSize(),
+            ) { attuale ->
+                when (attuale) {
+                    0 -> PaginaWebcam(ridotte) { vai(1) }
+                    1 -> PaginaComputer(ridotte) { vai(2) }
+                    2 -> PaginaProfili(ridotte) { vai(3) }
+                    else -> PaginaPermessi(ridotte, chiedendo) { inizia() }
                 }
-            },
-            label = "pagina",
-            modifier = Modifier.widthIn(max = 640.dp).fillMaxSize(),
-        ) { attuale ->
-            when (attuale) {
-                0 -> PaginaWebcam(ridotte) { vai(1) }
-                1 -> PaginaComputer(ridotte) { vai(2) }
-                2 -> PaginaProfili(ridotte) { vai(3) }
-                else -> PaginaPermessi(ridotte, chiedendo) { inizia() }
             }
         }
         Intestazione(
@@ -144,6 +153,7 @@ fun Presentazione(fine: () -> Unit) {
             totale = DURATE.size,
             riempimento = riempimento.asState(),
             salta = if (pagina < ultima) ({ vai(ultima) }) else null,
+            modifier = Modifier.onSizeChanged { altezzaIntestazione = with(densita) { it.height.toDp() } },
         )
     }
 }
@@ -154,11 +164,14 @@ private val DURATE = listOf(10, 8, 10, 5)
 /** Lo spazio lasciato in cima a ogni pagina per le barrette e «Salta». */
 private val SPAZIO_INTESTAZIONE = 60.dp
 
+/** L'altezza misurata dell'intestazione (almeno [SPAZIO_INTESTAZIONE]), per [ImpaginazionePagina]. */
+private val LocalSpazioIntestazione = compositionLocalOf { SPAZIO_INTESTAZIONE }
+
 @Composable
-private fun Intestazione(pagina: Int, totale: Int, riempimento: State<Float>, salta: (() -> Unit)?) {
+private fun Intestazione(pagina: Int, totale: Int, riempimento: State<Float>, salta: (() -> Unit)?, modifier: Modifier = Modifier) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.widthIn(max = 640.dp).fillMaxWidth().padding(horizontal = Spazi.largo, vertical = Spazi.stretto),
+        modifier = modifier.widthIn(max = 640.dp).fillMaxWidth().padding(horizontal = Spazi.largo, vertical = Spazi.stretto),
     ) {
         BarreAvanzamento(pagina, totale, riempimento)
         Spacer(Modifier.weight(1f).widthIn(min = Spazi.stretto))
@@ -214,16 +227,17 @@ fun ImpaginazionePagina(
     contenuto: @Composable ColumnScope.() -> Unit,
     azioni: @Composable () -> Unit,
 ) {
+    val spazioIntestazione = LocalSpazioIntestazione.current
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val orizzontale = maxWidth > maxHeight && maxHeight < 520.dp
         if (orizzontale) {
             Row(Modifier.fillMaxSize().padding(horizontal = Spazi.largo).padding(bottom = Spazi.piccolo), horizontalArrangement = Arrangement.spacedBy(Spazi.largo)) {
-                Box(Modifier.weight(1f).fillMaxHeight().padding(top = SPAZIO_INTESTAZIONE, bottom = Spazi.stretto)) {
+                Box(Modifier.weight(1f).fillMaxHeight().padding(top = spazioIntestazione, bottom = Spazi.stretto)) {
                     scena(Modifier.fillMaxSize())
                 }
                 Column(Modifier.weight(1f).fillMaxHeight()) {
                     Column(
-                        Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(top = SPAZIO_INTESTAZIONE, bottom = Spazi.stretto),
+                        Modifier.weight(1f).padding(top = spazioIntestazione).verticalScroll(rememberScrollState()).padding(bottom = Spazi.stretto),
                         verticalArrangement = Arrangement.spacedBy(Spazi.medio),
                         content = contenuto,
                     )
@@ -234,7 +248,7 @@ fun ImpaginazionePagina(
             val altezzaScena: Dp = (maxHeight * quotaScena).coerceIn(170.dp, 340.dp)
             Column(Modifier.fillMaxSize().padding(horizontal = Spazi.largo).padding(bottom = Spazi.piccolo)) {
                 Column(
-                    Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(top = SPAZIO_INTESTAZIONE, bottom = Spazi.stretto),
+                    Modifier.weight(1f).padding(top = spazioIntestazione).verticalScroll(rememberScrollState()).padding(bottom = Spazi.stretto),
                     verticalArrangement = Arrangement.spacedBy(Spazi.medio),
                 ) {
                     scena(Modifier.fillMaxWidth().height(altezzaScena))

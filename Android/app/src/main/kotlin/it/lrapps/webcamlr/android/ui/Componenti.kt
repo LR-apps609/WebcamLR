@@ -101,7 +101,7 @@ fun disegnaLogo(scope: androidx.compose.ui.graphics.drawscope.DrawScope, lato: F
 
 /** «WebcamLR» con «LR» nell'accento salvia: il corallo resta solo per «in onda» e la registrazione. */
 @Composable
-fun MarchioWebcamLR(stile: TextStyle = Stili.titolo) {
+fun MarchioWebcamLR(stile: TextStyle = Stili.titolo, modifier: Modifier = Modifier) {
     Text(
         buildAnnotatedString {
             append("Webcam")
@@ -109,7 +109,9 @@ fun MarchioWebcamLR(stile: TextStyle = Stili.titolo) {
         },
         style = stile,
         color = Colori.testo,
-        modifier = Modifier.semantics { contentDescription = "WebcamLR" },
+        maxLines = 1,
+        softWrap = false,
+        modifier = modifier.semantics { contentDescription = "WebcamLR" },
     )
 }
 
@@ -439,12 +441,18 @@ fun RigaLink(testo: String, icona: ImageVector? = null, valore: String? = null, 
     )
 }
 
-/** Titolo e valore, come i numeri dei «Dettagli». */
+/**
+ * Titolo e valore, come i numeri dei «Dettagli». Collaudo 20 (t09 B7): uno accanto all'altro se ci stanno, altrimenti
+ * il valore sotto il titolo (prima il valore si prendeva la riga e il titolo andava a capo una lettera per riga).
+ */
 @Composable
 fun RigaValore(titolo: String, valore: String) {
     ListItem(
-        headlineContent = { Text(titolo) },
-        trailingContent = { Text(valore, style = Stili.numeri, color = Colori.testoChiaro, textAlign = TextAlign.End) },
+        headlineContent = {
+            AcapoSeServe(primo = { Text(titolo) }) {
+                Text(valore, style = Stili.numeri, color = Colori.testoChiaro, textAlign = TextAlign.End)
+            }
+        },
         colors = coloriRiga(),
         modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) {},
     )
@@ -589,7 +597,15 @@ fun PillolaStato(
     val colore = if (tono == TonoPillola.IN_ONDA) Color.White else Colori.ambraTesto
     val punto = if (tono == TonoPillola.IN_ONDA) Color.White else Colori.ambra
     val spaziata = base.copy(letterSpacing = Stili.sezione.letterSpacing * scala)
-    val stile = if (grande) spaziata.copy(fontSize = with(LocalDensity.current) { base.fontSize.value.dp.toSp() }) else spaziata
+    // Collaudo 20 (t09 B6): anche la piccola, l'ultima scelta quando la normale non ci sta (nelle orecchie, accanto
+    // al foro della fotocamera, con il carattere di sistema al 200%), resta della sua misura: «IN ONDA» sempre intero.
+    val stile = when (misura) {
+        MisuraPillola.GRANDE -> spaziata.copy(fontSize = with(LocalDensity.current) { base.fontSize.value.dp.toSp() })
+        MisuraPillola.PICCOLA -> with(LocalDensity.current) {
+            spaziata.copy(fontSize = base.fontSize.value.dp.toSp(), letterSpacing = spaziata.letterSpacing.value.dp.toSp())
+        }
+        MisuraPillola.NORMALE -> spaziata
+    }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spazi.stretto * scala),

@@ -71,6 +71,38 @@ sealed interface Schermata {
     data object Segnala : Schermata
 }
 
+/**
+ * Collaudo 20 (t09 B9): la pila in parole, per salvarla quando Android ricrea l'attività (dimensione del carattere o
+ * dello schermo cambiata nelle impostazioni di sistema, lingua): prima si tornava sempre alla lista dei computer.
+ */
+private fun Schermata.inTesto(): String = when (this) {
+    Schermata.Computer -> "computer"
+    Schermata.LettoreQR -> "lettore"
+    Schermata.InOnda -> "in-onda"
+    is Schermata.Impostazioni -> "impostazioni:" + pagina.name
+    Schermata.App -> "app"
+    Schermata.Pro -> "pro"
+    is Schermata.Domande -> "domande:" + (aperta ?: "")
+    Schermata.Guida -> "guida"
+    Schermata.Segnala -> "segnala"
+}
+
+private fun schermataDaTesto(testo: String): Schermata? {
+    val (nome, resto) = testo.split(":", limit = 2).let { it[0] to it.getOrNull(1) }
+    return when (nome) {
+        "computer" -> Schermata.Computer
+        "lettore" -> Schermata.LettoreQR
+        "in-onda" -> Schermata.InOnda
+        "impostazioni" -> Schermata.Impostazioni(PaginaImpostazioni.entries.firstOrNull { it.name == resto } ?: PaginaImpostazioni.Principale)
+        "app" -> Schermata.App
+        "pro" -> Schermata.Pro
+        "domande" -> Schermata.Domande(resto?.ifEmpty { null })
+        "guida" -> Schermata.Guida
+        "segnala" -> Schermata.Segnala
+        else -> null
+    }
+}
+
 class MainActivity : ComponentActivity() {
     private val pila = mutableStateListOf<Schermata>(Schermata.Computer)
 
@@ -142,6 +174,15 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         PreferenzeInterfaccia.prepara(this)
+        // Ricreata da Android (carattere, schermo, lingua): le pagine aperte tornano com'erano. «In onda» solo se la
+        // sessione c'è ancora (ci pensa la riga sotto).
+        savedInstanceState?.getStringArrayList(CHIAVE_PILA)?.mapNotNull { schermataDaTesto(it) }
+            ?.filter { it != Schermata.InOnda || Sessioni.attuale != null }
+            ?.takeIf { it.firstOrNull() == Schermata.Computer }
+            ?.let { salvata ->
+                pila.clear()
+                pila.addAll(salvata)
+            }
         // Una sessione ancora viva (per esempio dopo aver riaperto l'app dall'avviso): si torna a «In onda».
         if (Sessioni.attuale != null && pila.lastOrNull() != Schermata.InOnda) pila.add(Schermata.InOnda)
         setContent {
@@ -155,6 +196,11 @@ class MainActivity : ComponentActivity() {
         gestisciCollegamento(intent)
         // Solo all'apertura vera, non quando Android ricrea l'attività con lo stesso intento.
         if (savedInstanceState == null) gestisciScollega(intent)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putStringArrayList(CHIAVE_PILA, ArrayList(pila.map { it.inTesto() }))
     }
 
     /**
@@ -422,5 +468,8 @@ class MainActivity : ComponentActivity() {
     companion object {
         /** Nell'intento della notifica: «Scollega» apre la domanda della X (P5). */
         const val EXTRA_CONFERMA_SCOLLEGA = "it.lrapps.webcamlr.android.CONFERMA_SCOLLEGA"
+
+        /** La pila delle schermate nello stato salvato dell'attività. */
+        private const val CHIAVE_PILA = "pila"
     }
 }

@@ -325,9 +325,11 @@ fun SchermataSegnala(ultimaLatenzaMs: Int?, indietro: () -> Unit) {
         }
         if (conDati) {
             Column(Modifier.fillMaxWidth().padding(top = Spazi.stretto).clip(RoundedCornerShape(Raggi.controllo)).background(Colori.pannelloScuro).padding(Spazi.piccolo)) {
+                // Collaudo 20 (t09 B7): nome e valore accanto se ci stanno, altrimenti il valore sotto il nome.
                 for ((nome, valore) in datiTecnici) {
-                    Row(Modifier.fillMaxWidth()) {
-                        Text(nome, style = Stili.nota, color = Colori.testoSecondario, modifier = Modifier.weight(1f))
+                    AcapoSeServe(Modifier.fillMaxWidth(), spazioSotto = 0.dp, secondoAllaFine = false, primo = {
+                        Text(nome, style = Stili.nota, color = Colori.testoSecondario)
+                    }) {
                         Text(valore, style = Stili.numeri, color = Colori.testoTenue)
                     }
                 }

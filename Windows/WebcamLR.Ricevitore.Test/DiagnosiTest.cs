@@ -144,6 +144,23 @@ public class DiagnosiTest
     }
 
     [Fact]
+    public void ConSoloAndroidNienteDispositiviApple()
+    {
+        // Collaudo 20 (t04 B3): un Android collegato e il servizio di Apple assente: non «Dispositivi Apple», il debug USB.
+        var problema = Assert.Single(Diagnosi.Problemi(TuttoAPosto with { Cavo = StatoCavo.ServizioAssente, SoloAndroid = true }));
+        Assert.Equal("android-come-cavo", problema.Id);
+        Assert.Null(problema.Azione);
+        // Con un iPhone (o nessun telefono) resta quello di Apple.
+        Assert.Equal("servizio-assente", Assert.Single(Diagnosi.Problemi(TuttoAPosto with { Cavo = StatoCavo.ServizioAssente })).Id);
+        // Se il cavo di Android ha già qualcosa da dire, basta quello.
+        var conCavo = Diagnosi.Problemi(TuttoAPosto with
+        {
+            Cavo = StatoCavo.ServizioAssente, SoloAndroid = true, Android = new SituazioneCavo(true, StatoCavo.InAscolto, true),
+        });
+        Assert.Equal(["android-al-cavo"], conCavo.Select(p => p.Id));
+    }
+
+    [Fact]
     public void IPhoneAlCavoMaAppChiusa()
     {
         var problema = Assert.Single(Diagnosi.Problemi(TuttoAPosto with { IPhoneAlCavo = true }));

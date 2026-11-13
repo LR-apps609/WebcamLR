@@ -1061,4 +1061,10 @@
   <data name="Risposta_CavoAndroid" xml:space="preserve">
     <value>Ci sono due strade. Con il debug USB (la più veloce): sul telefono apri Impostazioni › Informazioni sul telefono e tocca sette volte «Numero build»; poi in Impostazioni › Sistema › Opzioni sviluppatore attiva «Debug USB». Sul PC servono gli strumenti di Android (adb), gratuiti da Google: se c'è Android Studio ci sono già. Collega il cavo, scegli «Consenti» alla domanda «Consentire il debug USB?» e apri WebcamLR sul telefono: il collegamento parte da solo e la riga «Cavo USB» dice «In uso · Android». Senza modalità sviluppatore: attiva «Tethering USB» (Impostazioni › Hotspot e tethering) e scegli il PC dalla lista.</value>
   </data>
+  <data name="Diagnosi_AndroidComeCavoTitolo" xml:space="preserve">
+    <value>Cavo USB con Android</value>
+  </data>
+  <data name="Diagnosi_AndroidComeCavo" xml:space="preserve">
+    <value>Per il cavo con Android attiva «Debug USB» nelle Opzioni sviluppatore del telefono e collega il cavo: WebcamLR lo usa da sola, senza altre app.</value>
+  </data>
 </root>

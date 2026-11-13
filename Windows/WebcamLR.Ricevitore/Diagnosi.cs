@@ -24,8 +24,12 @@ public enum StatoFirewall
 /// <param name="Cavo">Null finché il servizio di Apple (cavo dell'iPhone) non è stato cercato.</param>
 /// <param name="ProfiloTethering">Il profilo della rete del Tethering USB di Android; null se non c'è.</param>
 /// <param name="Android">Il cavo di Android con adb (Qualità 17); null finché non è stato cercato.</param>
+/// <param name="SoloAndroid">
+/// Collaudo 20 (t04 B3): sono collegati solo telefoni Android. Il suggerimento «Dispositivi Apple» per il cavo dell'iPhone
+/// non serve: al suo posto come si usa il cavo con Android (debug USB).
+/// </param>
 public sealed record SituazioneRete(bool HaRete, ProfiloRete Profilo, StatoFirewall Firewall, StatoCavo? Cavo, bool IPhoneAlCavo,
-    ProfiloRete? ProfiloTethering = null, SituazioneCavo? Android = null);
+    ProfiloRete? ProfiloTethering = null, SituazioneCavo? Android = null, bool SoloAndroid = false);
 
 /// <summary>Una rete collegata come la vede Windows: il profilo, e se passa dal Tethering USB di un telefono Android.</summary>
 public sealed record ReteCollegata(ProfiloRete Profilo, bool TetheringUsb = false);
@@ -130,6 +134,12 @@ public static class Diagnosi
         {
             problemi.Add(new("iphone-al-cavo", TestiRicevitore.T("Diagnosi_IPhoneAlCavoTitolo"), TestiRicevitore.T("Diagnosi_IPhoneAlCavo"),
                 "cavo", null, Grave: false));
+        }
+        else if (situazione.SoloAndroid)
+        {
+            if (!problemi.Any(p => p.IdDomanda == "cavo-android"))
+                problemi.Add(new("android-come-cavo", TestiRicevitore.T("Diagnosi_AndroidComeCavoTitolo"),
+                    TestiRicevitore.T("Diagnosi_AndroidComeCavo"), "cavo-android", null, Grave: false));
         }
         else if (situazione.Cavo == StatoCavo.ServizioAssente)
         {

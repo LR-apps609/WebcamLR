@@ -878,6 +878,8 @@ public sealed partial class MainWindow : Window
         {
             var richiesta = ++richiesteDiagnosi;
             var porta = ascoltatore.Porta;
+            // Solo telefoni Android collegati: il cavo dell'iPhone non c'entra (collaudo 20, t04 B3).
+            var soloAndroid = telefoni.Telefoni.Count > 0 && telefoni.Telefoni.All(t => t.Ciao.Piattaforma == Piattaforma.Android);
             var (haRete, profilo, tethering, firewall) = await Task.Run(() =>
             {
                 var haRete = IndirizziLocali.Ipv4().Count > 0;
@@ -888,7 +890,7 @@ public sealed partial class MainWindow : Window
             if (richiesta != richiesteDiagnosi) return;
             var nuovi = Diagnosi.Problemi(new SituazioneRete(haRete, profilo, firewall,
                 cavo.Verificato ? cavo.Stato : null, cavo.IPhoneAlCavo, tethering,
-                cavoAndroid.Verificato ? SituazioneCavo.Di(cavoAndroid) : null));
+                cavoAndroid.Verificato ? SituazioneCavo.Di(cavoAndroid) : null, soloAndroid));
             foreach (var nuovo in nuovi.Where(n => n.Grave && problemi.All(p => p.Id != n.Id)))
                 registro.Aggiungi(Testi.T("Registro_Diagnosi", nuovo.Titolo));
             problemi = nuovi;
@@ -909,7 +911,8 @@ public sealed partial class MainWindow : Window
         MostraProblema(BarraDiagnosi, AzioneDiagnosi, RispostaDiagnosi, grave);
         MostraFirewallNonRiuscito(grave);
         var suggerimento = problemi.FirstOrDefault(p => !p.Grave);
-        var daMostrare = suggerimento is not null && !suggerimentoCavoChiuso && (senzaTelefono || suggerimento.Id == "servizio-assente");
+        var daMostrare = suggerimento is not null && !suggerimentoCavoChiuso
+            && (senzaTelefono || suggerimento.Id is "servizio-assente" or "android-come-cavo");
         MostraProblema(BarraCavo, AzioneCavo, RispostaCavo, daMostrare ? suggerimento : null);
         TestoRete.Visibility = Visibile(telefono is null && !BarraDiagnosi.IsOpen);
         // Nella vista Essenziale la diagnosi si vede dalla pillola del telefono (passo 7).

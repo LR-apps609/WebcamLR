@@ -1039,4 +1039,10 @@
   <data name="Risposta_CavoAndroid" xml:space="preserve">
     <value>There are two ways. With USB debugging (the fastest): on the phone open Settings › About phone and tap “Build number” seven times; then in Settings › System › Developer options turn on “USB debugging”. The PC needs the Android tools (adb), free from Google: if Android Studio is installed you already have them. Plug in the cable, choose “Allow” when asked “Allow USB debugging?” and open WebcamLR on the phone: the connection starts by itself and the “USB cable” row says “In use · Android”. Without developer mode: turn on “USB tethering” (Settings › Hotspot &amp; tethering) and choose the PC from the list.</value>
   </data>
+  <data name="Diagnosi_AndroidComeCavoTitolo" xml:space="preserve">
+    <value>USB cable with Android</value>
+  </data>
+  <data name="Diagnosi_AndroidComeCavo" xml:space="preserve">
+    <value>For the cable with Android, turn on “USB debugging” in the phone’s Developer options and plug in the cable: WebcamLR uses it on its own, no other app needed.</value>
+  </data>
 </root>

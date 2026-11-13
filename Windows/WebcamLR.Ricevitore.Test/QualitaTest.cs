@@ -20,6 +20,22 @@ public class QualitaTest
         Assert.Equal(attesa, Qualita.Da(latenzaMs, perdite));
     }
 
+    [Theory]
+    // Collaudo 20 (t06 B4): «rete 17–24 ms · decodifica 119–347 ms» con il processore al 100%: è il PC, non il Wi-Fi.
+    [InlineData(161, 17, true)]
+    [InlineData(373, 24, true)]
+    // Rete lenta: la colpa è sua.
+    [InlineData(200, 160, false)]
+    [InlineData(200, 120, false)]
+    // Non debole: niente da spiegare.
+    [InlineData(120, 10, false)]
+    // Senza la parte di rete non si sa.
+    [InlineData(300, null, false)]
+    public void ColpaDelPc(int latenzaMs, int? reteMs, bool attesa)
+    {
+        Assert.Equal(attesa, Qualita.ColpaDelPc(latenzaMs, reteMs));
+    }
+
     [Fact]
     public void TestoETacche()
     {

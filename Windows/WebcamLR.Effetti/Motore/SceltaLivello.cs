@@ -53,14 +53,19 @@ public readonly record struct CambioLivello(LivelloResa Da, LivelloResa A, doubl
 /// La scala dei livelli (Qualità 6, «qualità che si adatta al PC»), separata dal motore e provata con tempi finti.
 ///
 /// Si misura a finestre di <see cref="FinestraUs"/> (2 s) con i tempi di ogni fotogramma reso (maschera e resa: due code
-/// che lavorano in parallelo, quindi conta la più lenta delle due medie) e si confronta con il tempo di un fotogramma: la
-/// media della metà centrale degli ultimi 30 intervalli d'arrivo (un intoppo del Wi-Fi, una raffica di due fotogrammi o
-/// una pausa non contano), mai sotto quello dei fps dichiarati dal telefono (<see cref="Fps"/>: 33 ms a 30 fps, 17 ms a
-/// 60) né, se non li dice, sotto 1/60 di secondo.
+/// che lavorano in parallelo, quindi conta la più lenta delle due medie) e si confronta con il tempo di un fotogramma:
+/// quello dei fps dichiarati dal telefono (<see cref="Fps"/>: 33 ms a 30 fps, 17 ms a 60). Solo se il telefono non li
+/// dice, la media della metà centrale degli ultimi 30 intervalli d'arrivo (un intoppo del Wi-Fi, una raffica di due
+/// fotogrammi o una pausa non contano), mai sotto 1/60 di secondo.
+/// Collaudo 20 (t06 B1): prima il riferimento era il più lungo tra i due. Con il processore al 100% la decodifica rallenta,
+/// i fotogrammi arrivano al motore più radi (165 ms invece di 33) e il «margine» sembrava enorme: la qualità risaliva
+/// proprio mentre il PC non reggeva. Gli arrivi lenti con i fps dichiarati sono un PC (o una rete) in ritardo, non tempo
+/// in più da spendere.
 /// - <b>Scende</b> appena una finestra supera l'85% del fotogramma: di un gradino che alleggerisce la coda più lenta
 ///   (<see cref="Giu"/>). Il fotogramma dopo il cambio riparte da una finestra nuova.
 /// - <b>Risale</b> di un gradino dopo <see cref="FinestreDiMarginePerSalire"/> finestre di fila (10 s) sotto il 50% del
-///   fotogramma. Se poi ricade entro <see cref="ProvaRisalitaUs"/> (30 s) dal gradino appena preso, la prossima volta
+///   fotogramma, e mai con i fotogrammi che arrivano più radi di quanto dice il telefono (<see cref="ArriviInRitardo"/>).
+///   Se poi ricade entro <see cref="ProvaRisalitaUs"/> (30 s) dal gradino appena preso, la prossima volta
 ///   aspetta il doppio (20 s, 40 s… fino a 160 s): un PC al limite non fa avanti e indietro ogni 12 secondi. Dopo 30 s
 ///   tenuti si torna all'attesa normale.
 /// I primi <see cref="FotogrammiDiRiscaldamento"/> fotogrammi dopo <see cref="Azzera"/> o una fonte nuova non contano: la
@@ -80,6 +85,12 @@ public sealed class SceltaLivello
 
     /// <summary>Sotto questa parte del fotogramma c'è margine per il gradino sopra (che costa fino al doppio).</summary>
     public const double QuotaRisalita = 0.5;
+
+    /// <summary>
+    /// Con i fps dichiarati, arrivi in media più lunghi di così (in fotogrammi) vogliono dire PC o rete in ritardo: non si
+    /// risale (collaudo 20, t06 B1).
+    /// </summary>
+    public const double ArriviInRitardo = 1.5;
 
     /// <summary>Finestre di margine di fila per risalire di un gradino (10 s), raddoppiate a ogni ricaduta.</summary>
     public const int FinestreDiMarginePerSalire = 5;
@@ -138,20 +149,32 @@ public sealed class SceltaLivello
     public void FonteNuova() => daScartare = FotogrammiDiRiscaldamento;
 
     /// <summary>
-    /// Il tempo di un fotogramma (ms) con cui si confronta: la media della metà centrale degli intervalli, almeno quello
-    /// dei fps dichiarati (o 1/60 s). Null se non si sa ancora nulla.
+    /// Il tempo di un fotogramma (ms) con cui si confronta: quello dei fps dichiarati; senza, la media della metà centrale
+    /// degli intervalli d'arrivo, almeno 1/60 s. Null se non si sa ancora nulla.
     /// </summary>
     public double? FotogrammaMs
     {
         get
         {
-            var minimo = fps > 0 ? 1000.0 / fps : FotogrammaMinimoMs;
-            if (intervalli.Count == 0) return fps > 0 ? minimo : null;
+            if (fps > 0) return 1000.0 / fps;
+            return ArriviMs is double arrivi ? Math.Max(arrivi, FotogrammaMinimoMs) : null;
+        }
+    }
+
+    /// <summary>
+    /// La media della metà centrale degli ultimi intervalli d'arrivo al motore (ms), null se non ce ne sono. Con i fps
+    /// dichiarati non decide nulla: sale quando il PC (decodifica) o la rete restano indietro.
+    /// </summary>
+    public double? ArriviMs
+    {
+        get
+        {
+            if (intervalli.Count == 0) return null;
             var ordinati = intervalli.Order().ToArray();
             int via = ordinati.Length / 4, quanti = ordinati.Length - 2 * via;
             double totale = 0;
             for (var i = via; i < via + quanti; i++) totale += ordinati[i];
-            return Math.Max(totale / quanti / 1000.0, minimo);
+            return totale / quanti / 1000.0;
         }
     }
 
@@ -195,7 +218,10 @@ public sealed class SceltaLivello
             ultimaSalita = null;
             return Cambia(giu, maschera, resa, fotogramma);
         }
-        if (media > fotogramma * QuotaRisalita || Livello == LivelloResa.Pieno)
+        // Fotogrammi che arrivano molto più radi di quanto dice il telefono: il PC è indietro (decodifica senza processore)
+        // o la rete. Non è margine: non si aggiunge lavoro.
+        var inRitardo = fps > 0 && ArriviMs is double arrivi && arrivi > fotogramma * ArriviInRitardo;
+        if (media > fotogramma * QuotaRisalita || Livello == LivelloResa.Pieno || inRitardo)
         {
             finestreDiMargine = 0;
             return null;

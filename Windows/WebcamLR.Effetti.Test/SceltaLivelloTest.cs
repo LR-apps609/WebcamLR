@@ -221,6 +221,41 @@ public class SceltaLivelloTest
     }
 
     [Fact]
+    public void ConIlProcessorePienoNonRisale()
+    {
+        // Collaudo 20 (t06 B1): telefono a 30 fps, processore al 100%, la decodifica rallenta e i fotogrammi arrivano al
+        // motore ogni 165 ms. Maschera 16 ms e resa 74 ms: prima «margine a 165 ms» e la qualità risaliva. Ora resta giù.
+        var (scelta, video) = Nuova(LivelloResa.Minimo, passo: 165_000, fps: 30);
+        Assert.Null(video.Per(180, 16, 74));
+        Assert.Equal(LivelloResa.Minimo, scelta.Livello);
+        Assert.Equal(1000.0 / 30, scelta.FotogrammaMs!.Value, 3);
+        Assert.InRange(scelta.ArriviMs!.Value, 164, 166);
+
+        // Anche con effetti leggerissimi: gli arrivi radi sono un PC indietro, non margine.
+        (scelta, video) = Nuova(LivelloResa.Minimo, passo: 66_667, fps: 30);
+        Assert.Null(video.Per(180, 3, 4));
+        Assert.Equal(LivelloResa.Minimo, scelta.Livello);
+
+        // Con gli arrivi regolari e lo stesso lavoro leggero risale dopo cinque finestre, come prima.
+        (scelta, video) = Nuova(LivelloResa.Minimo, fps: 30);
+        DopoFinestre(SceltaLivello.FinestreDiMarginePerSalire, video.FinoAlCambio(3, 4));
+        Assert.Equal(LivelloResa.Veloce, scelta.Livello);
+    }
+
+    [Fact]
+    public void ConIlProcessorePienoScende()
+    {
+        // Dal pieno, con i fotogrammi che arrivano ogni 165 ms e la resa a 74 ms: 74 non sta nei 33 ms del telefono
+        // (prima il confronto era con 165 ms e non scendeva).
+        var (scelta, video) = Nuova(passo: 165_000, fps: 30);
+        var cambio = video.Per(10, 16, 74);
+        Assert.NotNull(cambio);
+        Assert.False(cambio!.Value.Salita);
+        Assert.Equal(LivelloResa.BordoLeggero, scelta.Livello);
+        Assert.InRange(cambio.Value.FotogrammaMs, 33.3, 33.4);
+    }
+
+    [Fact]
     public void UnIntervalloAnomaloNonFaScendere()
     {
         // Collaudo 20: un solo intervallo da 1 ms (due fotogrammi a raffica dopo un intoppo del Wi-Fi) tra 29 da 33 ms.

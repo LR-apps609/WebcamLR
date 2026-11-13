@@ -2150,4 +2150,13 @@ The details are in {1}: send them with “Report a bug”.</value>
   <data name="Dati_AdbMancante" xml:space="preserve">
     <value>adb not installed</value>
   </data>
+  <data name="Qualita_PcSottoSforzo" xml:space="preserve">
+    <value>PC busy</value>
+  </data>
+  <data name="Qualita_DescrizionePc" xml:space="preserve">
+    <value>PC busy: {0} milliseconds of delay, the network is fine ({1} ms). Show the numbers</value>
+  </data>
+  <data name="Numeri_ColpaDelPc" xml:space="preserve">
+    <value>The delay is on this PC, not the network: close heavy programs or choose a lower quality.</value>
+  </data>
 </root>

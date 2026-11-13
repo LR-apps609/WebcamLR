@@ -674,19 +674,26 @@ public sealed partial class MainWindow : Window
         }
         if (s.LatenzaMs is int ms)
         {
-            var qualita = Qualita.Da(ms);
-            var colore = Pennello(qualita switch
-            {
-                QualitaCollegamento.Ottima => "Verde",
-                QualitaCollegamento.Buona => "AccentoChiaro",
-                _ => "AmbraTesto",
-            });
+            // Collaudo 20 (t06 B4): ritardo alto ma rete buona, è il PC (decodifica, effetti) a non reggere. Le tacche
+            // dicono la rete; il testo, in ambra, il PC, così non si cambia Wi-Fi per niente.
+            var colpaDelPc = Qualita.ColpaDelPc(ms, s.ArrivoMs);
+            var qualita = colpaDelPc ? Qualita.Da(s.ArrivoMs ?? ms) : Qualita.Da(ms);
+            var colore = Pennello(ColoreQualita(qualita));
             var spenta = Pennello("Linea");
             var tacche = new[] { Tacca1, Tacca2, Tacca3 };
             for (var i = 0; i < tacche.Length; i++) tacche[i].Fill = i < qualita.Tacche() ? colore : spenta;
-            TestoQualita.Text = qualita.Testo();
-            TestoQualita.Foreground = colore;
-            AutomationProperties.SetName(ChipQualita, Testi.T("Qualita_Descrizione", qualita.Testo().ToLowerInvariant(), ms));
+            if (colpaDelPc)
+            {
+                TestoQualita.Text = Testi.T("Qualita_PcSottoSforzo");
+                TestoQualita.Foreground = Pennello("AmbraTesto");
+                AutomationProperties.SetName(ChipQualita, Testi.T("Qualita_DescrizionePc", ms, s.ArrivoMs ?? 0));
+            }
+            else
+            {
+                TestoQualita.Text = qualita.Testo();
+                TestoQualita.Foreground = colore;
+                AutomationProperties.SetName(ChipQualita, Testi.T("Qualita_Descrizione", qualita.Testo().ToLowerInvariant(), ms));
+            }
         }
         else
         {
@@ -735,6 +742,13 @@ public sealed partial class MainWindow : Window
         if (inPagina) ContenutoCollegamento.Visibility = Visibile(StradaSceglibile);
     }
 
+    private static string ColoreQualita(QualitaCollegamento qualita) => qualita switch
+    {
+        QualitaCollegamento.Ottima => "Verde",
+        QualitaCollegamento.Buona => "AccentoChiaro",
+        _ => "AmbraTesto",
+    };
+
     /// <summary>I numeri di sempre, a un clic dal chip della qualità (funzioni 28 e 31), con il grafico dell'ultimo minuto.</summary>
     private void MostraNumeri()
     {
@@ -757,6 +771,8 @@ public sealed partial class MainWindow : Window
                 RitardoNelRegistro.Testo(s.CodaMs)));
         // Il motore effetti del PC (già compreso nell'anteprima e nella webcam qui sopra).
         if (RigaNumeriEffetti() is { } effettiRiga) righe.Add(effettiRiga);
+        // Il ritardo è sul PC, non sulla rete (collaudo 20, t06 B4): che cosa fare.
+        if (s.LatenzaMs is int totale && Qualita.ColpaDelPc(totale, s.ArrivoMs)) righe.Add(Testi.T("Numeri_ColpaDelPc"));
         if (storiaLatenza.Media is int media) righe.Add(Testi.T("Numeri_Media", media, storiaLatenza.Massima));
         if (testoAvvio is { } avvio) righe.Add(Testi.T("Numeri_Avvio", avvio.Split(':', 2).Last().Trim()));
         TestoNumeri.Text = string.Join("\n", righe);

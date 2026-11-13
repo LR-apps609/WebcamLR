@@ -19,6 +19,16 @@ public static class Qualita
         : latenzaMs >= 80 || perdite > 0 ? QualitaCollegamento.Buona
         : QualitaCollegamento.Ottima;
 
+    /// <summary>
+    /// Collaudo 20 (t06 B4): il ritardo è «debole» ma la rete va bene da sola (sotto «Debole») e la parte del PC
+    /// (decodifica, effetti, coda: <paramref name="latenzaMs"/> meno <paramref name="reteMs"/>) è più grande di quella della
+    /// rete. Allora il chip non dà la colpa al Wi-Fi: dice che il PC è sotto sforzo. Senza la parte di rete, falso.
+    /// </summary>
+    /// <param name="reteMs">Dalla cattura all'arrivo sul computer (StatisticheVideo.ArrivoMs).</param>
+    public static bool ColpaDelPc(int latenzaMs, int? reteMs) =>
+        Da(latenzaMs) == QualitaCollegamento.Debole && reteMs is int rete && rete >= 0
+        && Da(rete) != QualitaCollegamento.Debole && latenzaMs - rete > rete;
+
     public static string Testo(this QualitaCollegamento qualita) => qualita switch
     {
         QualitaCollegamento.Ottima => TestiRicevitore.T("Qualita_Ottimo"),

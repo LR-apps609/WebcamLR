@@ -2156,4 +2156,13 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
   <data name="Dati_AdbMancante" xml:space="preserve">
     <value>adb non installato</value>
   </data>
+  <data name="Qualita_PcSottoSforzo" xml:space="preserve">
+    <value>PC sotto sforzo</value>
+  </data>
+  <data name="Qualita_DescrizionePc" xml:space="preserve">
+    <value>PC sotto sforzo: {0} millisecondi di ritardo, la rete va bene ({1} ms). Mostra i numeri</value>
+  </data>
+  <data name="Numeri_ColpaDelPc" xml:space="preserve">
+    <value>Il ritardo è su questo PC, non sulla rete: chiudi i programmi pesanti o scegli una qualità più bassa.</value>
+  </data>
 </root>

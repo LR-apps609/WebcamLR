@@ -77,6 +77,19 @@ jobs:
           $esito = Install-WindowsFeature Server-Media-Foundation
           $esito | Format-List | Out-String
 
+      # Sul profilo del runner mancano le impostazioni di accessibilità che un PC ha sempre: senza, la sottoscrizione a
+      # AccessibilitySettings.HighContrastChanged dà 0x80070490 e WebcamLR non parte (vedi LEGGIMI, «Limiti»).
+      - name: Impostazioni di accessibilità del profilo
+        shell: powershell
+        continue-on-error: true
+        run: |
+          Get-ChildItem 'HKCU:\Control Panel\Accessibility' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty PSChildName
+          $chiave = 'HKCU:\Control Panel\Accessibility\HighContrast'
+          if (-not (Test-Path $chiave)) { New-Item -Path $chiave -Force | Out-Null }
+          Set-ItemProperty -Path $chiave -Name Flags -Value '126'
+          Set-ItemProperty -Path $chiave -Name 'High Contrast Scheme' -Value ''
+          Get-ItemProperty $chiave | Format-List | Out-String
+
       - name: La macchina (schermo, Media Foundation)
         shell: powershell
         continue-on-error: true

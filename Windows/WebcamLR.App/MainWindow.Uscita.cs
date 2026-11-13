@@ -97,6 +97,13 @@ public sealed partial class MainWindow
                 fineAvvisoRiprese?.Stop();
             }
             await ChiudiRipreseAsync();
+            // Telefoni, video, rete e icona con la finestra ancora viva (collaudo 20, t02 B4: crash 0xC000027B all'uscita
+            // con un telefono collegato). Un tetto, perché un telefono che non risponde non tenga aperta l'app.
+            var chiusura = ChiudiRisorseAsync();
+            await Task.WhenAny(chiusura, Task.Delay(TimeSpan.FromSeconds(5)));
+            // Le chiamate già in coda per il thread dell'interfaccia (telefono andato, ultimo stato) girano ora, non a
+            // finestra chiusa.
+            await Task.Delay(200);
         }
         catch (Exception errore)
         {

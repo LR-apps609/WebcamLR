@@ -240,35 +240,67 @@ public sealed partial class MainWindow : Window
         };
         Closed += async (_, _) =>
         {
-            // async void: un errore nella chiusura non deve diventare un crash all'uscita.
-            try
-            {
-                // Prima di tutto: la registrazione si chiude bene anche se l'app sta uscendo. Di solito l'ha già chiusa
-                // EsciAsync; qui resta solo il caso di una chiusura arrivata da Windows. Si aspetta senza bloccare.
-                await ChiudiRipreseAsync();
-                System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged -= SuCambioRete;
-                controlloDiagnosi.Stop();
-                reteAssestata.Stop();
-                risveglioAssestato.Stop();
-                controlloRisveglio.Stop();
-                FermaPausa();
-                FermaAppInUso();
-                FermaAggiornamenti();
-                finestraGobbo?.Chiudi();
-                risveglio.Dispose();
-                iconaTray?.Dispose();
-                notifiche.Dispose();
-                annuncio.Dispose();
-                ascoltatore.Dispose();
-                await cavo.DisposeAsync();
-                await cavoAndroid.DisposeAsync();
-                uscitaWebcam.Dispose();
-                motoreVideo.Dispose();
-                ChiudiMicrofono();
-                await ChiudiTuttiAsync();
-            }
+            // async void: un errore nella chiusura non deve diventare un crash all'uscita. Di solito EsciAsync ha già
+            // chiuso tutto prima di chiudere la finestra; qui resta il caso di una chiusura arrivata da Windows.
+            try { await ChiudiRisorseAsync(); }
             catch (Exception) { }
         };
+    }
+
+    /// <summary>La chiusura di telefoni, video, rete e icona: una volta sola, da EsciAsync o dalla chiusura della finestra.</summary>
+    private Task? chiusuraRisorse;
+
+    private Task ChiudiRisorseAsync() => chiusuraRisorse ??= ChiudiRisorseUnaVoltaAsync();
+
+    /// <summary>
+    /// Chiude tutto con la finestra ancora viva. Collaudo 20 (t02 B4): con un telefono collegato «--esci» finiva con
+    /// 0xC000027B in CoreMessagingXP.dll (la coda del thread dell'interfaccia), con o senza la X prima. La chiusura stava
+    /// nel gestore Closed, async: al primo await EsciAsync chiamava Application.Exit, e i lettori video, le sessioni e le
+    /// loro chiamate sul thread dell'interfaccia finivano a XAML già smontato. Ora i lettori si staccano dai riquadri,
+    /// prima smette di arrivare tutto (rete, cavo, telefoni) e solo dopo si chiude la finestra.
+    /// </summary>
+    private async Task ChiudiRisorseUnaVoltaAsync()
+    {
+        try
+        {
+            // Prima di tutto: la registrazione si chiude bene anche se l'app sta uscendo. Si aspetta senza bloccare.
+            await ChiudiRipreseAsync();
+        }
+        catch (Exception errore) { App.ScriviErrore(errore); }
+        Prova(() => System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged -= SuCambioRete);
+        Prova(controlloDiagnosi.Stop);
+        Prova(reteAssestata.Stop);
+        Prova(risveglioAssestato.Stop);
+        Prova(controlloRisveglio.Stop);
+        Prova(FermaPausa);
+        Prova(FermaAppInUso);
+        Prova(FermaAggiornamenti);
+        Prova(() => finestraGobbo?.Chiudi());
+        // Nessun telefono nuovo, poi i lettori staccati dai riquadri prima di chiuderli.
+        Prova(annuncio.Dispose);
+        Prova(ascoltatore.Dispose);
+        Prova(() => Video.SetMediaPlayer(null));
+        Prova(() => VideoPiccolo?.SetMediaPlayer(null));
+        try
+        {
+            await ChiudiTuttiAsync();
+            await cavo.DisposeAsync();
+            await cavoAndroid.DisposeAsync();
+        }
+        catch (Exception errore) { App.ScriviErrore(errore); }
+        Prova(uscitaWebcam.Dispose);
+        Prova(motoreVideo.Dispose);
+        Prova(ChiudiMicrofono);
+        Prova(risveglio.Dispose);
+        Prova(() => iconaTray?.Dispose());
+        Prova(notifiche.Dispose);
+    }
+
+    /// <summary>Un passo della chiusura: se fallisce si annota e si va avanti con gli altri.</summary>
+    private static void Prova(Action passo)
+    {
+        try { passo(); }
+        catch (Exception errore) { App.ScriviErrore(errore); }
     }
 
     /// <summary>
@@ -433,7 +465,8 @@ public sealed partial class MainWindow : Window
 
     private void Notifica(string titolo, string testo)
     {
-        if (inPrimoPiano && AppWindow.IsVisible) return;
+        // Uscendo, i telefoni si scollegano da qui: niente notifica «telefono perso».
+        if (uscita || (inPrimoPiano && AppWindow.IsVisible)) return;
         notifiche.Mostra(titolo, testo);
     }
 

@@ -109,19 +109,34 @@ _tocca() {
 # tocca_testo "<testo>" [indice]: cerca per text o content-desc (prima uguale, poi «contiene»), tocca il centro.
 tocca_testo() { _tocca testo "$1" "${2:-1}"; }
 
+# tocca_classe <classe> [n]: per esempio android.widget.EditText (il campo di testo).
+tocca_classe() { _tocca classe "$1" "${2:-1}"; }
+
 # tocca_id <resource-id>: per esempio permission_allow_button (va bene anche il nome completo con il pacchetto).
 tocca_id() { _tocca id "$1" "${2:-1}"; }
 
-# scrivi "<testo>": nel campo che ha il fuoco (prima toccalo). Solo caratteri ASCII: `input text` non scrive accenti.
+# scrivi "<testo>": nel campo che ha il fuoco (prima toccalo). `adb shell input text` sa scrivere solo ASCII: le
+# lettere accentate si scrivono senza accento (è → e) e gli altri caratteri non ASCII si saltano; il registro lo dice.
 scrivi() {
-    local testo="$1" sicuro
-    if printf '%s' "$testo" | LC_ALL=C grep -q '[^ -~]'; then
-        passo "ATTENZIONE: «$testo» ha caratteri non ASCII che adb input text non sa scrivere"
-    fi
-    sicuro=$(printf '%s' "$testo" | sed -e 's/[\\"'"'"'`$&|;<>()*?#~!]/\\&/g' -e 's/ /%s/g')
+    local testo="$1" ascii sicuro
+    ascii=$(printf '%s' "$testo" | python3 -I -c 'import sys, unicodedata
+t = unicodedata.normalize("NFKD", sys.stdin.read())
+print("".join(c for c in t if 32 <= ord(c) < 127), end="")')
+    [ "$ascii" != "$testo" ] && passo "ATTENZIONE: «$testo» ha caratteri non ASCII: scrivo «$ascii»"
+    sicuro=$(printf '%s' "$ascii" | sed -e 's/[\\"'"'"'`$&|;<>()*?#~!]/\\&/g' -e 's/ /%s/g')
     adb_sh "input text $sicuro"
-    passo "SCRIVI «$testo»"
+    passo "SCRIVI «$ascii»"
     sleep 0.8
+}
+
+# svuota_campo [n=40]: cancella il testo del campo che ha il fuoco (fine del campo, poi n volte Canc indietro).
+svuota_campo() {
+    local n="${1:-40}" tasti
+    adb_sh input keyevent KEYCODE_MOVE_END
+    tasti=$(printf 'KEYCODE_DEL %.0s' $(seq 1 "$n"))
+    # shellcheck disable=SC2086
+    adb_sh input keyevent $tasti
+    passo "SVUOTA CAMPO"
 }
 
 indietro() { adb_sh input keyevent KEYCODE_BACK; passo "INDIETRO"; sleep 1.2; }
@@ -305,3 +320,115 @@ ripristina() {
     passo "RIPRISTINA (schermo, carattere, rotazione, rete, lingua italiana)"
     sleep 2
 }
+
+# ---------------------------------------------------------------- computer finto (Strumenti/collaudo/ComputerFinto)
+# Il cuore vero del ricevitore Windows sulla macchina Linux: il telefono dell'emulatore lo raggiunge a 10.0.2.2.
+# I suoi file stanno in $USCITA/computer-finto/ (eventi.log, statistiche.csv, fotogrammi/, stato.txt, codice.txt…).
+
+COMPUTER_FINTO="${COMPUTER_FINTO:-}"
+PORTA_FINTO="${PORTA_FINTO:-52740}"
+PORTA_CAVO="${PORTA_CAVO:-52800}"
+CF="$USCITA/computer-finto"
+
+# avvia_computer_finto [opzioni]: --nome "<nome>", --rifiuta, --interrompi-dopo <s>, --pausa <s>, --senza-in-onda,
+# --ogni <s>, --attesa-conferma <s> (vedi ComputerFinto --help). Ascolta su $PORTA_FINTO e prova il cavo su $PORTA_CAVO.
+avvia_computer_finto() {
+    if [ -z "$COMPUTER_FINTO" ] || [ ! -f "$COMPUTER_FINTO" ]; then
+        passo "COMPUTER FINTO non disponibile (COMPUTER_FINTO=${COMPUTER_FINTO:-vuoto})"
+        return 1
+    fi
+    ferma_computer_finto >/dev/null 2>&1
+    mkdir -p "$CF"
+    rm -f "$CF/collegamento.txt" "$CF/stato.txt"
+    dotnet "$COMPUTER_FINTO" --uscita "$CF" --porta "$PORTA_FINTO" --cavo "$PORTA_CAVO" "$@" >> "$CF/console.txt" 2>&1 </dev/null &
+    echo $! > "$CF/pid"
+    local i
+    for i in $(seq 1 30); do
+        [ -s "$CF/collegamento.txt" ] && break
+        sleep 1
+    done
+    if [ ! -s "$CF/collegamento.txt" ]; then
+        passo "COMPUTER FINTO non partito: vedi computer-finto/console.txt"
+        return 1
+    fi
+    passo "COMPUTER FINTO avviato sulla porta $(cat "$CF/porta.txt" 2>/dev/null) $*"
+}
+
+ferma_computer_finto() {
+    local pid i
+    pid=$(cat "$CF/pid" 2>/dev/null) || return 0
+    kill -TERM "$pid" 2>/dev/null
+    for i in $(seq 1 15); do kill -0 "$pid" 2>/dev/null || break; sleep 1; done
+    kill -KILL "$pid" 2>/dev/null
+    rm -f "$CF/pid"
+    adb forward --remove "tcp:$PORTA_CAVO" >/dev/null 2>&1
+    passo "COMPUTER FINTO fermato"
+}
+
+# stato_computer: attesa | conferma | collegato | video | interrotto | fermo
+stato_computer() { tr -d '\n' < "$CF/stato.txt" 2>/dev/null; }
+
+# collegamenti_computer: quante volte un telefono è stato accettato (cresce a ogni ricollegamento).
+collegamenti_computer() { grep -c ' COLLEGATO ' "$CF/eventi.log" 2>/dev/null || echo 0; }
+
+# attendi_computer <stato> [secondi=30]: per esempio `attendi_computer video 40` (il computer riceve il video).
+attendi_computer() {
+    local voluto="$1" secondi="${2:-30}" fine
+    fine=$(( $(date +%s) + secondi ))
+    while [ "$(date +%s)" -lt "$fine" ]; do
+        if [ "$(stato_computer)" = "$voluto" ]; then passo "COMPUTER FINTO: $voluto"; return 0; fi
+        sleep 1
+    done
+    passo "COMPUTER FINTO: non arriva a «$voluto» in ${secondi}s (è «$(stato_computer)»)"
+    return 1
+}
+
+# attendi_ricollegamento <collegamenti-prima> [secondi=60]: un collegamento nuovo e di nuovo video.
+attendi_ricollegamento() {
+    local prima="$1" secondi="${2:-60}" fine
+    fine=$(( $(date +%s) + secondi ))
+    while [ "$(date +%s)" -lt "$fine" ]; do
+        if [ "$(collegamenti_computer)" -gt "$prima" ] && [ "$(stato_computer)" = video ]; then
+            passo "COMPUTER FINTO: ricollegato e di nuovo video"
+            return 0
+        fi
+        sleep 1
+    done
+    passo "COMPUTER FINTO: nessun ricollegamento in ${secondi}s (collegamenti $(collegamenti_computer), stato «$(stato_computer)»)"
+    return 1
+}
+
+# codice_computer: l'ultimo codice di conferma chiesto dal computer finto (lo stesso che il telefono mostra).
+codice_computer() { tr -d '\n' < "$CF/codice.txt" 2>/dev/null; }
+
+# statistiche_computer: le ultime righe di statistiche.csv nel registro.
+statistiche_computer() {
+    passo "STATISTICHE del computer finto (ultime ${1:-5} righe):"
+    tail -n "${1:-5}" "$CF/statistiche.csv" 2>/dev/null | sed 's/^/        /' | tee -a "$USCITA/passi.log" >&2
+}
+
+# collega_indirizzo [indirizzo]: «Collega a mano (indirizzo)» con 10.0.2.2:<porta> (dalla schermata principale).
+collega_indirizzo() {
+    local indirizzo="${1:-10.0.2.2:$(tr -d '\n' < "$CF/porta.txt" 2>/dev/null || echo "$PORTA_FINTO")}"
+    passo "COLLEGA A MANO a $indirizzo"
+    tocca_testo "Collega a mano (indirizzo)" || return 1
+    tocca_classe android.widget.EditText || return 1
+    svuota_campo
+    scrivi "$indirizzo"
+    tocca_testo "Collega" || invio
+}
+
+# collega_qr: apre il link del QR code del computer finto, come la fotocamera di sistema (webcamlr://collega?…).
+collega_qr() {
+    local link
+    link=$(tr -d '\n' < "$CF/collegamento.txt" 2>/dev/null)
+    [ -n "$link" ] || { passo "COLLEGA QR: nessun link (computer finto avviato?)"; return 1; }
+    adb_sh "am start -a android.intent.action.VIEW -d '$link' $PACCHETTO" >/dev/null 2>&1
+    passo "COLLEGA QR con $link"
+    sleep 2
+}
+
+# collega_cavo / scollega_cavo: la via del cavo con il debug USB. Il computer finto prova ogni secondo
+# 127.0.0.1:$PORTA_CAVO, che «adb forward» porta alla porta 52741 del telefono (dove l'app ascolta in primo piano).
+collega_cavo() { adb forward "tcp:$PORTA_CAVO" tcp:52741 >/dev/null; passo "CAVO: adb forward tcp:$PORTA_CAVO → telefono:52741"; }
+scollega_cavo() { adb forward --remove "tcp:$PORTA_CAVO" >/dev/null 2>&1; passo "CAVO staccato"; }

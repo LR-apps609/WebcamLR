@@ -69,6 +69,7 @@ schermata "pagina-permessi"
 | `lingua_inglese`, `lingua_italiana` | lingua dell'app (Android 13+, nessun riavvio) |
 | `ripristina` | schermo, carattere, rotazione, rete e lingua come all'inizio (lo fa anche esegui.sh tra un copione e l'altro) |
 | `nota "<testo>"`, `fallisci "<motivo>"` | un'osservazione; FALLITO in esito.txt e fine del copione |
+| `tocca_classe <classe>`, `svuota_campo` | per esempio `android.widget.EditText`; cancella il campo con il fuoco |
 
 Note:
 
@@ -77,8 +78,44 @@ Note:
 - L'emulatore è in inglese: i dialoghi di sistema dei permessi sono in inglese («While using the app», «Allow»,
   «Don't allow»); usate `consenti_dialogo` / `rifiuta_dialogo`.
 - Le animazioni di sistema sono spente (come «Rimuovi animazioni»): l'app ferma le scene animate e i dump riescono.
-- Nessun computer con WebcamLR in rete: «In onda» non si raggiunge; la fotocamera è quella emulata di Android.
-- `scrivi` non sa scrivere lettere accentate (limite di `adb shell input text`).
+- La fotocamera è quella emulata di Android (una stanza finta che si muove).
+- `scrivi` scrive solo ASCII (limite di `adb shell input text`): «perché» diventa «perche», «»» e gli altri simboli non
+  ASCII si saltano, e passi.log lo dice. Una tastiera di prova (ADBKeyboard) lo risolverebbe, ma va installata a parte.
+
+## In onda: il computer finto
+
+`Strumenti/collaudo/ComputerFinto` è un programma console con il cuore vero del ricevitore Windows
+(`WebcamLR.Ricevitore`: ascolto sulla 52740, stretta di mano, abbinamento, statistiche). Il workflow lo compila e
+lo lascia pronto; il copione lo accende. Dall'emulatore il computer è `10.0.2.2`.
+
+```sh
+avvia_computer_finto --nome "PC di collaudo"     # anche: --rifiuta, --interrompi-dopo 30 --pausa 15,
+                                                # --senza-in-onda, --ogni 5, --attesa-conferma 2
+collega_indirizzo                               # «Collega a mano (indirizzo)» con 10.0.2.2:52740
+# oppure: collega_qr (il link del QR code, con il gettone: niente codice) o collega_cavo (adb forward → 52741)
+attendi_computer video 45 || fallisci "niente video al computer"
+statistiche_computer
+ferma_computer_finto                            # lo fa anche esegui.sh alla fine del copione
+```
+
+| Funzione | Cosa fa |
+|---|---|
+| `avvia_computer_finto [opzioni]`, `ferma_computer_finto` | accende (aspetta che ascolti) / spegne con «arrivederci» |
+| `collega_indirizzo [ip:porta]`, `collega_qr`, `collega_cavo`, `scollega_cavo` | le tre strade del telefono |
+| `stato_computer`, `attendi_computer <stato> [s]` | `attesa`, `conferma`, `collegato`, `video`, `interrotto`, `fermo` |
+| `collegamenti_computer`, `attendi_ricollegamento <prima> [s]` | quante volte ha accettato il telefono; aspetta un ricollegamento con video |
+| `codice_computer`, `statistiche_computer [n]` | il codice di conferma chiesto; le ultime righe delle statistiche |
+
+Il computer finto consente da solo un telefono nuovo dopo `--attesa-conferma` secondi (il telefono intanto mostra
+«Conferma sul computer» con il codice), dice al telefono che un'app usa la webcam (il rosso «IN ONDA») e scrive in
+`computer-finto/`: `eventi.log`, `statistiche.csv` (ogni secondo: risoluzione, fps, Mbit/s, latenza), `stato.txt`,
+`codice.txt`, `collegamento.txt`, `fotogrammi/NNN-TTTs.png` (un fotogramma chiave ogni `--ogni` secondi, decodificato
+con ffmpeg), `video.h264` (solo nell'artifact) e `riepilogo.txt`. `--interrompi-dopo <s>` chiude tutto di colpo
+<s> secondi dopo il primo video e resta irraggiungibile per `--pausa` secondi (una caduta di rete vista dal
+computer); `rete_spenta` fa la stessa prova dal telefono. Il cavo: il vero Windows apre il canale con adb, ma
+salta gli emulatori; qui fa le sue veci un `adb forward tcp:52800 tcp:52741`, la stessa porta del telefono.
+
+Copioni pronti: `in_onda` (a mano, codice, 60 s in onda, rete spenta 20 s e ricollegamento, Scollega) e `cavo`.
 
 ## Schermate e pulsanti (dal copione fumo)
 

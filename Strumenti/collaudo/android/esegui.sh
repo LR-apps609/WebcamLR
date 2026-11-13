@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Esegue i copioni di collaudo sull'emulatore già acceso (lo chiama .github/workflows/collaudo-android.yml).
-# Variabili: APK (l'APK di debug), RISULTATI (cartella, predefinita «risultati»), COPIONI (nomi separati da spazi,
+# Variabili: APK (l'APK di debug), COMPUTER_FINTO (la DLL del computer finto, facoltativa), RISULTATI (cartella, predefinita «risultati»), COPIONI (nomi separati da spazi,
 # vuoto = tutti quelli in copioni/), TEMPO_COPIONE (secondi, predefinito 1200).
 # Finisce sempre con 0: un copione che trova un bug scrive FALLITO nel suo esito.txt, non ferma il lavoro.
 set -u
@@ -71,6 +71,12 @@ for nome in $nomi; do
         bash -c 'source "$1"; source "$2"' copione "$QUI/lib.sh" "$copione" </dev/null
     codice=$?
     durata=$(( $(date +%s) - inizio ))
+    # Il computer finto lasciato acceso dal copione si ferma qui (con «arrivederci»), e la sua chiave di prova sparisce.
+    if [ -f "$uscita/computer-finto/pid" ]; then
+        USCITA="$uscita" bash -c 'source "$1"; ferma_computer_finto' ferma "$QUI/lib.sh" >/dev/null 2>&1 </dev/null
+    fi
+    rm -f "$uscita/computer-finto/identita.key" "$uscita/computer-finto/pid"
+    adb forward --remove-all >/dev/null 2>&1
     sleep 2
     kill "$lettore" 2>/dev/null; wait "$lettore" 2>/dev/null
     adb logcat -b crash -d -v threadtime > "$uscita/crash.txt" 2>/dev/null

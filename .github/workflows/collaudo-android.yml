@@ -1,5 +1,6 @@
 # Banco di prova Android per il collaudo: compila l'APK di debug, accende un emulatore (API 34, x86_64, KVM),
-# installa l'APK ed esegue i copioni di Strumenti/collaudo/android/copioni/. Per ogni copione l'artifact
+# installa l'APK ed esegue i copioni di Strumenti/collaudo/android/copioni/. Il «computer finto» (ComputerFinto, il
+# cuore del ricevitore Windows) gira sulla stessa macchina: il telefono lo raggiunge a 10.0.2.2 e va «in onda». Per ogni copione l'artifact
 # «collaudo-android» contiene schermate PNG numerate, alberi XML dell'interfaccia, passi.log, logcat dell'app,
 # crash.txt ed esito.txt (OK / FALLITO e motivo). Un copione che trova un bug non fa fallire il lavoro.
 # Guida: Strumenti/collaudo/android/LEGGIMI.md
@@ -11,6 +12,7 @@ on:
     paths:
       - "Android/**"
       - "Strumenti/collaudo/android/**"
+      - "Strumenti/collaudo/ComputerFinto/**"
       - ".github/workflows/collaudo-android.yml"
   workflow_dispatch:
     inputs:
@@ -50,6 +52,20 @@ jobs:
           apk=$(find app/build/outputs/apk/debug -name '*.apk' | head -1)
           test -n "$apk"
           echo "APK=$GITHUB_WORKSPACE/Android/$apk" >> "$GITHUB_ENV"
+
+      # Il computer finto (Strumenti/collaudo/ComputerFinto): il cuore del ricevitore Windows per portare il telefono
+      # «in onda»; ffmpeg decodifica i fotogrammi che salva.
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Computer finto
+        run: |
+          dotnet publish Strumenti/collaudo/ComputerFinto -c Release -o "$RUNNER_TEMP/computer-finto" --nologo 2>&1 | tee -a risultati/computer-finto-compila.log
+          test -f "$RUNNER_TEMP/computer-finto/ComputerFinto.dll"
+          echo "COMPUTER_FINTO=$RUNNER_TEMP/computer-finto/ComputerFinto.dll" >> "$GITHUB_ENV"
+          command -v ffmpeg >/dev/null || (sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null)
+          ffmpeg -version | head -1
 
       - name: KVM per l'emulatore
         run: |

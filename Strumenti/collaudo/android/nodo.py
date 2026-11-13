@@ -4,6 +4,7 @@
 Uso:
   nodo.py <dump.xml> testo "<testo>" [indice]   → stampa «x y» (centro del nodo), uscita 1 se non c'è
   nodo.py <dump.xml> id "<resource-id>" [indice]
+  nodo.py <dump.xml> classe "<classe>" [indice]    → per esempio android.widget.EditText
   nodo.py <dump.xml> elenca                       → i testi e le descrizioni visibili, uno per riga
 
 Per il testo si prova, nell'ordine: text uguale, content-desc uguale, poi text o content-desc che contiene il testo
@@ -57,6 +58,10 @@ def cerca_id(radice, voluto):
     return trovati
 
 
+def cerca_classe(radice, voluta):
+    return [centro for nodo, centro in nodi(radice) if nodo.get("class", "") == voluta]
+
+
 def main():
     if len(sys.argv) < 3:
         print(__doc__, file=sys.stderr)
@@ -78,7 +83,10 @@ def main():
         return 0
     if len(sys.argv) < 4:
         return 2
-    trovati = cerca_testo(radice, sys.argv[3]) if modo == "testo" else cerca_id(radice, sys.argv[3])
+    cerca = {"testo": cerca_testo, "id": cerca_id, "classe": cerca_classe}.get(modo)
+    if cerca is None:
+        return 2
+    trovati = cerca(radice, sys.argv[3])
     indice = int(sys.argv[4]) if len(sys.argv) > 4 else 1
     if len(trovati) < indice:
         return 1

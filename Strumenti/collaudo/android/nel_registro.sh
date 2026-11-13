@@ -10,6 +10,7 @@ copia="$lavoro/risultati"
 cp -r "$sorgente" "$copia"
 find "$copia" -name 'logcat-completo.txt.gz' -delete
 find "$copia" -name 'gradle-*.log' -delete
+find "$copia" \( -name 'video.h264' -o -name 'video.hevc' \) -delete
 if command -v convert >/dev/null 2>&1; then
     find "$copia" -name '*.png' | while IFS= read -r png; do
         convert "$png" -resize 50% -quality 72 "${png%.png}.jpg" && rm -f "$png"

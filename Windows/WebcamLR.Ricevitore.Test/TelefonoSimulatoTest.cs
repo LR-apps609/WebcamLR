@@ -558,6 +558,41 @@ public class TelefonoSimulatoTest
     }
 
     [Fact]
+    public async Task LoStessoTelefonoInFilaNonFaUnaSecondaDomanda()
+    {
+        // Collaudo 20: lo stesso telefono arriva due volte; la seconda richiesta aspetta dietro la prima. Detto «Consenti»
+        // (o «Non consentire») alla prima, la seconda non riapre la domanda.
+        using var idComputer = IdentitaDispositivo.Nuova();
+        var domande = 0;
+        var risposta = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var abbinamento = new Abbinamento(idComputer)
+        {
+            ChiediConferma = (_, _, _) =>
+            {
+                Interlocked.Increment(ref domande);
+                return risposta.Task;
+            },
+        };
+        var prima = abbinamento.ConfermaAsync("x", "X", "123456", CancellationToken.None);
+        var seconda = abbinamento.ConfermaAsync("x", "X", "654321", CancellationToken.None);
+        risposta.SetResult(true);
+        Assert.True(await prima.WaitAsync(Limite));
+        Assert.True(await seconda.WaitAsync(Limite));
+        Assert.Equal(1, domande);
+        Assert.True(abbinamento.Fidato("x"));
+
+        // Con il no: anche la seconda è no, senza domanda.
+        domande = 0;
+        risposta = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        prima = abbinamento.ConfermaAsync("y", "Y", "111111", CancellationToken.None);
+        seconda = abbinamento.ConfermaAsync("y", "Y", "222222", CancellationToken.None);
+        risposta.SetResult(false);
+        Assert.False(await prima.WaitAsync(Limite));
+        Assert.False(await seconda.WaitAsync(Limite));
+        Assert.Equal(1, domande);
+    }
+
+    [Fact]
     public async Task IlTempoFinitoInFilaNonContaComeRifiuto()
     {
         // Collaudo 33 e 37: chi aspetta dietro un'altra domanda e finisce il tempo non ha visto nulla: niente pausa di due

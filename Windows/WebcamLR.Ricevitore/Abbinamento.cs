@@ -96,9 +96,16 @@ public sealed class Abbinamento
         }
         try
         {
+            // Collaudo 20: lo stesso telefono può arrivare due volte (la prima connessione morta senza che il PC se ne sia
+            // accorto) e la seconda aspettava qui dietro la prima. Ora, preso il turno, si guarda la risposta già data:
+            // consentito (fidato) o rifiutato da poco, senza chiedere di nuovo.
+            if (Fidato(impronta)) return true;
+            if (RifiutatoDaPoco(impronta)) return false;
             try { consentito = await chiedi(nome, codice, scaduto); }
             catch (OperationCanceledException) { consentito = false; }
-            if (!consentito && !telefonoVia.IsCancellationRequested) SegnaRifiuto(impronta);
+            // Il sì si ricorda subito, prima di lasciare il turno a chi aspetta.
+            if (consentito) Fida(impronta, nome);
+            else if (!telefonoVia.IsCancellationRequested) SegnaRifiuto(impronta);
         }
         finally
         {

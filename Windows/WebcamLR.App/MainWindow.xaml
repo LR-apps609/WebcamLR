@@ -388,8 +388,6 @@
                 </ScrollViewer>
                 <!-- In fondo, sempre: il QR per collegare un telefono con l'app WebcamLR (iPhone o Android). Sotto, l'indirizzo da
                      scrivere a mano e il QR della pagina per scaricare l'app (non è quello per collegarsi). -->
-                <!-- Collaudo 20 (t06 B5): il QR sta in un contenitore suo. Spostato da e verso la griglia della colonna (pagina
-                     «Telefoni», menu della pillola), UI Automation perdeva poi il centro e la colonna di destra. -->
                 <StackPanel x:Name="PostoBloccoQR" Grid.Row="1">
                 <Border x:Name="BloccoQR" Margin="{StaticResource MargineRiquadroQR}" Background="{ThemeResource Fondo}" BorderBrush="{ThemeResource Linea}" BorderThickness="1" CornerRadius="{StaticResource RaggioRiquadro}" Padding="{StaticResource PaddingRiquadroQR}">
                     <StackPanel Spacing="{StaticResource SpazioStretto}" HorizontalAlignment="Center">
@@ -397,14 +395,14 @@
                         <Border x:Name="CorniceQR" Background="{StaticResource Bianco}" CornerRadius="{StaticResource RaggioStretto}" Padding="{StaticResource MargineStretto}" HorizontalAlignment="Center">
                             <Image x:Name="ImmagineQR" x:Uid="ImmagineQR" Width="150" Height="150" />
                         </Border>
-                        <TextBlock x:Uid="InquadraloConApp" FontSize="{StaticResource MisuraNota}" Foreground="{ThemeResource TestoSecondario}" TextAlignment="Center" TextWrapping="Wrap" />
+                        <TextBlock x:Name="TestoInquadraloQR" x:Uid="InquadraloConApp" FontSize="{StaticResource MisuraNota}" Foreground="{ThemeResource TestoSecondario}" TextAlignment="Center" TextWrapping="Wrap" />
                         <TextBlock x:Name="IndirizzoScritto" FontFamily="{StaticResource Numeri}" FontSize="{StaticResource MisuraNumeri}" Foreground="{ThemeResource TestoSecondario}" IsTextSelectionEnabled="True"
                                    TextAlignment="Center" TextWrapping="Wrap" />
                         <!-- Passo 7 (windows.md 2.14): «Il PC non è collegato a una rete» con la strada per risolverlo, sotto il QR. -->
                         <Button x:Name="PulsanteWiFi" x:Uid="PulsanteApriWiFi" Style="{StaticResource PulsanteSecondario}" Click="SuApriWiFi" HorizontalAlignment="Center" Visibility="Collapsed" />
                         <!-- Collaudo 20 (t09 B13): il testo va a capo, invece di finire tagliato («Non hai ancora l'app? Sca»). -->
                         <HyperlinkButton x:Name="PulsanteScaricaApp" x:Uid="PulsanteScaricaApp" Style="{StaticResource PulsanteLink}" HorizontalAlignment="Center" Click="SuApriMenuAllegato">
-                            <TextBlock x:Uid="TestoScaricaApp" TextWrapping="Wrap" TextAlignment="Center" />
+                            <TextBlock x:Name="TestoScaricaAppQR" x:Uid="TestoScaricaApp" TextWrapping="Wrap" TextAlignment="Center" />
                             <FlyoutBase.AttachedFlyout>
                                 <Flyout Placement="Right">
                                     <StackPanel Width="230" Spacing="{StaticResource SpazioMezzo}">

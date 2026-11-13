@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
@@ -256,18 +257,77 @@ public sealed partial class MainWindow
         ApriImpostazioni(problema.Pagina == PaginaProblema.Uscite ? PaginaImpostazioni.Uscite : PaginaImpostazioni.Telefoni);
     }
 
-    /// <summary>Il menu della pillola mostra il QR di sempre, preso in prestito dalla colonna di sinistra.</summary>
+    /// <summary>Il menu della pillola mostra il QR di sempre: una copia del riquadro della colonna di sinistra.</summary>
     private void SuAperturaPillolaTelefono(object? sender, object e)
     {
         RestituisciPillola();
-        if (BloccoQR.Parent != PostoBloccoQR) return;
-        var prestito = Togli(BloccoQR);
-        PostoQR.Children.Add(BloccoQR);
-        prestitiPillola.Add(new Prestito(BloccoQR, () =>
+        var copia = CopiaBloccoQR();
+        PostoQR.Children.Add(copia);
+        prestitiPillola.Add(new Prestito(copia, () => PostoQR.Children.Remove(copia)));
+    }
+
+    /// <summary>
+    /// Una copia del riquadro del QR (titolo, QR, indirizzo, «Non hai ancora l'app?») per la pagina «Telefoni» e il menu
+    /// della pillola. Collaudo 20 (t06 B5): spostare il riquadro vero e rimetterlo nella colonna rompeva l'albero di UI
+    /// Automation dall'immagine del QR in poi (la barra sotto il video e la colonna di destra sparivano per l'Assistente
+    /// vocale; a schermo c'erano), come la riga delle app con le sue icone nella pagina «Uscite». Stessi valori del
+    /// riquadro vero, letti da lì.
+    /// </summary>
+    private Border CopiaBloccoQR()
+    {
+        TextBlock Come(TextBlock vero) => new()
         {
-            PostoQR.Children.Remove(BloccoQR);
-            prestito.Rimetti();
-        }));
+            Text = vero.Text,
+            FontFamily = vero.FontFamily,
+            FontSize = vero.FontSize,
+            Foreground = vero.Foreground,
+            TextAlignment = TextAlignment.Center,
+            TextWrapping = TextWrapping.Wrap,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            IsTextSelectionEnabled = vero.IsTextSelectionEnabled,
+        };
+        var contenuto = new StackPanel { Spacing = Token.SpazioStretto, HorizontalAlignment = HorizontalAlignment.Center };
+        contenuto.Children.Add(Come(TitoloQR));
+        if (CorniceQR.Visibility == Visibility.Visible && ImmagineQR.Source is { } qr)
+        {
+            var immagine = new Image { Source = qr, Width = ImmagineQR.Width, Height = ImmagineQR.Height };
+            AutomationProperties.SetName(immagine, AutomationProperties.GetName(ImmagineQR));
+            contenuto.Children.Add(new Border
+            {
+                Background = CorniceQR.Background,
+                CornerRadius = CorniceQR.CornerRadius,
+                Padding = CorniceQR.Padding,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Child = immagine,
+            });
+        }
+        contenuto.Children.Add(Come(TestoInquadraloQR));
+        contenuto.Children.Add(Come(IndirizzoScritto));
+        if (PulsanteWiFi.Visibility == Visibility.Visible)
+        {
+            var wifi = new Button { Content = PulsanteWiFi.Content, Style = PulsanteWiFi.Style, HorizontalAlignment = HorizontalAlignment.Center };
+            wifi.Click += SuApriWiFi;
+            contenuto.Children.Add(wifi);
+        }
+        var scarica = new HyperlinkButton
+        {
+            Content = Come(TestoScaricaAppQR),
+            Style = PulsanteScaricaApp.Style,
+            HorizontalAlignment = HorizontalAlignment.Center,
+        };
+        // Lo stesso menu del riquadro vero (QR della pagina per scaricare l'app), aperto accanto alla copia.
+        scarica.Click += (_, _) => FlyoutBase.GetAttachedFlyout(PulsanteScaricaApp)?.ShowAt(scarica);
+        contenuto.Children.Add(scarica);
+        return new Border
+        {
+            Margin = BloccoQR.Margin,
+            Background = BloccoQR.Background,
+            BorderBrush = BloccoQR.BorderBrush,
+            BorderThickness = BloccoQR.BorderThickness,
+            CornerRadius = BloccoQR.CornerRadius,
+            Padding = BloccoQR.Padding,
+            Child = contenuto,
+        };
     }
 
     private void SuChiusuraPillolaTelefono(object? sender, object e) => RestituisciPillola();
@@ -523,7 +583,7 @@ public sealed partial class MainWindow
                 Prendi(BarraDiagnosi);
                 Prendi(BarraCavo);
                 ContenutoPagina.Children.Add(FinestraApp.ContenutoSicurezza(abbinamento, MostraTelefoni));
-                Prendi(BloccoQR);
+                ContenutoPagina.Children.Add(CopiaBloccoQR());
                 break;
             case PaginaImpostazioni.Uscite:
                 // La webcam per le altre app, il microfono del telefono, NDI (in arrivo); sotto, la riga delle app con l'aiuto scritto.

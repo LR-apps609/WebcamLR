@@ -53,7 +53,10 @@ function T06-Registro([string]$titolo) {
     try {
         Clicca 'PulsanteRegistro' -AncheNascosti
         Start-Sleep -Milliseconds 800
-        $testo = T06-Testo 'TestoRegistro'
+        Set-Clipboard -Value ' '
+        Clicca 'PulsanteCopiaRegistro'
+        Start-Sleep -Milliseconds 500
+        $testo = (Get-Clipboard -Raw)
         Tasto 'Esc'
     } catch { $testo = "(registro non aperto: $($_.Exception.Message))" }
     Scrivi-Log "REGISTRO DELL'APP ($titolo):"
@@ -175,6 +178,15 @@ try {
 
     Start-Sleep -Seconds 6
     Fotografa 'video-senza-effetti'
+    # Giro 2: lo sfondo si accende solo con la fotocamera frontale (giro 1: con la posteriore tutto grigio).
+    Tasto 'Ctrl+2'
+    Start-Sleep -Seconds 2
+    Passo 'Passo alla fotocamera frontale' {
+        Clicca 'Frontale' -Dentro 'SceltaObiettivo'
+        Attendi-Telefono 'obiettivo frontale' 10 -Nome $nomeTelefono | Out-Null
+        Start-Sleep -Seconds 3
+        Fotografa 'frontale'
+    }
     Controlla-Video | Out-Null
 
     # ---------------------------------------------------------------- un minuto senza effetti (riferimento)
@@ -199,8 +211,6 @@ try {
         Tasto 'Esc'
     }
 
-    Tasto 'Ctrl+2'
-    Start-Sleep -Seconds 2
     Fotografa 'completo-con-sfocatura'
     T06-Registro 'dopo la sfocatura' | Out-Null
     T06-Numeri 'numeri-con-sfocatura'
@@ -321,57 +331,14 @@ try {
         }
     }
 
-    # ---------------------------------------------------------------- pausa automatica (Impostazioni › Uscite) e il sospetto
-    T06-Segna 'Uscite e pausa automatica'
-    Passo 'Impostazioni › Uscite: pausa automatica' {
-        T06-Apri-Impostazioni
-        Clicca (Testo-App 'Impostazioni_Uscite') -Dentro 'ScorrimentoImpostazioni'
-        Start-Sleep -Seconds 1
-        Fotografa 'impostazioni-Uscite'
-        if (T06-Scorri 100) { Fotografa 'impostazioni-Uscite-in-fondo' }
-        $i = Trova-Elemento 'InterruttorePausaAutomatica' -AncheNascosti
-        $stato = $null
-        if ($i -and $i.TryGetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern, [ref]$stato)) { Scrivi-Log "Pausa automatica: $($stato.Current.ToggleState)" }
-        Scrivi-Log "Nota della pausa automatica: «$(T06-Testo 'NotaPausaAutomatica')»"
-        Scrivi-Log "A schermo adesso: $(Elenco-Visibili)"
-        T06-Chiudi-Impostazioni
+    T06-Segna 'torno alla fotocamera posteriore con la sfocatura accesa'
+    Passo 'Fotocamera posteriore con la sfocatura accesa' {
+        Clicca 'Principale 1×' -Dentro 'SceltaObiettivo'
+        Start-Sleep -Seconds 5
+        Fotografa 'posteriore-con-sfocatura'
+        Scrivi-Log "Sfondo nella colonna: $(T06-Testo 'SceltaSfondo')"
     }
-    Passo 'Dopo Uscite: cosa vede UI Automation e cosa si vede a schermo' {
-        Start-Sleep -Seconds 1
-        Fotografa 'dopo-uscite-chiuse'
-        Scrivi-Log "A schermo dopo la chiusura: $(Elenco-Visibili)"
-        foreach ($id in 'PulsanteSchermo', 'PulsanteSfondoVideo', 'PannelloAppInUso', 'PannelloDestroScorrimento', 'IntestazioneEffetti', 'ChipQualita', 'PulsanteRegistro') {
-            $e = Trova-Elemento $id -AncheNascosti
-            if ($e) { Scrivi-Log "  ${id}: c'è, fuori schermo $($e.Current.IsOffscreen), $(Descrivi-Rettangolo $e.Current.BoundingRectangle)" } else { Scrivi-Log "  ${id}: NON c'è" }
-        }
-        $cambio = Confronta-Finestra 'riapro Impostazioni' { Clicca 'PulsanteImpostazioni'; Start-Sleep -Seconds 1 }
-        Fotografa 'impostazioni-riaperte-dopo-uscite'
-        $vede = [bool](Trova-Elemento 'ScorrimentoImpostazioni' -AncheNascosti)
-        Scrivi-Log "Elenco delle impostazioni per UI Automation: $vede; finestra cambiata del $cambio%"
-        if (-not $vede) { Segnala-Problema "Dopo Impostazioni › Uscite il pannello non si vede con UI Automation (finestra cambiata del $cambio%)" }
-        # Per scrupolo: una voce qualsiasi, per vedere se il pannello risponde davvero.
-        try { Clicca (Testo-App 'Impostazioni_Effetti') -Dentro 'ScorrimentoImpostazioni'; Start-Sleep -Seconds 1; Fotografa 'impostazioni-effetti-dopo-uscite' } catch { Scrivi-Log "  voce Effetti dopo Uscite: $($_.Exception.Message)" }
-        T06-Chiudi-Impostazioni
-        Start-Sleep -Seconds 1
-        Fotografa 'dopo-uscite-seconda-chiusura'
-        Scrivi-Log "Pulsante Sfondo dopo tutto: $([bool](Trova-Elemento 'PulsanteSfondoVideo'))"
-    }
-
-    T06-Segna 'pausa automatica: finestra ridotta a icona 45 s'
-    Passo 'Pausa automatica: riduco la finestra a icona per 45 s' {
-        $f = Finestra-App
-        $righePrima = @(Registro-Telefono $nomeTelefono).Count
-        [void][CollaudoNativo]::ShowWindow([IntPtr]$f.Current.NativeWindowHandle, 6)
-        Start-Sleep -Seconds 45
-        $nuove = @(Registro-Telefono $nomeTelefono | Select-Object -Skip $righePrima)
-        Scrivi-Log "Telefono durante la finestra ridotta ($($nuove.Count) righe nuove):"
-        $nuove | Select-Object -Last 15 | ForEach-Object { Scrivi-Log "    > $_" }
-        Porta-Davanti
-        Start-Sleep -Seconds 3
-        Fotografa 'finestra-riaperta'
-        Controlla-Video | Out-Null
-    }
-    T06-Registro 'dopo la finestra ridotta' | Out-Null
+    T06-Registro 'dopo il ritorno alla posteriore' | Out-Null
 
     # ---------------------------------------------------------------- fine
     T06-Segna 'fine'

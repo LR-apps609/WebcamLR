@@ -56,6 +56,24 @@ var DOWNLOAD = {
     ? { iphone: "an iPhone or iPad", android: "Android", windows: "Windows", mac: "a Mac", linux: "Linux" }
     : { iphone: "un iPhone o un iPad", android: "Android", windows: "Windows", mac: "un Mac", linux: "Linux" };
   var scheda = piattaforma && document.querySelector('[data-piattaforma="' + piattaforma + '"]');
+  // Dal telefono la sezione «Sul telefono» sale sopra quella «Sul computer» (e prende il numero 1), così la scheda
+  // riconosciuta è davvero la prima dopo l'introduzione, come dice la riga #rilevato. Dentro la sezione la scheda
+  // evidente è già la prima (`.piattaforma.evidente { order: -1 }` in stile.css).
+  if (scheda && (piattaforma === "iphone" || piattaforma === "android")) {
+    var sezioneTelefono = scheda.closest("section");
+    var titoloComputer = document.getElementById("titolo-computer");
+    var sezioneComputer = titoloComputer && titoloComputer.closest("section");
+    if (sezioneTelefono && sezioneComputer && sezioneTelefono !== sezioneComputer) {
+      sezioneComputer.parentNode.insertBefore(sezioneTelefono, sezioneComputer);
+      var stileTelefono = sezioneTelefono.getAttribute("style"), stileComputer = sezioneComputer.getAttribute("style");
+      sezioneTelefono.setAttribute("style", stileComputer); sezioneComputer.setAttribute("style", stileTelefono);
+      [[sezioneTelefono, "1"], [sezioneComputer, "2"]].forEach(function (coppia) {
+        var occhiello = coppia[0].querySelector(".occhiello");
+        if (occhiello) occhiello.textContent = occhiello.textContent.replace(/^\d/, coppia[1]);
+      });
+    }
+  }
+
   if (scheda) {
     scheda.classList.add("evidente");
     var etichetta = scheda.querySelector(".riconosciuto");

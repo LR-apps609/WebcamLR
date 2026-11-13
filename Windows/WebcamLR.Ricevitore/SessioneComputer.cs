@@ -89,6 +89,8 @@ public sealed class SessioneComputer : IAsyncDisposable
 
     private FormatoVideo? formato;
     private int fotogrammiUltimoSecondo;
+    /// <summary>È arrivato almeno un fotogramma: da lì, un secondo senza fotogrammi vuol dire latenza sconosciuta.</summary>
+    private bool fotogrammiVisti;
     private long byteUltimoSecondo;
     private int pacchettiAudioUltimoSecondo;
     private ulong ultimoPacchetto = Orologio.Adesso();
@@ -458,6 +460,7 @@ public sealed class SessioneComputer : IAsyncDisposable
                 lock (blocco)
                 {
                     fotogrammiUltimoSecondo++;
+                    fotogrammiVisti = true;
                     byteUltimoSecondo += pacchetto.Contenuto.Length;
                     latenza.Fotogramma(fotogramma.Timestamp, adesso);
                 }
@@ -640,6 +643,9 @@ public sealed class SessioneComputer : IAsyncDisposable
                 lock (blocco)
                 {
                     var arrivo = latenza.ChiudiSecondo();
+                    // Il video si è fermato (nessun fotogramma in questo secondo): nessuna latenza. Anche quelle d'uscita
+                    // sarebbero di prima, valide fino a 2 s (collaudo 20, t04 B4: «Collegamento ottimo, 60 ms» a telefono muto).
+                    if (fotogrammiUltimoSecondo == 0 && fotogrammiVisti) uscita = default;
                     // Da vetro a uscita quando c'è; senza video decodificato (o con un computer che non lo misura) l'arrivo.
                     ultima = RitardoVetro.Latenza(uscita.Webcam, uscita.Anteprima, arrivo);
                     latenzaMostrata = uscita.Webcam ?? uscita.Anteprima;

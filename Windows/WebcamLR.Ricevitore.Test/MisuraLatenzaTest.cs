@@ -39,7 +39,9 @@ public class MisuraLatenzaTest
             misura.Fotogramma(1_000_000, 1_000_000 + (ulong)ms * 1000);
         }
         Assert.Equal(31, misura.ChiudiSecondo());
-        Assert.Equal(31, misura.ChiudiSecondo()); // nessun fotogramma nuovo: resta l'ultima
+        // Nessun fotogramma nuovo: la latenza non si sa più (collaudo 20, t04 B4), non resta l'ultima.
+        Assert.Null(misura.ChiudiSecondo());
+        Assert.Null(misura.UltimaLatenzaMs);
     }
 
     [Fact]

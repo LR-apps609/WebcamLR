@@ -38,7 +38,10 @@ public sealed class MisuraLatenza
         return latenza;
     }
 
-    /// <summary>Chiude il secondo: la latenza mostrata è la mediana dei fotogrammi arrivati.</summary>
+    /// <summary>
+    /// Chiude il secondo: la latenza mostrata è la mediana dei fotogrammi arrivati. Senza fotogrammi nel secondo non si sa:
+    /// null (collaudo 20, t04 B4: il telefono taceva e il chip diceva ancora «Collegamento ottimo, 60 ms» per 2–3 s).
+    /// </summary>
     public int? ChiudiSecondo()
     {
         if (latenzeRecenti.Count > 0)
@@ -46,6 +49,10 @@ public sealed class MisuraLatenza
             latenzeRecenti.Sort();
             UltimaLatenzaMs = latenzeRecenti[latenzeRecenti.Count / 2];
             latenzeRecenti.Clear();
+        }
+        else
+        {
+            UltimaLatenzaMs = null;
         }
         return UltimaLatenzaMs;
     }

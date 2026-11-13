@@ -445,7 +445,7 @@
     <!-- finale_collegamento: Wi-Fi o cavo (regola «Automatico») -->
     <string name="collegamento_sezione">Connection to the computer</string>
     <string name="collegamento_automatico">Automatic</string>
-    <string name="collegamento_nota">Automatic picks the fastest route at the start and then stays on it: it only switches if it drops, or when you plug in the cable. You can also choose it on the computer.</string>
+    <string name="collegamento_nota">Automatic picks the fastest route at the start and then stays on it: it only switches if it drops, or when you turn on USB tethering. The cable with USB debugging is used when you connect: to move to it while on Wi-Fi, tap “Disconnect”. You can also choose the route on the computer.</string>
     <string name="collegamento_in_uso">In use</string>
     <string name="piu_veloce_ora">fastest now</string>
     <string name="registro_vecchio_chiuso_nel_passaggio">The computer closed the previous connection: waiting for the new one</string>

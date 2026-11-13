@@ -447,7 +447,7 @@
     <!-- finale_collegamento: Wi-Fi o cavo (regola «Automatico») -->
     <string name="collegamento_sezione">Collegamento al computer</string>
     <string name="collegamento_automatico">Automatico</string>
-    <string name="collegamento_nota">Automatico sceglie la strada più veloce all\'inizio e poi resta su quella: cambia solo se si stacca, o quando attacchi il cavo. Puoi sceglierla anche dal computer.</string>
+    <string name="collegamento_nota">Automatico sceglie la strada più veloce all\'inizio e poi resta su quella: cambia solo se si stacca, o quando attivi il tethering USB. Il cavo con il debug USB si usa quando ti colleghi: per passarci durante il Wi-Fi, tocca «Scollega». Puoi scegliere la strada anche dal computer.</string>
     <string name="collegamento_in_uso">In uso</string>
     <string name="piu_veloce_ora">più veloce ora</string>
     <string name="registro_vecchio_chiuso_nel_passaggio">Il computer ha chiuso il collegamento di prima: aspetto quello nuovo</string>

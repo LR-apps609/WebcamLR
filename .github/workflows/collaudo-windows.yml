@@ -1,0 +1,107 @@
+# Banco di prova Windows (collaudo-20): compila WebcamLR.App come il lavoro «windows» di compila.yml, la avvia sul desktop
+# del runner e la guida con i copioni PowerShell di Strumenti/collaudo/windows/copioni (UI Automation, telefono finto).
+# Risultati nell'artifact «collaudo-windows»: una cartella per copione con schermate, alberi dell'interfaccia, passi.log,
+# registri del telefono finto, dati dell'app ed esito.txt. Un copione che trova un bug non fa fallire il lavoro.
+# Guida: Strumenti/collaudo/windows/LEGGIMI.md.
+name: Collaudo Windows
+
+on:
+  push:
+    branches: ["collaudo-20*"]
+    paths:
+      - "Windows/**"
+      - "Strumenti/collaudo/**"
+      - ".github/workflows/collaudo-windows.yml"
+  workflow_dispatch:
+    inputs:
+      copioni:
+        description: "Copioni da eseguire, separati da virgole (vuoto = tutti)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: collaudo-windows-${{ github.ref }}-${{ github.event.inputs.copioni }}
+  cancel-in-progress: false
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
+
+jobs:
+  collaudo:
+    name: collaudo windows (${{ github.event.inputs.copioni || 'tutti' }})
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepara le cartelle
+        run: mkdir -p registri risultati-collaudo
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      # Come in compila.yml: l'app WinUI x64 si porta dietro Protocollo, Ricevitore, Effetti, Microfono, Webcam.
+      - name: dotnet build (WebcamLR.App, x64)
+        run: |
+          set -o pipefail
+          dotnet build Windows/WebcamLR.App/WebcamLR.App.csproj -c Debug -p:Platform=x64 --nologo 2>&1 \
+            | tee registri/dotnet-build-app.log
+
+      - name: dotnet build (telefono finto e lingua del collaudo)
+        run: |
+          set -o pipefail
+          dotnet build Strumenti/collaudo/TelefonoFinto -c Release --nologo 2>&1 | tee registri/dotnet-build-telefono.log
+          dotnet build Strumenti/collaudo/windows/LinguaAvvio -c Release --nologo 2>&1 | tee registri/dotnet-build-lingua.log
+
+      - name: Prova del telefono finto contro il Ricevitore
+        continue-on-error: true
+        run: |
+          dotnet test Strumenti/collaudo/TelefonoFinto.Prova --nologo --logger "console;verbosity=normal" 2>&1 \
+            | tee registri/dotnet-test-telefono.log
+
+      - name: La macchina (schermo, Media Foundation)
+        shell: powershell
+        continue-on-error: true
+        run: |
+          Add-Type -AssemblyName System.Windows.Forms
+          "Schermo: " + [System.Windows.Forms.SystemInformation]::VirtualScreen
+          "Sessione interattiva: " + [Environment]::UserInteractive
+          (Get-CimInstance Win32_OperatingSystem).Caption
+          try { Get-WindowsFeature Server-Media-Foundation | Format-Table -AutoSize | Out-String } catch { "Get-WindowsFeature non c'è" }
+          Test-Path "$env:WINDIR\System32\mfplat.dll"
+          Test-Path "$env:WINDIR\System32\msmpeg2vdec.dll"
+
+      - name: Copioni
+        shell: powershell
+        timeout-minutes: 40
+        env:
+          COPIONI: ${{ github.event.inputs.copioni }}
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File Strumenti\collaudo\windows\Esegui-Copioni.ps1 `
+            -Copioni "$env:COPIONI" -Uscita risultati-collaudo
+          exit 0
+
+      - name: Riassunto
+        if: ${{ !cancelled() }}
+        run: |
+          cat risultati-collaudo/riassunto.txt || true
+          for f in risultati-collaudo/*/esito.txt; do echo "::group::$f"; cat "$f"; echo "::endgroup::"; done
+          cp registri/*.log risultati-collaudo/ 2>/dev/null || true
+
+      - name: Carica i risultati
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: collaudo-windows
+          path: risultati-collaudo/
+          if-no-files-found: warn
+          retention-days: 14

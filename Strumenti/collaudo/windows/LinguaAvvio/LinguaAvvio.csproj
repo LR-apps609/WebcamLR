@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Solo per il collaudo: un «startup hook» di .NET (DOTNET_STARTUP_HOOKS) che sceglie la lingua dell'interfaccia di
+       WebcamLR senza cambiare la lingua di Windows del runner. Collaudo.psm1 lo usa in Avvia-App. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>LinguaAvvio</AssemblyName>
+  </PropertyGroup>
+
+</Project>

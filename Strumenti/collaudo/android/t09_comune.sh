@@ -131,3 +131,28 @@ presentazione() {
     local k
     for k in 1 2 3; do attendi_id "permission_message" 8 || break; consenti_dialogo || break; done
 }
+
+# segnala_da_app <prefisso>: «App e assistenza› Segnala un bug», scrive una descrizione, fotografa e torna indietro.
+segnala_da_app() {
+    local p="$1"
+    alla_principale
+    tocca_testo "App e assistenza" || { nota "$p: «App e assistenza» non raggiungibile"; return 1; }
+    attendi 1
+    if tocca_testo "Segnala un bug"; then
+        attendi 1
+        giro "$p-segnala" 6
+        if tocca_classe android.widget.EditText; then
+            attendi 1
+            schermata "$p-segnala-tastiera"
+            scrivi "Con il testo grande la schermata principale non mostra le impostazioni"
+            attendi 1
+            schermata "$p-segnala-scritto-tastiera"
+            indietro
+            giro "$p-segnala-scritto" 6
+        fi
+        indietro
+    else
+        nota "$p: «Segnala un bug» non raggiungibile in App e assistenza"
+    fi
+    alla_principale
+}

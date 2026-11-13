@@ -7,7 +7,10 @@
   var CHIAVE = "webcamlr-lingua";
   var lingua = (document.documentElement.lang || "it").slice(0, 2);
   var altra = document.querySelector('.lingue a[hreflang]');
-  if (!altra) return;
+  // Lo script nell'<head> di ogni pagina tiene il posto della striscia («attesa-lingua») se pensa che comparirà:
+  // la classe si toglie quando la striscia c'è o quando si sa che non serve.
+  function libera() { document.documentElement.classList.remove("attesa-lingua"); }
+  if (!altra) { libera(); return; }
 
   function ricorda() {
     try { localStorage.setItem(CHIAVE, "scelta"); } catch (e) {}
@@ -24,12 +27,12 @@
     ricorda();
   });
 
-  if (giaScelto()) return;
+  if (giaScelto()) { libera(); return; }
   var preferite = (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ""]);
   var prima = String(preferite[0] || "").toLowerCase();
   var italiano = prima.slice(0, 2) === "it";
   var suggerisci = lingua === "it" ? (prima !== "" && !italiano) : italiano;
-  if (!suggerisci) return;
+  if (!suggerisci) { libera(); return; }
 
   var verso = lingua === "it" ? "en" : "it";
   var testi = verso === "en"
@@ -64,4 +67,5 @@
   var testata = document.querySelector(".testata");
   if (testata && testata.parentNode) testata.parentNode.insertBefore(striscia, testata.nextSibling);
   else document.body.insertBefore(striscia, document.body.firstChild);
+  libera();
 })();

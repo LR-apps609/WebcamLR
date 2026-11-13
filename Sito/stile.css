@@ -74,6 +74,8 @@ p { margin: 0; }
 .lingue a:hover { color: var(--testo); background: var(--pannello-chiaro); }
 .lingue [aria-current] { background: var(--accento-tenue); color: var(--accento-chiaro); }
 .suggerimento-lingua { background: var(--accento-tenue); border-bottom: 1px solid var(--accento); }
+/* Il posto della striscia (44 px + il bordo), tenuto finché lingua.js non la mette (script nell'<head>). */
+.attesa-lingua .testata { margin-bottom: 45px; }
 .suggerimento-lingua .contenitore { display: flex; align-items: center; justify-content: space-between; gap: var(--spazio-piccolo); min-height: 44px; font-size: 16px; }
 .suggerimento-lingua a { color: var(--accento-chiaro); font-weight: 600; }
 .suggerimento-lingua .chiudi { flex-shrink: 0; width: 44px; height: 44px; margin: -2px; border: 0; border-radius: 50%; background: transparent; color: var(--testo-chiaro); font: 24px/1 var(--testi); cursor: pointer; }

@@ -15,6 +15,25 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preload" href="caratteri/BarlowCondensed-Bold.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="caratteri/Barlow-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<script>
+  // Prima del primo disegno, perché la testata non cambi forma quando arrivano menu.js e lingua.js (con la rete lenta
+  // la pagina saltava di 50-100 px): la classe «con-menu» c'è da subito, e se la striscia della lingua comparirà
+  // (stessa regola di lingua.js) il suo posto si tiene già («attesa-lingua»). Se gli script non arrivano, al «load»
+  // le classi si tolgono e la pagina resta come senza JavaScript.
+  (function () {
+    var radice = document.documentElement;
+    radice.classList.add("con-menu");
+    try {
+      var prima = String((navigator.languages && navigator.languages[0]) || navigator.language || "").toLowerCase();
+      var italiano = prima.slice(0, 2) === "it", paginaItaliana = (radice.lang || "it").slice(0, 2) === "it";
+      if (localStorage.getItem("webcamlr-lingua") !== "scelta" && (paginaItaliana ? prima !== "" && !italiano : italiano)) radice.classList.add("attesa-lingua");
+    } catch (e) {}
+    addEventListener("load", function () {
+      if (!window.menuPronto) radice.classList.remove("con-menu");
+      radice.classList.remove("attesa-lingua");
+    });
+  })();
+</script>
 <link rel="stylesheet" href="token.css">
 <link rel="stylesheet" href="stile.css">
 <meta property="og:site_name" content="WebcamLR">

@@ -4,7 +4,10 @@
 // Gli eventi sono sul documento: così funziona anche nella 404 inglese, che sostituisce il <body> dopo il caricamento.
 (function () {
   var radice = document.documentElement;
+  // La classe la mette già lo script nell'<head> di ogni pagina; qui si conferma, e si dice che il menu è pronto
+  // (senza, al «load» lo script dell'<head> la toglie).
   radice.classList.add("con-menu");
+  window.menuPronto = true;
 
   function pulsante() { return document.querySelector(".menu-pulsante"); }
   function testata() { return document.querySelector(".testata"); }

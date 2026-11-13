@@ -23,13 +23,14 @@ Avvia-App | Out-Null
 Avvia-TelefonoFinto -DalQR --nome 'iPhone delle pagine' --durata 900 --riconnetti-sempre | Out-Null
 Attendi-Telefono 'ACCETTATO' 30 -Nome 'iPhone delle pagine' | Out-Null
 Chiudi-App
-$voci = 'Fotocamera', 'Effetti', 'Sfondo', 'Profili', 'Qualita', 'Schermo', 'Microfono', 'Telefoni', 'Gobbo', 'Avvio', 'Registro', 'Uscite'
+if ($env:FIX_PAGINE_VOCI) { $voci = $env:FIX_PAGINE_VOCI -split ',' } else { $voci = 'Fotocamera', 'Effetti', 'Sfondo', 'Profili', 'Qualita', 'Schermo', 'Microfono', 'Telefoni', 'Gobbo', 'Avvio', 'Registro', 'Uscite' }
 foreach ($voce in $voci) {
     Passo "Pagina $voce" {
         Avvia-App | Out-Null
         Tasto 'Ctrl+2'
         Start-Sleep -Seconds 2
         [void](Controlla "$voce prima")
+        if ($voce -in $env:FIX_PAGINE_ALBERI -split ',') { Albero-UI "prima-$voce" -Tutto | Out-Null }
         Apri-Impostazioni
         Clicca (Testo-App "Impostazioni_$voce") -Dentro 'ScorrimentoImpostazioni'
         Start-Sleep -Milliseconds 800
@@ -37,8 +38,9 @@ foreach ($voce in $voci) {
         Start-Sleep -Seconds 1
         if ((Controlla "$voce dopo") -gt 0) {
             Segnala-Problema "Dopo Impostazioni › $voce la vista Completo non è tutta raggiungibile con UI Automation"
-            Albero-UI "dopo-$voce" | Out-Null
+            Albero-UI "dopo-$voce" -Tutto | Out-Null
         }
         Chiudi-App
     }
 }
+if ($env:FIX_PAGINE_ALBERI) { & (Join-Path $PSScriptRoot '..\t13\stampa.ps1') -Cartella (Cartella-Risultati) }

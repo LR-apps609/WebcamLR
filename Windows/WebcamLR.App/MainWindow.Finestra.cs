@@ -58,8 +58,22 @@ public sealed partial class MainWindow
         {
             if (cambio.DidSizeChange || cambio.DidPresenterChange) AggiornaZoneTitolo();
         };
-        // Contrasto elevato acceso o spento con la finestra aperta: i pulsanti di sistema seguono.
-        accessibilita.HighContrastChanged += (_, _) => DispatcherQueue.TryEnqueue(ColoraBarraDelTitolo);
+        // Contrasto elevato acceso o spento con la finestra aperta: i pulsanti di sistema seguono. Su Windows Server la
+        // sottoscrizione fallisce (0x80070490, elemento non trovato: collaudo 20) e prima l'app non partiva. Ripiego: i
+        // colori si rifanno quando la finestra torna attiva (si cambia il contrasto dalle Impostazioni di Windows, poi si
+        // torna qui).
+        try
+        {
+            accessibilita.HighContrastChanged += (_, _) => DispatcherQueue.TryEnqueue(ColoraBarraDelTitolo);
+        }
+        catch (Exception errore)
+        {
+            App.ScriviErrore(errore);
+            Activated += (_, evento) =>
+            {
+                if (evento.WindowActivationState != WindowActivationState.Deactivated) ColoraBarraDelTitolo();
+            };
+        }
     }
 
     /// <summary>

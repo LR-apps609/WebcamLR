@@ -266,7 +266,8 @@ public sealed class FinestraGobbo
         ritardoSalvataggio.Tick += (_, _) => SalvaTesto();
         finestra.Closed += (_, _) =>
         {
-            accessibilita.HighContrastChanged -= SuContrastoCambiato;
+            try { accessibilita.HighContrastChanged -= SuContrastoCambiato; }
+            catch (Exception) { }
             ritardoVelocita?.Stop();
             ritardoSalvataggio?.Stop();
             SalvaTesto();
@@ -302,7 +303,9 @@ public sealed class FinestraGobbo
             finestra.SetTitleBar(intestazione);
             finestra.AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
             ColoriBarraDelTitolo.Applica(finestra.AppWindow.TitleBar, estesa: true, accessibilita.HighContrast);
-            accessibilita.HighContrastChanged += SuContrastoCambiato;
+            // Su Windows Server la sottoscrizione fallisce (0x80070490): il gobbo si apre lo stesso, con i colori di adesso.
+            try { accessibilita.HighContrastChanged += SuContrastoCambiato; }
+            catch (Exception) { }
             // Il posto per i pulsanti di sistema (a destra, a sinistra con le lingue da destra a sinistra).
             intestazione.SizeChanged += (_, _) => AggiornaMarginiTitolo();
             intestazione.Loaded += (_, _) => AggiornaMarginiTitolo();

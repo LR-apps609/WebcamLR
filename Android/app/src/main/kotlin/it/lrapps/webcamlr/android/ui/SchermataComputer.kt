@@ -25,17 +25,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -54,10 +51,8 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Usb
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -90,7 +85,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.DialogProperties
 import it.lrapps.webcamlr.android.R
 import it.lrapps.webcamlr.android.contenuti.InfoApp
 import it.lrapps.webcamlr.android.dati.ComputerConosciuti
@@ -630,38 +624,27 @@ private fun DialogoIndirizzo(chiudi: () -> Unit, collega: (Associazione) -> Unit
             is Indirizzi.Esito.NonValido -> errore = esito.errore
         }
     }
-    // Collaudo 20 (t09 B4): il dialogo sta sopra la tastiera (riceve i suoi margini) e il titolo scorre con il testo e
-    // il campo, così con il carattere grande, anche in orizzontale, restano in vista il campo che si sta scrivendo e
-    // «Collega»; il campo con il fuoco si porta da solo in vista dentro lo scorrimento.
-    AlertDialog(
-        onDismissRequest = chiudi,
-        modifier = Modifier.windowInsetsPadding(WindowInsets.safeDrawing),
-        properties = DialogProperties(decorFitsSystemWindows = false),
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Spazi.stretto)) {
-                Text(
-                    stringResource(R.string.indirizzo_titolo), style = MaterialTheme.typography.headlineSmall,
-                    color = AlertDialogDefaults.titleContentColor,
-                    modifier = Modifier.padding(bottom = Spazi.piccolo).semantics { heading() },
-                )
-                Text(stringResource(R.string.indirizzo_testo), style = Stili.corpo, color = Colori.testoChiaro)
-                OutlinedTextField(
-                    value = testo,
-                    onValueChange = { testo = it; errore = null },
-                    placeholder = { Text("192.168.1.20") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Go),
-                    keyboardActions = KeyboardActions(onGo = { prova() }, onDone = { prova() }),
-                    isError = nonValido,
-                    textStyle = Stili.numeriCorpo,
-                    colors = coloriCampo(),
-                )
-                errore?.let { Text(testoErroreIndirizzo(it), style = Stili.nota, color = Colori.ambraTesto) }
-            }
-        },
-        confirmButton = {
+    // Collaudo 20 (t09 B4): sopra la tastiera, con titolo, testo e campo che scorrono e i pulsanti sempre in vista.
+    DialogoSopraLaTastiera(
+        titolo = stringResource(R.string.indirizzo_titolo),
+        chiudi = chiudi,
+        pulsanti = {
+            PulsanteLink(stringResource(R.string.annulla), tenue = true) { chiudi() }
             PulsanteLink(stringResource(R.string.collega)) { prova() }
         },
-        dismissButton = { PulsanteLink(stringResource(R.string.annulla), tenue = true) { chiudi() } },
-    )
+    ) {
+        Text(stringResource(R.string.indirizzo_testo), style = Stili.corpo, color = Colori.testoChiaro)
+        OutlinedTextField(
+            value = testo,
+            onValueChange = { testo = it; errore = null },
+            placeholder = { Text("192.168.1.20") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Go),
+            keyboardActions = KeyboardActions(onGo = { prova() }, onDone = { prova() }),
+            isError = nonValido,
+            textStyle = Stili.numeriCorpo,
+            colors = coloriCampo(),
+        )
+        errore?.let { Text(testoErroreIndirizzo(it), style = Stili.nota, color = Colori.ambraTesto) }
+    }
 }

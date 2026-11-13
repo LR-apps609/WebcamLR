@@ -1,12 +1,37 @@
 package it.lrapps.webcamlr.android.ui
 
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialogDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 
 /*
  * Collaudo 20 (t09, testo al 200% su telefoni piccoli): impaginazioni che si adattano invece di schiacciare. Una riga
@@ -81,6 +106,57 @@ fun SoloSeCiSta(modifier: Modifier = Modifier, contenuto: @Composable () -> Unit
             layout(larghezza, altezza) { dentro.placeRelative(0, (altezza - dentro.height) / 2) }
         } else {
             layout(vincoli.minWidth, vincoli.minHeight) {}
+        }
+    }
+}
+
+/**
+ * Un dialogo con un campo di testo che resta sopra la tastiera, con l'aspetto dell'`AlertDialog` di Material 3. Collaudo
+ * 20 (t09 B4): l'`AlertDialog` non riceve i margini della tastiera e con il carattere grande il campo e «Collega»
+ * finivano sotto. Qui la finestra del dialogo è a tutto schermo e il riquadro sta nello spazio libero da barre e
+ * tastiera: titolo, testo e campo scorrono, i pulsanti restano in fondo al riquadro; il campo con il fuoco si porta
+ * da solo in vista. Indietro o un tocco fuori dal riquadro chiudono.
+ */
+@Composable
+fun DialogoSopraLaTastiera(
+    titolo: String,
+    chiudi: () -> Unit,
+    pulsanti: @Composable () -> Unit,
+    contenuto: @Composable ColumnScope.() -> Unit,
+) {
+    Dialog(onDismissRequest = chiudi, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(Spazi.medio)
+                .pointerInput(chiudi) { detectTapGestures { chiudi() } },
+        ) {
+            Surface(
+                shape = AlertDialogDefaults.shape,
+                color = AlertDialogDefaults.containerColor,
+                tonalElevation = AlertDialogDefaults.TonalElevation,
+                modifier = Modifier.widthIn(min = 280.dp, max = 560.dp)
+                    // Un tocco sul riquadro non lo chiude.
+                    .pointerInput(Unit) { detectTapGestures { } }
+                    .semantics { paneTitle = titolo },
+            ) {
+                Column(Modifier.padding(Spazi.largo)) {
+                    Column(
+                        Modifier.weight(1f, fill = false).fillMaxWidth().verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(Spazi.stretto),
+                    ) {
+                        Text(
+                            titolo, style = MaterialTheme.typography.headlineSmall, color = AlertDialogDefaults.titleContentColor,
+                            modifier = Modifier.padding(bottom = Spazi.piccolo).semantics { heading() },
+                        )
+                        contenuto()
+                    }
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(Spazi.stretto, Alignment.End),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().padding(top = Spazi.largo),
+                    ) { pulsanti() }
+                }
+            }
         }
     }
 }

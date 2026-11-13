@@ -9,6 +9,25 @@ _dimensioni() {
     if [ "${_rotazione:-0}" = 1 ]; then echo "${d#*x}x${d%x*}"; else echo "$d"; fi
 }
 
+# scorri_dentro "<testo>": scorre verso l'alto il contenuto che contiene il testo, partendo dal testo stesso
+# (in un dialogo lo swipe a metà schermo cade sui pulsanti).
+scorri_dentro() {
+    local f="$USCITA/.attesa.xml" c x y
+    _dump "$f" && c=$(python3 -I "$_NODO" "$f" testo "$1") || return 1
+    x=${c% *}; y=${c#* }
+    adb_sh input swipe "$x" "$y" "$x" $(( y > 300 ? y - 250 : 20 )) 400
+    passo "SCORRI DENTRO «$1»"
+    sleep 1
+}
+
+# campo_visibile <nome>: il campo di testo c'è nell'albero (cioè si vede) e «Collega» anche.
+campo_visibile() {
+    local f="$USCITA/.attesa.xml"
+    _dump "$f"
+    if python3 -I "$_NODO" "$f" classe android.widget.EditText >/dev/null; then passo "B4 $1: campo visibile"; else nota "B4 $1: campo NON visibile"; fi
+    if python3 -I "$_NODO" "$f" testo "Collega" >/dev/null; then passo "B4 $1: «Collega» visibile"; else nota "B4 $1: «Collega» NON visibile"; fi
+}
+
 avvia_computer_finto --nome "PC di Anna" --attesa-conferma 8 || nota "il computer finto non parte"
 telefono_piccolo_testo_grande 2.0
 cancella_dati_app
@@ -32,8 +51,12 @@ if c_e_testo "Impostazioni"; then passo "B1: ingranaggio presente"; else nota "B
 # B4: «Collega a mano» con la tastiera, in orizzontale.
 if tocca_testo "Collega a mano (indirizzo)"; then
     attendi 1
-    tocca_classe android.widget.EditText && { attendi 2; schermata "o-indirizzo-tastiera"; testi_visibili; }
-    if c_e_testo "Collega"; then passo "B4 o: «Collega» nell'albero con la tastiera"; else nota "B4 o: «Collega» non visibile con la tastiera"; fi
+    schermata "o-indirizzo"
+    scorri_dentro "Lo trovi nella finestra"
+    schermata "o-indirizzo-scorso"
+    if tocca_classe android.widget.EditText; then
+        attendi 2; schermata "o-indirizzo-tastiera"; testi_visibili; campo_visibile "o"
+    fi
     indietro; attendi 1
     c_e_testo "Annulla" && tocca_testo "Annulla" || indietro
 else
@@ -52,7 +75,7 @@ if tocca_testo "Inquadra il QR code del computer"; then attendi 3; schermata "v-
 alla_principale
 if tocca_testo "Collega a mano (indirizzo)"; then
     attendi 1
-    tocca_classe android.widget.EditText && { attendi 2; schermata "v-indirizzo-tastiera"; testi_visibili; }
+    tocca_classe android.widget.EditText && { attendi 2; schermata "v-indirizzo-tastiera"; testi_visibili; campo_visibile "v"; }
     indietro; attendi 1
     c_e_testo "Annulla" && tocca_testo "Annulla" || indietro
 fi

@@ -485,3 +485,19 @@ collega_qr() {
 # 127.0.0.1:$PORTA_CAVO, che «adb forward» porta alla porta 52741 del telefono (dove l'app ascolta in primo piano).
 collega_cavo() { adb forward "tcp:$PORTA_CAVO" tcp:52741 >/dev/null; passo "CAVO: adb forward tcp:$PORTA_CAVO → telefono:52741"; }
 scollega_cavo() { adb forward --remove "tcp:$PORTA_CAVO" >/dev/null 2>&1; passo "CAVO staccato"; }
+
+# registro_telefono: il «Registro del collegamento» dell'app (Impostazioni › Registro del collegamento), fotografato
+# e scritto in passi.log: è il registro della sessione visto dal telefono. Da «In onda» o dalla schermata principale.
+registro_telefono() {
+    passo "REGISTRO DEL TELEFONO"
+    c_e_testo "Tocca due volte per riaccendere lo schermo" && tocca_due_volte
+    tocca_testo "Impostazioni" || return 1
+    if ! tocca_testo "Registro del collegamento"; then indietro; return 1; fi
+    attendi 1
+    schermata "registro-telefono"
+    testi_visibili
+    scorri_giu
+    schermata "registro-telefono-2"
+    testi_visibili
+    indietro; indietro
+}

@@ -68,6 +68,7 @@ schermata "pagina-permessi"
 | `schermo_piccolo`, `carattere_grande [2.0]`, `ruota [orizzontale\|verticale]` | 480x800 @240 dpi; font_scale; rotazione |
 | `lingua_inglese`, `lingua_italiana` | lingua dell'app (Android 13+, nessun riavvio) |
 | `ripristina` | schermo, carattere, rotazione, rete e lingua come all'inizio (lo fa anche esegui.sh tra un copione e l'altro) |
+| `registro_telefono` | apre Impostazioni › Registro del collegamento: fotografie e testi in passi.log |
 | `nota "<testo>"`, `fallisci "<motivo>"` | un'osservazione; FALLITO in esito.txt e fine del copione |
 | `tocca_due_volte [x y]` | doppio tocco (al centro): riaccende «In onda» oscurato |
 | `tocca_classe <classe>`, `svuota_campo` | per esempio `android.widget.EditText`; cancella il campo con il fuoco |

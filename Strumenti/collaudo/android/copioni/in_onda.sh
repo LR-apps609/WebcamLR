@@ -32,6 +32,7 @@ fi
 if ! attendi_computer video 45; then
     schermata "senza-video"
     testi_visibili
+    registro_telefono
     fallisci "il computer finto non riceve il video"
 fi
 attendi 3
@@ -60,7 +61,7 @@ else
 fi
 attendi 10
 rete_accesa
-attendi_ricollegamento "$prima" 90 || fallisci "dopo la rete riaccesa il telefono non torna in onda da solo"
+attendi_ricollegamento "$prima" 90 || { registro_telefono; fallisci "dopo la rete riaccesa il telefono non torna in onda da solo"; }
 attendi 5
 schermata "ricollegato"
 statistiche_computer 3

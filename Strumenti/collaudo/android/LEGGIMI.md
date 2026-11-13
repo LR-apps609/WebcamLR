@@ -69,6 +69,7 @@ schermata "pagina-permessi"
 | `lingua_inglese`, `lingua_italiana` | lingua dell'app (Android 13+, nessun riavvio) |
 | `ripristina` | schermo, carattere, rotazione, rete e lingua come all'inizio (lo fa anche esegui.sh tra un copione e l'altro) |
 | `nota "<testo>"`, `fallisci "<motivo>"` | un'osservazione; FALLITO in esito.txt e fine del copione |
+| `tocca_due_volte [x y]` | doppio tocco (al centro): riaccende «In onda» oscurato |
 | `tocca_classe <classe>`, `svuota_campo` | per esempio `android.widget.EditText`; cancella il campo con il fuoco |
 
 Note:
@@ -115,7 +116,13 @@ con ffmpeg), `video.h264` (solo nell'artifact) e `riepilogo.txt`. `--interrompi-
 computer); `rete_spenta` fa la stessa prova dal telefono. Il cavo: il vero Windows apre il canale con adb, ma
 salta gli emulatori; qui fa le sue veci un `adb forward tcp:52800 tcp:52741`, la stessa porta del telefono.
 
-Copioni pronti: `in_onda` (a mano, codice, 60 s in onda, rete spenta 20 s e ricollegamento, Scollega) e `cavo`.
+Copioni pronti: `in_onda` (a mano, codice, 60 s in onda, rete spenta 20 s e ricollegamento, Scollega),
+`in_onda_qr` (link del QR code, senza codice) e `cavo`.
+
+Da sapere in onda: dopo 30 secondi senza tocchi «In onda» si oscura (schermo nero con «IN ONDA» o «Riconnessione…» e
+«Tocca due volte per riaccendere lo schermo»): i pulsanti («Scollega», «Pausa», «Specchia», «Microfono al computer»,
+«Impostazioni», «Frontale», «1×») tornano con `tocca_due_volte`. Sull'emulatore il video è 720x1280 a 10–13 fps con
+latenza di 1–2 s e il telefono vede la rete come «Cavo di rete»: sono limiti dell'emulatore, non dell'app.
 
 ## Schermate e pulsanti (dal copione fumo)
 

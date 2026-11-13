@@ -107,6 +107,15 @@ tocca_xy() {
     sleep "${ATTESA_DOPO_TOCCO:-1.2}"
 }
 
+# tocca_due_volte [x y]: doppio tocco (di serie al centro), per esempio per riaccendere «In onda» oscurato.
+tocca_due_volte() {
+    local d x y
+    d=$(_dimensioni); x="${1:-$(( ${d%x*} / 2 ))}"; y="${2:-$(( ${d#*x} / 2 ))}"
+    adb_sh "input tap $x $y; input tap $x $y"
+    passo "DOPPIO TOCCO in $x $y"
+    sleep 1.5
+}
+
 # Il dump «prima del tocco» resta in albero/ con il numero del passo: è l'albero a ogni passo.
 _tocca() {
     local modo="$1" valore="$2" indice="${3:-1}" prova n nome f centro

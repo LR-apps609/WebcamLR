@@ -1,7 +1,7 @@
 # Copione «in onda»: il telefono si collega al computer finto con «Collega a mano» (10.0.2.2), conferma il codice,
 # resta in onda 60 secondi, perde la rete per 20 secondi e si deve ricollegare da solo.
 
-avvia_computer_finto --nome "PC di collaudo" --attesa-conferma 5 || fallisci "il computer finto non parte"
+avvia_computer_finto --nome "PC di collaudo" --attesa-conferma 10 || fallisci "il computer finto non parte"
 cancella_dati_app
 lingua_italiana
 permessi_concedi
@@ -27,7 +27,7 @@ else
     nota "nessuna schermata «Conferma sul computer» (il computer era già conosciuto?)"
 fi
 
-# --- In onda.
+# --- In onda (dopo 30 secondi senza tocchi lo schermo si oscura da solo: Impostazioni › Oscura lo schermo).
 if ! attendi_computer video 45; then
     schermata "senza-video"
     testi_visibili
@@ -50,10 +50,11 @@ prima=$(collegamenti_computer)
 rete_spenta
 attendi 4
 schermata "rete-spenta-4s"
-if attendi_testo "mi ricollego" 20; then
+# «In onda» si oscura da solo dopo 30 secondi senza tocchi: lì si legge «Riconnessione…», altrimenti «…mi ricollego…».
+if attendi_testo "Riconnessione" 20 || c_e_testo "mi ricollego"; then
     schermata "rete-spenta-riconnessione"
 else
-    nota "con la rete spenta il telefono non mostra «…mi ricollego…»"
+    nota "con la rete spenta il telefono non mostra «Riconnessione…» né «…mi ricollego…»"
     schermata "rete-spenta-20s"
 fi
 attendi 10
@@ -63,7 +64,11 @@ attendi 5
 schermata "ricollegato"
 statistiche_computer 3
 
-# --- Scollega dal telefono: la domanda, poi la lista dei computer.
+# --- Scollega dal telefono: lo schermo oscurato si riaccende con un doppio tocco, poi la domanda e la lista.
+if c_e_testo "Tocca due volte per riaccendere lo schermo"; then
+    schermata "in-onda-oscurato"
+    tocca_due_volte
+fi
 if tocca_testo "Scollega"; then
     schermata "domanda-scollega"
     tocca_testo "Scollega"

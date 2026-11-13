@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Solo per il collaudo: un «startup hook» di .NET (DOTNET_STARTUP_HOOKS) che Collaudo.psm1 aggiunge in Avvia-App.
+       Sceglie la lingua dell'interfaccia di WebcamLR e aggira un limite delle macchine Windows Server di GitHub
+       (StartupHook.cs). Non entra mai nell'app né nell'installatore. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>GancioAvvio</AssemblyName>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Harmony (MIT): sostituisce un metodo a programma avviato. Solo nel banco di prova. -->
+    <PackageReference Include="Lib.Harmony" Version="2.3.3" />
+  </ItemGroup>
+
+</Project>

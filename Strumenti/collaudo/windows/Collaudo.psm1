@@ -37,12 +37,14 @@ if (-not $script:Exe) {
     $script:Exe = Join-Path $script:Radice 'Windows\WebcamLR.App\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\WebcamLR.exe'
 }
 $script:TelefonoExe = Join-Path $script:Radice 'Strumenti\collaudo\TelefonoFinto\bin\Release\net8.0\TelefonoFinto.exe'
-$script:Gancio = Join-Path $script:Radice 'Strumenti\collaudo\windows\LinguaAvvio\bin\Release\net8.0\LinguaAvvio.dll'
+$script:Gancio = Join-Path $script:Radice 'Strumenti\collaudo\windows\GancioAvvio\bin\Release\net8.0\GancioAvvio.dll'
 $script:DatiApp = Join-Path $env:LOCALAPPDATA 'WebcamLR'
 $script:Uscita = Join-Path $env:TEMP 'collaudo'
 $script:Log = $null
 $script:Numero = 0
 $script:Lingua = 'it-IT'
+# Vero: l'errore 0x80070490 di HighContrastChanged delle macchine Windows Server si ignora (GancioAvvio). Senza, l'app non parte.
+$script:AggiraContrasto = $true
 $script:Processo = $null
 $script:Telefoni = @{}
 $script:Problemi = New-Object System.Collections.ArrayList
@@ -136,7 +138,8 @@ function Lingua-Italiana {
 function Avvia-App {
     <#
     Avvia WebcamLR.exe e aspetta la finestra. La lingua (Lingua-Inglese / Lingua-Italiana) passa con un «startup hook» di
-    .NET (LinguaAvvio.dll): l'app la legge dalla lingua dell'interfaccia, che sul runner è l'inglese.
+    .NET (GancioAvvio.dll): l'app la legge dalla lingua dell'interfaccia, che sul runner è l'inglese. Lo stesso gancio
+    aggira l'errore di HighContrastChanged delle macchine Windows Server (vedi LEGGIMI, «Limiti»); gancio.log dice cosa fa.
     -Azzera: prima Azzera-Dati (primo avvio). -Argomenti: riga di comando in più.
     #>
     param([switch]$Azzera, [string]$Argomenti = '', [int]$Attesa = 60)
@@ -149,6 +152,8 @@ function Avvia-App {
     if (Test-Path $script:Gancio) {
         $info.EnvironmentVariables['DOTNET_STARTUP_HOOKS'] = $script:Gancio
         $info.EnvironmentVariables['WEBCAMLR_COLLAUDO_LINGUA'] = $script:Lingua
+        $info.EnvironmentVariables['WEBCAMLR_COLLAUDO_REGISTRO'] = (Join-Path $script:Uscita 'gancio.log')
+        if ($script:AggiraContrasto) { $info.EnvironmentVariables['WEBCAMLR_COLLAUDO_CONTRASTO'] = '1' }
     } else {
         Scrivi-Log "Attenzione: $script:Gancio non c'è, la lingua resta quella di Windows"
     }
@@ -164,6 +169,8 @@ function Avvia-App {
         if ($finestra -and $finestra.Current.BoundingRectangle.Width -ge 500) { break }
     }
     Start-Sleep -Seconds 2
+    $gancio = Join-Path $script:Uscita 'gancio.log'
+    if (Test-Path $gancio) { Get-Content -LiteralPath $gancio -Encoding UTF8 | Select-Object -Last 6 | ForEach-Object { Scrivi-Log "  $_" } }
     Descrivi-Finestre
     $finestra = Finestra-App
     if (-not $finestra) { throw "La finestra di WebcamLR non è comparsa in $Attesa s" }

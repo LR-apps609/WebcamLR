@@ -26,8 +26,13 @@ for _ in 1 2 3 4; do
     tocca_testo "Salta"
     attendi 3
 done
-tocca_testo "Inizia" || fallisci "manca «Inizia»"
-attendi_testo "Impostazioni" 20 || fallisci "la schermata principale non compare"
+# «Impostazioni» c'è anche nel testo della pagina dei permessi: la principale si riconosce da «Usa il cavo USB».
+for _ in 1 2 3 4; do
+    c_e_testo "Usa il cavo USB" && break
+    c_e_testo "Inizia" && tocca_testo "Inizia"
+    attendi_testo "Usa il cavo USB" 12 && break
+done
+c_e_testo "Usa il cavo USB" || fallisci "la schermata principale non compare"
 collega_cavo
 attendi_computer video 45 || fallisci "dal cavo il computer finto non riceve il video"
 attendi 5

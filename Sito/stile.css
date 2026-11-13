@@ -76,7 +76,7 @@ p { margin: 0; }
 .suggerimento-lingua { background: var(--accento-tenue); border-bottom: 1px solid var(--accento); }
 .suggerimento-lingua .contenitore { display: flex; align-items: center; justify-content: space-between; gap: var(--spazio-piccolo); min-height: 44px; font-size: 16px; }
 .suggerimento-lingua a { color: var(--accento-chiaro); font-weight: 600; }
-.suggerimento-lingua .chiudi { flex-shrink: 0; width: 40px; height: 40px; border: 0; border-radius: 50%; background: transparent; color: var(--testo-chiaro); font: 24px/1 var(--testi); cursor: pointer; }
+.suggerimento-lingua .chiudi { flex-shrink: 0; width: 44px; height: 44px; margin: -2px; border: 0; border-radius: 50%; background: transparent; color: var(--testo-chiaro); font: 24px/1 var(--testi); cursor: pointer; }
 .suggerimento-lingua .chiudi:hover { background: var(--velo-lieve); color: var(--testo); }
 
 /* Il pulsante «Menu» del telefono (menu.js): sopra i 700 px non c'è. */
@@ -408,10 +408,12 @@ p { margin: 0; }
 
 /* Domande */
 .domande { border-top: 1px solid var(--linea); }
-.domande details { padding: var(--spazio-medio) 0; border-bottom: 1px solid var(--linea); }
-.domande summary { cursor: pointer; font-size: 19px; font-weight: 600; padding: var(--spazio-minimo) 0; }
+/* La domanda è alta almeno 44 px da toccare: 8 px sopra e sotto la riga, tolti dallo spazio del riquadro, così
+   l'aspetto resta quello di prima (16 + 4 px sopra, 4 + 10 px prima della risposta). */
+.domande details { padding: var(--spazio-piccolo) 0; border-bottom: 1px solid var(--linea); }
+.domande summary { cursor: pointer; font-size: 19px; font-weight: 600; padding: var(--spazio-stretto) 0; }
 .domande summary:hover { color: var(--accento-chiaro); }
-.domande details p { margin-top: 10px; color: var(--testo-tenue); max-width: 46em; }
+.domande details p { margin-top: 6px; color: var(--testo-tenue); max-width: 46em; }
 .domande details[id], section[id] { scroll-margin-top: 88px; }
 .domande .solo-sito { font: var(--misura-numeri) var(--numeri); color: var(--testo-secondario); margin-left: 6px; }
 
@@ -491,6 +493,16 @@ td + td { color: var(--testo-chiaro); }
 .piede span.spazio { flex-grow: 1; }
 .piede a:not(.marchio) { color: var(--testo-chiaro); text-decoration: none; }
 .piede a:not(.marchio):hover { color: var(--testo); }
+
+/* Aree di tocco di almeno 44 × 44 px senza cambiare l'aspetto: il logo e i link del piede crescono di padding e
+   rientrano di margine negativo (il posto che occupano resta lo stesso); IT/EN con un'area invisibile intorno. */
+.testata .marchio { padding: var(--spazio-stretto); margin: calc(-1 * var(--spazio-stretto)); }
+@media (max-width: 700px) { .testata .marchio { margin-right: auto; } }
+.lingue a { position: relative; }
+.lingue a::after { content: ""; position: absolute; top: min(0px, calc(50% - 22px)); bottom: min(0px, calc(50% - 22px)); left: min(0px, calc(50% - 22px)); right: min(0px, calc(50% - 22px)); }
+/* Il marchio del piede cresce solo verso l'alto: sotto, quando il piede va a capo, ci sono i link. */
+.piede .marchio { padding-top: 19px; margin-top: -19px; }
+.piede a:not(.marchio) { padding: 11px var(--spazio-stretto); margin: -11px calc(-1 * var(--spazio-stretto)); }
 
 @media (max-width: 700px) { html:not(.con-menu) { scroll-padding-top: 170px; } html:not(.con-menu) :is(.articolo h2[id], .domande details[id], section[id]) { scroll-margin-top: 170px; } }
 

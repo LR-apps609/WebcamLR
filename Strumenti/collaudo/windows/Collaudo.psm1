@@ -387,7 +387,7 @@ function Elenco-Visibili {
             $c = $_.Current
             if ($c.AutomationId -and $c.AutomationId -notmatch '^\d+$') { $c.AutomationId } else { '«' + $c.Name + '»' }
         } | Select-Object -Unique)
-    ($voci | Select-Object -First 80) -join ' '
+    ($voci | Select-Object -First 250) -join ' '
 }
 
 function Attendi-Elemento {
@@ -400,6 +400,7 @@ function Attendi-Elemento {
         Start-Sleep -Milliseconds 300
     } while ((Get-Date) -lt $limite)
     Scrivi-Log "  a schermo adesso: $(Elenco-Visibili)"
+    if ($Dentro) { Scrivi-Log "  «$Dentro» c'è: $([bool](Trova-Elemento $Dentro -AncheNascosti))" }
     throw "Elemento «$Chi» non trovato in $Secondi s"
 }
 
@@ -587,6 +588,52 @@ function Schermata-Elemento {
     Salva-Area ([int]$r.X - $Margine) ([int]$r.Y - $Margine) ([int]$r.Width + 2 * $Margine) ([int]$r.Height + 2 * $Margine) $file $formato
     Scrivi-Log "Schermata di $(Descrivi-Elemento $e): $(Split-Path -Leaf $file)"
     $file
+}
+
+function Impronta-Area([int]$X, [int]$Y, [int]$L, [int]$A) {
+    # Una griglia di 64×36 campioni di luminosità dell'area: basta per dire se l'immagine cambia e se non è tinta unita.
+    $bitmap = New-Object System.Drawing.Bitmap $L, $A
+    $grafica = [System.Drawing.Graphics]::FromImage($bitmap)
+    try {
+        $grafica.CopyFromScreen($X, $Y, 0, 0, (New-Object System.Drawing.Size $L, $A))
+        $valori = New-Object 'int[]' (64 * 36)
+        for ($j = 0; $j -lt 36; $j++) {
+            for ($i = 0; $i -lt 64; $i++) {
+                $c = $bitmap.GetPixel([int](($i + 0.5) * $L / 64), [int](($j + 0.5) * $A / 36))
+                $valori[$j * 64 + $i] = [int](0.3 * $c.R + 0.59 * $c.G + 0.11 * $c.B)
+            }
+        }
+        , $valori
+    } finally {
+        $grafica.Dispose()
+        $bitmap.Dispose()
+    }
+}
+
+function Controlla-Video {
+    <#
+    Guarda se il video nell'elemento <Chi> (di serie il primo tra 'VideoElaborato' e 'Video' a schermo) scorre: due
+    campionature a <Secondi> di distanza. Vero se cambia almeno il 2% dei punti e l'immagine non è tinta unita. Lo scrive
+    nel registro; con -Obbligatorio un errore se non scorre.
+    #>
+    param([string]$Chi, [double]$Secondi = 1.5, [switch]$Obbligatorio)
+    $e = $null
+    foreach ($id in @($Chi, 'VideoElaborato', 'Video') | Where-Object { $_ }) { $e = Trova-Elemento $id; if ($e) { break } }
+    if (-not $e) { throw 'Nessun elemento video a schermo (Video o VideoElaborato)' }
+    $r = $e.Current.BoundingRectangle
+    $prima = Impronta-Area ([int]$r.X) ([int]$r.Y) ([int]$r.Width) ([int]$r.Height)
+    Start-Sleep -Milliseconds ([int]($Secondi * 1000))
+    $dopo = Impronta-Area ([int]$r.X) ([int]$r.Y) ([int]$r.Width) ([int]$r.Height)
+    $cambiati = 0
+    for ($k = 0; $k -lt $prima.Length; $k++) { if ([Math]::Abs($prima[$k] - $dopo[$k]) -gt 12) { $cambiati++ } }
+    $media = ($dopo | Measure-Object -Average).Average
+    $varieta = ($dopo | Measure-Object -Maximum).Maximum - ($dopo | Measure-Object -Minimum).Minimum
+    $percento = [Math]::Round(100.0 * $cambiati / $prima.Length, 1)
+    $scorre = $percento -ge 2 -and $varieta -gt 30
+    Scrivi-Log ("Controlla-Video {0} {1}: {2}% dei punti cambiati in {3} s, luminosità media {4:0}, escursione {5} → {6}" -f `
+            $e.Current.AutomationId, (Descrivi-Rettangolo $r), $percento, $Secondi, $media, $varieta, $(if ($scorre) { 'SCORRE' } else { 'FERMO' }))
+    if ($Obbligatorio -and -not $scorre) { throw "Il video non scorre ($percento% dei punti cambiati, escursione $varieta)" }
+    $scorre
 }
 
 function Albero-UI {

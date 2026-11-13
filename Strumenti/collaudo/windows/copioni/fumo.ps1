@@ -24,6 +24,7 @@ foreach ($voce in $voci) {
         Start-Sleep -Milliseconds 800
         Fotografa "impostazioni-$voce"
         Clicca 'PulsanteIndietroImpostazioni'
+        Scrivi-Log "  pannello aperto: $([bool](Trova-Elemento 'PulsanteChiudiImpostazioni' -AncheNascosti)), elenco: $([bool](Trova-Elemento 'ScorrimentoImpostazioni' -AncheNascosti))"
     }
 }
 Passo 'Impostazioni: chiusura' {
@@ -100,6 +101,7 @@ if ($collegato) {
         Attendi-Telefono 'Video:' 20 -Nome 'iPhone di collaudo' -Obbligatorio | Out-Null
         Start-Sleep -Seconds 6
         Fotografa 'video-in-onda'
+        Controlla-Video -Obbligatorio | Out-Null
         Start-Sleep -Seconds 3
         Schermata 'video-tre-secondi-dopo' | Out-Null
     }
@@ -124,9 +126,11 @@ if ($collegato) {
         Rete-Spenta
         Start-Sleep -Seconds 6
         Fotografa 'rete-spenta'
+        Controlla-Video | Out-Null   # qui ci si aspetta «FERMO» (o l'animazione della riconnessione)
         Rete-Accesa
         Start-Sleep -Seconds 6
         Fotografa 'rete-accesa'
+        Controlla-Video -Obbligatorio | Out-Null
     }
 }
 Ferma-TelefonoFinto

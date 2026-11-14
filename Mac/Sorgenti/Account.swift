@@ -221,7 +221,10 @@ struct FoglioTelefoniFidati: View {
                 }
                 .padding(Spazi.stretto)
                 .background(Tema.barraLaterale, in: RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous).strokeBorder(Tema.linea))
+                // Il contorno sopra la riga non prende i clic (t05 B2: con il contorno sopra, «Rimuovi» non rispondeva;
+                // la stessa riga senza contorno, in Impostazioni › Sicurezza, sì).
+                .overlay(RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous).strokeBorder(Tema.linea)
+                    .allowsHitTesting(false))
             }
         }
     }

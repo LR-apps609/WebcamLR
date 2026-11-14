@@ -39,15 +39,7 @@ final class CopioneCorrezioni: CopioneCollaudo {
 
     /// ⌘Q come una persona; se l'app resta aperta la chiude il banco.
     @MainActor private func esciConComandoQ() {
-        // Senza finestre ⌘Q dal banco può non arrivare: si usa il menu «WebcamLR › Esci da WebcamLR», come col mouse.
-        let menuApp = app.menuBars.menuBarItems["WebcamLR"]
-        if !principale.exists, menuApp.exists {
-            menuApp.click()
-            let esci = app.menuItems["Esci da WebcamLR"]
-            if esci.waitForExistence(timeout: 2) { esci.click() } else { app.typeKey(.escape, modifierFlags: []) }
-        } else {
-            app.typeKey("q", modifierFlags: .command)
-        }
+        app.typeKey("q", modifierFlags: .command)
         let limite = Date().addingTimeInterval(10)
         while app.state != .notRunning && Date() < limite { aspettaUnPo(0.5) }
         if app.state != .notRunning {

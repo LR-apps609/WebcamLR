@@ -50,4 +50,16 @@ public class SezioneAppTest
         Assert.Equal("breve", SegnalazioneBug.Bozza("breve"));
         Assert.Equal("", SegnalazioneBug.Bozza(null));
     }
+
+    [Fact]
+    public void PagineDelSitoNellaLinguaDellApp()
+    {
+        // Collaudo 20 (t19 B6): in inglese le pagine inglesi del sito (Sito/en), con le stesse ancore.
+        Assert.Equal("https://lr-apps609.github.io/WebcamLR/en/aiuto.html#microfono", InfoApp.Pagina(InfoApp.GuidaMicrofonoWindows, italiano: false));
+        Assert.Equal("https://lr-apps609.github.io/WebcamLR/en/privacy.html", InfoApp.Pagina(InfoApp.Privacy, italiano: false));
+        Assert.Equal("https://lr-apps609.github.io/WebcamLR/en/", InfoApp.Pagina(InfoApp.Sito, italiano: false));
+        Assert.Equal(InfoApp.Aiuto, InfoApp.Pagina(InfoApp.Aiuto, italiano: true));
+        // Il file della versione non ha una copia inglese.
+        Assert.Equal(InfoApp.VersioneRecente, InfoApp.Pagina(InfoApp.VersioneRecente, italiano: false));
+    }
 }

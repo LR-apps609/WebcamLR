@@ -63,7 +63,9 @@ public sealed partial class MainWindow
                 Text = profilo.Descrizione,
                 FontSize = Token.MisuraNota,
                 TextWrapping = TextWrapping.Wrap,
-                MaxLines = 2,
+                // Tre righe (in inglese due non bastano: collaudo 20, t19 B10), con «…» se servisse ancora di più.
+                MaxLines = 3,
+                TextTrimming = TextTrimming.CharacterEllipsis,
                 Foreground = Pennello("TestoSecondario"),
             };
             var scheda = new Button

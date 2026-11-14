@@ -187,7 +187,7 @@ public sealed partial class MainWindow : Window
         annuncio = new AnnuncioWindows((ushort)ascoltatore.Porta);
         _ = MostraQRAsync();
         _ = MostraQRAppAsync();
-        CollegamentoDownload.NavigateUri = new Uri(InfoApp.Download);
+        CollegamentoDownload.NavigateUri = new Uri(InfoApp.Pagina(InfoApp.Download));
         // Cambio di Wi-Fi o cavo collegato: il QR deve avere gli indirizzi nuovi.
         System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged += SuCambioRete;
         registro.Aggiungi(Testi.T("Registro_Avviata", ascoltatore.Porta));
@@ -939,7 +939,9 @@ public sealed partial class MainWindow : Window
         }
         barra.Title = problema.Titolo;
         barra.Message = problema.Messaggio;
-        azione.Content = problema.Azione?.Testo;
+        // Testi che vanno a capo nella colonna stretta (collaudo 20, t19 B10: «Open Micro…», «How the USB cab…» in inglese).
+        azione.Content = problema.Azione?.Testo is { } testoAzione ? new TextBlock { Text = testoAzione, TextWrapping = TextWrapping.Wrap } : null;
+        if (risposta.Content is string testoRisposta) risposta.Content = new TextBlock { Text = testoRisposta, TextWrapping = TextWrapping.Wrap };
         azione.Tag = problema.Azione?.Indirizzo;
         azione.Visibility = problema.Azione is null ? Visibility.Collapsed : Visibility.Visible;
         risposta.Tag = problema.IdDomanda;

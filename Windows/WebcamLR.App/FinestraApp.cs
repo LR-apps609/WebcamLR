@@ -218,7 +218,7 @@ public static class FinestraApp
                 pannello.Children.Add(Testo($"{indice + 1}.  {sezione.Passi[indice]}", "TestoSecondario"));
             }
         }
-        pannello.Children.Add(new HyperlinkButton { Content = Testi.T("App_AltreRisposte"), NavigateUri = new Uri(InfoApp.Aiuto), Style = (Style)Application.Current.Resources["PulsanteLink"] });
+        pannello.Children.Add(new HyperlinkButton { Content = Testi.T("App_AltreRisposte"), NavigateUri = new Uri(InfoApp.Pagina(InfoApp.Aiuto)), Style = (Style)Application.Current.Resources["PulsanteLink"] });
         return pannello;
     }
 
@@ -265,7 +265,7 @@ public static class FinestraApp
         pannello.Children.Add(ricerca);
         pannello.Children.Add(nessuna);
         pannello.Children.Add(elenco);
-        pannello.Children.Add(new HyperlinkButton { Content = Testi.T("App_AltreRisposte"), NavigateUri = new Uri(InfoApp.Aiuto), Style = (Style)Application.Current.Resources["PulsanteLink"] });
+        pannello.Children.Add(new HyperlinkButton { Content = Testi.T("App_AltreRisposte"), NavigateUri = new Uri(InfoApp.Pagina(InfoApp.Aiuto)), Style = (Style)Application.Current.Resources["PulsanteLink"] });
         return pannello;
     }
 
@@ -522,8 +522,8 @@ public static class FinestraApp
         var versione = typeof(FinestraApp).Assembly.GetName().Version?.ToString(3) ?? "—";
         pannello.Children.Add(Testo(Testi.T("Info_Versione", versione), grassetto: true));
         pannello.Children.Add(Testo(Testi.T("Info_Privacy"), "TestoSecondario"));
-        pannello.Children.Add(new HyperlinkButton { Content = "Privacy", NavigateUri = new Uri(InfoApp.Privacy), Style = (Style)Application.Current.Resources["PulsanteLink"] });
-        pannello.Children.Add(new HyperlinkButton { Content = Testi.T("Info_Sito"), NavigateUri = new Uri(InfoApp.Sito), Style = (Style)Application.Current.Resources["PulsanteLink"] });
+        pannello.Children.Add(new HyperlinkButton { Content = "Privacy", NavigateUri = new Uri(InfoApp.Pagina(InfoApp.Privacy)), Style = (Style)Application.Current.Resources["PulsanteLink"] });
+        pannello.Children.Add(new HyperlinkButton { Content = Testi.T("Info_Sito"), NavigateUri = new Uri(InfoApp.Pagina(InfoApp.Sito)), Style = (Style)Application.Current.Resources["PulsanteLink"] });
         pannello.Children.Add(Testo(Testi.T("Info_AltreApp", string.Join(Testi.T("Congiunzione"), InfoApp.AltreAppLR)), "TestoSecondario", Token.MisuraNota));
         return pannello;
     }

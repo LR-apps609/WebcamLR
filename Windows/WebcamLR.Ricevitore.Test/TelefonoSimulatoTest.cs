@@ -303,10 +303,13 @@ public class TelefonoSimulatoTest
 
         await telefono.InviaAsync(new FormatoVideo(Codec.H264, 1920, 1080, 30));
         using var fineVideo = new CancellationTokenSource(Limite);
+        // Il video continua finché il telefono non ha ricevuto la sua latenza: senza fotogrammi nel secondo il computer non
+        // la manda più (collaudo 20, t04 B4: niente latenza vecchia).
+        var latenzaSulTelefono = new TaskCompletionSource();
         var video = Task.Run(async () =>
         {
             var chiave = true;
-            while (!fineVideo.IsCancellationRequested && !statisticheConLatenza.Task.IsCompleted)
+            while (!fineVideo.IsCancellationRequested && !latenzaSulTelefono.Task.IsCompleted)
             {
                 await telefono.InviaAsync(new FotogrammaVideo(OrologioTelefono() - RitardoSimulato, chiave, chiave, new byte[2000]).ComePacchetto());
                 chiave = false;
@@ -321,6 +324,7 @@ public class TelefonoSimulatoTest
         // Sul telefono conta l'ultima latenza: le prime, prima che gli orologi si allineino, si scartano.
         while (telefono.Ricevuti.Reader.TryRead(out _)) { }
         Assert.InRange((await telefono.AttendiAsync<Latenza>().WaitAsync(Limite)).Ms, 25, 250);
+        latenzaSulTelefono.TrySetResult();
         await video;
 
         // Avvio misurato (1.11): le tappe dall'accettazione al primo fotogramma, in ordine; «a schermo» lo segna la finestra.

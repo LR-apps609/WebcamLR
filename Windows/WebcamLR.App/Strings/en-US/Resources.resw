@@ -624,7 +624,7 @@ The details are in {1}: send them with “Report a bug”.</value>
     <value>Send by email</value>
   </data>
   <data name="Bug_Copiata" xml:space="preserve">
-    <value>Copied: paste it into an email to support.</value>
+    <value>Copied to the clipboard: paste it wherever you want to send it.</value>
   </data>
   <data name="Bug_CopiaNonRiuscita" xml:space="preserve">
     <value>I can’t copy it right now: try again in a moment.</value>

@@ -624,7 +624,7 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
     <value>Invia per email</value>
   </data>
   <data name="Bug_Copiata" xml:space="preserve">
-    <value>Copiata: incollala in una mail all'assistenza.</value>
+    <value>Copiata negli appunti: incollala dove vuoi mandarla.</value>
   </data>
   <data name="Bug_CopiaNonRiuscita" xml:space="preserve">
     <value>Non riesco a copiarla adesso: riprova tra un attimo.</value>

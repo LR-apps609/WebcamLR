@@ -12,12 +12,23 @@ public static class InfoApp
     public const string Download = "https://lr-apps609.github.io/WebcamLR/download.html";
     /// <summary>Il file con l'ultima versione pubblicata (Documenti/Pubblicazione.md), letto da «Aggiornamento disponibile».</summary>
     public const string VersioneRecente = "https://lr-apps609.github.io/WebcamLR/versione.json";
-    /// <summary>La guida al microfono del telefono su Windows (W2): cavo audio virtuale, app di chiamata, OBS.</summary>
     /// <summary>
     /// Il microfono del telefono nelle chiamate e in OBS: la sezione «microfono» dell'aiuto del sito (con «Su Windows» e
     /// «In OBS»). Collaudo 20 (t03 B2): prima un documento della repository che su main non c'è («File not found»).
     /// </summary>
     public const string GuidaMicrofonoWindows = Aiuto + "#microfono";
+
+    /// <summary>
+    /// Una pagina del sito nella lingua dell'app: in inglese la stessa pagina sotto «en/» (Sito/en: index, aiuto, download,
+    /// privacy, con gli stessi id). Collaudo 20 (t19 B6): con l'app in inglese si aprivano le pagine italiane.
+    /// </summary>
+    public static string Pagina(string indirizzo) => Pagina(indirizzo, Lingua.ÈItaliana(Lingua.Attuale));
+
+    public static string Pagina(string indirizzo, bool italiano) =>
+        italiano || !indirizzo.StartsWith(Sito, StringComparison.Ordinal) || indirizzo.StartsWith(Sito + "en/", StringComparison.Ordinal)
+            || indirizzo.EndsWith(".json", StringComparison.Ordinal)
+            ? indirizzo
+            : Sito + "en/" + indirizzo[Sito.Length..];
     /// <summary>L'app gratuita «Dispositivi Apple» su Microsoft Store: installa il servizio per il cavo USB (1.7).</summary>
     public const string DispositiviApple = "ms-windows-store://pdp/?productid=9NP83LWLPZ9K";
     /// <summary>«Estensioni video HEVC» di Microsoft su Microsoft Store: senza, Windows non mostra l'HEVC del 4K (passo 7).</summary>

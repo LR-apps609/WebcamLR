@@ -43,7 +43,7 @@ public sealed partial class MainWindow
             Grid.SetColumn(tacca, i);
             LivelloMicrofono.Children.Add(tacca);
         }
-        GuidaMicrofono.NavigateUri = new Uri(InfoApp.GuidaMicrofonoWindows);
+        GuidaMicrofono.NavigateUri = new Uri(InfoApp.Pagina(InfoApp.GuidaMicrofonoWindows));
         microfono.Livello += livello => coda.TryEnqueue(() =>
         {
             // Spento da qui: un livello rimasto in coda non riaccende l'indicatore.

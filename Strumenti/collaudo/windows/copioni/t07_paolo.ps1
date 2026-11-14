@@ -107,7 +107,7 @@ try {
     }
     Passo 'Il telefono rimosso cade e si ricollega: chiede il codice?' {
         # --interrompi-dopo 45: la connessione si chiude 45 s dopo il primo video, il telefono riprova dopo 6 s.
-        $riga = Attendi-Telefono 'CODICE' 70 -Nome $nome1
+        $riga = Attendi-Telefono '] CODICE' 70 -Nome $nome1
         Start-Sleep -Seconds 2
         Fotografa 'telefono1-riconnessione'
         Scrivi-Log "A schermo: $(Elenco-Visibili)"
@@ -128,7 +128,7 @@ try {
     $nome2 = 'Galaxy di Paolo'
     Passo 'Telefono 2 con il codice: Consenti' {
         Avvia-TelefonoFinto --nome $nome2 --android --durata 40 | Out-Null
-        Attendi-Telefono 'CODICE' 30 -Nome $nome2 -Obbligatorio | Out-Null
+        Attendi-Telefono '] CODICE' 30 -Nome $nome2 -Obbligatorio | Out-Null
         Attendi-Testo (Testo-App 'Conferma_Consenti') 15 | Out-Null
         Fotografa 'telefono2-domanda'
         Scrivi-Log "Domanda: $(Elenco-Visibili)"
@@ -141,7 +141,7 @@ try {
     Passo 'Telefono 2 fidato rientra senza codice (atteso)' {
         Avvia-TelefonoFinto --nome $nome2 --android --durata 20 | Out-Null
         $ok = Attendi-Telefono 'ACCETTATO' 20 -Nome $nome2
-        $cod = @(Registro-Telefono $nome2 | Where-Object { $_ -like '*CODICE*' }).Count
+        $cod = @(Registro-Telefono $nome2 | Where-Object { $_ -like '*] CODICE*' }).Count
         Scrivi-Log "Telefono 2 fidato: accettato «$ok», righe CODICE $cod"
     }
     Ferma-TelefonoFinto
@@ -159,7 +159,7 @@ try {
     }
     Passo 'Il telefono 2 rimosso rientra: chiede il codice?' {
         Avvia-TelefonoFinto --nome $nome2 --android --durata 40 | Out-Null
-        $riga = Attendi-Telefono 'CODICE' 25 -Nome $nome2
+        $riga = Attendi-Telefono '] CODICE' 25 -Nome $nome2
         Start-Sleep -Seconds 1
         Fotografa 'telefono2-rientro'
         Ultime-Telefono $nome2 8

@@ -5,11 +5,17 @@ public enum InfoApp {
     /// Assistenza e segnalazioni: da confermare con Ledion (Documenti/Cosa serve da Ledion.md).
     /// Vuoto = «Segnala un bug» usa la condivisione di sistema invece della mail.
     public static let emailAssistenza = ""
-    public static let sito = URL(string: "https://lr-apps609.github.io/WebcamLR/")!
-    public static let privacy = URL(string: "https://lr-apps609.github.io/WebcamLR/privacy.html")!
-    public static let aiuto = URL(string: "https://lr-apps609.github.io/WebcamLR/aiuto.html")!
-    /// La pagina per scaricare l'app sul telefono (App Store e Google Play): il QR «App per il telefono» del Mac.
-    public static let download = URL(string: "https://lr-apps609.github.io/WebcamLR/download.html")!
+    /// Collaudo t19 B6: con l'app in inglese le pagine inglesi del sito (`en/`, stessi nomi); altrimenti le italiane.
+    /// La lingua è quella dell'app, come per i testi di Stile (`Bundle.stile`).
+    private static let radice: String = {
+        let linguaApp = Bundle.main.preferredLocalizations.first ?? "it"
+        return "https://lr-apps609.github.io/WebcamLR/" + (linguaApp.hasPrefix("en") ? "en/" : "")
+    }()
+    public static let sito = URL(string: radice)!
+    public static let privacy = URL(string: radice + "privacy.html")!
+    public static let aiuto = URL(string: radice + "aiuto.html")!
+    /// La pagina per scaricare WebcamLR (telefono e computer): il QR «App per il telefono» del Mac e «Mandami il link».
+    public static let download = URL(string: radice + "download.html")!
     /// L'ultima versione pubblicata, letta dal Mac per «Aggiornamento disponibile» (formato in Documenti/Pubblicazione.md).
     public static let versioneRecente = URL(string: "https://lr-apps609.github.io/WebcamLR/versione.json")!
 

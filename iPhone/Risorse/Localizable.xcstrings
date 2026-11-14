@@ -2925,23 +2925,6 @@
         }
       }
     },
-    "Goditi l'esperienza" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enjoy the experience"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Goditi l'esperienza"
-          }
-        }
-      }
-    },
     "Grandangolo 0,5×" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3028,7 +3011,6 @@
       }
     },
     "I permessi non si danno qui: toccando «Inizia» iOS ti chiede fotocamera e microfono, rispondi «Consenti». La rete locale te la chiede quando WebcamLR cerca il computer. Puoi cambiarli quando vuoi in Impostazioni › WebcamLR." : {
-      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3605,19 +3587,19 @@
         }
       }
     },
-    "In ascolto sul cavo USB (porta %lld)" : {
+    "In ascolto sul cavo USB (porta %@)" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Listening on the USB cable (port %lld)"
+            "value" : "Listening on the USB cable (port %@)"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "In ascolto sul cavo USB (porta %lld)"
+            "value" : "In ascolto sul cavo USB (porta %@)"
           }
         }
       }
@@ -7391,6 +7373,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Trascina la linea sul tuo riquadro per confrontare."
+          }
+        }
+      }
+    },
+    "Tre permessi e si parte" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Three permissions and you’re ready"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tre permessi e si parte"
           }
         }
       }

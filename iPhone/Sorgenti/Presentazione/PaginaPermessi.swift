@@ -1,7 +1,7 @@
 import Stile
 import SwiftUI
 
-/// Ultima pagina, «Goditi l'esperienza»: i permessi spiegati prima che iOS li chieda. Toccando un permesso la
+/// Ultima pagina, «Tre permessi e si parte» (era «Goditi l'esperienza», collaudo t19 B11): i permessi spiegati prima che iOS li chieda. Toccando un permesso la
 /// scena fa vedere a cosa serve (il video che va al computer, l'audio, la ricerca sulla Wi-Fi).
 /// «Inizia» chiede fotocamera e microfono; la rete locale la chiede iOS quando parte la ricerca dei computer.
 struct PaginaPermessi: View {
@@ -31,7 +31,7 @@ struct PaginaPermessi: View {
             scena
         } contenuto: {
             VStack(alignment: .leading, spacing: Spazi.piccolo) {
-                TitoloPresentazione(Text("Goditi l'esperienza"))
+                TitoloPresentazione(Text("Tre permessi e si parte"))
                 TestoPresentazione(Text("Prima di iniziare, tre permessi: ecco a cosa servono."))
                 permesso(.fotocamera, titolo: "Fotocamera",
                          testo: "Per mandare il video al computer e leggere il suo QR code. Senza, WebcamLR non può funzionare.",

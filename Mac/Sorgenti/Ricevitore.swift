@@ -884,7 +884,7 @@ final class Ricevitore {
                 avvioMisurato = true
                 if let ms = Self.millisecondiDallAvvioApp() { dallAvvio = String(localized: ", \(ms) ms dall'avvio dell'app") }
             }
-            registra(String(localized: "Visibile in rete sulla porta \(Int(listener?.port?.rawValue ?? 0))\(diretto + dallAvvio)"))
+            registra(String(localized: "Visibile in rete sulla porta \(String(listener?.port?.rawValue ?? 0))\(diretto + dallAvvio)"))
             aggiornaIndirizzi()
             indirizziAnnunciati = indirizzi
             attesaRiapertura = .seconds(1)
@@ -892,7 +892,7 @@ final class Ricevitore {
             listener?.cancel()
             listener = nil
             if portaFissa, case .posix(.EADDRINUSE) = errore {
-                registra(String(localized: "Porta \(Int(Servizio.portaPredefinita)) occupata: ne uso un'altra"))
+                registra(String(localized: "Porta \(String(Servizio.portaPredefinita)) occupata: ne uso un'altra"))
                 avvia(porta: nil)
             } else {
                 rete = .errore(errore.localizedDescription)

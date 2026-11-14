@@ -204,10 +204,19 @@ struct ImpaginazionePagina<Scena: View, Contenuto: View, Azioni: View>: View {
                     // Sotto le barrette e «Salta»
                     // Posizione sotto le barre di avanzamento e «Salta», non una spaziatura.
                     .padding(.top, 60)
-                    .padding(.bottom, Spazi.stretto)
+                    .padding(.bottom, Spazi.largo)
                 }
                 .scrollBounceBehavior(.basedOnSize)
-                .scrollIndicators(misuraTesto.isAccessibilitySize ? .visible : .hidden)
+                // Collaudo t19 B4 e A2: il testo che continua sotto il pulsante (titolo inglese su due righe, carattere
+                // grande) si capisce: l'ultima riga sfuma e la barra di scorrimento lampeggia all'apertura.
+                .mask {
+                    VStack(spacing: 0) {
+                        Rectangle()
+                        LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom)
+                            .frame(height: Spazi.largo)
+                    }
+                }
+                .scrollIndicators(misuraTesto.isAccessibilitySize ? .visible : .automatic)
                 .scrollIndicatorsFlash(onAppear: true)
                 azioni
                     .padding(.top, Spazi.stretto)

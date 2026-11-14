@@ -122,7 +122,7 @@ final class AscoltoCavo {
                 return
             }
             if !inAscolto { inAscolto = true }
-            RegistroCollegamento.condiviso.aggiungi(String(localized: "In ascolto sul cavo USB (porta \(Int(CavoUSB.porta)))"))
+            RegistroCollegamento.condiviso.aggiungi(String(localized: "In ascolto sul cavo USB (porta \(String(CavoUSB.porta)))"))
         case .failed, .waiting:
             // Per esempio la porta occupata o l'ascolto tolto da iOS: si riprova tra poco.
             ferma()

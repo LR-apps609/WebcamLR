@@ -1618,7 +1618,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "On the Mac: Meeting, Class, Live and Interview profiles"
+            "value" : "On the Mac: Meeting, Lesson, Live stream and Interview profiles"
           }
         },
         "it" : {
@@ -1733,7 +1733,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "On the computer: Meeting, Class, Live and Interview profiles"
+            "value" : "On the computer: Meeting, Lesson, Live stream and Interview profiles"
           }
         },
         "it" : {

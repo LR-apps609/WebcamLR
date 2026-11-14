@@ -26,7 +26,8 @@ struct PaginaComputer: View {
     @State private var toccato = false
 
     static let indirizzo = "lr-apps609.github.io/WebcamLR"
-    static let collegamento = URL(string: "https://lr-apps609.github.io/WebcamLR/download.html")!
+    /// Nella lingua dell'app (collaudo t19 B6): la pagina inglese del sito con l'app in inglese.
+    static let collegamento = InfoApp.download
 
     var body: some View {
         ImpaginazionePagina {

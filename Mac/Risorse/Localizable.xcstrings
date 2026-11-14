@@ -4752,12 +4752,12 @@
         }
       }
     },
-    "Porta %lld occupata: ne uso un'altra" : {
+    "Porta %@ occupata: ne uso un'altra" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Port %lld in use: using another one"
+            "value" : "Port %@ in use: using another one"
           }
         }
       }
@@ -5627,7 +5627,6 @@
       }
     },
     "Sblocca WebcamLR Pro sul telefono" : {
-      "comment" : "Impostazioni › Schermata di attesa, senza Pro.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7146,12 +7145,12 @@
         }
       }
     },
-    "Visibile in rete sulla porta %lld%@" : {
+    "Visibile in rete sulla porta %@%@" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Visible on the network on port %lld%@"
+            "value" : "Visible on the network on port %@%@"
           }
         }
       }

@@ -29,8 +29,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -77,6 +79,8 @@ fun ContenutoPro() {
         if (attivo) {
             StatoProAttivo()
             Text(stringResource(R.string.pro_attivo_vale), style = Stili.corpo, color = Colori.testoSecondario)
+            // Collaudo 20 (t12 B5): anche con Pro attivo «Ripristina acquisti» dice com'è andata.
+            stato.avviso?.let { Text(it, style = Stili.nota, color = Colori.testoChiaro, modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite }) }
             PulsanteRipristina(stato.operazione == StatoPro.Operazione.RIPRISTINO)
         } else {
             Text(stringResource(R.string.pro_invito), style = Stili.corpo, color = Colori.testoChiaro)

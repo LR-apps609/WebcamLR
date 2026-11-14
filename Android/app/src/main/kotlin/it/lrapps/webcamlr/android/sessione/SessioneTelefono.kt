@@ -2426,7 +2426,11 @@ class SessioneTelefono(
         if (nuovo == pro || chiusaDallUtente) return
         val prima = formatoEffettivo()
         pro = nuovo
-        if (!nuovo) spegniFunzioniPro()
+        if (!nuovo) {
+            spegniFunzioniPro()
+            // Collaudo 20 (t12): il video scende a 720p e gli effetti Pro si spengono: lo si dice anche sul telefono.
+            annuncia(Testi.testo(R.string.avviso_pro_tolto))
+        }
         val dopo = formatoEffettivo()
         if (prima != dopo && fotocameraPronta) {
             avviaFotocamera()

@@ -377,6 +377,9 @@
     <string name="pro_avviso_acquisto">Acquisto non riuscito. Controlla la connessione e riprova.</string>
     <string name="pro_avviso_ripristino">Ripristino non riuscito. Controlla la connessione e riprova.</string>
     <string name="pro_avviso_nessun_acquisto">Nessun acquisto di WebcamLR Pro per questo account Google.</string>
+    <string name="pro_avviso_ripristino_play">Ripristino non riuscito: Google Play non è pronto. Accedi con un account Google o aggiorna il Play Store, poi riprova.</string>
+    <string name="pro_avviso_ripristino_senza_play">Su questo telefono non c\'è Google Play: gli acquisti non si possono ripristinare.</string>
+    <string name="pro_avviso_ripristinato">Acquisti ripristinati: WebcamLR Pro è attivo.</string>
     <!-- 81_registro: il registro del collegamento (Impostazioni › Registro del collegamento) -->
     <string name="registro_scollegato">Scollegato da %1$s</string>
     <string name="registro_specchiata">Immagine inviata specchiata</string>
@@ -426,6 +429,7 @@
     <string name="registro_fotocamera_spenta">Nessuna app usa la webcam: fotocamera spenta</string>
     <string name="registro_microfono_non_disponibile">Microfono non disponibile: %1$s</string>
     <string name="registro_pro_spento">Senza WebcamLR Pro: effetti e controlli Pro spenti</string>
+    <string name="avviso_pro_tolto">WebcamLR Pro non è più attivo: video fino a 720p, effetti e controlli Pro spenti.</string>
     <string name="registro_caldo">Telefono caldo: %1$s</string>
     <string name="registro_fresco">Telefono più fresco: %1$s</string>
     <string name="registro_prestazioni">Prestazioni: %1$s</string>

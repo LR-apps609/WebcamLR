@@ -375,6 +375,9 @@
     <string name="pro_avviso_acquisto">Purchase failed. Check your connection and try again.</string>
     <string name="pro_avviso_ripristino">Restore failed. Check your connection and try again.</string>
     <string name="pro_avviso_nessun_acquisto">No WebcamLR Pro purchase for this Google account.</string>
+    <string name="pro_avviso_ripristino_play">Restore failed: Google Play isn\'t ready. Sign in with a Google account or update the Play Store, then try again.</string>
+    <string name="pro_avviso_ripristino_senza_play">This phone has no Google Play: purchases can\'t be restored.</string>
+    <string name="pro_avviso_ripristinato">Purchases restored: WebcamLR Pro is active.</string>
     <!-- 81_registro: il registro del collegamento (Impostazioni › Registro del collegamento) -->
     <string name="registro_scollegato">Disconnected from %1$s</string>
     <string name="registro_specchiata">Sent image mirrored</string>
@@ -424,6 +427,7 @@
     <string name="registro_fotocamera_spenta">No app is using the webcam: camera off</string>
     <string name="registro_microfono_non_disponibile">Microphone not available: %1$s</string>
     <string name="registro_pro_spento">Without WebcamLR Pro: effects and Pro controls off</string>
+    <string name="avviso_pro_tolto">WebcamLR Pro is no longer active: video up to 720p, Pro effects and controls off.</string>
     <string name="registro_caldo">Phone warm: %1$s</string>
     <string name="registro_fresco">Phone cooler: %1$s</string>
     <string name="registro_prestazioni">Performance: %1$s</string>

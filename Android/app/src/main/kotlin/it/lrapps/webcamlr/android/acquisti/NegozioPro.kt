@@ -164,7 +164,7 @@ object NegozioPro {
             connetti()
             principale.postDelayed({
                 if (stato.value.operazione == StatoPro.Operazione.RIPRISTINO && cliente?.isReady != true) {
-                    cambia { it.copy(operazione = StatoPro.Operazione.NESSUNA, avviso = Testi.testo(R.string.pro_avviso_ripristino)) }
+                    cambia { it.copy(operazione = StatoPro.Operazione.NESSUNA, avviso = avvisoRipristinoFallito(it)) }
                 }
             }, 8_000)
         }
@@ -254,6 +254,10 @@ object NegozioPro {
                                     caricamentoProdotto = false,
                                 )
                             }
+                            // Collaudo 20 (t12 B4): un ripristino in corso finisce subito, con il motivo vero.
+                            if (stato.value.operazione == StatoPro.Operazione.RIPRISTINO) {
+                                cambia { it.copy(operazione = StatoPro.Operazione.NESSUNA, avviso = avvisoRipristinoFallito(it)) }
+                            }
                             if (!assente) riprovaPiuTardi()
                         }
                     }
@@ -309,6 +313,18 @@ object NegozioPro {
         }
     }
 
+    /**
+     * Collaudo 20 (t12 B4): il motivo vero di un ripristino non riuscito, coerente con la frase della pagina: senza
+     * Google Play, Google Play da sistemare (nessun account, Play Store vecchio) o, solo altrimenti, la connessione.
+     */
+    private fun avvisoRipristinoFallito(stato: StatoPro): String = Testi.testo(
+        when {
+            !stato.giocoDisponibile -> R.string.pro_avviso_ripristino_senza_play
+            stato.playDaSistemare -> R.string.pro_avviso_ripristino_play
+            else -> R.string.pro_avviso_ripristino
+        },
+    )
+
     private fun leggiAcquisti(ripristino: Boolean) {
         val c = cliente ?: return
         val parametri = QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build()
@@ -316,7 +332,13 @@ object NegozioPro {
             principale.post {
                 if (esito.responseCode != BillingClient.BillingResponseCode.OK) {
                     if (ripristino) {
-                        cambia { it.copy(operazione = StatoPro.Operazione.NESSUNA, avviso = Testi.testo(R.string.pro_avviso_ripristino)) }
+                        val playNonPronto = esito.responseCode == BillingClient.BillingResponseCode.BILLING_UNAVAILABLE
+                        cambia {
+                            it.copy(
+                                operazione = StatoPro.Operazione.NESSUNA,
+                                avviso = avvisoRipristinoFallito(if (playNonPronto) it.copy(playDaSistemare = true) else it),
+                            )
+                        }
                     }
                     return@post
                 }
@@ -326,7 +348,12 @@ object NegozioPro {
                     cambia {
                         it.copy(
                             operazione = StatoPro.Operazione.NESSUNA,
-                            avviso = if (!it.attivo && !it.inAttesa) Testi.testo(R.string.pro_avviso_nessun_acquisto) else null,
+                            // Collaudo 20 (t12 B5): con Pro attivo si dice che il ripristino è andato.
+                            avviso = when {
+                                it.attivo -> Testi.testo(R.string.pro_avviso_ripristinato)
+                                !it.inAttesa -> Testi.testo(R.string.pro_avviso_nessun_acquisto)
+                                else -> null
+                            },
                         )
                     }
                 }

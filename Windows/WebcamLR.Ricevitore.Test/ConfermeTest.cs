@@ -50,7 +50,8 @@ public class ConfermeTest
         Assert.Equal("Sostituisci", sostituisci.Conferma);
         var fidato = Conferme.RimuoviFidato("Pixel 8");
         Assert.Equal("Rimuovere «Pixel 8» dai telefoni fidati?", fidato.Titolo);
-        Assert.Equal("La prossima volta dovrai confermarlo con il codice.", fidato.Testo);
+        // Collaudo 20 (t14 B4): togliendo la fiducia un telefono collegato si scollega.
+        Assert.Equal("Se è collegato si scollega subito. La prossima volta dovrai confermarlo con il codice.", fidato.Testo);
         Assert.Equal("Rimuovi", fidato.Conferma);
     }
 

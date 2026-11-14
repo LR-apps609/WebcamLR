@@ -630,7 +630,7 @@ The details are in {1}: send them with “Report a bug”.</value>
     <value>I can’t copy it right now: try again in a moment.</value>
   </data>
   <data name="Bug_NienteVideo" xml:space="preserve">
-    <value>No video and no images are sent: only the text above.</value>
+    <value>No video and no images: only the text above, the technical details and, if you include it, the connection log, which contains phone names and network addresses.</value>
   </data>
   <data name="Sicurezza_Spiegazione" xml:space="preserve">
     <value>Video and controls travel encrypted. New phones can only connect with the QR code in this window or after you confirm them with the code.</value>
@@ -2197,5 +2197,14 @@ The details are in {1}: send them with “Report a bug”.</value>
   </data>
   <data name="Gobbo_CosaServe" xml:space="preserve">
     <value>The teleprompter shows your text on the phone, next to the lens, so you read while looking at the camera. It needs a connected iPhone with WebcamLR Pro; you write the text here.</value>
+  </data>
+  <data name="Telefoni_OraNellaWebcam" xml:space="preserve">
+    <value>The webcam now shows “{0}”: that is what apps see.</value>
+  </data>
+  <data name="Bug_AnteprimaRegistro" xml:space="preserve">
+    <value>See the log that gets attached</value>
+  </data>
+  <data name="Bug_RegistroVuoto" xml:space="preserve">
+    <value>The log is empty.</value>
   </data>
 </root>

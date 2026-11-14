@@ -272,6 +272,9 @@ public static class FinestraApp
     /// <summary>L'altezza massima della descrizione in «Segnala un bug» (oltre, scorre dentro la casella).</summary>
     private const double AltezzaMassimaDescrizione = 260;
 
+    /// <summary>L'altezza massima dell'anteprima del registro in «Segnala un bug».</summary>
+    private const double AltezzaMassimaRegistro = 180;
+
     private static UIElement ContenutoSegnalazione(IReadOnlyList<(string Nome, string Valore)> datiTecnici)
     {
         var pannello = new StackPanel { Spacing = Token.SpazioMezzo };
@@ -316,17 +319,52 @@ public static class FinestraApp
         var includi = new CheckBox { Content = Testi.T("Bug_IncludiDati"), IsChecked = true };
         var dati = Testo(string.Join("\n", datiTecnici.Select(d => $"{d.Nome}: {d.Valore}")), "TestoSecondario", Token.MisuraNota);
         var includiRegistro = new CheckBox { Content = Testi.T("Bug_IncludiRegistro"), IsChecked = Preferenze.SegnalazioneConRegistro };
-        includiRegistro.Checked += (_, _) => Preferenze.SegnalazioneConRegistro = true;
-        includiRegistro.Unchecked += (_, _) => Preferenze.SegnalazioneConRegistro = false;
+        // Collaudo 20 (t07 B3): il registro allegato si può leggere prima di copiare (ha i nomi dei telefoni e gli indirizzi
+        // di rete). Se è incluso di serie lo decide la preferenza di sempre: qui non cambia.
+        var testoRegistro = new TextBox
+        {
+            IsReadOnly = true,
+            AcceptsReturn = true,
+            TextWrapping = TextWrapping.Wrap,
+            MaxHeight = AltezzaMassimaRegistro,
+            FontSize = Token.MisuraNota,
+            Text = Registro?.Testo() is { Length: > 0 } righe ? righe : Testi.T("Bug_RegistroVuoto"),
+        };
+        ScrollViewer.SetVerticalScrollBarVisibility(testoRegistro, ScrollBarVisibility.Auto);
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(testoRegistro, Testi.T("Bug_AnteprimaRegistro"));
+        var anteprimaRegistro = new Expander
+        {
+            Header = Testi.T("Bug_AnteprimaRegistro"),
+            Content = testoRegistro,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            Visibility = includiRegistro.IsChecked == true ? Visibility.Visible : Visibility.Collapsed,
+        };
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(anteprimaRegistro, Testi.T("Bug_AnteprimaRegistro"));
+        // Aprendola, il registro di adesso (è quello che si copierà).
+        anteprimaRegistro.Expanding += (_, _) =>
+            testoRegistro.Text = Registro?.Testo() is { Length: > 0 } adesso ? adesso : Testi.T("Bug_RegistroVuoto");
+        includiRegistro.Checked += (_, _) =>
+        {
+            Preferenze.SegnalazioneConRegistro = true;
+            anteprimaRegistro.Visibility = Visibility.Visible;
+        };
+        includiRegistro.Unchecked += (_, _) =>
+        {
+            Preferenze.SegnalazioneConRegistro = false;
+            anteprimaRegistro.Visibility = Visibility.Collapsed;
+        };
         includi.Checked += (_, _) =>
         {
             dati.Visibility = Visibility.Visible;
             includiRegistro.IsEnabled = true;
+            anteprimaRegistro.Visibility = includiRegistro.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         };
         includi.Unchecked += (_, _) =>
         {
             dati.Visibility = Visibility.Collapsed;
             includiRegistro.IsEnabled = false;
+            anteprimaRegistro.Visibility = Visibility.Collapsed;
         };
         var esito = Testo("", "TestoSecondario", Token.MisuraNota);
         var invia = new Button
@@ -384,6 +422,7 @@ public static class FinestraApp
         pannello.Children.Add(includi);
         pannello.Children.Add(dati);
         pannello.Children.Add(includiRegistro);
+        pannello.Children.Add(anteprimaRegistro);
         pannello.Children.Add(invia);
         pannello.Children.Add(esito);
         pannello.Children.Add(Testo(Testi.T("Bug_NienteVideo"), "TestoSecondario", Token.MisuraNota));

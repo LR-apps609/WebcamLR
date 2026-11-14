@@ -280,11 +280,25 @@ public sealed class ElencoTelefoni
     /// </summary>
     private readonly HashSet<TelefonoCollegato> inProva = [];
 
-    /// <summary>Dentro il blocco: segna i telefoni dell'elenco che hanno Pro.</summary>
+    /// <summary>I telefoni che in questa esecuzione hanno detto di essere gratis (capacità arrivate, senza Pro).</summary>
+    private readonly HashSet<string> senzaPro = [];
+
+    /// <summary>Dentro il blocco: segna i telefoni dell'elenco che hanno Pro e quelli che, arrivate le capacità, non lo hanno.</summary>
     private void RicordaPro()
     {
         foreach (var telefono in telefoni)
-            if (RegolePro.Attivo(telefono.Capacita)) conPro.Add(telefono.Impronta);
+        {
+            if (telefono.Capacita is null) continue;
+            if (RegolePro.Attivo(telefono.Capacita))
+            {
+                conPro.Add(telefono.Impronta);
+                senzaPro.Remove(telefono.Impronta);
+            }
+            else if (!conPro.Contains(telefono.Impronta))
+            {
+                senzaPro.Add(telefono.Impronta);
+            }
+        }
     }
 
     /// <summary>
@@ -298,7 +312,11 @@ public sealed class ElencoTelefoni
         if (!RichiedePro || telefoni.Count == 0) return true;
         RicordaPro();
         if (conPro.Contains(impronta) || telefoni.Any(t => conPro.Contains(t.Impronta))) return true;
-        inAttesa = telefoni.Any(t => t.Capacita is null);
+        // Collaudo 20 (t14 B1): se il Pro del telefono che arriva non si sa ancora (le sue capacità arrivano dopo), entra
+        // «in prova» come quando manca la capacità di uno dell'elenco. Prima un Android con Pro restava fuori se l'iPhone
+        // gratis era già nella webcam, ed entrava nell'ordine inverso: ora l'esito non dipende da chi arriva prima.
+        // Solo chi in questa esecuzione si è già detto gratis resta fuori subito.
+        inAttesa = telefoni.Any(t => t.Capacita is null) || !senzaPro.Contains(impronta);
         return inAttesa;
     }
 

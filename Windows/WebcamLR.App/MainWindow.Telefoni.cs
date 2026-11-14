@@ -125,7 +125,10 @@ public sealed partial class MainWindow
             var perPro = nuova.ImprontaTelefono is { } impronta && telefoni.FuoriPerPro(impronta);
             registro.Aggiungi(perPro ? Testi.T("Registro_NonEntraPro", ciao.Nome)
                 : Testi.T("Registro_NonEntraPieno", ciao.Nome, telefoni.Massimo));
-            coda.TryEnqueue(() => AvvisaPieno(ciao.Nome, perPro));
+            // Collaudo 20 (t14 B7): il nome (già ripulito) di un telefono mai consentito non va in avvisi e notifiche: chiunque
+            // in rete potrebbe far comparire un testo a sua scelta. Per lui «Il telefono»; il nome resta nel registro.
+            var fidato = nuova.ImprontaTelefono is { } suaImpronta && abbinamento.Fidato(suaImpronta);
+            coda.TryEnqueue(() => AvvisaPieno(fidato ? ciao.Nome : "", perPro));
         };
 
         // Sul thread di rete, prima del benvenuto: il formato e il video che seguono trovano già il telefono al suo posto.
@@ -616,6 +619,18 @@ public sealed partial class MainWindow
     /// Chiusura voluta (dopo la domanda di ChiediScollega, se serviva): il telefono riceve l'arrivederci e la finestra si
     /// aggiorna subito. Durante la riconnessione la sessione non c'è più: si dimentica e basta.
     /// </summary>
+    /// <summary>
+    /// Un telefono tolto dai fidati (Impostazioni › Telefoni). Collaudo 20 (t14 B4, t07 B6): se era collegato restava nella
+    /// webcam ma spariva dalla pagina. Togliere la fiducia vuol dire togliere l'accesso: si scollega subito (come dice la
+    /// domanda), e la volta dopo chiede il codice. Così non tiene nemmeno il posto di un altro telefono (t07 B7).
+    /// </summary>
+    private void FidatiCambiati()
+    {
+        foreach (var collegato in telefoni.Telefoni.Where(t => !abbinamento.Fidato(t.Impronta)).ToList())
+            _ = ScollegaAsync(collegato);
+        MostraTelefoni();
+    }
+
     private async Task ScollegaAsync(TelefonoCollegato collegato)
     {
         if (!telefoni.Contiene(collegato)) return;
@@ -663,13 +678,20 @@ public sealed partial class MainWindow
         // Tornato, perso di nuovo (conta solo l'attesa dell'ultima perdita) o già scollegato: niente da fare.
         if (!telefoni.Contiene(collegato) || collegato.Perdite != perdita || collegato.Sessione is not null) return;
         registro.Aggiungi(Testi.T("Registro_NonTornato", collegato.Nome, attesa.TotalSeconds));
+        var eraNellaWebcam = telefoni.ESelezionato(collegato);
         Dimentica(collegato);
-        Notifica(Testi.T("Notifica_TelefonoPerso"), Testi.T("Notifica_TelefonoPersoTesto", collegato.Nome));
+        // Collaudo 20 (t14 B3): con due telefoni, perso quello nella webcam ci va l'altro (la logica resta): ora lo si dice,
+        // nel banner, nella notifica e all'Assistente vocale, perché le app vedono un'altra persona.
+        var subentrato = eraNellaWebcam ? Scelto?.Nome : null;
+        var testoNotifica = Testi.T("Notifica_TelefonoPersoTesto", collegato.Nome);
+        if (subentrato is not null) testoNotifica += " " + Testi.T("Telefoni_OraNellaWebcam", subentrato);
+        Notifica(Testi.T("Notifica_TelefonoPerso"), testoNotifica);
+        if (subentrato is not null) registro.Aggiungi(Testi.T("Telefoni_OraNellaWebcam", subentrato));
         // Anche con la finestra davanti, dove la notifica non arriva: un banner fisso sopra il video (come il Mac nel passo 2).
         // Collaudo 20 (t08 B5): diceva «non è tornato. Riapri WebcamLR sul telefono», ma il telefono riprova da solo (con la
         // rete assente aspetta senza fine) e torna nella webcam appena può. Ora dice che si aspetta; la domanda frequente
         // del banner resta per chi non lo vede tornare.
-        MostraTelefonoPerso(collegato.Nome);
+        MostraTelefonoPerso(collegato.Nome, subentrato);
     }
 
     /// <summary>Dopo l'arrivederci del telefono: l'attesa dell'altra strada (cavo → Wi-Fi dello stesso telefono).</summary>

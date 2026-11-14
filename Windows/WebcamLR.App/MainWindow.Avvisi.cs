@@ -69,10 +69,12 @@ public sealed partial class MainWindow
     /// «iPhone di Ledion non è tornato. Riapri WebcamLR sul telefono.» sopra il video, con «Il telefono non trova il PC?»
     /// e la X; resta finché non lo chiudi o il telefono torna (come il Mac nel passo 2). La riga nel registro c'è già.
     /// </summary>
-    private void MostraTelefonoPerso(string nome)
+    /// <param name="subentrato">Il telefono passato nella webcam al suo posto, se c'è (collaudo 20, t14 B3).</param>
+    private void MostraTelefonoPerso(string nome, string? subentrato = null)
     {
         telefonoPerso = nome;
         var testo = Testi.T("TelefonoPerso_Banner", nome);
+        if (subentrato is not null) testo += " " + Testi.T("Telefoni_OraNellaWebcam", subentrato);
         BarraTelefonoPerso.Message = testo;
         BarraTelefonoPerso.IsOpen = true;
         Annuncia(testo);

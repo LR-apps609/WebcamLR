@@ -914,7 +914,7 @@
     <value>Remove “{0}” from trusted phones?</value>
   </data>
   <data name="Conferma_RimuoviFidatoTesto" xml:space="preserve">
-    <value>Next time you’ll need to confirm it with the code.</value>
+    <value>If it is connected, it is disconnected right away. Next time you will need to confirm it with the code.</value>
   </data>
   <data name="Conferma_Rimuovi" xml:space="preserve">
     <value>Remove</value>

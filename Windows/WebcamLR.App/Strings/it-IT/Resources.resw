@@ -630,7 +630,7 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
     <value>Non riesco a copiarla adesso: riprova tra un attimo.</value>
   </data>
   <data name="Bug_NienteVideo" xml:space="preserve">
-    <value>Nessun video e nessuna immagine vengono inviati: solo il testo qui sopra.</value>
+    <value>Nessun video e nessuna immagine: solo il testo qui sopra, i dati tecnici e, se lo includi, il registro del collegamento, che contiene i nomi dei telefoni e gli indirizzi di rete.</value>
   </data>
   <data name="Sicurezza_Spiegazione" xml:space="preserve">
     <value>Il video e i comandi viaggiano cifrati. I telefoni nuovi si collegano solo con il QR code di questa finestra o dopo la tua conferma con il codice.</value>
@@ -2203,5 +2203,14 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
   </data>
   <data name="Gobbo_CosaServe" xml:space="preserve">
     <value>Il gobbo mostra il tuo testo sul telefono, vicino all'obiettivo, così leggi guardando in camera. Serve un iPhone collegato con WebcamLR Pro; il testo si scrive qui.</value>
+  </data>
+  <data name="Telefoni_OraNellaWebcam" xml:space="preserve">
+    <value>Ora la webcam mostra «{0}»: è quello che vedono le app.</value>
+  </data>
+  <data name="Bug_AnteprimaRegistro" xml:space="preserve">
+    <value>Vedi il registro che si allega</value>
+  </data>
+  <data name="Bug_RegistroVuoto" xml:space="preserve">
+    <value>Il registro è vuoto.</value>
   </data>
 </root>

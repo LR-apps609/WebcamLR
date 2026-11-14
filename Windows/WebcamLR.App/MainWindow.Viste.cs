@@ -593,7 +593,7 @@ public sealed partial class MainWindow
                 Prendi(SezioneTelefoni);
                 Prendi(BarraDiagnosi);
                 Prendi(BarraCavo);
-                ContenutoPagina.Children.Add(FinestraApp.ContenutoSicurezza(abbinamento, MostraTelefoni));
+                ContenutoPagina.Children.Add(FinestraApp.ContenutoSicurezza(abbinamento, FidatiCambiati));
                 ContenutoPagina.Children.Add(CopiaBloccoQR());
                 break;
             case PaginaImpostazioni.Uscite:

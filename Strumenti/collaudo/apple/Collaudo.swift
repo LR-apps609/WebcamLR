@@ -351,7 +351,9 @@ class CopioneCollaudo: XCTestCase {
     }
 
     static let nomiConsenti = ["Allow", "Allow While Using App", "Allow Full Access", "OK", "Consenti",
-                               "Consenti mentre usi l’app", "Consenti mentre usi l'app"]
+                               "Consenti mentre usi l’app", "Consenti mentre usi l'app",
+                               // Sul Mac di GitHub: «MobileCal quit unexpectedly» e simili, di app del sistema.
+                               "Ignore", "Ignora"]
     static let nomiNega = ["Don’t Allow", "Don't Allow", "Non consentire"]
 
     // MARK: - Ricerca degli elementi

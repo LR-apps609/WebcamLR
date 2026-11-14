@@ -109,6 +109,8 @@ Errori di compilazione: `<piattaforma>/_banco/esito-compilazione.txt` e `compila
 - Niente fotocamera, telefoni o computer veri: niente «In onda», nessun collegamento.
 - Acquisti: niente configurazione StoreKit nei test: la pagina Pro dice «L'App Store non risponde» (normale qui).
 - Rete locale: il simulatore non chiede il permesso; sul Mac la domanda di macOS può comparire o no.
+- Sul Mac di GitHub (schermo 1024×768, finestra alta ~675 punti) a volte compare «MobileCal quit unexpectedly»: è
+  del sistema, non di WebcamLR; il banco lo chiude con «Ignore».
 - Sul Mac «caratteri grandi» non esiste; la lingua si cambia con gli argomenti di avvio (`-AppleLanguages`).
 - `avviaPulito()` è davvero pulito solo la prima volta in un metodo: le volte dopo azzera solo i permessi (iPhone).
 - Raramente l'iPhone risponde «Timed out while evaluating UI query» durante la presentazione animata: il metodo finisce

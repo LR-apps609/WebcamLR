@@ -1179,6 +1179,10 @@ private fun avvisiAttivi(sessione: SessioneTelefono, verticale: Boolean, doppioT
             fisso = true, persiste = true, azione = CodaAvvisi.Azione.IMPOSTAZIONI_APP,
         )
     }
+    // Collaudo 20 (t12): Pro tolto in onda (rimborso): video fino a 720p, effetti Pro spenti.
+    if (sessione.proTolto) {
+        elenco += CodaAvvisi.Avviso("pro-tolto", stringResource(R.string.avviso_pro_tolto), Icons.Filled.Warning, suggerimento = false, priorita = 4, persiste = true)
+    }
     // Collaudo 20 (t07 B5): notifiche negate. Il video continua a schermo spento senza l'avviso con «Scollega».
     if (Permessi.notificheNegate) {
         elenco += CodaAvvisi.Avviso(

@@ -264,6 +264,9 @@ class SessioneTelefono(
         private set
     var reteDisponibile by mutableStateOf(true)
         private set
+    /** Collaudo 20 (t12): Pro tolto durante la sessione (rimborso): «In onda» mostra un avviso. */
+    var proTolto by mutableStateOf(false)
+        private set
     /** Lo schermo è oscurato (funzione 32): il video continua. */
     var oscurato by mutableStateOf(false)
     /** La strada verso il computer come la riceve il computer (`stato.collegamento`): in uso, preferenza, strade. */
@@ -2426,11 +2429,10 @@ class SessioneTelefono(
         if (nuovo == pro || chiusaDallUtente) return
         val prima = formatoEffettivo()
         pro = nuovo
-        if (!nuovo) {
-            spegniFunzioniPro()
-            // Collaudo 20 (t12): il video scende a 720p e gli effetti Pro si spengono: lo si dice anche sul telefono.
-            annuncia(Testi.testo(R.string.avviso_pro_tolto))
-        }
+        // Collaudo 20 (t12): il video scende a 720p e gli effetti Pro si spengono: «In onda» lo dice (anche se in quel
+        // momento era aperta un'altra pagina sopra).
+        proTolto = !nuovo
+        if (!nuovo) spegniFunzioniPro()
         val dopo = formatoEffettivo()
         if (prima != dopo && fotocameraPronta) {
             avviaFotocamera()

@@ -2555,7 +2555,11 @@ class SessioneTelefono(
     private fun caloreCambiato() {
         if (chiusaDallUtente) return
         misuraStato()
-        if (regolaQualita() && fotocameraPronta) avviaFotocamera()
+        // Collaudo 20 (t18 B1): fotocamera e codificatore ripartono solo se il formato effettivo cambia davvero.
+        // Risalendo a gradini dal calore (con l'isteresi di [RegolatoreCalore]) il formato spesso resta lo stesso,
+        // per esempio un 720p gratuito: prima ogni gradino era uno scatto del video.
+        val prima = formatoEffettivo()
+        if (regolaQualita() && fotocameraPronta && formatoEffettivo() != prima) avviaFotocamera()
         if (destinazione != null) aggiornaStato()
     }
 

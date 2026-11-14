@@ -168,6 +168,9 @@
     <string name="stato_con_qualita">%1$s, connection %2$s</string>
     <string name="mostra_dettagli">Show connection details</string>
     <string name="avviso_caldo">Phone very warm: quality lowered until it cools down</string>
+    <string name="avviso_raffreddamento">The phone is cooling down: quality comes back shortly</string>
+    <string name="oscurato_raffreddamento">cooling down, quality lowered a little longer</string>
+    <string name="oscurato_chiamata">Call in progress: phone microphone paused</string>
     <string name="avviso_batteria_risparmio">Battery at %1$d%%: 24 fps to save power, plug in the charger</string>
     <string name="avviso_batteria">Battery at %1$d%%: plug in the charger</string>
     <string name="avviso_batteria_10" formatted="false">Battery at 10%: plug in the charger or the video will stop</string>

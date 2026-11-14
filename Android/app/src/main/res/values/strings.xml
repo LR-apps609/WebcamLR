@@ -171,6 +171,9 @@
     <string name="stato_con_qualita">%1$s, collegamento %2$s</string>
     <string name="mostra_dettagli">Mostra i dettagli del collegamento</string>
     <string name="avviso_caldo">Telefono molto caldo: qualità ridotta finché si raffredda</string>
+    <string name="avviso_raffreddamento">Il telefono si sta raffreddando: la qualità torna tra poco</string>
+    <string name="oscurato_raffreddamento">in raffreddamento, qualità ridotta ancora per poco</string>
+    <string name="oscurato_chiamata">Chiamata in corso: microfono del telefono in pausa</string>
     <string name="avviso_batteria_risparmio">Batteria al %1$d%%: 24 fps per risparmiare, collega il caricatore</string>
     <string name="avviso_batteria">Batteria al %1$d%%: collega il caricatore</string>
     <string name="avviso_batteria_10" formatted="false">Batteria al 10%: collega il caricatore o il video si fermerà</string>

@@ -1194,7 +1194,10 @@ private fun avvisiAttivi(sessione: SessioneTelefono, verticale: Boolean, doppioT
         elenco += CodaAvvisi.Avviso("microfono", microfono, Icons.Filled.MicOff, suggerimento = false, priorita = 5, persiste = true)
     }
     if (sessione.qualitaRidotta) {
-        elenco += CodaAvvisi.Avviso("caldo", stringResource(R.string.avviso_caldo), Icons.Filled.Thermostat, suggerimento = false, priorita = 4, persiste = true)
+        // Collaudo 20 (t18 B2): già fresco ma con la qualità ancora ridotta (l'isteresi), lo si dice: niente «molto caldo»
+        // mentre lo schermo oscurato dice «temperatura normale».
+        val testoCaldo = stringResource(if (sessione.temperatura == Temperatura.NORMALE) R.string.avviso_raffreddamento else R.string.avviso_caldo)
+        elenco += CodaAvvisi.Avviso("caldo", testoCaldo, Icons.Filled.Thermostat, suggerimento = false, priorita = 4, persiste = true)
     }
     // A3: al 10% un avviso nuovo (un altro argomento), che si vede di nuovo anche se quello del 20% era un'icona.
     if (sessione.batteriaBassa && sessione.batteria <= 10) {
@@ -1560,7 +1563,15 @@ private fun SchermoOscurato(sessione: SessioneTelefono, riaccendi: () -> Unit) {
     val qualita = latenza?.let { "${testoQualita(QualitaCollegamento.da(it, sessione.perditeRecenti))} · $it ms" } ?: "— ms"
     val tipo = sessione.tipoCollegamento?.let { testoTipoCollegamento(it) }
     val batteria = if (sessione.batteria >= 0) stringResource(R.string.oscurato_batteria, sessione.batteria) else stringResource(R.string.oscurato_batteria_ignota)
-    val temperatura = stringResource(R.string.oscurato_temperatura, descrizioneTemperatura(sessione.temperatura))
+    // Collaudo 20 (t18 B2): lo stesso stato dell'avviso: con la qualità ancora ridotta, «in raffreddamento».
+    val temperatura = if (sessione.qualitaRidotta && sessione.temperatura == Temperatura.NORMALE) {
+        stringResource(R.string.oscurato_raffreddamento)
+    } else {
+        stringResource(R.string.oscurato_temperatura, descrizioneTemperatura(sessione.temperatura))
+    }
+    // Collaudo 20 (t18 B4): la chiamata in corso si legge anche a schermo oscurato.
+    val chiamata = sessione.chiamataInCorso.ora()
+    val testoChiamata = stringResource(R.string.oscurato_chiamata)
     val riaccendiTesto = stringResource(R.string.riaccendi_schermo)
     val suggerimento = stringResource(R.string.oscurato_suggerimento)
     Box(
@@ -1569,7 +1580,7 @@ private fun SchermoOscurato(sessione: SessioneTelefono, riaccendi: () -> Unit) {
             .pointerInput(sessione) { detectTapGestures(onDoubleTap = { riaccendi() }) }
             // Con TalkBack il doppio tocco arriva come attivazione: riaccende lo schermo.
             .semantics(mergeDescendants = true) {
-                contentDescription = "$testoStato. $suggerimento"
+                contentDescription = if (chiamata) "$testoStato. $testoChiamata. $suggerimento" else "$testoStato. $suggerimento"
                 onClick(label = riaccendiTesto) { riaccendi(); true }
             },
     ) {
@@ -1585,6 +1596,7 @@ private fun SchermoOscurato(sessione: SessioneTelefono, riaccendi: () -> Unit) {
             }
             Text(listOfNotNull(qualita, tipo).joinToString("   "), style = Stili.numeri, color = Colori.testoSecondario, textAlign = TextAlign.Center)
             Text("$batteria   $temperatura", style = Stili.numeri, color = Colori.testoSecondario, textAlign = TextAlign.Center)
+            if (chiamata) Text(testoChiamata, style = Stili.corpo, color = Colori.ambraTesto, textAlign = TextAlign.Center)
             Spacer(Modifier.height(Spazi.medio))
             Text(suggerimento, style = Stili.nota, color = Colori.testoSecondario, textAlign = TextAlign.Center)
         }

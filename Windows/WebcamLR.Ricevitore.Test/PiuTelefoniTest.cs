@@ -183,7 +183,7 @@ public class PiuTelefoniTest
     {
         // WebcamLR Pro, come sul Mac: due telefoni insieme se almeno uno ha sbloccato Pro.
         // Collaudo 20 (t14 B1): il Pro del telefono che arriva si sa solo dalle sue capacità, dopo l'ingresso: entra «in
-        // prova» ed esce se, arrivate le capacità di tutti, nessuno ha Pro. Chi si è già detto gratis resta fuori subito.
+        // prova» ed esce se, arrivate le capacità di tutti, nessuno ha Pro.
         using var idComputer = IdentitaDispositivo.Nuova();
         using var idA = IdentitaDispositivo.Nuova();
         using var idB = IdentitaDispositivo.Nuova();
@@ -193,7 +193,6 @@ public class PiuTelefoniTest
         var (a, arrivoA) = await CollegaAsync(pc, idA, "iPhone di Ledion");
         await using var _a = a;
         arrivoA.Telefono!.Capacita = new Capacita(["frontale"], 1, false, Pro: false);
-        // B non si sa ancora: entra in prova.
         Assert.True(pc.Elenco.PuoEntrare(idB.Impronta));
         Assert.False(pc.Elenco.FuoriPerPro(idB.Impronta));
         var (b, arrivoB) = await CollegaAsync(pc, idB, "Pixel");
@@ -201,30 +200,22 @@ public class PiuTelefoniTest
         {
             Assert.Equal(EsitoArrivo.Nuovo, arrivoB.Esito);
             Assert.Empty(pc.Elenco.DaTogliereSenzaPro());
-            // Le sue capacità: gratis anche lui. Esce, e da qui in poi resta fuori subito, con il messaggio di Pro.
+            // Le sue capacità: gratis anche lui. Esce (con l'avviso Pro nella finestra).
             arrivoB.Telefono!.Capacita = new Capacita(["frontale"], 1, false, Pro: false);
             Assert.Same(arrivoB.Telefono, Assert.Single(pc.Elenco.DaTogliereSenzaPro()));
             pc.Elenco.Rimuovi(arrivoB.Telefono);
         }
-        Assert.True(pc.Elenco.FuoriPerPro(idB.Impronta));
-        Assert.False(pc.Elenco.PuoEntrare(idB.Impronta));
-        await using (var b2 = new TelefonoFinto(idB))
-        {
-            await b2.CollegaAsync(pc.WiFi.Porta, "Pixel");
-            await b2.AttendiAsync<Arrivederci>().WaitAsync(Limite);
-        }
-        Assert.Equal("Pixel", await pc.NonAmmessi.Reader.ReadAsync().AsTask().WaitAsync(Limite));
         Assert.Equal(1, pc.Elenco.Conteggio);
         // Lo stesso telefono che torna entra sempre.
         Assert.True(pc.Elenco.PuoEntrare(idA.Impronta));
         Assert.False(pc.Elenco.FuoriPerPro(idA.Impronta));
 
-        // Con Pro sul telefono nella webcam, il secondo entra.
-        arrivoA.Telefono.Capacita = new Capacita(["frontale"], 1, false, Pro: true);
-        Assert.False(pc.Elenco.FuoriPerPro(idB.Impronta));
-        var (b3, arrivoB3) = await CollegaAsync(pc, idB, "Pixel");
-        await using var _b3 = b3;
-        Assert.Equal(EsitoArrivo.Nuovo, arrivoB3.Esito);
+        // B ha sbloccato Pro e riprova: entra e resta (anche se poco fa era gratis).
+        var (b2, arrivoB2) = await CollegaAsync(pc, idB, "Pixel");
+        await using var _b2 = b2;
+        Assert.Equal(EsitoArrivo.Nuovo, arrivoB2.Esito);
+        arrivoB2.Telefono!.Capacita = new Capacita(["frontale"], 1, false, Pro: true);
+        Assert.Empty(pc.Elenco.DaTogliereSenzaPro());
         Assert.Equal(2, pc.Elenco.Conteggio);
     }
 
@@ -251,6 +242,7 @@ public class PiuTelefoniTest
     [Fact]
     public async Task SenzaProAncheSenzaPrecontrollo()
     {
+        // Senza il controllo prima della fiducia, Accogli fa entrare in prova anche lui; esce alle sue capacità.
         using var idComputer = IdentitaDispositivo.Nuova();
         using var idA = IdentitaDispositivo.Nuova();
         using var idB = IdentitaDispositivo.Nuova();
@@ -259,21 +251,11 @@ public class PiuTelefoniTest
         var (a, arrivoA) = await CollegaAsync(pc, idA, "A");
         await using var _a = a;
         arrivoA.Telefono!.Capacita = new Capacita(["frontale"], 1, false, Pro: false);
-        // B già visto gratis in questa esecuzione: anche senza precontrollo, Accogli lo lascia fuori.
-        var (b0, arrivoB0) = await CollegaAsync(pc, idB, "B");
-        await using (b0)
-        {
-            arrivoB0.Telefono!.Capacita = new Capacita(["frontale"], 1, false, Pro: false);
-            Assert.Single(pc.Elenco.DaTogliereSenzaPro());
-            pc.Elenco.Rimuovi(arrivoB0.Telefono);
-        }
-        await using var b = new TelefonoFinto(idB);
-        await b.CollegaAsync(pc.WiFi.Porta, "B");
-        var arrivoB = await pc.ArrivoAsync();
-        Assert.Equal(EsitoArrivo.SenzaPro, arrivoB.Esito);
-        Assert.Null(arrivoB.Telefono);
-        await b.AttendiAsync<Arrivederci>().WaitAsync(Limite);
-        Assert.Equal(1, pc.Elenco.Conteggio);
+        var (b, arrivoB) = await CollegaAsync(pc, idB, "B");
+        await using var _b = b;
+        Assert.Equal(EsitoArrivo.Nuovo, arrivoB.Esito);
+        arrivoB.Telefono!.Capacita = new Capacita(["frontale"], 1, false, Pro: false);
+        Assert.Single(pc.Elenco.DaTogliereSenzaPro());
     }
 
     [Fact]

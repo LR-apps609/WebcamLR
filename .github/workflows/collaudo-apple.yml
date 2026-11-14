@@ -1,0 +1,117 @@
+# Banco di prova iPhone e Mac (collaudo-20): esegue i copioni XCUITest dei tester sulle app vere,
+# l'iPhone sul simulatore e il Mac sulla macchina di GitHub, e raccoglie schermate, alberi, note, registri e esito.
+# Istruzioni: Strumenti/collaudo/apple/LEGGIMI.md. Un copione rosso non fa fallire il lavoro: l'esito è in
+# collaudo-apple/esito.txt (artifact «collaudo-apple») e nel riepilogo dell'esecuzione.
+name: Collaudo Apple
+
+on:
+  push:
+    branches: ["collaudo-20*"]
+    paths:
+      - "iPhone/**"
+      - "Mac/**"
+      - "Stile/**"
+      - "Protocollo/**"
+      - "Strumenti/collaudo/apple/**"
+      - ".github/workflows/collaudo-apple.yml"
+  workflow_dispatch:
+    inputs:
+      copioni:
+        description: "Copioni da eseguire (vuoto = tutti): CopioneFumo, CopioneFumo/test02_impostazioni, iPhone:…, Mac:…"
+        required: false
+        default: ""
+      dispositivo:
+        description: "Simulatore iPhone (per lo schermo piccolo: iPhone SE (3rd generation); «recente» = il più nuovo)"
+        required: false
+        default: "iPhone 16"
+      piattaforme:
+        description: "Dove eseguire"
+        required: false
+        default: "entrambe"
+        type: choice
+        options: [entrambe, iphone, mac]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: collaudo-apple-${{ github.ref }}-${{ github.run_id }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  collaudo:
+    name: collaudo (iPhone simulatore e Mac)
+    runs-on: macos-latest
+    timeout-minutes: 150
+    env:
+      WEBCAMLR_TEAM: ""
+      COPIONI: ${{ github.event.inputs.copioni || '' }}
+      DISPOSITIVO: ${{ github.event.inputs.dispositivo || 'iPhone 16' }}
+      PIATTAFORME: ${{ github.event.inputs.piattaforme || 'entrambe' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Come nel lavoro macos di compila.yml.
+      - name: Xcode più recente
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Strumenti (XcodeGen)
+        run: |
+          brew install xcodegen
+          xcodegen --version
+          xcodebuild -version
+          command -v xcbeautify || brew install xcbeautify
+          xcrun simctl list runtimes | grep -i ios || true
+
+      - name: Genera i progetti Xcode
+        run: |
+          (cd Mac && xcodegen generate --spec project-senza-account.yml)
+          (cd iPhone && xcodegen generate)
+
+      - name: Copioni iPhone (simulatore)
+        if: ${{ !cancelled() && env.PIATTAFORME != 'mac' }}
+        continue-on-error: true
+        run: Strumenti/collaudo/apple/esegui.sh iphone "$COPIONI" "$DISPOSITIVO"
+
+      - name: Copioni Mac
+        if: ${{ !cancelled() && env.PIATTAFORME != 'iphone' }}
+        continue-on-error: true
+        run: Strumenti/collaudo/apple/esegui.sh mac "$COPIONI"
+
+      - name: Esito
+        if: ${{ !cancelled() }}
+        run: |
+          mkdir -p collaudo-apple
+          {
+            echo "Collaudo Apple · $(date -u '+%Y-%m-%d %H:%M UTC') · commit ${GITHUB_SHA::7} · ramo ${GITHUB_REF_NAME}"
+            echo "Copioni: «${COPIONI:-tutti}» · simulatore richiesto: $DISPOSITIVO · piattaforme: $PIATTAFORME"
+            xcodebuild -version | tr '\n' ' '; echo
+            sw_vers | tr '\n' ' '; echo
+            echo
+          } > collaudo-apple/intestazione.txt
+          python3 -I Strumenti/collaudo/apple/banco.py riepilogo collaudo-apple > /dev/null
+          cat collaudo-apple/intestazione.txt collaudo-apple/esito.txt > collaudo-apple/esito-completo.txt
+          mv collaudo-apple/esito-completo.txt collaudo-apple/esito.txt
+          rm collaudo-apple/intestazione.txt
+          cat collaudo-apple/esito.txt
+          { echo '```'; cat collaudo-apple/esito.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      # Gli artifact stanno su un dominio che alcune reti bloccano: i risultati anche nel registro (scarica.sh).
+      - name: Risultati nel registro (base64)
+        if: ${{ !cancelled() }}
+        run: Strumenti/collaudo/apple/nel_registro.sh collaudo-apple
+
+      - name: Carica i risultati
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: collaudo-apple
+          path: collaudo-apple/
+          if-no-files-found: warn
+          retention-days: 14

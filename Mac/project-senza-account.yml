@@ -2,3 +2,33 @@
 # che richiede un permesso concesso solo all'account sviluppatore a pagamento.
 include:
   - base.yml
+# Banco di prova (collaudo): i copioni XCUITest dei tester. Qui e non in base.yml, così project.yml (con l'account)
+# resta com'è. Sorgenti in CollaudoUI/ più la libreria comune Strumenti/collaudo/apple/Collaudo.swift (la stessa
+# dell'iPhone). Si lancia con lo schema «CollaudoUI» e su GitHub con .github/workflows/collaudo-apple.yml.
+targets:
+  CollaudoUI-Mac:
+    type: bundle.ui-testing
+    platform: macOS
+    sources:
+      - CollaudoUI
+      - path: ../Strumenti/collaudo/apple/Collaudo.swift
+        group: CollaudoUI
+    dependencies:
+      - target: WebcamLR
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: it.lrapps.webcamlr.mac.collaudoui
+        TEST_TARGET_NAME: WebcamLR
+        GENERATE_INFOPLIST_FILE: YES
+        ENABLE_HARDENED_RUNTIME: NO
+        SWIFT_EMIT_LOC_STRINGS: NO
+schemes:
+  CollaudoUI:
+    build:
+      targets:
+        WebcamLR: all
+        CollaudoUI-Mac: [test]
+    test:
+      config: Debug
+      targets:
+        - CollaudoUI-Mac

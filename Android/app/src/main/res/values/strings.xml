@@ -77,6 +77,11 @@
     <string name="presentazione_sul_computer">Sul computer</string>
     <string name="presentazione_sul_computer_testo">profili, effetti, microfono, registrazione</string>
     <string name="presentazione_permessi_titolo">Goditi l\'esperienza</string>
+    <!-- Collaudo 20 (t19 B6): le pagine del sito nella lingua dell'app. -->
+    <string name="indirizzo_sito">https://lr-apps609.github.io/WebcamLR/</string>
+    <string name="indirizzo_privacy">https://lr-apps609.github.io/WebcamLR/privacy.html</string>
+    <string name="indirizzo_aiuto">https://lr-apps609.github.io/WebcamLR/aiuto.html</string>
+    <string name="indirizzo_download">https://lr-apps609.github.io/WebcamLR/download.html</string>
     <string name="presentazione_permessi_testo">Prima di iniziare, tre permessi: ecco a cosa servono.</string>
     <string name="permesso_fotocamera">Fotocamera</string>
     <string name="permesso_fotocamera_testo">Per mandare il video al computer e leggere il suo QR code. Senza, WebcamLR non può funzionare.</string>

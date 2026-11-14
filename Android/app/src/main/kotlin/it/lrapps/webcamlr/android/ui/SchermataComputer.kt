@@ -156,7 +156,7 @@ fun SchermataComputer(
         Ricollegamento.fatto = true
     }
 
-    val testoLink = stringResource(R.string.presentazione_computer_messaggio, InfoApp.DOWNLOAD)
+    val testoLink = stringResource(R.string.presentazione_computer_messaggio, stringResource(R.string.indirizzo_download))
     val oggettoLink = stringResource(R.string.presentazione_computer_oggetto)
     val titoloLink = stringResource(R.string.mandami_link)
     val mandaLink = {

@@ -174,10 +174,13 @@ fun SchermataApp(indietro: () -> Unit, apriPro: () -> Unit, apriDomande: () -> U
             NotaSotto(stringResource(R.string.computer_conosciuti_nota))
 
             EtichettaSezione(stringResource(R.string.informazioni))
+            // Collaudo 20 (t19 B6): le pagine del sito nella lingua dell'app.
+            val indirizzoPrivacy = stringResource(R.string.indirizzo_privacy)
+            val indirizzoSito = stringResource(R.string.indirizzo_sito)
             Gruppo {
                 RigaValore(stringResource(R.string.versione), "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
-                RigaLink(stringResource(R.string.privacy), icona = Icons.Filled.PanTool) { apriIndirizzo(context, InfoApp.PRIVACY) }
-                RigaLink(stringResource(R.string.sito), icona = Icons.Filled.Language) { apriIndirizzo(context, InfoApp.SITO) }
+                RigaLink(stringResource(R.string.privacy), icona = Icons.Filled.PanTool) { apriIndirizzo(context, indirizzoPrivacy) }
+                RigaLink(stringResource(R.string.sito), icona = Icons.Filled.Language) { apriIndirizzo(context, indirizzoSito) }
             }
             NotaSotto(stringResource(R.string.licenze))
             if (IdentitaTelefono.soloPerQuestaVolta) {
@@ -274,8 +277,9 @@ fun SchermataGuida(indietro: () -> Unit) {
             }
         }
         Spacer(Modifier.height(Spazi.piccolo))
+        val indirizzoAiuto = stringResource(R.string.indirizzo_aiuto)
         Gruppo {
-            RigaLink(stringResource(R.string.altre_risposte_sito), icona = Icons.AutoMirrored.Filled.OpenInNew) { apriIndirizzo(context, InfoApp.AIUTO) }
+            RigaLink(stringResource(R.string.altre_risposte_sito), icona = Icons.AutoMirrored.Filled.OpenInNew) { apriIndirizzo(context, indirizzoAiuto) }
         }
     }
 }

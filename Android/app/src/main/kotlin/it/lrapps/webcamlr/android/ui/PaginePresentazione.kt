@@ -342,7 +342,7 @@ fun PaginaComputer(ridotte: Boolean, avanti: () -> Unit) {
         }
     }
 
-    val testoCondividi = stringResource(R.string.presentazione_computer_messaggio, InfoApp.DOWNLOAD)
+    val testoCondividi = stringResource(R.string.presentazione_computer_messaggio, stringResource(R.string.indirizzo_download))
     val oggettoCondividi = stringResource(R.string.presentazione_computer_oggetto)
     // Lo stesso nome e lo stesso stile (secondario bordato con l'icona Condividi) della lista dei computer.
     val titoloCondividi = stringResource(R.string.mandami_link)

@@ -74,7 +74,11 @@
     <string name="presentazione_sul_telefono_testo">lens, zoom, flashlight, mirror, background blur, pause</string>
     <string name="presentazione_sul_computer">On the computer</string>
     <string name="presentazione_sul_computer_testo">profiles, effects, microphone, recording</string>
-    <string name="presentazione_permessi_titolo">Enjoy the experience</string>
+    <string name="presentazione_permessi_titolo">Three permissions and you\'re ready</string>
+    <string name="indirizzo_sito">https://lr-apps609.github.io/WebcamLR/en/</string>
+    <string name="indirizzo_privacy">https://lr-apps609.github.io/WebcamLR/en/privacy.html</string>
+    <string name="indirizzo_aiuto">https://lr-apps609.github.io/WebcamLR/en/aiuto.html</string>
+    <string name="indirizzo_download">https://lr-apps609.github.io/WebcamLR/en/download.html</string>
     <string name="presentazione_permessi_testo">Before you start, three permissions: here is what they are for.</string>
     <string name="permesso_fotocamera">Camera</string>
     <string name="permesso_fotocamera_testo">To send the video to the computer and scan its QR code. Without it, WebcamLR can’t work.</string>

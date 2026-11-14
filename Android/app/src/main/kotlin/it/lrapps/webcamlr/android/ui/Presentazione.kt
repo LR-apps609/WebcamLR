@@ -19,6 +19,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -61,6 +62,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -241,8 +250,9 @@ fun ImpaginazionePagina(
                     scena(Modifier.fillMaxSize())
                 }
                 Column(Modifier.weight(1f).fillMaxHeight()) {
+                    val scorrimento = rememberScrollState()
                     Column(
-                        Modifier.weight(1f).padding(top = spazioIntestazione).verticalScroll(rememberScrollState()).padding(bottom = Spazi.stretto),
+                        Modifier.weight(1f).padding(top = spazioIntestazione).sfumaturaSeContinua(scorrimento).verticalScroll(scorrimento).padding(bottom = Spazi.stretto),
                         verticalArrangement = Arrangement.spacedBy(Spazi.medio),
                         content = contenuto,
                     )
@@ -252,8 +262,9 @@ fun ImpaginazionePagina(
         } else {
             val altezzaScena: Dp = (maxHeight * quotaScena).coerceIn(170.dp, 340.dp)
             Column(Modifier.fillMaxSize().padding(horizontal = Spazi.largo).padding(bottom = Spazi.piccolo)) {
+                val scorrimento = rememberScrollState()
                 Column(
-                    Modifier.weight(1f).padding(top = spazioIntestazione).verticalScroll(rememberScrollState()).padding(bottom = Spazi.stretto),
+                    Modifier.weight(1f).padding(top = spazioIntestazione).sfumaturaSeContinua(scorrimento).verticalScroll(scorrimento).padding(bottom = Spazi.stretto),
                     verticalArrangement = Arrangement.spacedBy(Spazi.medio),
                 ) {
                     scena(Modifier.fillMaxWidth().height(altezzaScena))
@@ -264,6 +275,24 @@ fun ImpaginazionePagina(
         }
     }
 }
+
+/**
+ * Collaudo 20 (t19 B3): quando il testo continua sotto il pulsante, l'ultima riga sfuma invece di sembrare tagliata:
+ * si capisce che la pagina scorre.
+ */
+private fun Modifier.sfumaturaSeContinua(scorrimento: ScrollState): Modifier =
+    graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }.drawWithContent {
+        drawContent()
+        if (scorrimento.canScrollForward) {
+            val altezza = 40.dp.toPx().coerceAtMost(size.height)
+            drawRect(
+                Brush.verticalGradient(listOf(Color.Black, Color.Transparent), startY = size.height - altezza, endY = size.height),
+                topLeft = Offset(0f, size.height - altezza),
+                size = Size(size.width, altezza),
+                blendMode = BlendMode.DstIn,
+            )
+        }
+    }
 
 /** Titolo di una pagina, in Barlow Condensed; per TalkBack è un'intestazione. */
 @Composable

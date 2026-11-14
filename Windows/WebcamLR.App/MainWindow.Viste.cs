@@ -90,7 +90,7 @@ public sealed partial class MainWindow
     private PaginaImpostazioni PaginaAttuale =>
         impostazioniAperte && pilaImpostazioni.Count > 0 ? pilaImpostazioni.Peek() : PaginaImpostazioni.Elenco;
 
-    private bool InSchermoIntero => AppWindow.Presenter.Kind == Microsoft.UI.Windowing.AppWindowPresenterKind.FullScreen;
+    private bool InSchermoIntero => AppWindow?.Presenter?.Kind == Microsoft.UI.Windowing.AppWindowPresenterKind.FullScreen;
 
     /// <summary>L'ultimo tasto premuto era Tab; il fuoco è arrivato su «Esci» con Tab (allora il pulsante resta).</summary>
     private bool ultimoTastoTab, fuocoDaTab;

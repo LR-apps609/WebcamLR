@@ -276,9 +276,14 @@ public sealed partial class MainWindow : Window
         Prova(FermaAppInUso);
         Prova(FermaAggiornamenti);
         Prova(() => finestraGobbo?.Chiudi());
-        // Nessun telefono nuovo, poi i lettori staccati dai riquadri prima di chiuderli.
-        Prova(annuncio.Dispose);
-        Prova(ascoltatore.Dispose);
+        // Nessun telefono nuovo, poi i lettori staccati dai riquadri prima di chiuderli. Ciò che può aspettare un altro filo
+        // (rete, webcam, motore, audio) si chiude fuori dal thread dell'interfaccia: se si blocca, EsciAsync esce lo stesso
+        // allo scadere (collaudo 20: una volta «--esci» non chiudeva in 15 s, t11 e t17).
+        await Task.Run(() =>
+        {
+            Prova(annuncio.Dispose);
+            Prova(ascoltatore.Dispose);
+        });
         Prova(() => Video.SetMediaPlayer(null));
         Prova(() => VideoPiccolo?.SetMediaPlayer(null));
         try
@@ -288,9 +293,12 @@ public sealed partial class MainWindow : Window
             await cavoAndroid.DisposeAsync();
         }
         catch (Exception errore) { App.ScriviErrore(errore); }
-        Prova(uscitaWebcam.Dispose);
-        Prova(motoreVideo.Dispose);
-        Prova(ChiudiMicrofono);
+        await Task.Run(() =>
+        {
+            Prova(uscitaWebcam.Dispose);
+            Prova(motoreVideo.Dispose);
+            Prova(ChiudiMicrofono);
+        });
         Prova(risveglio.Dispose);
         Prova(() => iconaTray?.Dispose());
         Prova(notifiche.Dispose);
@@ -1463,7 +1471,9 @@ public sealed partial class MainWindow : Window
     /// <summary>Vista pulita (funzione 29): solo il video, senza intestazione, colonne e barra. Esc per uscire.</summary>
     private bool vistaPulita;
 
-    private bool InMini => AppWindow.Presenter.Kind == AppWindowPresenterKind.CompactOverlay;
+    // Dopo la chiusura della finestra AppWindow o il presentatore possono mancare (collaudo 20, t10: NullReferenceException in
+    // Errori.txt all'uscita, da SuPuntatoreFuoriVideo).
+    private bool InMini => AppWindow?.Presenter?.Kind == AppWindowPresenterKind.CompactOverlay;
 
     /// <summary>Il video in una finestrella sempre in primo piano (sovrapposizione compatta di Windows).</summary>
     /// <summary>Vero dalla richiesta della finestra mini al ritorno alla normale: la misura minima non vale.</summary>
@@ -1598,7 +1608,11 @@ public sealed partial class MainWindow : Window
 
     private void SuPuntatoreSulVideo(object sender, PointerRoutedEventArgs e) => MostraEsciPerUnPo();
 
-    private void SuPuntatoreFuoriVideo(object sender, PointerRoutedEventArgs e) => MostraPulsanteTorna();
+    private void SuPuntatoreFuoriVideo(object sender, PointerRoutedEventArgs e)
+    {
+        if (chiudiDavvero) return;
+        MostraPulsanteTorna();
+    }
 
     // MARK: finestra stretta
 

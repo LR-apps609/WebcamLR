@@ -731,7 +731,7 @@
     <value>Connect a phone to use it.</value>
   </data>
   <data name="Microfono_NonMandaAudio" xml:space="preserve">
-    <value>The phone doesn’t send audio.</value>
+    <value>The phone isn't sending audio: usually WebcamLR isn't allowed to use the microphone on the phone (phone Settings › WebcamLR › Microphone).</value>
   </data>
   <data name="Microfono_UscitaNonDisponibile" xml:space="preserve">
     <value>Audio output not available: {0}.</value>
@@ -1056,5 +1056,8 @@
   </data>
   <data name="Pro_Voce13" xml:space="preserve">
     <value>On the PC: custom waiting screen</value>
+  </data>
+  <data name="Microfono_AccesoInAttesa" xml:space="preserve">
+    <value>on, waiting</value>
   </data>
 </root>

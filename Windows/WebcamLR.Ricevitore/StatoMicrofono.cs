@@ -37,7 +37,11 @@ public static class StatoMicrofono
         DispositivoAudio? uscita, bool cavoInstallato, string? erroreUscita)
     {
         var utilizzabile = telefonoCollegato && mandaAudio == true;
-        var stato = acceso ? TestiRicevitore.T("Microfono_Attivo") : TestiRicevitore.T("Microfono_Spento");
+        // «attivo» solo se l'audio può arrivare; acceso senza telefono (o con un telefono che non lo manda) «acceso, in attesa»
+        // (collaudo 20, t17 B3: «attivo» accanto a «Collega un telefono per usarlo»).
+        var stato = !acceso ? TestiRicevitore.T("Microfono_Spento")
+            : utilizzabile ? TestiRicevitore.T("Microfono_Attivo")
+            : TestiRicevitore.T("Microfono_AccesoInAttesa");
         var attivo = acceso && audioInArrivo && utilizzabile;
         return new VistaMicrofono(stato, Nota(), attivo, utilizzabile);
 

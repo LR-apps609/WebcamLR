@@ -476,10 +476,12 @@ public class MicrofonoTest
         var altoparlanti = new DispositivoAudio("{1}", "Altoparlanti (Realtek(R) Audio)");
 
         var senzaTelefono = StatoMicrofono.Descrivi(false, null, true, false, cavo, true, null);
-        Assert.Equal(("attivo", "Collega un telefono per usarlo.", false, false),
+        // Collaudo 20 (t17 B3): acceso senza telefono non è «attivo».
+        Assert.Equal(("acceso, in attesa", "Collega un telefono per usarlo.", false, false),
             (senzaTelefono.Stato, senzaTelefono.Nota, senzaTelefono.Attivo, senzaTelefono.Utilizzabile));
         Assert.Null(StatoMicrofono.Descrivi(true, null, false, false, null, false, null).Nota);
-        Assert.Equal("Il telefono non manda l'audio.", StatoMicrofono.Descrivi(true, false, true, false, cavo, true, null).Nota);
+        Assert.StartsWith("Il telefono non manda l'audio: di solito il microfono non è consentito", StatoMicrofono.Descrivi(true, false, true, false, cavo, true, null).Nota);
+        Assert.Equal("acceso, in attesa", StatoMicrofono.Descrivi(true, false, true, false, cavo, true, null).Stato);
 
         // Senza cavo il testo onesto si vede anche da spento; con il cavo scelto, il nome del microfono da usare.
         var senzaCavo = StatoMicrofono.Descrivi(true, true, false, false, null, false, null);

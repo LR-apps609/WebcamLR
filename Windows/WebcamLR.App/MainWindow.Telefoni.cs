@@ -181,13 +181,18 @@ public sealed partial class MainWindow
                 if (collegato.Sessione == nuova && telefoni.Contiene(collegato)) SuTelefonoAccettato(collegato, nuova, accettato, nuovoTelefono);
             });
         };
+        // Il primo «stato» di questa sessione: lo stesso telefono che torna parte con l'audio spento finché non riceve il
+        // comando, e non va letto come «spento dal telefono» (collaudo 20, t17 B4: interruttore e preferenza salvata passavano
+        // a spento e tornavano accesi).
+        var primoStatoDellaSessione = true;
         nuova.StatoRicevuto += stato => SuInterfaccia(collegato =>
         {
             var scelto = telefoni.ESelezionato(collegato);
             var eraInPausa = collegato.InPausa;
             var viaCavoPrima = ContrattoCollegamento.ViaCavo(collegato.Stato, collegato.Collegamento);
             var obiettivoPrima = collegato.Stato?.Obiettivo;
-            var audioPrima = collegato.Stato?.Audio;
+            var audioPrima = primoStatoDellaSessione ? null : collegato.Stato?.Audio;
+            primoStatoDellaSessione = false;
             var sistemaPrima = EffettiDelSistema.Di(collegato.Stato);
             var cambioPausa = collegato.AggiornaStato(stato);
             RegistraPausa(collegato, cambioPausa, scelto);

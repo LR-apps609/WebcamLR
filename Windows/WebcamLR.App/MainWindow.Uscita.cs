@@ -79,6 +79,9 @@ public sealed partial class MainWindow
     /// </summary>
     public void EsciSenzaDomande() => _ = EsciAsync();
 
+    /// <summary>Oltre questo tempo l'uscita senza registrazione aperta si forza (collaudo 20, «--esci» che non chiudeva).</summary>
+    private static readonly TimeSpan TempoMassimoUscita = TimeSpan.FromSeconds(10);
+
     /// <summary>
     /// L'uscita vera: salva la posizione, chiude la registrazione (con await e un tetto lungo, N1: la finestra intanto
     /// risponde e dice «Chiudo la registrazione…»), poi chiude la finestra e l'app.
@@ -87,6 +90,17 @@ public sealed partial class MainWindow
     {
         if (uscita) return;
         uscita = true;
+        // Ultima rete: l'installatore aspetta che l'app esca. Se qualcosa si blocca oltre il tetto (registrazione esclusa:
+        // ha il suo, più lungo), si esce comunque e lo si annota.
+        if (registrazione is null && chiusuraInCorso.IsCompleted)
+        {
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(TempoMassimoUscita);
+                App.ScriviErrore(new TimeoutException($"Uscita oltre {TempoMassimoUscita.TotalSeconds:0} s: chiusura forzata"));
+                Environment.Exit(0);
+            });
+        }
         try
         {
             SalvaPosizione();

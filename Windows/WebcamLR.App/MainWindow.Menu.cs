@@ -32,9 +32,9 @@ public sealed partial class MainWindow
         // Collaudo 20 (t10 B10): il riquadro del video non prende il fuoco, quindi Maiusc+F10 o il tasto Menu non aprivano il
         // suo menu. Una richiesta da tastiera (senza posizione del puntatore) che nessun controllo col fuoco ha preso apre il
         // menu del video, al centro del video.
-        Radice.ContextRequested += (_, evento) =>
+        Radice.ContextRequested += (mittente, evento) =>
         {
-            if (evento.Handled || evento.TryGetPosition(Radice, out _) || RiquadroVideo.Visibility != Microsoft.UI.Xaml.Visibility.Visible) return;
+            if (evento.Handled || evento.TryGetPosition(Radice, out Windows.Foundation.Point _) || RiquadroVideo.Visibility != Microsoft.UI.Xaml.Visibility.Visible) return;
             evento.Handled = true;
             menuVideo.ShowAt(RiquadroVideo, new Microsoft.UI.Xaml.Controls.Primitives.FlyoutShowOptions
             {

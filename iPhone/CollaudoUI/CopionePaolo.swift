@@ -95,7 +95,7 @@ final class CopionePaolo: CopioneCollaudo {
         aspettaUnPo(2)
         nota("Dopo la revoca della fotocamera lo stato dell'app è \(app.state.rawValue) (1 = non in esecuzione, 4 = in primo piano)")
         permessi = .nonRispondere
-        app.activate()
+        avvia()
         aspettaUnPo(3)
         if let domanda = attendiDomandaDiSistema(secondi: 6) {
             fotografa("dopo la revoca, domanda")
@@ -134,29 +134,6 @@ final class CopionePaolo: CopioneCollaudo {
         scorri(giu: true, volte: 2)
         fotografa("app e assistenza in fondo")
         scorri(giu: false, volte: 2)
-        if tocca("Domande frequenti") {
-            fotografa("domande frequenti")
-            for parola in ["privacy", "Google", "dati"] {
-                let campo = app.searchFields.firstMatch.exists ? app.searchFields.firstMatch : app.textFields.firstMatch
-                if campo.exists {
-                    premi(campo)
-                    if let valore = campo.value as? String, !valore.isEmpty, valore != campo.placeholderValue {
-                        campo.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: valore.count))
-                    }
-                    campo.typeText(parola)
-                    aspettaUnPo(1)
-                    fotografa("domande frequenti cerca \(parola)")
-                    nota("Domande frequenti, ricerca «\(parola)»: \(app.staticTexts.allElementsBoundByIndex.prefix(12).map { $0.label }.joined(separator: " | "))")
-                } else {
-                    nota("Domande frequenti: nessun campo di ricerca")
-                    break
-                }
-            }
-            if toccaSePresente("Il mio video passa da Internet?", secondi: 2) {
-                fotografa("risposta video passa da internet")
-            }
-            indietro()
-        }
         if tocca("Segnala un bug") {
             fotografa("segnala un bug")
             scorri(giu: true)
@@ -180,6 +157,35 @@ final class CopionePaolo: CopioneCollaudo {
                     chiudiFoglio()
                 }
             }
+        }
+        chiudiFoglio()
+        aspettaUnPo(1)
+        if !esiste("Domande frequenti") {
+            indietro()
+            aspettaUnPo(1)
+        }
+        if tocca("Domande frequenti") {
+            fotografa("domande frequenti")
+            for parola in ["privacy", "Google", "dati"] {
+                let campo = app.searchFields.firstMatch.exists ? app.searchFields.firstMatch : app.textFields.firstMatch
+                if campo.exists {
+                    premi(campo)
+                    if let valore = campo.value as? String, !valore.isEmpty, valore != campo.placeholderValue {
+                        campo.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: valore.count))
+                    }
+                    campo.typeText(parola)
+                    aspettaUnPo(1)
+                    fotografa("domande frequenti cerca \(parola)")
+                    nota("Domande frequenti, ricerca «\(parola)»: \(app.staticTexts.allElementsBoundByIndex.prefix(12).map { $0.label }.joined(separator: " | "))")
+                } else {
+                    nota("Domande frequenti: nessun campo di ricerca")
+                    break
+                }
+            }
+            if toccaSePresente("Il mio video passa da Internet?", secondi: 2) {
+                fotografa("risposta video passa da internet")
+            }
+            indietro()
         }
     }
 }

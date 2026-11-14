@@ -35,7 +35,7 @@ a 150; t18_guarda "in-onda-2min30"
 
 # --- Batteria che scende: scollegato dal caricatore, 15% e poi 10%.
 a 240
-adb_sh dumpsys battery unplug; adb_sh dumpsys battery set level 15; passo "BATTERIA: scollegata, 15%"
+adb_sh dumpsys battery unplug; adb_sh dumpsys battery set status 3; adb_sh dumpsys battery set level 15; passo "BATTERIA: scollegata (in scarica), 15%"
 attendi 25; t18_guarda "batteria-15"; t18_video_ok "batteria 15%"
 adb_sh dumpsys battery set level 10; passo "BATTERIA: 10%"
 attendi 25; t18_guarda "batteria-10"; t18_video_ok "batteria 10%"

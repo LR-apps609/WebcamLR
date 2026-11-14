@@ -29,7 +29,7 @@ attendi 25; t18_guarda "batteria-2"; t18_video_ok "batteria 2%"
 
 # --- Caricatore di nuovo, risparmio spento, telefono che si raffredda.
 b 420
-adb_sh dumpsys battery set ac 1; adb_sh dumpsys battery set level 40; adb_sh dumpsys battery set temp 300
+adb_sh dumpsys battery set ac 1; adb_sh dumpsys battery set status 2; adb_sh dumpsys battery set level 40; adb_sh dumpsys battery set temp 300
 adb_sh settings put global low_power 0
 adb_sh cmd thermalservice override-status 0
 passo "CARICATORE collegato (40%), risparmio spento, 30 °C, stato termico 0"

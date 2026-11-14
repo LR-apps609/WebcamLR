@@ -36,7 +36,7 @@ t18_misura() {
     bat=$(adb_sh dumpsys battery 2>/dev/null | tr -d '\r')
     liv=$(echo "$bat" | awk -F': ' '/^ *level:/ {print $2; exit}')
     temp=$(echo "$bat" | awk -F': ' '/^ *temperature:/ {print $2; exit}')
-    inc=$(echo "$bat" | awk -F': ' '/AC powered:/ {a=$2} /USB powered:/ {u=$2} END {print (a=="true"||u=="true") ? "rete" : "batteria"}')
+    inc=$(echo "$bat" | awk -F': ' '/AC powered:/ {a=$2} /USB powered:/ {u=$2} /^ *status:/ {s=$2} END {print ((a=="true"||u=="true") ? "rete" : "batteria") "-s" s}')
     term=$(adb_sh dumpsys thermalservice 2>/dev/null | tr -d '\r' | awk -F': ' '/Thermal Status/ {print $2; exit}')
     cf=$(stato_computer)
     read -r fps mbit lat < <(tail -n 10 "$CF/statistiche.csv" 2>/dev/null | grep -v '^ora' | awk -F, '{f+=$5; m+=$6; l+=$7; n++} END {if (n) printf "%.1f %.2f %.0f", f/n, m/n, l/n}')

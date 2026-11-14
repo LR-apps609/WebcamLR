@@ -83,7 +83,7 @@ function T18-Silenzio([string]$Etichetta, [int]$Secondi, [int[]]$Foto) {
     Start-Sleep -Seconds 3
     T18-Guarda "$Etichetta-dopo"
     $righe = @(Registro-Telefono $n | Select-Object -Last 8) -join ' // '
-    Scrivi-Log "TELEFONO dopo $Etichetta: $righe"
+    Scrivi-Log "TELEFONO dopo ${Etichetta}: $righe"
 }
 
 function T18-Stampa {

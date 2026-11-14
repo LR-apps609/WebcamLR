@@ -189,7 +189,7 @@ sealed class Computer
 
     private void ComandoAudioDopo(SessioneComputer sessione, int numero, double secondi, bool acceso)
     {
-        sessione.Salutato += _ => _ = Task.Run(async () =>
+        sessione.Salutato += ciao => Task.Run(async () =>
         {
             await Task.Delay(TimeSpan.FromSeconds(secondi));
             if (sessione.Terminata) return;

@@ -125,6 +125,14 @@ public sealed partial class MainWindow
         }
         chiudiDavvero = true;
         passoUscita = "chiusura della finestra";
+        // Collaudo 20 (t17, run 43553328321): con tutto già chiuso e salvato, una volta Close() non è più tornato (telefono
+        // appena perso, finestra in «Riconnessione»). Qui non resta niente da perdere: se entro 2 s l'app non è uscita da
+        // sola, si esce comunque.
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(TimeSpan.FromSeconds(2));
+            Environment.Exit(0);
+        });
         Close();
         passoUscita = "uscita dell'app";
         Application.Current.Exit();

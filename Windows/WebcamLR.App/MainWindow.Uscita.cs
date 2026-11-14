@@ -97,7 +97,7 @@ public sealed partial class MainWindow
             _ = Task.Run(async () =>
             {
                 await Task.Delay(TempoMassimoUscita);
-                App.ScriviErrore(new TimeoutException($"Uscita oltre {TempoMassimoUscita.TotalSeconds:0} s: chiusura forzata"));
+                App.ScriviErrore(new TimeoutException($"Uscita oltre {TempoMassimoUscita.TotalSeconds:0} s: chiusura forzata (fermo a «{passoUscita}»)"));
                 Environment.Exit(0);
             });
         }
@@ -124,7 +124,9 @@ public sealed partial class MainWindow
             App.ScriviErrore(errore);
         }
         chiudiDavvero = true;
+        passoUscita = "chiusura della finestra";
         Close();
+        passoUscita = "uscita dell'app";
         Application.Current.Exit();
     }
 

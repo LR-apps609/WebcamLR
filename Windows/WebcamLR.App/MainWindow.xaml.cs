@@ -264,49 +264,61 @@ public sealed partial class MainWindow : Window
         try
         {
             // Prima di tutto: la registrazione si chiude bene anche se l'app sta uscendo. Si aspetta senza bloccare.
+            passoUscita = "riprese";
             await ChiudiRipreseAsync();
         }
         catch (Exception errore) { App.ScriviErrore(errore); }
-        Prova(() => System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged -= SuCambioRete);
-        Prova(controlloDiagnosi.Stop);
-        Prova(reteAssestata.Stop);
-        Prova(risveglioAssestato.Stop);
-        Prova(controlloRisveglio.Stop);
-        Prova(FermaPausa);
-        Prova(FermaAppInUso);
-        Prova(FermaAggiornamenti);
-        Prova(() => finestraGobbo?.Chiudi());
+        Prova("cambio di rete", () => System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged -= SuCambioRete);
+        Prova("controlloDiagnosi.Stop", controlloDiagnosi.Stop);
+        Prova("reteAssestata.Stop", reteAssestata.Stop);
+        Prova("risveglioAssestato.Stop", risveglioAssestato.Stop);
+        Prova("controlloRisveglio.Stop", controlloRisveglio.Stop);
+        Prova("FermaPausa", FermaPausa);
+        Prova("FermaAppInUso", FermaAppInUso);
+        Prova("FermaAggiornamenti", FermaAggiornamenti);
+        Prova("gobbo", () => finestraGobbo?.Chiudi());
         // Nessun telefono nuovo, poi i lettori staccati dai riquadri prima di chiuderli. Ciò che può aspettare un altro filo
         // (rete, webcam, motore, audio) si chiude fuori dal thread dell'interfaccia: se si blocca, EsciAsync esce lo stesso
         // allo scadere (collaudo 20: una volta «--esci» non chiudeva in 15 s, t11 e t17).
         await Task.Run(() =>
         {
-            Prova(annuncio.Dispose);
-            Prova(ascoltatore.Dispose);
+            Prova("annuncio.Dispose", annuncio.Dispose);
+            Prova("ascoltatore.Dispose", ascoltatore.Dispose);
         });
-        Prova(() => Video.SetMediaPlayer(null));
-        Prova(() => VideoPiccolo?.SetMediaPlayer(null));
+        Prova("lettore grande", () => Video.SetMediaPlayer(null));
+        Prova("lettore piccolo", () => VideoPiccolo?.SetMediaPlayer(null));
         try
         {
+            passoUscita = "telefoni";
             await ChiudiTuttiAsync();
+            passoUscita = "cavo";
             await cavo.DisposeAsync();
+            passoUscita = "cavo Android";
             await cavoAndroid.DisposeAsync();
         }
         catch (Exception errore) { App.ScriviErrore(errore); }
         await Task.Run(() =>
         {
-            Prova(uscitaWebcam.Dispose);
-            Prova(motoreVideo.Dispose);
-            Prova(ChiudiMicrofono);
+            Prova("uscitaWebcam.Dispose", uscitaWebcam.Dispose);
+            Prova("motoreVideo.Dispose", motoreVideo.Dispose);
+            Prova("ChiudiMicrofono", ChiudiMicrofono);
         });
-        Prova(risveglio.Dispose);
-        Prova(() => iconaTray?.Dispose());
-        Prova(notifiche.Dispose);
+        Prova("risveglio.Dispose", risveglio.Dispose);
+        Prova("icona", () => iconaTray?.Dispose());
+        Prova("notifiche.Dispose", notifiche.Dispose);
+        passoUscita = "fatto";
     }
 
+    /// <summary>
+    /// Il passo della chiusura in corso, per l'uscita forzata (MainWindow.Uscita.cs): se qualcosa si blocca, Errori.txt dice
+    /// dove (collaudo 20: «--esci» che una volta non chiudeva, t11 e t17).
+    /// </summary>
+    private volatile string passoUscita = "inizio";
+
     /// <summary>Un passo della chiusura: se fallisce si annota e si va avanti con gli altri.</summary>
-    private static void Prova(Action passo)
+    private void Prova(string nome, Action passo)
     {
+        passoUscita = nome;
         try { passo(); }
         catch (Exception errore) { App.ScriviErrore(errore); }
     }

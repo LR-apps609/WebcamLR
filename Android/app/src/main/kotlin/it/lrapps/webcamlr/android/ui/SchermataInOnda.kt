@@ -1586,7 +1586,14 @@ private fun SchermoOscurato(sessione: SessioneTelefono, riaccendi: () -> Unit) {
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spazi.medio), modifier = Modifier.padding(Spazi.medio)) {
             if (tono != null) {
-                PillolaStato(stringResource(if (tono == TonoPillola.PAUSA) R.string.pausa_titolo else R.string.in_onda), tono, misura = MisuraPillola.GRANDE)
+                // Collaudo 20: su un telefono stretto la pillola grande (che non cresce con il carattere) non ci sta e si
+                // leggeva «IN OND»: se il testo non ci sta, la misura normale.
+                var grandeNonCiSta by remember(tono) { mutableStateOf(false) }
+                PillolaStato(
+                    stringResource(if (tono == TonoPillola.PAUSA) R.string.pausa_titolo else R.string.in_onda), tono,
+                    misura = if (grandeNonCiSta) MisuraPillola.NORMALE else MisuraPillola.GRANDE,
+                    misuraTesto = { risultato -> if (risultato.hasVisualOverflow && !grandeNonCiSta) grandeNonCiSta = true },
+                )
                 Text(sessione.computer.nome, style = Stili.titolo, color = Colori.testoSecondario, textAlign = TextAlign.Center)
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spazi.piccolo)) {

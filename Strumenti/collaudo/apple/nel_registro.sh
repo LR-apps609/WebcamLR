@@ -8,7 +8,8 @@ sorgente="${1:-collaudo-apple}"
 lavoro=$(mktemp -d)
 copia="$lavoro/collaudo-apple"
 cp -R "$sorgente" "$copia"
-find "$copia" \( -name 'xcodebuild.log' -o -name 'compilazione.log' -o -name '*.ips' \) -delete
+find "$copia" \( -name xcodebuild.log -o -name compilazione.log -o -name "*.ips" \) -delete
+find "$copia" -type d -name video -prune -exec rm -rf {} +
 find "$copia" -name 'log-app.txt' | while IFS= read -r f; do tail -n 300 "$f" > "$f.coda" && mv "$f.coda" "$f"; done
 find "$copia" -name '*.png' | while IFS= read -r png; do
   larghezza=$(sips -g pixelWidth "$png" 2>/dev/null | awk '/pixelWidth/ {print $2}')

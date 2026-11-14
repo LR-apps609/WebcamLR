@@ -161,6 +161,17 @@ def estrai(xcresult, cartella):
             if not sorgente.exists():
                 continue
             base, estensione = nome_pulito(e.get("suggestedHumanReadableName") or e["exportedFileName"])
+            # Allegati automatici di Xcode 26 (eventi sintetizzati, istantanee dell'interfaccia): non servono.
+            if base.startswith(("Synthesized Event", "UI Snapshot", "App UI hierarchy", "kXCTAttachment")):
+                continue
+            # La registrazione dello schermo (Xcode 26 la fa da sola): a parte, solo nell'artifact.
+            if base.startswith("Screen Recording"):
+                (cartella / "video").mkdir(exist_ok=True)
+                shutil.copyfile(sorgente, cartella / "video" / f"{base}.{estensione or 'mp4'}")
+                continue
+            # Gli alberi e gli altri testi senza estensione: .txt.
+            if estensione == "albero":
+                base, estensione = f"{base}.albero", "txt"
             if re.fullmatch(r"\d+ nota", base):
                 note.append(sorgente.read_text(encoding="utf-8", errors="replace").strip())
                 continue

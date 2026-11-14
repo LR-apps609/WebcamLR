@@ -6,23 +6,12 @@ import XCTest
 
 final class CopioneFumo: CopioneCollaudo {
 
-    /// Le pagine del pannello Impostazioni, con la riga di dettaglio che le distingue (alcuni titoli, come «Sfondo» e
-    /// «Schermo», sono anche pulsanti sotto il video).
-    private static let pagineImpostazioni: [(titolo: String, dettaglio: String)] = [
-        ("Fotocamera", "Obiettivo, zoom, esposizione, messa a fuoco"),
-        ("Effetti", "Filtro, regolazioni, ritocco, scritta e logo"),
-        ("Sfondo", "Nessuno, sfocatura o un'immagine"),
-        ("Profili", "Profili pronti e profili salvati"),
-        ("Qualità e collegamento", "Qualità video, Wi-Fi o USB, numeri"),
-        ("Schermo", "Riempi l'inquadratura, finestra mini, barra dei menu"),
-        ("Microfono", "Il microfono del telefono sul Mac"),
-        ("Telefoni", "Collegati, fidati, collegane un altro"),
-        ("Sicurezza", "Codice di questo Mac, telefoni fidati"),
-        ("Uscite", "Webcam virtuale, microfono, NDI"),
-        ("Schermata di attesa", "Cosa vedono le app quando il video non c'è"),
-        ("Gobbo", "Un testo che scorre sul telefono"),
-        ("Avvio e notifiche", "Apri all'avvio del Mac, notifiche"),
-        ("Registro del collegamento", "Gli ultimi eventi, da copiare"),
+    /// Le pagine del pannello Impostazioni. I titoli «Sfondo» e «Schermo» sono anche pulsanti sotto il video: per questo
+    /// si cercano dentro il pannello (`dentro: "Impostazioni"`, il gruppo con quell'etichetta). Le ultime righe stanno
+    /// sotto il bordo della finestra: `tocca` scorre il pannello fin lì.
+    private static let pagineImpostazioni = [
+        "Fotocamera", "Effetti", "Sfondo", "Profili", "Qualità e collegamento", "Schermo", "Microfono", "Telefoni",
+        "Sicurezza", "Uscite", "Schermata di attesa", "Gobbo", "Avvio e notifiche", "Registro del collegamento",
     ]
 
     /// Primo avvio pulito: la finestra principale, le eventuali domande di sistema, la finestra tutta.
@@ -51,11 +40,11 @@ final class CopioneFumo: CopioneCollaudo {
         tocca("Impostazioni")
         fotografa("impostazioni elenco")
         for pagina in Self.pagineImpostazioni {
-            guard tocca(pagina.dettaglio) else { continue }
-            fotografa("impostazioni \(pagina.titolo)")
-            scorri(giu: true, volte: 2)
-            fotografa("impostazioni \(pagina.titolo) in fondo")
-            tocca("Indietro")
+            guard tocca(pagina, dentro: "Impostazioni") else { continue }
+            fotografa("impostazioni \(pagina)")
+            scorri(giu: true, volte: 2, dentro: "Impostazioni")
+            fotografa("impostazioni \(pagina) in fondo")
+            tocca("Indietro", dentro: "Impostazioni")
         }
         tocca("Chiudi le impostazioni")
         fotografa("impostazioni chiuse")
@@ -71,7 +60,7 @@ final class CopioneFumo: CopioneCollaudo {
                 aspettaUnPo(1.5)
                 fotografa("app e assistenza guida")
                 for scheda in ["WebcamLR Pro", "Domande frequenti", "Segnala un bug", "Informazioni"] {
-                    if tocca(scheda) {
+                    if tocca(scheda, dentro: "Barra laterale") {
                         aspettaUnPo(1)
                         fotografa("app e assistenza \(scheda)")
                     }

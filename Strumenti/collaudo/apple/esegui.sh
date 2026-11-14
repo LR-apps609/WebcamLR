@@ -40,8 +40,9 @@ case "$piattaforma" in
     xcrun simctl boot "$udid" 2>/dev/null
     xcrun simctl bootstatus "$udid" -b >/dev/null 2>&1
     destinazione="id=$udid"
-    # Sul simulatore non serve firmare.
-    firma=(CODE_SIGNING_ALLOWED=NO)
+    # Firma locale («-»), senza account: senza firma l'app non ha i diritti (entitlements) e sul simulatore il
+    # Portachiavi non salva (avviso «L'iPhone non riesce a ricordare questo collegamento»).
+    firma=(CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER=)
     ;;
   mac)
     progetto=Mac/WebcamLR-Mac.xcodeproj
@@ -68,11 +69,20 @@ pulisci_mac() {
   true
 }
 
-# Il simulatore cancellato e riacceso: app, dati, Portachiavi e permessi come appena comprato.
+# L'app tolta dal simulatore (con i suoi dati), permessi e Portachiavi azzerati: come appena installata.
+# Più veloce di «simctl erase» (che costava ~5 minuti a test tra cancellazione, avvio e prima installazione).
+# Con COLLAUDO_CANCELLA=1 si cancella invece tutto il simulatore.
 pulisci_iphone() {
-  xcrun simctl shutdown "$udid" >/dev/null 2>&1
-  xcrun simctl erase "$udid" || echo "simctl erase non riuscito"
-  xcrun simctl boot "$udid" >/dev/null 2>&1
+  if [ "${COLLAUDO_CANCELLA:-0}" = 1 ]; then
+    xcrun simctl shutdown "$udid" >/dev/null 2>&1
+    xcrun simctl erase "$udid" || echo "simctl erase non riuscito"
+    xcrun simctl boot "$udid" >/dev/null 2>&1
+  else
+    xcrun simctl terminate "$udid" it.lrapps.webcamlr.iphone >/dev/null 2>&1
+    xcrun simctl uninstall "$udid" it.lrapps.webcamlr.iphone >/dev/null 2>&1
+    xcrun simctl privacy "$udid" reset all it.lrapps.webcamlr.iphone >/dev/null 2>&1
+    xcrun simctl keychain "$udid" reset >/dev/null 2>&1
+  fi
   xcrun simctl bootstatus "$udid" -b >/dev/null 2>&1
 }
 

@@ -158,8 +158,9 @@ class CopioneCollaudo: XCTestCase {
     /// esatto, poi un testo che lo contiene. Pulsanti, celle, voci di menu e link prima dei testi semplici.
     /// Se non lo trova segna un errore (il copione continua) e salva schermata e albero.
     @MainActor @discardableResult
-    func tocca(_ etichetta: String, secondi: Double? = nil, file: StaticString = #filePath, line: UInt = #line) -> Bool {
-        guard let elemento = trovaScorrendo(etichetta, secondi: secondi ?? attesaDiSerie) else {
+    func tocca(_ etichetta: String, dentro contenitore: String? = nil, secondi: Double? = nil,
+               file: StaticString = #filePath, line: UInt = #line) -> Bool {
+        guard let elemento = trovaScorrendo(etichetta, dentro: contenitore, secondi: secondi ?? attesaDiSerie) else {
             XCTFail("Non trovo «\(etichetta)» da toccare", file: file, line: line)
             fotografa("non trovo \(etichetta)")
             return false
@@ -172,8 +173,8 @@ class CopioneCollaudo: XCTestCase {
 
     /// Come `tocca`, ma senza errore se l'elemento non c'è: dice solo se l'ha toccato.
     @MainActor @discardableResult
-    func toccaSePresente(_ etichetta: String, secondi: Double = 2) -> Bool {
-        guard let elemento = trova(etichetta, secondi: secondi) else { return false }
+    func toccaSePresente(_ etichetta: String, dentro contenitore: String? = nil, secondi: Double = 2) -> Bool {
+        guard let elemento = trova(etichetta, dentro: contenitore, secondi: secondi) else { return false }
         premi(elemento)
         aspettaUnPo()
         rispondiAlleDomandeDiSistema()
@@ -220,11 +221,14 @@ class CopioneCollaudo: XCTestCase {
 
     /// Dice se un testo è sullo schermo (aspettando fino a `secondi`), senza errori.
     @MainActor func esiste(_ testo: String, secondi: Double = 0) -> Bool {
-        let predicato = NSPredicate(format: "identifier CONTAINS[c] %@ OR label CONTAINS[c] %@ OR title CONTAINS[c] %@",
-                                    testo, testo, testo)
+        let predicato = NSPredicate(format: "identifier CONTAINS[c] %@ OR label CONTAINS[c] %@ OR title CONTAINS[c] %@ OR value == %@",
+                                    testo, testo, testo, testo)
         let limite = Date().addingTimeInterval(secondi)
         repeat {
             if app.descendants(matching: .any).matching(predicato).firstMatch.exists { return true }
+            #if os(macOS)
+            if !testiCheContengono(testo, in: app).isEmpty { return true }
+            #endif
             if Date() >= limite { break }
             rispondiAlleDomandeDiSistema()
             aspettaUnPo(0.5)
@@ -263,13 +267,16 @@ class CopioneCollaudo: XCTestCase {
     }
 
     /// Scorre il contenuto: `giu: true` per vedere ciò che sta sotto.
-    @MainActor func scorri(giu: Bool = true, volte: Int = 1) {
+    /// `dentro`: il contenitore da scorrere (etichetta o identificatore), per esempio il pannello «Impostazioni» del Mac.
+    @MainActor func scorri(giu: Bool = true, volte: Int = 1, dentro contenitore: String? = nil) {
+        let radice = contenitore.flatMap { self.contenitore($0) }
         for _ in 0..<volte {
             #if os(iOS)
-            if giu { app.swipeUp() } else { app.swipeDown() }
+            let bersaglio = radice ?? app
+            if giu { bersaglio.swipeUp() } else { bersaglio.swipeDown() }
             #else
-            let finestra = app.windows.firstMatch
-            finestra.scroll(byDeltaX: 0, deltaY: giu ? -400 : 400)
+            let bersaglio = radice ?? app.windows.firstMatch
+            bersaglio.scroll(byDeltaX: 0, deltaY: giu ? -400 : 400)
             #endif
             aspettaUnPo(0.5)
         }
@@ -358,18 +365,34 @@ class CopioneCollaudo: XCTestCase {
     /// Cerca l'elemento per etichetta, identificatore o titolo, aspettando fino a `secondi`. Ordine: un controllo
     /// (pulsante, cella, voce di menu…) con il testo uguale, poi un controllo che lo contiene, poi un testo semplice
     /// uguale, poi uno che lo contiene. A parità, quello toccabile.
-    @MainActor func trova(_ etichetta: String, secondi: Double = 5) -> XCUIElement? {
-        let esatto = NSPredicate(format: "identifier == %@ OR label == %@ OR title == %@", etichetta, etichetta, etichetta)
+    @MainActor func trova(_ etichetta: String, dentro nomeContenitore: String? = nil, secondi: Double = 5) -> XCUIElement? {
+        let esatto = NSPredicate(format: "identifier == %@ OR label == %@ OR title == %@ OR value == %@",
+                                 etichetta, etichetta, etichetta, etichetta)
         let contiene = NSPredicate(format: "label CONTAINS[c] %@ OR title CONTAINS[c] %@", etichetta, etichetta)
         let limite = Date().addingTimeInterval(secondi)
         repeat {
-            let uguali = candidati(app.descendants(matching: .any).matching(esatto))
-            let simili = candidati(app.descendants(matching: .any).matching(contiene))
+            var radice: XCUIElement = app
+            if let nomeContenitore {
+                guard let trovato = contenitore(nomeContenitore) else {
+                    if Date() >= limite { break }
+                    aspettaUnPo(0.4)
+                    continue
+                }
+                radice = trovato
+            }
+            let uguali = candidati(radice.descendants(matching: .any).matching(esatto))
+            var simili = candidati(radice.descendants(matching: .any).matching(contiene))
+            #if os(macOS)
+            // Sul Mac i testi hanno solo il valore (niente etichetta): «contiene» si controlla qui.
+            simili += testiCheContengono(etichetta, in: radice)
+            #endif
             let gruppi = [uguali.filter { Self.controllo($0) }, simili.filter { Self.controllo($0) },
                           uguali.filter { !Self.controllo($0) }, simili.filter { !Self.controllo($0) }]
-            for gruppo in gruppi where !gruppo.isEmpty {
-                return gruppo.first(where: { $0.isHittable }) ?? gruppo[0]
+            // Prima uno toccabile (nell'ordine dei gruppi): una voce di un menu chiuso esiste ma non si tocca.
+            for gruppo in gruppi {
+                if let toccabile = gruppo.first(where: { $0.isHittable }) { return toccabile }
             }
+            if let primo = gruppi.first(where: { !$0.isEmpty })?.first { return primo }
             if Date() >= limite { break }
             rispondiAlleDomandeDiSistema()
             aspettaUnPo(0.4)
@@ -379,14 +402,47 @@ class CopioneCollaudo: XCTestCase {
 
     /// Come `trova`; se non c'è, scorre (prima in giù, poi in su) e riguarda: gli elenchi di SwiftUI creano le
     /// righe solo quando arrivano sullo schermo, quindi una riga in fondo non esiste finché non si scorre.
-    @MainActor func trovaScorrendo(_ etichetta: String, secondi: Double = 5) -> XCUIElement? {
-        if let elemento = trova(etichetta, secondi: min(secondi, 3)) { return elemento }
-        for giu in [true, true, true, true, true, false, false, false, false, false, false, false, false] {
-            scorri(giu: giu)
-            if let elemento = trova(etichetta, secondi: 0) { return elemento }
+    @MainActor func trovaScorrendo(_ etichetta: String, dentro contenitore: String? = nil, secondi: Double = 5) -> XCUIElement? {
+        if let elemento = trova(etichetta, dentro: contenitore, secondi: min(secondi, 3)) {
+            #if os(macOS)
+            // Sul Mac si scorre solo dentro un contenitore dato: scorrere la finestra intera non serve.
+            if elemento.isHittable || contenitore == nil { return elemento }
+            #else
+            if elemento.isHittable { return elemento }
+            #endif
         }
-        return trova(etichetta, secondi: max(0, secondi - 3))
+        for giu in [true, true, true, true, true, false, false, false, false, false, false, false, false] {
+            #if os(macOS)
+            if contenitore == nil { break }
+            #endif
+            scorri(giu: giu, dentro: contenitore)
+            if let elemento = trova(etichetta, dentro: contenitore, secondi: 0), elemento.isHittable { return elemento }
+        }
+        return trova(etichetta, dentro: contenitore, secondi: max(0, secondi - 3))
     }
+
+    /// Il contenitore con questa etichetta, identificatore o titolo: un gruppo, un elenco, una finestra, un foglio…
+    /// (non un pulsante con lo stesso nome). Serve a `dentro:` quando un nome compare in più punti.
+    @MainActor func contenitore(_ nome: String) -> XCUIElement? {
+        let predicato = NSPredicate(format: "identifier == %@ OR label == %@ OR title == %@", nome, nome, nome)
+        let tipi: [XCUIElement.ElementType] = [.group, .scrollView, .outline, .table, .collectionView, .sheet,
+                                               .popover, .dialog, .window, .navigationBar, .other]
+        for tipo in tipi {
+            let elemento = app.descendants(matching: tipo).matching(predicato).firstMatch
+            if elemento.exists { return elemento }
+        }
+        return nil
+    }
+
+    #if os(macOS)
+    /// I testi sotto `radice` il cui valore contiene `testo` (al massimo 150 testi guardati).
+    @MainActor private func testiCheContengono(_ testo: String, in radice: XCUIElement) -> [XCUIElement] {
+        radice.staticTexts.allElementsBoundByIndex.prefix(150).filter { elemento in
+            guard let valore = elemento.value as? String else { return false }
+            return valore.localizedCaseInsensitiveContains(testo)
+        }
+    }
+    #endif
 
     /// Un elemento che si tocca (prima di `.staticText` nell'elenco dei tipi preferiti).
     @MainActor private static func controllo(_ elemento: XCUIElement) -> Bool {

@@ -1,0 +1,2 @@
+Collaudo t11 (Marta, cieca, VoiceOver): i copioni stanno in iPhone/CollaudoUI/CopioneT11.swift e Mac/CollaudoUI/CopioneT11.swift
+(dove il banco li compila). Ogni schermata: fotografia, albero e performAccessibilityAudit di Xcode (ogni problema in note.txt).

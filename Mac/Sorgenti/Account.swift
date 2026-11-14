@@ -147,6 +147,10 @@ struct MenuWebcamLR: View {
 struct FoglioTelefoniFidati: View {
     let ricevitore: Ricevitore
     @Environment(\.dismiss) private var chiudi
+    /// Il telefono di cui si chiede la rimozione. La domanda è un avviso di SwiftUI dentro il foglio: l'NSAlert modale
+    /// di `chiediERimuoviFidato` (che va bene nella pagina Sicurezza) da un foglio aperto non si mostrava e «Rimuovi»
+    /// non faceva niente (collaudo t05 B2).
+    @State private var daRimuovere: TelefonoFidato?
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spazi.medio) {
@@ -177,7 +181,7 @@ struct FoglioTelefoniFidati: View {
                                         .foregroundStyle(Tema.verde)
                                 }
                                 Spacer(minLength: Spazi.stretto)
-                                Button("Rimuovi") { ricevitore.chiediERimuoviFidato(telefono) }
+                                Button("Rimuovi") { daRimuovere = telefono }
                                     .buttonStyle(StileDistruttivo())
                                     .accessibilityLabel("Rimuovi \(telefono.nome)")
                             }
@@ -202,5 +206,16 @@ struct FoglioTelefoniFidati: View {
         .foregroundStyle(Tema.testo)
         .tint(Tema.accento)
         .background(Tema.fondo)
+        .alert(daRimuovere.map { Text("Rimuovere «\($0.nome)» dai telefoni fidati?") } ?? Text(verbatim: ""),
+               isPresented: Binding(get: { daRimuovere != nil }, set: { if !$0 { daRimuovere = nil } }),
+               presenting: daRimuovere) { telefono in
+            Button("Annulla", role: .cancel) { daRimuovere = nil }
+            Button("Rimuovi", role: .destructive) {
+                ricevitore.rimuoviFidato(telefono)
+                daRimuovere = nil
+            }
+        } message: { _ in
+            Text("La prossima volta dovrai confermarlo con il codice.")
+        }
     }
 }

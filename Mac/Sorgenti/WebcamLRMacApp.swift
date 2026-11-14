@@ -159,8 +159,43 @@ final class DelegatoApp: NSObject, NSApplicationDelegate {
         false
     }
 
+    /// WebcamLR aperta da macOS all'accesso al Mac (Impostazioni › Avvio e notifiche): lì resta senza finestra se
+    /// l'ultima volta era chiusa, pronta per il telefono. Aperta da te (Dock, Finder, Launchpad, Spotlight) mostra
+    /// sempre la finestra principale.
+    @MainActor private var apertaAllAccesso = false
+
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        // L'evento «open application» porta `keyAELaunchedAsLogInItem` quando l'app parte come elemento di login.
+        let evento = NSAppleEventManager.shared().currentAppleEvent
+        let allAccesso = evento?.eventID == AEEventID(kAEOpenApplication)
+            && evento?.paramDescriptor(forKeyword: AEKeyword(keyAEPropData))?.enumCodeValue == OSType(keyAELaunchedAsLogInItem)
+        MainActor.assumeIsolated { apertaAllAccesso = allAccesso }
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
-        MainActor.assumeIsolated { preparaTastiPerIlTesto() }
+        MainActor.assumeIsolated {
+            preparaTastiPerIlTesto()
+            mostraFinestraSeManca()
+        }
+    }
+
+    /// Collaudo t05 B1 e t01 B6: macOS ripristina le finestre com'erano all'uscita. Se la finestra principale era
+    /// stata chiusa (pallino rosso o ⌘W) prima di ⌘Q dalla barra dei menu, al riavvio dal Dock non compariva
+    /// niente: solo il menu e l'icona nella barra. Dopo il ripristino (un attimo dopo l'avvio), se l'hai aperta tu e
+    /// la finestra principale non c'è, la si apre.
+    @MainActor
+    private func mostraFinestraSeManca() {
+        guard !apertaAllAccesso else { return }
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(600))
+            let app = NSApplication.shared
+            let principaleVisibile = app.windows.contains { finestra in
+                finestra.isVisible && finestra.identifier?.rawValue.hasPrefix(WebcamLRMacApp.idPrincipale) == true
+            }
+            guard !principaleVisibile else { return }
+            Self.apriFinestraPrincipale(app)
+            app.activate(ignoringOtherApps: true)
+        }
     }
 
     /// I tasti singoli del menu Video (1–4, +, −, F) sono anche cifre e lettere da scrivere. In un campo di testo

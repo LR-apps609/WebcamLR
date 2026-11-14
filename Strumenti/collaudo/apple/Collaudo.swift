@@ -165,10 +165,10 @@ class CopioneCollaudo: XCTestCase {
             fotografa("non trovo \(etichetta)")
             return false
         }
-        premi(elemento)
+        let premuto = premi(elemento)
         aspettaUnPo()
         rispondiAlleDomandeDiSistema()
-        return true
+        return premuto
     }
 
     /// Come `tocca`, ma senza errore se l'elemento non c'è: dice solo se l'ha toccato.
@@ -461,7 +461,8 @@ class CopioneCollaudo: XCTestCase {
     }
 
     /// Tocca o fa clic; se l'elemento è fuori dallo schermo (iPhone) prova prima a scorrere fin lì.
-    @MainActor func premi(_ elemento: XCUIElement) {
+    @MainActor @discardableResult
+    func premi(_ elemento: XCUIElement) -> Bool {
         #if os(iOS)
         if !elemento.isHittable {
             for giu in [true, true, true, true, false, false, false, false, false, false] where !elemento.isHittable {
@@ -479,9 +480,10 @@ class CopioneCollaudo: XCTestCase {
             XCTFail("«\(elemento.label.isEmpty ? elemento.title : elemento.label)» c'è ma non si può cliccare "
                     + "(posizione \(elemento.frame), finestra \(app.windows.firstMatch.frame))")
             fotografa("non cliccabile \(elemento.label)")
-            return
+            return false
         }
         elemento.click()
         #endif
+        return true
     }
 }

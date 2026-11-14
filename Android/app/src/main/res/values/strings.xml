@@ -104,7 +104,7 @@
     <string name="riduzione_obiettivo">l\'obiettivo non ci arriva</string>
     <string name="riduci_se_caldo">Riduci la qualità se si scalda</string>
     <string name="risparmio_batteria" formatted="false">Risparmio batteria: 24 fps sotto il 20%</string>
-    <string name="registro_vuoto">Ancora niente: le righe compaiono dal primo collegamento.</string>
+    <string name="registro_vuoto">Ancora niente: le righe compaiono dal primo collegamento e restano finché l\'app è aperta (chiudendola si cancellano: il registro resta solo sul telefono e solo in memoria).</string>
     <string name="copia">Copia</string>
     <string name="copiato">Copiato</string>
     <string name="condividi_registro">Condividi il registro</string>
@@ -297,7 +297,9 @@
     <string name="collega_a">Collega a %1$s</string>
     <string name="collega">Collega</string>
     <string name="collega_altro_domanda">Collegarsi a %1$s?</string>
-    <string name="collega_altro_spiegazione">Il collegamento con %1$s si chiude e il video passa a questo computer.</string>
+    <string name="collega_altro_spiegazione">Il collegamento con %1$s si chiude e il video passa a questo computer. Se questo computer non accetta il telefono, si torna da soli a %1$s.</string>
+    <string name="torno_al_precedente">%1$s non ha accettato il telefono: torno a %2$s.</string>
+    <string name="registro_torno_al_precedente">%1$s non ha accettato: torno a %2$s</string>
     <string name="aiuto_altre_risposte">Altre risposte nelle domande frequenti</string>
     <string name="come_funziona">Come funziona</string>
     <string name="indirizzo_titolo">Indirizzo del computer</string>

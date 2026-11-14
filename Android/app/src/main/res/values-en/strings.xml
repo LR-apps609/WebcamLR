@@ -102,7 +102,7 @@
     <string name="riduzione_obiettivo">the lens can’t do it</string>
     <string name="riduci_se_caldo">Lower quality when it gets warm</string>
     <string name="risparmio_batteria" formatted="false">Battery saver: 24 fps below 20%</string>
-    <string name="registro_vuoto">Nothing yet: lines appear from the first connection.</string>
+    <string name="registro_vuoto">Nothing yet: lines appear from the first connection and stay while the app is open (closing it clears them: the log stays only on the phone, only in memory).</string>
     <string name="copia">Copy</string>
     <string name="copiato">Copied</string>
     <string name="condividi_registro">Share log</string>
@@ -295,7 +295,9 @@
     <string name="collega_a">Connect to %1$s</string>
     <string name="collega">Connect</string>
     <string name="collega_altro_domanda">Connect to %1$s?</string>
-    <string name="collega_altro_spiegazione">The connection with %1$s closes and the video moves to this computer.</string>
+    <string name="collega_altro_spiegazione">The connection with %1$s closes and the video moves to this computer. If this computer doesn’t accept the phone, it goes back to %1$s on its own.</string>
+    <string name="torno_al_precedente">%1$s didn\'t accept the phone: going back to %2$s.</string>
+    <string name="registro_torno_al_precedente">%1$s didn\'t accept: going back to %2$s</string>
     <string name="aiuto_altre_risposte">More answers in the FAQ</string>
     <string name="come_funziona">How it works</string>
     <string name="indirizzo_titolo">Computer address</string>

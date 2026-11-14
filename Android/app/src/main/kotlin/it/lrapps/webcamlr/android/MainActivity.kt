@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -32,6 +33,7 @@ import it.lrapps.webcamlr.android.rete.ComputerTrovato
 import it.lrapps.webcamlr.android.sessione.SessioneTelefono
 import it.lrapps.webcamlr.android.sessione.Sessioni
 import it.lrapps.webcamlr.android.sistema.Permessi
+import it.lrapps.webcamlr.android.sistema.RegistroCollegamento
 import it.lrapps.webcamlr.android.sistema.Testi
 import it.lrapps.webcamlr.android.ui.AttivitaUtente
 import it.lrapps.webcamlr.android.ui.AzioniImpostazioni
@@ -347,6 +349,8 @@ class MainActivity : ComponentActivity() {
             confirmButton = {
                 PulsantePieno(stringResource(R.string.collega)) {
                     collegamentoDaConfermare = null
+                    // Collaudo 20 (t14 B2): se il nuovo computer non accetta, si torna da soli a questo.
+                    computerDaRitrovare = attuale.computer
                     apriSessione(nuovo)
                 }
             },
@@ -354,6 +358,33 @@ class MainActivity : ComponentActivity() {
                 PulsanteSecondario(stringResource(R.string.annulla), compatto = true) { collegamentoDaConfermare = null }
             },
         )
+    }
+
+    /**
+     * Collaudo 20 (t14 B2): il computer lasciato per «Collega» verso un altro. Telefono e fotocamera reggono una
+     * sessione alla volta, quindi quello di prima si chiude subito; se il nuovo rifiuta o non risponde prima di essersi
+     * mai collegato, il telefono torna da solo a quello di prima invece di restare senza nessuno.
+     */
+    private var computerDaRitrovare: ComputerTrovato? = null
+
+    @Composable
+    private fun RitornoAlComputerDiPrima(sessione: SessioneTelefono?) {
+        val stato = sessione?.stato
+        LaunchedEffect(sessione, stato) {
+            val precedente = computerDaRitrovare ?: return@LaunchedEffect
+            if (sessione == null) return@LaunchedEffect
+            when {
+                stato == SessioneTelefono.Stato.Collegato -> computerDaRitrovare = null
+                stato is SessioneTelefono.Stato.Errore && !sessione.giaCollegato -> {
+                    computerDaRitrovare = null
+                    val nome = sessione.computer.nome
+                    android.util.Log.i("WebcamLR", "$nome non ha accettato: torno a ${precedente.nome}")
+                    RegistroCollegamento.aggiungi(getString(R.string.registro_torno_al_precedente, nome, precedente.nome))
+                    Toast.makeText(this@MainActivity, getString(R.string.torno_al_precedente, nome, precedente.nome), Toast.LENGTH_LONG).show()
+                    apriSessione(precedente)
+                }
+            }
+        }
     }
 
     @Composable
@@ -437,6 +468,7 @@ class MainActivity : ComponentActivity() {
             Schermata.Segnala -> SchermataSegnala(ultimaLatenzaMs = sessione?.ultimaLatenzaMs ?: ultimaLatenza, indietro = { indietro() })
         }
         DomandaAltroComputer()
+        RitornoAlComputerDiPrima(sessione)
         AvvisoLinkNonValido()
     }
 

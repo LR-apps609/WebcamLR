@@ -26,7 +26,10 @@ function T20-Cartella-Build([string]$Radice) {
 
 function T20-Installa([string]$Da, [string]$Etichetta) {
     # Come Installazione.cs: la cartella dell'app sostituita, i dati in %LOCALAPPDATA%\WebcamLR non si toccano.
-    if (Test-Path $cartellaApp) { Remove-Item -Recurse -Force $cartellaApp }
+    if (Test-Path $cartellaApp) {
+        try { Remove-Item -Recurse -Force $cartellaApp -ErrorAction Stop }
+        catch { Segnala-Problema "La cartella $cartellaApp non si cancella ($($_.Exception.Message)): installo sopra"; Get-ChildItem $cartellaApp -Recurse -File -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue }
+    }
     New-Item -ItemType Directory -Force -Path $cartellaApp | Out-Null
     Copy-Item -Path (Join-Path $Da '*') -Destination $cartellaApp -Recurse -Force
     $dis = Join-Path $lavoro 'disinstallatore\WebcamLR.Setup.exe'
@@ -89,11 +92,12 @@ function T20-Chiudi-Impostazioni {
 function T20-Telefono-Entra([string]$Etichetta) {
     # Il telefono finto con la stessa identità (stesso nome): ACCETTATO subito se fidato, CODICE se no (allora Consenti).
     # Il registro del telefono può contenere le righe dei giri prima: conto solo quelle nuove.
-    $gia = @(Registro-Telefono $telefono).Count
     $file = Join-Path (Cartella-Risultati) ("telefono-" + (($telefono -replace '[^\w\-]+', '-').Trim('-')) + ".log")
+    $gia = 0
     if (Test-Path $file) { $gia = @(Get-Content -LiteralPath $file -Encoding UTF8).Count }
+    Scrivi-Log "T20 ${Etichetta}: righe del telefono prima: $gia"
     Avvia-TelefonoFinto --nome $telefono --durata 40 | Out-Null
-    $nuove = { @(Registro-Telefono $telefono) | Select-Object -Skip $gia }
+    $nuove = { if (Test-Path $file) { @(Get-Content -LiteralPath $file -Encoding UTF8) | Select-Object -Skip $gia } }
     $esito = $null
     $limite = (Get-Date).AddSeconds(40)
     while ((Get-Date) -lt $limite -and -not $esito) {
@@ -231,6 +235,16 @@ Passo 'Disinstallazione silenziosa con WebcamLR aperta' {
 }
 & (Get-Module Collaudo) { $script:Processo = $null }
 T20-Stato '3-dopo-disinstallazione'
+Scrivi-Log "T20: processi cmd/timeout dopo 6 s: $((Get-Process -Name cmd, timeout -ErrorAction SilentlyContinue | ForEach-Object { "$($_.Name)#$($_.Id)" }) -join ', ')"
+foreach ($f in @(Get-ChildItem -Recurse -File (Join-Path $env:ProgramData 'WebcamLR') -ErrorAction SilentlyContinue)) {
+    Scrivi-Log "T20: in ProgramData resta $($f.FullName) ($($f.Length) byte)"
+    Get-Content -LiteralPath $f.FullName -TotalCount 15 -ErrorAction SilentlyContinue | ForEach-Object { Scrivi-Log "    $_" }
+}
+foreach ($attesa in 30, 60) {
+    Start-Sleep -Seconds 30
+    Scrivi-Log "T20: dopo $attesa s la cartella $cartellaApp esiste: $(Test-Path $cartellaApp); processi cmd/timeout: $((Get-Process -Name cmd, timeout -ErrorAction SilentlyContinue | ForEach-Object { "$($_.Name)#$($_.Id)" }) -join ', ')"
+}
+T20-Stato '3b-un-minuto-dopo'
 $reg = Join-Path $dati 'Installazione.txt'
 if (Test-Path $reg) { Get-Content $reg -Encoding UTF8 | ForEach-Object { Scrivi-Log "  Installazione.txt: $_" } }
 $run = (Get-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -Name 'WebcamLR' -ErrorAction SilentlyContinue).WebcamLR

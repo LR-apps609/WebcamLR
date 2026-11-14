@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
 import androidx.compose.runtime.getValue
@@ -32,6 +33,13 @@ object Permessi {
     var senzaLimitiBatteria by mutableStateOf(true)
         private set
 
+    /**
+     * Collaudo 20 (t07 B5): le notifiche negate (Android 13+). Il video continua anche a schermo spento, ma senza
+     * l'avviso «Video al computer» con «Scollega»: «In onda» lo dice.
+     */
+    var notificheNegate by mutableStateOf(false)
+        private set
+
     /** La risposta alla domanda della fotocamera. */
     fun fotocameraRisposta(concessa: Boolean) {
         fotocameraNegata = !concessa
@@ -45,6 +53,8 @@ object Permessi {
     fun aggiorna(context: Context) {
         fotocameraNegata = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED
         senzaLimitiBatteria = leggiSenzaLimiti(context)
+        notificheNegate = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
     }
 
     private fun leggiSenzaLimiti(context: Context): Boolean {

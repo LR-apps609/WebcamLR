@@ -22,7 +22,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
@@ -45,6 +47,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -343,6 +346,22 @@ fun SchermataSegnala(ultimaLatenzaMs: Int?, indietro: () -> Unit) {
                         Text(nome, style = Stili.nota, color = Colori.testoSecondario)
                     }) {
                         Text(valore, style = Stili.numeri, color = Colori.testoTenue)
+                    }
+                }
+            }
+            // Collaudo 20 (t07 B3): il registro che parte si vede prima dell'invio, con quello che contiene.
+            if (conRegistro) {
+                val righeRegistro by RegistroCollegamento.righe.collectAsState()
+                Text(stringResource(R.string.segnala_registro_contiene), style = Stili.nota, color = Colori.testoSecondario, modifier = Modifier.padding(top = Spazi.piccolo))
+                Column(
+                    Modifier.fillMaxWidth().padding(top = Spazi.minimo).heightIn(max = 220.dp).clip(RoundedCornerShape(Raggi.controllo))
+                        .background(Colori.pannelloScuro).verticalScroll(rememberScrollState()).padding(Spazi.piccolo),
+                ) {
+                    val ultime = righeRegistro.takeLast(RegistroCollegamento.PER_SEGNALAZIONE)
+                    if (ultime.isEmpty()) {
+                        Text(stringResource(R.string.registro_vuoto), style = Stili.nota, color = Colori.testoTenue)
+                    } else {
+                        for (riga in ultime) Text(riga, style = Stili.numeri, color = Colori.testoTenue)
                     }
                 }
             }

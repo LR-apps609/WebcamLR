@@ -29,6 +29,13 @@
     <string name="versione_app">WebcamLR · versione %1$s</string>
     <string name="nessun_browser">Nessun browser installato: apri %1$s da un altro dispositivo.</string>
     <string name="permesso_fotocamera_negato">WebcamLR non può usare la fotocamera. Consentila in Impostazioni › App › WebcamLR › Autorizzazioni.</string>
+    <string name="senza_fotocamera_titolo">Serve la fotocamera</string>
+    <string name="senza_fotocamera_testo">Senza la fotocamera WebcamLR non può mandare il video al computer né leggere il QR code. Il computer non c\'entra: consentila in Impostazioni › App › WebcamLR › Autorizzazioni.</string>
+    <string name="notifiche_spiegazione_titolo">Le notifiche di «In onda»</string>
+    <string name="notifiche_spiegazione_testo">Con le notifiche, a schermo spento o in un\'altra app vedi l\'avviso «Video al computer» con «Scollega». Senza, il video continua lo stesso, ma nessun avviso lo ricorda.</string>
+    <string name="avviso_notifiche_negate">Notifiche spente: a schermo spento il video continua senza l\'avviso «Video al computer».</string>
+    <string name="consenti">Consenti</string>
+    <string name="non_ora">Non ora</string>
 
     <!-- 10_presentazione -->
     <string name="avanti">Avanti</string>
@@ -286,7 +293,8 @@
     <string name="segnala_troppo_lungo">La descrizione si ferma a 20 000 caratteri: il testo oltre non è stato tenuto.</string>
     <string name="includi_dati">Includi i dati tecnici</string>
     <string name="invia_segnalazione">Invia la segnalazione</string>
-    <string name="segnala_nota">Nessun video e nessuna immagine vengono inviati: solo il testo qui sopra.</string>
+    <string name="segnala_nota">Nessun video e nessuna immagine vengono inviati: solo il testo qui sopra, cioè la descrizione e, se li includi, i dati tecnici e il registro del collegamento (con i nomi dei computer e gli indirizzi di rete).</string>
+    <string name="segnala_registro_contiene">Il registro che viene incluso (contiene i nomi dei computer e gli indirizzi di rete):</string>
 
     <!-- 60_computer -->
     <string name="app_e_assistenza">App e assistenza</string>

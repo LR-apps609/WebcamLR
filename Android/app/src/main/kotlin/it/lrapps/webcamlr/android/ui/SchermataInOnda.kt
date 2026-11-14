@@ -53,6 +53,7 @@ import androidx.compose.material.icons.filled.Flip
 import androidx.compose.material.icons.filled.LinkOff
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
+import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PauseCircle
 import androidx.compose.material.icons.filled.PlayArrow
@@ -1176,6 +1177,13 @@ private fun avvisiAttivi(sessione: SessioneTelefono, verticale: Boolean, doppioT
         elenco += CodaAvvisi.Avviso(
             "microfono-negato", stringResource(R.string.microfono_non_consentito), Icons.Filled.MicOff, suggerimento = false, priorita = 5,
             fisso = true, persiste = true, azione = CodaAvvisi.Azione.IMPOSTAZIONI_APP,
+        )
+    }
+    // Collaudo 20 (t07 B5): notifiche negate. Il video continua a schermo spento senza l'avviso con «Scollega».
+    if (Permessi.notificheNegate) {
+        elenco += CodaAvvisi.Avviso(
+            "notifiche-negate", stringResource(R.string.avviso_notifiche_negate), Icons.Filled.NotificationsOff, suggerimento = false,
+            priorita = 3, persiste = true, azione = CodaAvvisi.Azione.IMPOSTAZIONI_APP,
         )
     }
     if (microfono != null) {

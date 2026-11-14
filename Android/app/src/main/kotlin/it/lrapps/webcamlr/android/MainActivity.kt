@@ -141,10 +141,22 @@ class MainActivity : ComponentActivity() {
         // P3: niente più solo un Toast. Rifiutata, la schermata dei computer mostra una scheda con «Apri Impostazioni»
         // (dopo il secondo rifiuto Android non chiede più: resta solo la strada delle impostazioni).
         Permessi.fotocameraRisposta(concesso)
-        if (concesso) azione?.invoke()
+        if (concesso) {
+            azione?.invoke()
+        } else if (azione != null) {
+            // Collaudo 20 (t07 B8): un collegamento (o il lettore QR) lasciato senza fotocamera lo dice, invece di
+            // tornare in silenzio a «Non trovo nessun computer», che parla della rete.
+            senzaFotocamera = true
+        }
     }
 
-    private val permessoNotifiche = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    /** Collaudo 20 (t07 B8): un collegamento chiesto e la fotocamera negata. */
+    private var senzaFotocamera by mutableStateOf(false)
+
+    /** Collaudo 20 (t07 B5): prima di chiedere di nuovo le notifiche si spiega a cosa servono. */
+    private var spiegaNotifiche by mutableStateOf(false)
+
+    private val permessoNotifiche = registerForActivityResult(ActivityResultContracts.RequestPermission()) { Permessi.aggiorna(this) }
 
     /** La sessione che ha chiesto il microfono: la risposta va a lei, anche se intanto ne è nata un'altra. */
     private var sessioneMicrofono: SessioneTelefono? = null
@@ -329,6 +341,39 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    /** Collaudo 20 (t07 B5 e B8): la fotocamera negata a un collegamento e la spiegazione delle notifiche. */
+    @Composable
+    private fun DialoghiPermessi() {
+        if (senzaFotocamera) {
+            AlertDialog(
+                onDismissRequest = { senzaFotocamera = false },
+                title = { Text(stringResource(R.string.senza_fotocamera_titolo)) },
+                text = { Text(stringResource(R.string.senza_fotocamera_testo), style = Stili.corpo, color = Colori.testoChiaro) },
+                confirmButton = {
+                    PulsanteSecondario(stringResource(R.string.apri_impostazioni), compatto = true) {
+                        senzaFotocamera = false
+                        Permessi.apriPaginaApp(this@MainActivity)
+                    }
+                },
+                dismissButton = { PulsanteSecondario(stringResource(R.string.chiudi), compatto = true) { senzaFotocamera = false } },
+            )
+        }
+        if (spiegaNotifiche) {
+            AlertDialog(
+                onDismissRequest = { spiegaNotifiche = false },
+                title = { Text(stringResource(R.string.notifiche_spiegazione_titolo)) },
+                text = { Text(stringResource(R.string.notifiche_spiegazione_testo), style = Stili.corpo, color = Colori.testoChiaro) },
+                confirmButton = {
+                    PulsanteSecondario(stringResource(R.string.consenti), compatto = true) {
+                        spiegaNotifiche = false
+                        permessoNotifiche.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                },
+                dismissButton = { PulsanteSecondario(stringResource(R.string.non_ora), compatto = true) { spiegaNotifiche = false } },
+            )
+        }
+    }
+
     /** La domanda per [collegamentoDaConfermare]: con il sì si chiude la sessione attuale e si apre quella nuova. */
     @Composable
     private fun DomandaAltroComputer() {
@@ -469,6 +514,7 @@ class MainActivity : ComponentActivity() {
         }
         DomandaAltroComputer()
         RitornoAlComputerDiPrima(sessione)
+        DialoghiPermessi()
         AvvisoLinkNonValido()
     }
 
@@ -537,7 +583,12 @@ class MainActivity : ComponentActivity() {
                 ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
             ) {
                 // L'avviso «Video al computer» con «Scollega» (che apre la domanda): utile, non indispensabile.
-                permessoNotifiche.launch(Manifest.permission.POST_NOTIFICATIONS)
+                // Collaudo 20 (t07 B5): già negate una volta, prima una spiegazione (con «Consenti» si chiede).
+                if (shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
+                    spiegaNotifiche = true
+                } else {
+                    permessoNotifiche.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
             }
             Sessioni.attuale?.termina()
             SessioneTelefono(this, computer, socketCavoIniziale = socketCavo).avvia()

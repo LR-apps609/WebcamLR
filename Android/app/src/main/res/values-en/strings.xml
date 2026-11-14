@@ -27,6 +27,13 @@
     <string name="versione_app">WebcamLR · version %1$s</string>
     <string name="nessun_browser">No browser installed: open %1$s on another device.</string>
     <string name="permesso_fotocamera_negato">WebcamLR can’t use the camera. Allow it in Settings › Apps › WebcamLR › Permissions.</string>
+    <string name="senza_fotocamera_titolo">The camera is needed</string>
+    <string name="senza_fotocamera_testo">Without the camera WebcamLR can\'t send video to the computer or read the QR code. It\'s not the computer: allow it in Settings › Apps › WebcamLR › Permissions.</string>
+    <string name="notifiche_spiegazione_titolo">Notifications for “Live”</string>
+    <string name="notifiche_spiegazione_testo">With notifications, when the screen is off or you\'re in another app you see the “Video to computer” notice with “Disconnect”. Without them the video keeps going, but no notice reminds you.</string>
+    <string name="avviso_notifiche_negate">Notifications off: with the screen off the video keeps going without the “Video to computer” notice.</string>
+    <string name="consenti">Allow</string>
+    <string name="non_ora">Not now</string>
 
     <!-- 10_presentazione -->
     <string name="avanti">Next</string>
@@ -284,7 +291,8 @@
     <string name="segnala_troppo_lungo">The description stops at 20,000 characters: anything beyond that wasn’t kept.</string>
     <string name="includi_dati">Include technical data</string>
     <string name="invia_segnalazione">Send the report</string>
-    <string name="segnala_nota">No video or images are sent: only the text above.</string>
+    <string name="segnala_nota">No video or images are sent: only the text above, that is the description and, if you include them, the technical data and the connection log (with computer names and network addresses).</string>
+    <string name="segnala_registro_contiene">The log that gets included (it contains computer names and network addresses):</string>
 
     <!-- 60_computer -->
     <string name="app_e_assistenza">App and support</string>

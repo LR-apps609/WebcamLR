@@ -28,7 +28,7 @@ final class CopioneFumo: CopioneCollaudo {
             }
             fotografa("domanda di sistema \(numero)")
             nota("Domanda di sistema \(numero): «\(domanda.label)»")
-            rispondiAlleDomandeDiSistema(.concedi)
+            rispondiAlleDomandeDiSistema(.concedi, quante: 1)
         }
         permessi = .concedi
         chiudiAvvisoPortachiavi()

@@ -321,12 +321,12 @@ class CopioneCollaudo: XCTestCase {
 
     /// Risponde alla domanda di sistema aperta secondo `permessi` (o la risposta data qui). Dice se ha risposto.
     @MainActor @discardableResult
-    func rispondiAlleDomandeDiSistema(_ risposta: RispostaPermessi? = nil) -> Bool {
+    func rispondiAlleDomandeDiSistema(_ risposta: RispostaPermessi? = nil, quante: Int = 3) -> Bool {
         let scelta = risposta ?? permessi
         guard scelta != .nonRispondere else { return false }
         var risposto = false
         // Più domande di fila (fotocamera e poi microfono): al massimo tre.
-        for _ in 0..<3 {
+        for _ in 0..<max(1, quante) {
             guard let domanda = domandaDiSistema() else { break }
             let titolo = domanda.label
             let nomi = scelta == .concedi ? Self.nomiConsenti : Self.nomiNega
@@ -474,6 +474,13 @@ class CopioneCollaudo: XCTestCase {
             elemento.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         }
         #else
+        guard elemento.isHittable else {
+            // Esiste ma non si può cliccare (per esempio sotto il bordo della finestra): errore chiaro, il copione continua.
+            XCTFail("«\(elemento.label.isEmpty ? elemento.title : elemento.label)» c'è ma non si può cliccare "
+                    + "(posizione \(elemento.frame), finestra \(app.windows.firstMatch.frame))")
+            fotografa("non cliccabile \(elemento.label)")
+            return
+        }
         elemento.click()
         #endif
     }

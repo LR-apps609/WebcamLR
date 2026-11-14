@@ -18,6 +18,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Il tono del microfono finto (opzione audio): AAC-LC 48 kHz mono in ADTS, fatto con ffmpeg (Strumenti/collaudo/t17). -->
+    <None Include="tono.aac" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\..\Windows\WebcamLR.Protocollo\WebcamLR.Protocollo.csproj" />
   </ItemGroup>
 

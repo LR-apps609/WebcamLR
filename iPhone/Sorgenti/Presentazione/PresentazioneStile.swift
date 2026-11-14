@@ -177,6 +177,9 @@ struct ImpaginazionePagina<Scena: View, Contenuto: View, Azioni: View>: View {
     let scena: Scena
     let contenuto: Contenuto
     let azioni: Azioni
+    /// Collaudo A2: con il carattere di Accessibilità la scena si stringe e la barra di scorrimento si vede, così
+    /// il testo non «sparisce» sotto il pulsante: si capisce che continua più giù.
+    @Environment(\.dynamicTypeSize) private var misuraTesto
 
     init(quotaScena: CGFloat = 0.44,
          @ViewBuilder scena: () -> Scena,
@@ -204,7 +207,8 @@ struct ImpaginazionePagina<Scena: View, Contenuto: View, Azioni: View>: View {
                     .padding(.bottom, Spazi.stretto)
                 }
                 .scrollBounceBehavior(.basedOnSize)
-                .scrollIndicators(.hidden)
+                .scrollIndicators(misuraTesto.isAccessibilitySize ? .visible : .hidden)
+                .scrollIndicatorsFlash(onAppear: true)
                 azioni
                     .padding(.top, Spazi.stretto)
             }
@@ -214,6 +218,9 @@ struct ImpaginazionePagina<Scena: View, Contenuto: View, Azioni: View>: View {
     }
 
     private func altezzaScena(_ altezza: CGFloat) -> CGFloat {
-        min(340, max(180, altezza * quotaScena))
+        if misuraTesto.isAccessibilitySize {
+            return min(220, max(120, altezza * quotaScena * 0.5))
+        }
+        return min(340, max(180, altezza * quotaScena))
     }
 }

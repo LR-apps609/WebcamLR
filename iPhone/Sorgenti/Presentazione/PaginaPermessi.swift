@@ -42,7 +42,7 @@ struct PaginaPermessi: View {
                 permesso(.rete, titolo: "Rete locale",
                          testo: "Per trovare il computer sulla tua Wi-Fi. Il video va dritto al computer e resta nella tua rete.",
                          identificatore: "presentazione.permesso.rete")
-                TestoPresentazione(Text("Toccando «Inizia» iOS ti chiede fotocamera e microfono: rispondi «Consenti». La rete locale te la chiede quando WebcamLR cerca il computer. Puoi cambiarli quando vuoi in Impostazioni › WebcamLR."),
+                TestoPresentazione(Text("I permessi non si danno qui: toccando «Inizia» iOS ti chiede fotocamera e microfono, rispondi «Consenti». La rete locale te la chiede quando WebcamLR cerca il computer. Puoi cambiarli quando vuoi in Impostazioni › WebcamLR."),
                                    colore: Tema.testoSecondario, dimensione: 14)
             }
         } azioni: {
@@ -80,14 +80,18 @@ struct PaginaPermessi: View {
                 Spacer(minLength: 0)
             }
             .padding(Spazi.piccolo)
+            // Collaudo t01 B3: con il bordo accento la scheda scelta sembrava un interruttore acceso («ho dato il
+            // permesso»), ma il permesso lo chiede iOS dopo «Inizia». Il bordo resta neutro: la scelta si vede solo
+            // nell'icona e nel disegno in alto.
             .background(Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous)
-                .stroke(attivo ? Tema.accento.opacity(0.7) : Tema.contornoControllo, lineWidth: attivo ? 1.5 : 1))
+                .stroke(Tema.contornoControllo, lineWidth: 1))
             .contentShape(RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(attivo ? .isSelected : [])
+        .accessibilityHint(Text("Mostra nel disegno a cosa serve. Il permesso lo chiede iOS dopo «Inizia»."))
         .accessibilityIdentifier(identificatore)
     }
 

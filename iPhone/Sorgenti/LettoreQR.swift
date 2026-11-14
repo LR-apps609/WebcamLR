@@ -160,8 +160,9 @@ struct FoglioLettoreQR: View {
                         .padding(Spazi.largo)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                // Solo sopra il lettore: senza fotocamera c'è già il testo che dice cosa fare.
-                if permessoChiesto && permessoFotocamera {
+                // Solo sopra il lettore: senza fotocamera (permesso negato o lettore che non c'è, collaudo A4) c'è già
+                // il testo che dice cosa fare.
+                if permessoChiesto && permessoFotocamera && FotocameraQR.disponibile {
                     Text(testoInBasso)
                         .font(letto == nil ? .stile(.corpo) : .stile(.corpo, .corpoForte))
                         .multilineTextAlignment(.center)

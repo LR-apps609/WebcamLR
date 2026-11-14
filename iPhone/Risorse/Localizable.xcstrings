@@ -3027,6 +3027,23 @@
         }
       }
     },
+    "I permessi non si danno qui: toccando «Inizia» iOS ti chiede fotocamera e microfono, rispondi «Consenti». La rete locale te la chiede quando WebcamLR cerca il computer. Puoi cambiarli quando vuoi in Impostazioni › WebcamLR." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You don’t grant the permissions here: when you tap “Start”, iOS asks for the camera and the microphone, answer “Allow”. It asks for the local network when WebcamLR looks for your computer. You can change them any time in Settings › WebcamLR."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I permessi non si danno qui: toccando «Inizia» iOS ti chiede fotocamera e microfono, rispondi «Consenti». La rete locale te la chiede quando WebcamLR cerca il computer. Puoi cambiarli quando vuoi in Impostazioni › WebcamLR."
+          }
+        }
+      }
+    },
     "Il PC non risponde" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4604,6 +4621,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mostra i dettagli del collegamento"
+          }
+        }
+      }
+    },
+    "Mostra nel disegno a cosa serve. Il permesso lo chiede iOS dopo «Inizia»." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shows in the drawing what it’s for. iOS asks for the permission after “Start”."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostra nel disegno a cosa serve. Il permesso lo chiede iOS dopo «Inizia»."
           }
         }
       }
@@ -7239,23 +7272,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tocca ▶ a destra per riprendere. Il collegamento resta aperto."
-          }
-        }
-      }
-    },
-    "Toccando «Inizia» iOS ti chiede fotocamera e microfono: rispondi «Consenti». La rete locale te la chiede quando WebcamLR cerca il computer. Puoi cambiarli quando vuoi in Impostazioni › WebcamLR." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "When you tap “Start”, iOS asks for the camera and the microphone: answer “Allow”. It asks for the local network when WebcamLR looks for your computer. You can change them any time in Settings › WebcamLR."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Toccando «Inizia» iOS ti chiede fotocamera e microfono: rispondi «Consenti». La rete locale te la chiede quando WebcamLR cerca il computer. Puoi cambiarli quando vuoi in Impostazioni › WebcamLR."
           }
         }
       }

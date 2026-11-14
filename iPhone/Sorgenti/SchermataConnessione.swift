@@ -1,3 +1,4 @@
+import AVFoundation
 import Network
 import Stile
 import SwiftUI
@@ -70,6 +71,15 @@ struct SchermataConnessione: View {
     @State private var cavoRifiutato = false
     /// Primo piano o sottofondo dell'app (non la `Fase` della schermata, più sotto).
     @Environment(\.scenePhase) private var faseApp
+    /// Collaudo t01 B1: la fotocamera rifiutata (anche per sbaglio nella presentazione). Senza, WebcamLR non può
+    /// funzionare: la principale lo dice subito, con «Apri Impostazioni», come il lettore QR e come su Android.
+    /// Riletto all'apertura e a ogni ritorno nell'app (dalle Impostazioni di iOS, per esempio).
+    @State private var fotocameraNegata = SchermataConnessione.fotocameraRifiutata()
+
+    static func fotocameraRifiutata() -> Bool {
+        let stato = AVCaptureDevice.authorizationStatus(for: .video)
+        return stato == .denied || stato == .restricted
+    }
 
     private var mostraBenvenuto: Binding<Bool> {
         Binding(get: { !benvenutoVisto || presentazioneForzata },
@@ -88,6 +98,9 @@ struct SchermataConnessione: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: Spazi.medio) {
                     intestazione
+                    if fotocameraNegata && benvenutoVisto {
+                        avvisoFotocamera
+                    }
                     switch fase {
                     case .cerca: contenutoCerca
                     case .trovati: contenutoTrovati
@@ -110,6 +123,16 @@ struct SchermataConnessione: View {
                 .padding(.bottom, Spazi.medio)
                 .frame(minHeight: area.size.height, alignment: .top)
                 .animation(.easeInOut(duration: 0.25), value: fase)
+            }
+            // Collaudo A3: scorrendo, il titolo passava sotto l'orologio senza niente dietro. Sotto la barra di stato
+            // una striscia velata, come la barra di navigazione di iOS (qui nascosta).
+            .overlay(alignment: .top) {
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .frame(height: area.safeAreaInsets.top)
+                    .offset(y: -area.safeAreaInsets.top)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
             }
         }
         .background { sfondo.ignoresSafeArea() }
@@ -233,7 +256,10 @@ struct SchermataConnessione: View {
         .onChange(of: faseApp) { _, nuova in
             // Uscendo dall'app la pausa finisce: al ritorno il cavo funziona di nuovo da solo.
             if nuova == .background && !cavoRifiutato { cavoInPausa = false }
+            if nuova == .active { fotocameraNegata = Self.fotocameraRifiutata() }
         }
+        .onChange(of: benvenutoVisto) { _, _ in fotocameraNegata = Self.fotocameraRifiutata() }
+        .onChange(of: mostraLettore) { _, _ in fotocameraNegata = Self.fotocameraRifiutata() }
         .onChange(of: cerca.computer) { _, trovati in
             controllaRicollegamento(trovati)
         }
@@ -375,6 +401,17 @@ struct SchermataConnessione: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(attivo ? String(localized: "WebcamLR Pro attivo") : String(localized: "Sblocca WebcamLR Pro"))
+    }
+
+    /// Collaudo t01 B1: la fotocamera negata, in cima in tutte le fasi (gli stessi testi della diagnosi in onda).
+    private var avvisoFotocamera: some View {
+        let diagnosi = Diagnosi.fotocameraNegata
+        return Avviso(diagnosi.spiegazione, titolo: diagnosi.titolo, icona: "video.slash", azioni: {
+            Button("Apri Impostazioni") { ImpostazioniIOS.apri() }
+                .buttonStyle(StilePrimario())
+        })
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityIdentifier("principale.fotocameraNegata")
     }
 
     // MARK: - Fasi (Interfaccia finale)

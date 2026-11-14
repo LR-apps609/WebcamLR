@@ -177,8 +177,16 @@ struct SchermataImpostazioni: View {
                     Text(preferenza.testo).tag(preferenza)
                 }
             } label: {
-                Label("Usa", systemImage: "point.topleft.down.to.point.bottomright.curvepath")
+                Label {
+                    Text("Usa")
+                } icon: {
+                    Image(systemName: "point.topleft.down.to.point.bottomright.curvepath")
+                        .accessibilityHidden(true)
+                }
             }
+            // Collaudo t11 B12: VoiceOver diceva «Usa, Automatico» e leggeva il nome del simbolo. Ora «Collegamento,
+            // Automatico».
+            .accessibilityLabel(Text("Collegamento"))
             .listRowBackground(Tema.pannello)
             Toggle("Collegati da solo all'ultimo computer", isOn: $collegaDaSolo)
                 .listRowBackground(Tema.pannello)

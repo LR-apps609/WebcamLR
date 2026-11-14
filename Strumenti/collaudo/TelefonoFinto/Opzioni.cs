@@ -35,6 +35,10 @@ public sealed class Opzioni
           --pro                      il telefono ha WebcamLR Pro
           --effetti-sul-telefono     non offre gli effetti sul computer (capacita.effettiSulComputer falso)
           --senza-video              si collega ma non manda video
+          --audio                    ha un microfono utilizzabile (capacita.audio): a «comando audio» manda AAC-LC 48 kHz
+                                     mono (tono.aac a ciclo: 440 Hz che sale e scende, un bip a 1 kHz a ogni secondo)
+          --microfono-spento-dopo <s> dopo s secondi di audio il microfono si spegne «dal telefono» (stato.audio falso)
+          --microfono-negato         come un telefono senza permesso del microfono: capacita.audio falso (di serie)
           --ignora-pausa             non va in pausa quando il computer manda «pausa-automatica»
           --batteria <n>             batteria in stato (di serie 80; -1 = non nota); --in-carica
           --temperatura <t>          normale, calda, molto-calda, critica
@@ -71,6 +75,8 @@ public sealed class Opzioni
     public bool Pro { get; private set; }
     public bool EffettiSulComputer { get; private set; } = true;
     public bool SenzaVideo { get; private set; }
+    public bool Audio { get; private set; }
+    public TimeSpan? MicrofonoSpentoDopo { get; private set; }
     public bool RispettaPausa { get; private set; } = true;
     public int Batteria { get; private set; } = 80;
     public bool InCarica { get; private set; }
@@ -128,6 +134,9 @@ public sealed class Opzioni
                 case "--pro": o.Pro = true; break;
                 case "--effetti-sul-telefono": o.EffettiSulComputer = false; break;
                 case "--senza-video": o.SenzaVideo = true; break;
+                case "--audio": o.Audio = true; break;
+                case "--microfono-negato": o.Audio = false; break;
+                case "--microfono-spento-dopo": o.MicrofonoSpentoDopo = TimeSpan.FromSeconds(Secondi()); break;
                 case "--ignora-pausa": o.RispettaPausa = false; break;
                 case "--batteria": o.Batteria = Intero(); break;
                 case "--in-carica": o.InCarica = true; break;

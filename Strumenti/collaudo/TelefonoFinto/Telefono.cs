@@ -55,6 +55,10 @@ public sealed class Telefono
     private string? ultimoComando;
     private int? ultimaLatenza;
     private bool? inOnda;
+    /// <summary>Il microfono manda l'audio (dopo «comando audio» vero, se --audio).</summary>
+    private volatile bool audioAcceso;
+    private int generazioneAudio;
+    public long PacchettiAudioInviati { get; private set; }
 
     public long FotogrammiInviati { get; private set; }
 
@@ -205,7 +209,7 @@ public sealed class Telefono
             formati.Insert(0, new FormatoSupportato(opzioni.Larghezza, opzioni.Altezza, opzioni.Fps));
         return new Capacita(["grandangolo", "principale", "frontale"], 5, true, IsoMinimo: 50, IsoMassimo: 3200,
             Filtri: Filtri.Tutti, Sfondo: true, Pelle: true, Inquadratura: true, LuceVolto: true, Scritta: true,
-            DoppiaVista: false, Postura: true, Gobbo: true, Audio: false, Formati: formati, Specchia: true,
+            DoppiaVista: false, Postura: true, Gobbo: true, Audio: opzioni.Audio, Formati: formati, Specchia: true,
             Pro: opzioni.Pro ? true : null, SceltaCollegamento: false, SfondiPronti: SfondiPronti.Tutti, Immagini: false,
             Calore: true, EffettiSulComputer: opzioni.EffettiSulComputer, SceltaQualita: true);
     }
@@ -218,7 +222,7 @@ public sealed class Telefono
                 Zoom: zoom, Torcia: torcia, Esposizione: esposizione, Bianco: 0, Iso: 0, Tempo: 0,
                 Collegamento: new StatoCollegamento(StradeCollegamento.Wifi, PreferenzeCollegamento.Automatico,
                     [new StradaCollegamento(StradeCollegamento.Wifi, ultimaLatenza)]),
-                Qualita: qualita);
+                Qualita: qualita, Audio: opzioni.Audio ? audioAcceso : null);
     }
 
     private async Task StatoPeriodicoAsync(CancellationToken annulla)
@@ -279,6 +283,72 @@ public sealed class Telefono
         catch (Exception errore) when (errore is IOException or SocketException or ObjectDisposedException)
         {
             if (!muto) scrivi($"Video fermo: {errore.Message}");
+        }
+    }
+
+    /// <summary>«comando audio»: con --audio il microfono si accende o si spegne; senza, il telefono lo ignora.</summary>
+    private void CambiaAudio(bool acceso, CancellationToken annulla)
+    {
+        if (!opzioni.Audio)
+        {
+            scrivi("Audio chiesto ma il telefono non ha il microfono (capacita.audio falso): ignorato");
+            return;
+        }
+        if (acceso == audioAcceso) return;
+        audioAcceso = acceso;
+        var generazione = Interlocked.Increment(ref generazioneAudio);
+        scrivi(acceso ? "MICROFONO acceso dal computer" : "MICROFONO spento dal computer");
+        if (acceso) _ = AudioAsync(generazione, annulla);
+    }
+
+    /// <summary>
+    /// I frame di tono.aac (ADTS) senza intestazione, uno ogni 1024 campioni a 48 kHz, con il timestamp sull'orologio dei
+    /// fotogrammi, come il telefono vero (Protocollo.md, «Audio»).
+    /// </summary>
+    private async Task AudioAsync(int generazione, CancellationToken annulla)
+    {
+        try
+        {
+            var frame = FrameAudio.Leggi(Path.Combine(AppContext.BaseDirectory, "tono.aac"));
+            await InviaAsync(FormatoAudio.AAC48kMono(), annulla);
+            scrivi($"Formato audio inviato: AAC-LC 48 kHz mono ({frame.Count} frame a ciclo)");
+            var inizio = vita.Elapsed;
+            var t0 = Orologio.Adesso();
+            long n = 0;
+            var spentoDopo = opzioni.MicrofonoSpentoDopo;
+            while (!annulla.IsCancellationRequested && audioAcceso && generazione == Volatile.Read(ref generazioneAudio))
+            {
+                if (spentoDopo is { } dopo && vita.Elapsed - inizio >= dopo)
+                {
+                    spentoDopo = null;
+                    audioAcceso = false;
+                    scrivi("MICROFONO spento dal telefono (--microfono-spento-dopo)");
+                    await InviaAsync(Stato(), annulla);
+                    return;
+                }
+                if (muto || inPausa)
+                {
+                    await Task.Delay(20, annulla);
+                    inizio = vita.Elapsed;
+                    t0 = Orologio.Adesso();
+                    n = 0;
+                    continue;
+                }
+                var ts = t0 + (ulong)(n * 1_000_000L * FormatoAudio.CampioniPerPacchetto / 48_000);
+                await ScriviAsync(new PacchettoAudio(ts, frame[(int)(n % frame.Count)]).ComePacchetto(), annulla);
+                n++;
+                PacchettiAudioInviati++;
+                if (PacchettiAudioInviati == 1 || PacchettiAudioInviati % 470 == 0)
+                    scrivi($"Audio: {PacchettiAudioInviati} pacchetti inviati");
+                var prossimo = TimeSpan.FromTicks(n * TimeSpan.TicksPerSecond * FormatoAudio.CampioniPerPacchetto / 48_000);
+                var attesa = prossimo - (vita.Elapsed - inizio);
+                if (attesa > TimeSpan.Zero) await Task.Delay(attesa, annulla);
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception errore) when (errore is IOException or SocketException or ObjectDisposedException or FileNotFoundException)
+        {
+            if (!muto) scrivi($"Audio fermo: {errore.Message}");
         }
     }
 
@@ -375,6 +445,7 @@ public sealed class Telefono
                 return;
             case Comando comando:
                 Applica(comando);
+                if (comando.Audio is { } audio) CambiaAudio(audio, annulla);
                 if (!muto) await InviaAsync(Stato(), annulla);
                 return;
             case PausaAutomatica pausa:
@@ -444,5 +515,26 @@ public sealed class Telefono
             if (letti == 0) throw new IOException("Il computer ha chiuso durante la stretta di mano");
             lettore.Aggiungi(buffer.AsSpan(0, letti));
         }
+    }
+}
+
+/// <summary>I frame AAC grezzi di un file ADTS (l'intestazione di 7 o 9 byte si toglie).</summary>
+public static class FrameAudio
+{
+    public static List<byte[]> Leggi(string percorso)
+    {
+        var dati = File.ReadAllBytes(percorso);
+        var frame = new List<byte[]>();
+        var i = 0;
+        while (i + 7 <= dati.Length && dati[i] == 0xFF && (dati[i + 1] & 0xF0) == 0xF0)
+        {
+            var lunghezza = ((dati[i + 3] & 3) << 11) | (dati[i + 4] << 3) | (dati[i + 5] >> 5);
+            var intestazione = (dati[i + 1] & 1) == 1 ? 7 : 9;
+            if (lunghezza <= intestazione || i + lunghezza > dati.Length) break;
+            frame.Add(dati[(i + intestazione)..(i + lunghezza)]);
+            i += lunghezza;
+        }
+        if (frame.Count == 0) throw new FileNotFoundException($"Nessun frame AAC in {percorso}");
+        return frame;
     }
 }

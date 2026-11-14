@@ -57,6 +57,14 @@ internal static class Disinstallazione
         try { File.Delete(p.Collegamento); } catch (Exception errore) { Registro.Scrivi($"Collegamento: {errore.Message}"); }
         try { Registry.CurrentUser.DeleteSubKeyTree(DatiProdotto.ChiaveDisinstallazione, throwOnMissingSubKey: false); }
         catch (Exception errore) { Registro.Scrivi($"Registro: {errore.Message}"); }
+        // «Avvia con Windows», se punta a questa cartella (collaudo 20, t20 B1).
+        try
+        {
+            using var avvio = Registry.CurrentUser.OpenSubKey(PianoDisinstallazione.ChiaveAvvio, writable: true);
+            if (avvio is not null && PianoDisinstallazione.VoceAvvioDaTogliere(avvio.GetValue(PianoDisinstallazione.ValoreAvvio) as string, p.CartellaApp))
+                avvio.DeleteValue(PianoDisinstallazione.ValoreAvvio, throwOnMissingValue: false);
+        }
+        catch (Exception errore) { Registro.Scrivi($"Avvio con Windows: {errore.Message}"); }
         FunzioniWindows.AvvisaShell();
 
         // 3. I file. Questo programma è nella cartella da cancellare e non può cancellare sé stesso mentre gira:
@@ -73,7 +81,7 @@ internal static class Disinstallazione
             }
             if (daQui)
             {
-                var comando = $"/d /c timeout /t 2 /nobreak >nul & rd /s /q \"{p.CartellaApp}\"";
+                var comando = PianoDisinstallazione.ComandoPuliziaFinale(p.CartellaApp);
                 try
                 {
                     Process.Start(new ProcessStartInfo(Path.Combine(Environment.SystemDirectory, "cmd.exe"), comando)

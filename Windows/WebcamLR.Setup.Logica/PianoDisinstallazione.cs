@@ -22,6 +22,30 @@ public enum EsitoDisinstallazione
 /// </summary>
 public static class PianoDisinstallazione
 {
+    /// <summary>La chiave di «Avvia con Windows» (AvvioConWindows dell'app) e il nome del suo valore.</summary>
+    public const string ChiaveAvvio = @"Software\Microsoft\Windows\CurrentVersion\Run";
+    public const string ValoreAvvio = "WebcamLR";
+
+    /// <summary>
+    /// Collaudo 20 (t20 B1): la voce «Avvia con Windows» da togliere disinstallando, se punta all'exe di questa cartella
+    /// (restava orfana e, reinstallando, l'avvio automatico si riaccendeva da solo). Una voce che punta altrove non si tocca.
+    /// </summary>
+    public static bool VoceAvvioDaTogliere(string? valore, string cartellaApp) =>
+        !string.IsNullOrWhiteSpace(valore) && !string.IsNullOrWhiteSpace(cartellaApp)
+        && valore.Contains(cartellaApp.TrimEnd('\\') + "\\", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Il comando che toglie la cartella dopo l'uscita del disinstallatore (che sta lì dentro). Collaudo 20 (t20 B2): con
+    /// «timeout» senza una console vera l'attesa saltava («Input redirection is not supported») e «rd» partiva con il
+    /// disinstallatore ancora aperto: la cartella restava, vuota. «ping» aspetta anche senza console; un secondo tentativo
+    /// se la cartella c'è ancora.
+    /// </summary>
+    public static string ComandoPuliziaFinale(string cartellaApp)
+    {
+        var cartella = cartellaApp.TrimEnd('\\');
+        return $"/d /c ping -n 3 127.0.0.1 >nul & rd /s /q \"{cartella}\" & if exist \"{cartella}\" (ping -n 6 127.0.0.1 >nul & rd /s /q \"{cartella}\")";
+    }
+
     /// <summary>
     /// Il permesso dell'amministratore serve solo se c'è l'installatore della webcam nella cartella dell'app: è lui che
     /// toglie la webcam e la regola del firewall. Senza, «Disinstalla» non ha lo scudo.

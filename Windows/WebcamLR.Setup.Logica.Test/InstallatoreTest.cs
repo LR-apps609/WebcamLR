@@ -333,4 +333,27 @@ public class PianoDisinstallazioneTest
     {
         Assert.Equal(atteso, PianoDisinstallazione.Esito(codice, webcamRimasta));
     }
+
+    [Fact]
+    public void DisinstallandoSiTogliaLAvvioConWindows()
+    {
+        // Collaudo 20 (t20 B1): la voce Run che punta all'exe della cartella dell'app si toglie; un'altra no.
+        var cartella = @"C:\Users\Luisa\AppData\Local\Programs\WebcamLR";
+        Assert.True(PianoDisinstallazione.VoceAvvioDaTogliere($"\"{cartella}\\WebcamLR.exe\" --avvio", cartella));
+        Assert.True(PianoDisinstallazione.VoceAvvioDaTogliere($"\"{cartella.ToUpperInvariant()}\\WebcamLR.exe\" --avvio", cartella + "\\"));
+        Assert.False(PianoDisinstallazione.VoceAvvioDaTogliere(@"""D:\Altro\WebcamLR.exe"" --avvio", cartella));
+        Assert.False(PianoDisinstallazione.VoceAvvioDaTogliere($"\"{cartella}2\\WebcamLR.exe\"", cartella));
+        Assert.False(PianoDisinstallazione.VoceAvvioDaTogliere(null, cartella));
+    }
+
+    [Fact]
+    public void LaCartellaSiTogliePerDavvero()
+    {
+        // Collaudo 20 (t20 B2): niente «timeout» (senza console non aspetta), un'attesa con «ping» e un secondo tentativo.
+        var comando = PianoDisinstallazione.ComandoPuliziaFinale(@"C:\Programmi utente\WebcamLR\");
+        Assert.DoesNotContain("timeout", comando);
+        Assert.Contains("ping -n 3 127.0.0.1", comando);
+        Assert.Contains(@"rd /s /q ""C:\Programmi utente\WebcamLR""", comando);
+        Assert.Contains(@"if exist ""C:\Programmi utente\WebcamLR""", comando);
+    }
 }

@@ -165,31 +165,11 @@ struct FoglioTelefoniFidati: View {
                 Text("Nessun telefono fidato, per ora.")
                     .foregroundStyle(Tema.testoSecondario)
             } else {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: Spazi.stretto) {
-                        ForEach(ricevitore.telefoniFidati) { telefono in
-                            let collegato = ricevitore.telefoni.contains { $0.impronta == telefono.impronta }
-                            HStack(spacing: Spazi.stretto) {
-                                Image(systemName: "iphone")
-                                    .foregroundStyle(collegato ? Tema.verde : Tema.testoSecondario)
-                                    .accessibilityHidden(true)
-                                Text(telefono.nome)
-                                    .lineLimit(1)
-                                if collegato {
-                                    Text("Collegato")
-                                        .font(.stile(.sezione))
-                                        .foregroundStyle(Tema.verde)
-                                }
-                                Spacer(minLength: Spazi.stretto)
-                                Button("Rimuovi") { daRimuovere = telefono }
-                                    .buttonStyle(StileDistruttivo())
-                                    .accessibilityLabel("Rimuovi \(telefono.nome)")
-                            }
-                            .padding(Spazi.stretto)
-                            .background(Tema.barraLaterale, in: RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous).strokeBorder(Tema.linea))
-                        }
-                    }
+                // Collaudo t05 B2: dentro lo ScrollView del foglio il clic su «Rimuovi» non arrivava al pulsante (lo
+                // ScrollView risultava spento). Con pochi telefoni l'elenco sta senza scorrere; scorre solo se è lungo.
+                ViewThatFits(in: .vertical) {
+                    elencoFidati
+                    ScrollView { elencoFidati }
                 }
                 .frame(maxHeight: 260)
             }
@@ -216,6 +196,33 @@ struct FoglioTelefoniFidati: View {
             }
         } message: { _ in
             Text("La prossima volta dovrai confermarlo con il codice.")
+        }
+    }
+
+    private var elencoFidati: some View {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
+            ForEach(ricevitore.telefoniFidati) { telefono in
+                let collegato = ricevitore.telefoni.contains { $0.impronta == telefono.impronta }
+                HStack(spacing: Spazi.stretto) {
+                    Image(systemName: "iphone")
+                        .foregroundStyle(collegato ? Tema.verde : Tema.testoSecondario)
+                        .accessibilityHidden(true)
+                    Text(telefono.nome)
+                        .lineLimit(1)
+                    if collegato {
+                        Text("Collegato")
+                            .font(.stile(.sezione))
+                            .foregroundStyle(Tema.verde)
+                    }
+                    Spacer(minLength: Spazi.stretto)
+                    Button("Rimuovi") { daRimuovere = telefono }
+                        .buttonStyle(StileDistruttivo())
+                        .accessibilityLabel("Rimuovi \(telefono.nome)")
+                }
+                .padding(Spazi.stretto)
+                .background(Tema.barraLaterale, in: RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous).strokeBorder(Tema.linea))
+            }
         }
     }
 }

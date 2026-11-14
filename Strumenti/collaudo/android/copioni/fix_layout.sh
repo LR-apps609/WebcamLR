@@ -109,6 +109,8 @@ if collega_indirizzo; then
         testi_visibili
         if tocca_testo "Impostazioni"; then attendi 1; giro "v-in-onda-impostazioni" 4; indietro; attendi 1; fi
         # t11 B8: oscurato dopo 30 s senza niente; un tasto lo riaccende e il fuoco della tastiera torna ai comandi.
+        # (Indietro dopo il foglio può aprire «Scollegare il telefono?»: si annulla prima.)
+        c_e_testo "Scollegare il telefono?" && tocca_testo "Annulla"
         attendi 36
         schermata "v-in-onda-oscurato"
         if c_e_testo "Tocca due volte per riaccendere lo schermo"; then

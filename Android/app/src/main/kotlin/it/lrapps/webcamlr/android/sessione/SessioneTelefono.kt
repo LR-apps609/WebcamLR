@@ -639,6 +639,9 @@ class SessioneTelefono(
         inPrimoPiano = true
         // P3: di ritorno da Impostazioni con il permesso del microfono dato, il microfono chiesto parte da sé.
         if (microfonoNonConsentitoInterno.value && permessoMicrofono()) permessoMicrofonoCambiato(true)
+        // Collaudo 20 (t17 B2): il permesso dato (o tolto) nelle impostazioni di Android cambia `capacita.audio`.
+        if (permessoMicrofono()) microfonoNegato = false
+        aggiornaFunzioni()
         ServizioInOnda.avvia(app)
         if (pausaDecisa.sottofondo) {
             val adesso = SystemClock.elapsedRealtime()
@@ -1109,13 +1112,18 @@ class SessioneTelefono(
         return RectF(maxOf(r[0], 0f), maxOf(r[1], 0f), minOf(r[2], larghezzaVista), minOf(r[3], altezzaVista))
     }
 
-    /** «Microfono al computer», dal telefono o da `comando.audio`. Senza permesso lo chiede l'interfaccia. */
-    fun impostaAudio(acceso: Boolean) {
+    /**
+     * «Microfono al computer», dal telefono o da `comando.audio`. Senza permesso lo chiede l'interfaccia, ma solo per un
+     * tocco sul telefono: Collaudo 20 (t17 B2), chiesto dal computer non si apre la domanda di Android in mezzo alla
+     * diretta (il telefono può essere lontano, sul supporto); si mostra l'avviso «Microfono non consentito» e il
+     * computer lo sa dallo stato.
+     */
+    fun impostaAudio(acceso: Boolean, dalComputer: Boolean = false) {
         // P3: spento di proposito, l'avviso del permesso negato si chiude (il microfono negato non risulta mai «chiesto»).
         if (!acceso) microfonoNonConsentitoInterno.value = false
         if (acceso == audioRichiestoInterno.value) return
         if (acceso && !permessoMicrofono()) {
-            if (microfonoNegato) {
+            if (microfonoNegato || dalComputer) {
                 microfonoNonConsentitoInterno.value = true
                 aggiornaStato()
             } else {
@@ -2132,7 +2140,7 @@ class SessioneTelefono(
         val effettiNuovi = ModelloEffetti.applica(effettiInterni.value, comando, grafica.sfondiPronti, grafica.haFotoSfondo || personaleInArrivo)
         if (effettiNuovi != effettiInterni.value) cambiaEffetti(effettiNuovi)
         comando.specchia?.let { impostaSpecchio(it) }
-        comando.audio?.let { impostaAudio(it) }
+        comando.audio?.let { impostaAudio(it, dalComputer = true) }
         comando.collegamento?.let { impostaPreferenzaCollegamento(it) }
         comando.qualita?.let { impostaQualita(it) }
         if (comando.togliLogo == true) togliLogo()
@@ -2287,7 +2295,9 @@ class SessioneTelefono(
     /** Cosa si può dichiarare al computer: GPU, modelli dell'analisi, microfono. */
     private fun aggiornaFunzioni() {
         if (chiusaDallUtente) return
-        val microfono = app.packageManager.hasSystemFeature(PackageManager.FEATURE_MICROPHONE) && !microfonoNegato
+        // Collaudo 20 (t17 B2): il protocollo dice «microfono utilizzabile (permesso concesso)»: senza permesso (anche
+        // negato prima della sessione, nella presentazione) non si dichiara.
+        val microfono = app.packageManager.hasSystemFeature(PackageManager.FEATURE_MICROPHONE) && !microfonoNegato && permessoMicrofono()
         val nuove = FunzioniDisponibili(
             filtri = effettiGpu,
             sfondo = effettiGpu && analisi.mascheraDisponibile,

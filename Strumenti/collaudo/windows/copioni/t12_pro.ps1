@@ -53,10 +53,10 @@ function T12-Menu([string]$nome) {
         Start-Sleep -Seconds 3
         Fotografa "finestra-pro-$nome"
         Scrivi-Log "  testi: $((Testi-Visibili) -join ' | ')"
-        Tasto 'PgDn'; Start-Sleep -Milliseconds 600
-        Fotografa "finestra-pro-$nome-giu"
-        Tasto 'Alt+F4'
+        Albero-UI "finestra-pro-$nome-tutto" -Tutto | Out-Null
+        Clicca 'Chiudi'
         Start-Sleep -Seconds 1
+        if (-not (Finestra-App)) { Segnala-Problema "Dopo «Chiudi» della finestra Pro la finestra principale non c'è più"; Avvia-App | Out-Null }
         Porta-Davanti
     }
 }
@@ -181,7 +181,7 @@ foreach ($f in Get-ChildItem -LiteralPath $cartella -File | Sort-Object Name) {
             $g.Dispose(); $bmp.Dispose(); $img.Dispose()
             $nome = [IO.Path]::ChangeExtension($f.Name, '.jpg')
         } elseif ($f.Extension -in '.txt', '.log') {
-            if ($f.Name -match '^\d\d-' -and $f.Extension -eq '.txt') { continue }
+            if ($f.Name -match '^\d\d-' -and $f.Extension -eq '.txt' -and $f.Name -notmatch 'tutto|menu') { continue }
             $byte = [IO.File]::ReadAllBytes($f.FullName)
             if ($byte.Length -gt 2MB) { $byte = $byte[0..(2MB - 1)] }
             $nome = $f.Name

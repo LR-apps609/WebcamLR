@@ -111,13 +111,11 @@ final class CopioneCorrezioni: CopioneCollaudo {
         guard tocca("App e assistenza") else { return }
         guard tocca("Segnala un bug") else { return }
         aspettaUnPo(1)
-        app.swipeDown()
-        scorri(giu: true, volte: 2)
         fotografa("segnala un bug")
-        let vedi = esiste("Vedi il registro incluso")
-        nota("t07 B3: «Vedi il registro incluso» \(vedi); nota con il registro \(esiste("e il registro del collegamento"))")
-        if vedi {
-            toccaSePresente("Vedi il registro incluso")
+        let vedi = app.buttons["Vedi il registro incluso"]
+        nota("t07 B3: «Vedi il registro incluso» \(vedi.exists); nota con il registro \(esiste("e il registro del collegamento"))")
+        if vedi.exists && vedi.isHittable {
+            vedi.tap()
             aspettaUnPo(1)
             fotografa("registro incluso aperto")
         }

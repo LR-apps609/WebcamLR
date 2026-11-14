@@ -1015,3 +1015,34 @@ extension Avviso where Azioni == EmptyView {
                   alTocco: alTocco, suggerimentoTocco: suggerimentoTocco, chiudi: chiudi) { EmptyView() }
     }
 }
+
+/// Un interruttore che con il carattere di Accessibilità mette l'interruttore sotto il testo (collaudo A2): accanto,
+/// le parole lunghe si spezzavano a metà («automaticall/y»). Con le misure normali è l'interruttore di sistema.
+public struct StileInterruttore: ToggleStyle {
+    public init() {}
+
+    public func makeBody(configuration: Configuration) -> some View {
+        InterruttoreAdattivo(configuration: configuration)
+    }
+}
+
+private struct InterruttoreAdattivo: View {
+    let configuration: ToggleStyleConfiguration
+    @Environment(\.dynamicTypeSize) private var misuraTesto
+
+    var body: some View {
+        if misuraTesto.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: Spazi.stretto) {
+                configuration.label
+                    .fixedSize(horizontal: false, vertical: true)
+                Toggle(isOn: configuration.$isOn) { configuration.label }
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+            }
+            .accessibilityElement(children: .combine)
+        } else {
+            Toggle(isOn: configuration.$isOn) { configuration.label }
+                .toggleStyle(.switch)
+        }
+    }
+}

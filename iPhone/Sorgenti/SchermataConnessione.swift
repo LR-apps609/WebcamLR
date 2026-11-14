@@ -576,6 +576,8 @@ struct SchermataConnessione: View {
         HStack(alignment: .top, spacing: Spazi.piccolo) {
             Text(verbatim: "\(numero)")
                 .font(.stile(.numeri, .numeriEvidenti))
+                // Collaudo A2: con il carattere XXXL la cifra usciva dal cerchio.
+                .dynamicTypeSize(...DynamicTypeSize.xLarge)
                 .foregroundStyle(Tema.fondo)
                 .frame(width: 26, height: 26)
                 .background(problema ? Tema.ambra : Tema.accento, in: Circle())

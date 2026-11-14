@@ -67,6 +67,8 @@ struct SchermataImpostazioni: View {
             sezioneAltro
         }
         .tint(Tema.accento)
+        // Collaudo A2: con il carattere XXXL l'interruttore va sotto il testo (Stile).
+        .toggleStyle(StileInterruttore())
         .scrollContentBackground(.hidden)
         // Le liste sono nostre: Barlow (Documenti/Stile.md, «Barlow o sistema»).
         .font(.stile(.corpo))
@@ -89,19 +91,17 @@ struct SchermataImpostazioni: View {
                     .navigationBarTitleDisplayMode(.inline)
                     .intestazioneOpaca()
             } label: {
-                HStack(spacing: Spazi.stretto) {
-                    SegnoPro()
-                    Text(verbatim: "WebcamLR Pro")
-                        .font(.stile(.corpo, .corpoForte))
-                    Spacer(minLength: Spazi.stretto)
-                    if pro {
-                        Label("Attivo", systemImage: "checkmark")
-                            .labelStyle(.titleAndIcon)
-                            .foregroundStyle(Tema.accentoChiaro)
-                    } else {
-                        Text("Sblocca")
-                            .font(.stile(.corpo, .corpoForte))
-                            .foregroundStyle(Tema.accento)
+                // Collaudo A2: con il carattere XXXL in una riga sola le parole si spezzavano («Web/cam/LR», «Unlo/ck»):
+                // se non ci sta, lo stato va sotto il nome.
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: Spazi.stretto) {
+                        nomePro
+                        Spacer(minLength: Spazi.stretto)
+                        statoPro
+                    }
+                    VStack(alignment: .leading, spacing: Spazi.minimo) {
+                        nomePro
+                        statoPro
                     }
                 }
                 .accessibilityElement(children: .combine)
@@ -109,6 +109,31 @@ struct SchermataImpostazioni: View {
             .listRowBackground(Tema.pannello)
         } header: {
             EtichettaSezione("WebcamLR Pro")
+        }
+    }
+
+    private var nomePro: some View {
+        HStack(spacing: Spazi.stretto) {
+            SegnoPro()
+            // Un nome: su una riga, rimpicciolito se serve, mai spezzato.
+            Text(verbatim: "WebcamLR Pro")
+                .font(.stile(.corpo, .corpoForte))
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+        }
+    }
+
+    @ViewBuilder private var statoPro: some View {
+        if pro {
+            Label("Attivo", systemImage: "checkmark")
+                .labelStyle(.titleAndIcon)
+                .foregroundStyle(Tema.accentoChiaro)
+                .fixedSize()
+        } else {
+            Text("Sblocca")
+                .font(.stile(.corpo, .corpoForte))
+                .foregroundStyle(Tema.accento)
+                .fixedSize()
         }
     }
 

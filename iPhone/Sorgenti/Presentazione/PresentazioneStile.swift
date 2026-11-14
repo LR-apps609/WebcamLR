@@ -219,7 +219,7 @@ struct ImpaginazionePagina<Scena: View, Contenuto: View, Azioni: View>: View {
 
     private func altezzaScena(_ altezza: CGFloat) -> CGFloat {
         if misuraTesto.isAccessibilitySize {
-            return min(220, max(120, altezza * quotaScena * 0.5))
+            return min(240, max(150, altezza * quotaScena * 0.6))
         }
         return min(340, max(180, altezza * quotaScena))
     }

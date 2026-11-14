@@ -2641,12 +2641,12 @@
         }
       }
     },
-    "Il telefono non manda l'audio." : {
+    "Il telefono non manda l'audio: sul telefono consenti il microfono a WebcamLR, nelle impostazioni del telefono." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The phone doesn’t send audio."
+            "value" : "The phone doesn’t send audio: on the phone, allow WebcamLR to use the microphone in the phone’s settings."
           }
         }
       }
@@ -4439,7 +4439,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Couldn't remove everything (%@). Try “Rimuovi microfono.command” in the Strumenti folder."
+            "value" : "Couldn't remove everything (%@). Try “Rimuovi microfono.command” (Italian file name) in the “Strumenti” folder."
           }
         }
       }
@@ -4693,7 +4693,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "To use the phone's microphone in call apps you need “WebcamLR (microphone)”. You install it once, with your Mac password: choose “WebcamLR Microfono.pkg” (in the disk image) or “Installa microfono.command” (Strumenti folder)."
+            "value" : "To use the phone's microphone in call apps you need “WebcamLR (microphone)”. You install it once, with your Mac password: choose “WebcamLR Microfono.pkg” (in the disk image) or “Installa microfono.command” (in the “Strumenti” folder). The files keep these Italian names."
           }
         }
       }
@@ -5112,7 +5112,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This microphone can't be removed from the app (it was installed by an earlier version): open “Rimuovi microfono.command” in the Strumenti folder and enter your Mac password."
+            "value" : "This microphone can't be removed from the app (it was installed by an earlier version): open “Rimuovi microfono.command” (Italian file name) in the “Strumenti” folder and enter your Mac password."
           }
         }
       }
@@ -5741,7 +5741,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choose “Rimuovi microfono.command” in WebcamLR's Strumenti folder"
+            "value" : "Choose “Rimuovi microfono.command” in WebcamLR's “Strumenti” folder (the files keep these Italian names)"
           }
         }
       }
@@ -5751,7 +5751,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choose “WebcamLR Microfono.pkg” (in the disk image) or “Installa microfono.command” (Strumenti folder)"
+            "value" : "Choose “WebcamLR Microfono.pkg” (in the disk image) or “Installa microfono.command” (in the “Strumenti” folder; the files keep these Italian names)"
           }
         }
       }
@@ -7668,6 +7668,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "coming soon"
+          }
+        }
+      }
+    },
+    "in attesa" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "waiting"
           }
         }
       }

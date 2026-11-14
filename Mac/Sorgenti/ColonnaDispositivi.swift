@@ -835,6 +835,8 @@ struct RigaMicrofono: View {
     private var stato: String {
         if !installato { return String(localized: "non installato") }
         if !ricevitore.microfonoAcceso { return String(localized: "spento") }
+        // Collaudo t17: senza un telefono che manda l'audio non si dice «attivo» (l'interruttore resta acceso).
+        if !ricevitore.telefonoAttivo || ricevitore.capacita?.audio != true { return String(localized: "in attesa") }
         return inUso ? String(localized: "in uso") : String(localized: "attivo")
     }
 
@@ -918,7 +920,7 @@ struct RigaMicrofono: View {
     private var nota: String? {
         if !ricevitore.telefonoAttivo { return String(localized: "Collega un telefono per usarlo.") }
         // Capacità non ancora arrivate: per un attimo non si dice niente.
-        if let capacita = ricevitore.capacita, capacita.audio != true { return String(localized: "Il telefono non manda l'audio.") }
+        if let capacita = ricevitore.capacita, capacita.audio != true { return String(localized: "Il telefono non manda l'audio: sul telefono consenti il microfono a WebcamLR, nelle impostazioni del telefono.") }
         // Non installato: lo dice la riga con «Installa…» qui sotto.
         if !installato { return nil }
         if ricevitore.microfonoAcceso && !ricevitore.audioInArrivo && ricevitore.capacita?.audio == true {

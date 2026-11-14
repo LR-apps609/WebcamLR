@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.WindowInsets
@@ -88,11 +89,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -104,6 +107,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
@@ -275,14 +279,28 @@ fun SchermataInOnda(
     }
     // Dopo 30 secondi senza tocchi, con il video che va, lo schermo si oscura da solo. Non con un foglio aperto
     // (si riparte alla chiusura) e non con TalkBack, che sotto il nero non troverebbe più i comandi.
-    LaunchedEffect(ultimoTocco, sessione.stato, Impostazioni.oscuraDaSolo, foglio) {
-        if (!Impostazioni.oscuraDaSolo || foglio != null || sessione.stato != Stato.Collegato || conTalkBack(context)) return@LaunchedEffect
+    // Collaudo 20 (t11 B8): anche un tasto conta come un tocco, e con la tastiera sullo schermo aperta o con un
+    // lettore di schermo (anche braille o comandato da tastiera) lo schermo non si oscura.
+    val ultimoTasto = AttivitaUtente.ultimoTasto
+    val tastieraAperta = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+    LaunchedEffect(ultimoTocco, ultimoTasto, tastieraAperta, sessione.stato, Impostazioni.oscuraDaSolo, foglio) {
+        if (!Impostazioni.oscuraDaSolo || foglio != null || sessione.stato != Stato.Collegato || tastieraAperta || conTalkBack(context)) return@LaunchedEffect
         delay(30_000)
         if (sessione.stato == Stato.Collegato) sessione.oscurato = true
     }
+    // Riacceso con un tasto (MainActivity): il fuoco della tastiera torna al primo comando, invece di perdersi con il
+    // nero che sparisce.
+    val gestoreFuoco = LocalFocusManager.current
+    LaunchedEffect(sessione.oscurato) {
+        if (sessione.oscurato || !AttivitaUtente.fuocoDaRidare) return@LaunchedEffect
+        AttivitaUtente.fuocoDaRidare = false
+        // Un fotogramma: i comandi tornano nell'albero prima di ricevere il fuoco.
+        withFrameNanos { }
+        gestoreFuoco.moveFocus(FocusDirection.Next)
+    }
     // Vista pulita: solo in orizzontale, collegati, senza fogli, senza TalkBack e senza nulla da confermare.
     val pulitaPossibile = !verticale && foglio == null && sessione.stato == Stato.Collegato && sessione.codiceConferma == null
-    LaunchedEffect(ultimoTocco, pulitaPossibile) {
+    LaunchedEffect(ultimoTocco, ultimoTasto, pulitaPossibile) {
         if (!pulitaPossibile || conTalkBack(context)) {
             vistaPulita = false
             return@LaunchedEffect
@@ -645,10 +663,8 @@ private fun Modifier.margineSicuro(simmetrico: Boolean = false): Modifier {
     }
 }
 
-private fun conTalkBack(context: Context): Boolean {
-    val accessibilita = context.getSystemService(Context.ACCESSIBILITY_SERVICE) as? AccessibilityManager
-    return accessibilita?.isTouchExplorationEnabled == true
-}
+/** Collaudo 20 (t11 B8): TalkBack, ma anche gli altri lettori di schermo e i display braille ([lettoreDiSchermoAttivo]). */
+private fun conTalkBack(context: Context): Boolean = lettoreDiSchermoAttivo(context)
 
 // MARK: Il video
 

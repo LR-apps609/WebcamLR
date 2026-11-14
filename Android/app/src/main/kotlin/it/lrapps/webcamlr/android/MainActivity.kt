@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -32,6 +33,7 @@ import it.lrapps.webcamlr.android.sessione.SessioneTelefono
 import it.lrapps.webcamlr.android.sessione.Sessioni
 import it.lrapps.webcamlr.android.sistema.Permessi
 import it.lrapps.webcamlr.android.sistema.Testi
+import it.lrapps.webcamlr.android.ui.AttivitaUtente
 import it.lrapps.webcamlr.android.ui.AzioniImpostazioni
 import it.lrapps.webcamlr.android.ui.Colori
 import it.lrapps.webcamlr.android.ui.PaginaImpostazioni
@@ -198,6 +200,26 @@ class MainActivity : ComponentActivity() {
         gestisciCollegamento(intent)
         // Solo all'apertura vera, non quando Android ricrea l'attività con lo stesso intento.
         if (savedInstanceState == null) gestisciScollega(intent)
+    }
+
+    /**
+     * Collaudo 20 (t11 B8): ogni tasto (tastiera fisica, comandi a tasti) conta come attività per «In onda». Con lo
+     * schermo oscurato un tasto lo riaccende e basta (non sposta il fuoco sotto il nero); il fuoco torna ai comandi.
+     */
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        AttivitaUtente.tasto()
+        val sessione = Sessioni.attuale
+        val tastoDiSistema = event.keyCode == KeyEvent.KEYCODE_BACK || KeyEvent.isModifierKey(event.keyCode) ||
+            event.keyCode == KeyEvent.KEYCODE_VOLUME_UP || event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN ||
+            event.keyCode == KeyEvent.KEYCODE_VOLUME_MUTE
+        if (sessione != null && sessione.oscurato && pila.lastOrNull() == Schermata.InOnda && !tastoDiSistema) {
+            if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+                AttivitaUtente.fuocoDaRidare = true
+                sessione.oscurato = false
+            }
+            return true
+        }
+        return super.dispatchKeyEvent(event)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {

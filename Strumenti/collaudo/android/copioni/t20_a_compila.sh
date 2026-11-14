@@ -6,6 +6,10 @@ vecchia="$T20_CARTELLA/sorgente-beta4"
 passo "Scarico la beta 4 ($T20_BETA4)"
 ( cd "$radice" && git fetch -q --depth=1 origin "$T20_BETA4" && git worktree add -q --detach "$vecchia" FETCH_HEAD ) \
     >> "$USCITA/compila.log" 2>&1 || fallisci "non riesco a scaricare la beta 4 (vedi compila.log)"
+# La beta 4 così com'è non si compila più da zero: Billing 7.x vuole com.google.firebase dal repository di Google, che
+# il suo settings.gradle.kts filtra (corretto dopo, nella versione nuova). Solo nella copia temporanea del runner.
+sed -i 's|includeGroupByRegex("com\\\\.google\\\\.mediapipe.\*")|&\n                includeGroupByRegex("com\\\\.google\\\\.firebase.*")|' "$vecchia/Android/settings.gradle.kts"
+grep -n 'firebase' "$vecchia/Android/settings.gradle.kts" | sed 's/^/        /' >> "$USCITA/passi.log" || nota "correzione del repository non applicata"
 passo "Compilo la beta 4 (assembleDebug)"
 ( cd "$vecchia/Android" && ./gradlew --no-daemon -q :app:assembleDebug ) >> "$USCITA/compila.log" 2>&1 \
     || { tail -40 "$USCITA/compila.log" >> "$USCITA/passi.log"; fallisci "la beta 4 non si compila (vedi compila.log)"; }

@@ -102,7 +102,7 @@ final class CopioneCorrezioni: CopioneCollaudo {
         tocca("Rimuovi iPad di casa")
         aspettaUnPo(1)
         fotografa("domanda rimuovi ipad")
-        let annulla = app.buttons["Annulla"]
+        let annulla = app.buttons.matching(identifier: "Annulla").firstMatch
         XCTAssertTrue(annulla.waitForExistence(timeout: 3), "t05 B2: nessuna domanda dopo «Rimuovi»")
         if annulla.exists { annulla.click() }
         aspettaUnPo(1)

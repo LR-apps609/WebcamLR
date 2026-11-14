@@ -13,7 +13,7 @@ public enum ConfrontoPro {
         String(localized: "Specchia", bundle: .stile),
         String(localized: "Sfoca lo sfondo", bundle: .stile),
         String(localized: "Luce sul volto", bundle: .stile),
-        String(localized: "Microfono del telefono sul Mac", bundle: .stile),
+        microfono,
         String(localized: "Zoom, torcia e compensazione dell'esposizione", bundle: .stile),
         String(localized: "Collegamento sicuro", bundle: .stile)
     ]
@@ -28,12 +28,32 @@ public enum ConfrontoPro {
         String(localized: "Ritocco della pelle", bundle: .stile),
         String(localized: "Scritta e logo nel video", bundle: .stile),
         String(localized: "Controlli Pro: ISO, tempo, bianco e messa a fuoco", bundle: .stile),
+    ] + sulComputer
+
+    // Collaudo t03 B4 e t12 B1: sull'iPhone il computer può essere un Mac o un PC Windows (le voci «Sul computer» sono
+    // di Pro su tutti e due); sul Mac si parla del Mac, come Windows dice «Sul PC».
+    #if os(iOS)
+    private static let microfono = String(localized: "Microfono del telefono sul computer", bundle: .stile)
+    private static let sulComputer = [
+        String(localized: "Sul computer: profili Riunione, Lezione, Diretta e Colloquio", bundle: .stile),
+        String(localized: "Sul computer: foto e registrazione", bundle: .stile),
+        String(localized: "Sul computer: gobbo", bundle: .stile),
+        String(localized: "Sul computer: due telefoni insieme", bundle: .stile),
+        String(localized: "Sul computer: schermata d'attesa personalizzata", bundle: .stile)
+    ]
+    /// L'invito sotto il titolo della pagina Pro.
+    static let invito = String(localized: "Qualità piena, effetti da studio e tutti i comandi del computer. Si paga una volta sola, senza abbonamento. Il resto di WebcamLR resta gratis.", bundle: .stile)
+    #else
+    private static let microfono = String(localized: "Microfono del telefono sul Mac", bundle: .stile)
+    private static let sulComputer = [
         String(localized: "Sul Mac: profili Riunione, Lezione, Diretta e Colloquio", bundle: .stile),
         String(localized: "Sul Mac: foto e registrazione", bundle: .stile),
         String(localized: "Sul Mac: gobbo", bundle: .stile),
         String(localized: "Sul Mac: due telefoni insieme", bundle: .stile),
         String(localized: "Sul Mac: schermata d'attesa personalizzata", bundle: .stile)
     ]
+    static let invito = String(localized: "Qualità piena, effetti da studio e tutti i comandi del Mac. Si paga una volta sola, senza abbonamento. Il resto di WebcamLR resta gratis.", bundle: .stile)
+    #endif
 }
 
 /// Il segno «PRO» accanto a un comando che fa parte di WebcamLR Pro: testo scuro sull'accento salvia, mai corallo.
@@ -81,7 +101,7 @@ public struct PaginaPro<Azioni: View>: View {
             if attivo {
                 statoAttivo
             } else {
-                Text(String(localized: "Qualità piena, effetti da studio e tutti i comandi del Mac. Si paga una volta sola, senza abbonamento. Il resto di WebcamLR resta gratis.", bundle: .stile))
+                Text(ConfrontoPro.invito)
                     .foregroundStyle(Tema.testoChiaro)
                     .fixedSize(horizontal: false, vertical: true)
             }

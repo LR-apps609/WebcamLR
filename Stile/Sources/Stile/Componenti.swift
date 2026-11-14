@@ -58,6 +58,11 @@ public struct MarchioWebcamLR: View {
     public var body: some View {
         (Text(verbatim: "Webcam") + Text(verbatim: "LR").foregroundColor(Tema.accento))
             .font(.titolo(dimensione))
+            // Un marchio non va a capo («Webc/amLR» con il carattere XXXL, collaudo A2): resta su una riga e, se
+            // non ci sta, si rimpicciolisce. Cresce con il testo grande, ma non oltre la prima misura di Accessibilità.
+            .lineLimit(1)
+            .minimumScaleFactor(0.5)
+            .dynamicTypeSize(...DynamicTypeSize.accessibility1)
             .accessibilityLabel(Text(verbatim: "WebcamLR"))
     }
 }

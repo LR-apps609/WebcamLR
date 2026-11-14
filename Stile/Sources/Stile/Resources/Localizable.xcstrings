@@ -664,6 +664,22 @@
         }
       }
     },
+    "Il registro è vuoto." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The log is empty."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il registro è vuoto."
+          }
+        }
+      }
+    },
     "Il telefono non trova il computer" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1021,6 +1037,22 @@
         }
       }
     },
+    "Microfono del telefono sul computer" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phone microphone on the computer"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Microfono del telefono sul computer"
+          }
+        }
+      }
+    },
     "Molte reti pubbliche tengono i dispositivi separati: sono online ma non possono parlarsi. Usa il cavo USB, oppure attiva l'hotspot del telefono (sull'iPhone «Hotspot personale») e collega il computer a quello." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1085,6 +1117,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nessun telefono"
+          }
+        }
+      }
+    },
+    "Nessun video e nessuna immagine vengono inviati: solo il testo qui sopra e il registro del collegamento, che contiene i nomi dei dispositivi e gli indirizzi nella tua rete." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No video and no images are sent: only the text above and the connection log, which contains device names and addresses on your network."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun video e nessuna immagine vengono inviati: solo il testo qui sopra e il registro del collegamento, che contiene i nomi dei dispositivi e gli indirizzi nella tua rete."
           }
         }
       }
@@ -1255,6 +1303,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Qualità piena, effetti da studio e tutti i comandi del Mac. Si paga una volta sola, senza abbonamento. Il resto di WebcamLR resta gratis."
+          }
+        }
+      }
+    },
+    "Qualità piena, effetti da studio e tutti i comandi del computer. Si paga una volta sola, senza abbonamento. Il resto di WebcamLR resta gratis." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Full quality, studio effects and every computer control. You pay once, no subscription. The rest of WebcamLR stays free."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qualità piena, effetti da studio e tutti i comandi del computer. Si paga una volta sola, senza abbonamento. Il resto di WebcamLR resta gratis."
           }
         }
       }
@@ -1616,6 +1680,86 @@
         }
       }
     },
+    "Sul computer: due telefoni insieme" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On the computer: two phones at once"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sul computer: due telefoni insieme"
+          }
+        }
+      }
+    },
+    "Sul computer: foto e registrazione" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On the computer: photos and recording"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sul computer: foto e registrazione"
+          }
+        }
+      }
+    },
+    "Sul computer: gobbo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On the computer: teleprompter"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sul computer: gobbo"
+          }
+        }
+      }
+    },
+    "Sul computer: profili Riunione, Lezione, Diretta e Colloquio" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On the computer: Meeting, Class, Live and Interview profiles"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sul computer: profili Riunione, Lezione, Diretta e Colloquio"
+          }
+        }
+      }
+    },
+    "Sul computer: schermata d'attesa personalizzata" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On the computer: custom waiting screen"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sul computer: schermata d'attesa personalizzata"
+          }
+        }
+      }
+    },
     "Sul telefono tocca «Inquadra il QR code del computer» e inquadralo." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1748,6 +1892,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Usarla in Zoom, Meet e Teams"
+          }
+        }
+      }
+    },
+    "Vedi il registro incluso" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See the included log"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vedi il registro incluso"
           }
         }
       }

@@ -79,6 +79,11 @@ public struct ModuloSegnalazione: View {
                               registro: includiDati && includiRegistro ? registro : nil)
     }
 
+    /// Il registro parte con la segnalazione (l'interruttore acceso di serie resta com'è).
+    private var registroIncluso: Bool {
+        registro != nil && includiDati && includiRegistro
+    }
+
     /// Dopo «Invia» la bozza ha fatto il suo lavoro: si svuota alla prossima apertura del modulo.
     private func segnaInviata() {
         bozzaInviata = true
@@ -136,6 +141,26 @@ public struct ModuloSegnalazione: View {
                     .padding(Spazi.piccolo)
                     .background(Tema.pannelloScuro, in: RoundedRectangle(cornerRadius: Raggi.controllo))
                 }
+                // Collaudo t07 B3: il registro che parte con la segnalazione si può leggere prima dell'invio.
+                if let registro, registroIncluso {
+                    DisclosureGroup {
+                        ScrollView {
+                            Text(registro.isEmpty ? String(localized: "Il registro è vuoto.", bundle: .stile) : registro)
+                                .font(.stile(.numeri))
+                                .foregroundStyle(Tema.testoTenue)
+                                .textSelection(.enabled)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .frame(maxHeight: 200)
+                        .padding(Spazi.piccolo)
+                        .background(Tema.pannelloScuro, in: RoundedRectangle(cornerRadius: Raggi.controllo))
+                    } label: {
+                        Text(String(localized: "Vedi il registro incluso", bundle: .stile))
+                            .font(.stile(.nota, .corpoForte))
+                            .foregroundStyle(Tema.testoSecondario)
+                    }
+                    .tint(Tema.accento)
+                }
 
                 Group {
                     if let indirizzoMail {
@@ -166,9 +191,14 @@ public struct ModuloSegnalazione: View {
                 .buttonStyle(StilePrimario())
                 .disabled(descrizioneVuota)
 
-                Text(String(localized: "Nessun video e nessuna immagine vengono inviati: solo il testo qui sopra.", bundle: .stile))
+                // La nota dice il vero (t07 B3): con il registro parte anche quello, con i nomi dei dispositivi e gli
+                // indirizzi nella rete di casa.
+                Text(registroIncluso
+                     ? String(localized: "Nessun video e nessuna immagine vengono inviati: solo il testo qui sopra e il registro del collegamento, che contiene i nomi dei dispositivi e gli indirizzi nella tua rete.", bundle: .stile)
+                     : String(localized: "Nessun video e nessuna immagine vengono inviati: solo il testo qui sopra.", bundle: .stile))
                     .font(.stile(.nota))
                     .foregroundStyle(Tema.testoSecondario)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .font(.stile(.corpo))
             .padding(Spazi.largo)

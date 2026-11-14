@@ -102,6 +102,11 @@ jobs:
           cat collaudo-apple/esito.txt
           { echo '```'; cat collaudo-apple/esito.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
+      # Gli artifact stanno su un dominio che alcune reti bloccano: i risultati anche nel registro (scarica.sh).
+      - name: Risultati nel registro (base64)
+        if: ${{ !cancelled() }}
+        run: Strumenti/collaudo/apple/nel_registro.sh collaudo-apple
+
       - name: Carica i risultati
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4

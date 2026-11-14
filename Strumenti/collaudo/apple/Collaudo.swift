@@ -159,7 +159,7 @@ class CopioneCollaudo: XCTestCase {
     /// Se non lo trova segna un errore (il copione continua) e salva schermata e albero.
     @MainActor @discardableResult
     func tocca(_ etichetta: String, secondi: Double? = nil, file: StaticString = #filePath, line: UInt = #line) -> Bool {
-        guard let elemento = trova(etichetta, secondi: secondi ?? attesaDiSerie) else {
+        guard let elemento = trovaScorrendo(etichetta, secondi: secondi ?? attesaDiSerie) else {
             XCTFail("Non trovo «\(etichetta)» da toccare", file: file, line: line)
             fotografa("non trovo \(etichetta)")
             return false
@@ -375,6 +375,17 @@ class CopioneCollaudo: XCTestCase {
             aspettaUnPo(0.4)
         } while Date() < limite
         return nil
+    }
+
+    /// Come `trova`; se non c'è, scorre (prima in giù, poi in su) e riguarda: gli elenchi di SwiftUI creano le
+    /// righe solo quando arrivano sullo schermo, quindi una riga in fondo non esiste finché non si scorre.
+    @MainActor func trovaScorrendo(_ etichetta: String, secondi: Double = 5) -> XCUIElement? {
+        if let elemento = trova(etichetta, secondi: min(secondi, 3)) { return elemento }
+        for giu in [true, true, true, true, true, false, false, false, false, false, false, false, false] {
+            scorri(giu: giu)
+            if let elemento = trova(etichetta, secondi: 0) { return elemento }
+        }
+        return trova(etichetta, secondi: max(0, secondi - 3))
     }
 
     /// Un elemento che si tocca (prima di `.staticText` nell'elenco dei tipi preferiti).

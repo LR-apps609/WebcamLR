@@ -8,7 +8,7 @@ final class CopioneT01: CopioneCollaudo {
     private var inizio = Date()
     private var tocchi = 0
 
-    private func cronometro(_ cosa: String) {
+    @MainActor private func cronometro(_ cosa: String) {
         nota(String(format: "[%.1f s, %d tocchi] %@", Date().timeIntervalSince(inizio), tocchi, cosa))
     }
 

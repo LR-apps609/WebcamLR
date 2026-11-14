@@ -663,7 +663,7 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
     <value>Sito di WebcamLR</value>
   </data>
   <data name="Info_AltreApp" xml:space="preserve">
-    <value>Una app di LR Apps, come {0}.</value>
+    <value>Un'app di LR Apps, come {0}.</value>
   </data>
   <data name="Gobbo_Segnaposto" xml:space="preserve">
     <value>Incolla qui il testo da leggere. Ogni a capo è un paragrafo.</value>
@@ -2185,5 +2185,23 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
   </data>
   <data name="Effetti_MotivoSchedaVideo" xml:space="preserve">
     <value>la scheda video non si è potuta usare</value>
+  </data>
+  <data name="VoceImpostazioni.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Impostazioni</value>
+  </data>
+  <data name="PulsanteRegistro.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Registro del collegamento</value>
+  </data>
+  <data name="PulsanteProfili.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Profili salvati</value>
+  </data>
+  <data name="Telefoni_AspettoFidati" xml:space="preserve">
+    <value>Aspetto {0}: apri WebcamLR sul telefono e si ricollega da solo, senza rifare il QR.</value>
+  </data>
+  <data name="App_SchedeAiuto" xml:space="preserve">
+    <value>Schede dell'aiuto: Guida, Domande frequenti, Segnala un bug, Informazioni. Frecce sinistra e destra per cambiare scheda</value>
+  </data>
+  <data name="Gobbo_CosaServe" xml:space="preserve">
+    <value>Il gobbo mostra il tuo testo sul telefono, vicino all'obiettivo, così leggi guardando in camera. Serve un iPhone collegato con WebcamLR Pro; il testo si scrive qui.</value>
   </data>
 </root>

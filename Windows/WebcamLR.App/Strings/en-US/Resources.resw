@@ -2180,4 +2180,22 @@ The details are in {1}: send them with “Report a bug”.</value>
   <data name="Effetti_MotivoSchedaVideo" xml:space="preserve">
     <value>the graphics card could not be used</value>
   </data>
+  <data name="VoceImpostazioni.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="PulsanteRegistro.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Connection log</value>
+  </data>
+  <data name="PulsanteProfili.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Saved profiles</value>
+  </data>
+  <data name="Telefoni_AspettoFidati" xml:space="preserve">
+    <value>Waiting for {0}: open WebcamLR on the phone and it reconnects on its own, no need to scan the QR again.</value>
+  </data>
+  <data name="App_SchedeAiuto" xml:space="preserve">
+    <value>Help tabs: Guide, FAQ, Report a bug, About. Left and right arrows to change tab</value>
+  </data>
+  <data name="Gobbo_CosaServe" xml:space="preserve">
+    <value>The teleprompter shows your text on the phone, next to the lens, so you read while looking at the camera. It needs a connected iPhone with WebcamLR Pro; you write the text here.</value>
+  </data>
 </root>

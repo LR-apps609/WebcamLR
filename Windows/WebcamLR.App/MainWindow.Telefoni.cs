@@ -725,7 +725,9 @@ public sealed partial class MainWindow
             VideoPiccolo.SetMediaPlayer(piccolo);
         }
         Video.Visibility = Visibile(grande is not null);
-        Segnaposto.Opacity = grande is null ? 1 : 0;
+        // Collaudo 20 (t11 B2, t05 B4): con l'opacità a 0 «Collegato: in attesa del video…» restava per l'Assistente vocale
+        // anche con il video che scorre. Con Visibility esce dall'albero di UI Automation.
+        Segnaposto.Visibility = Visibile(grande is null);
         // L'immagine del motore sta sopra il video del lettore, solo finché c'è il video.
         if (grande is null && SulComputer) NascondiElaborata();
         if (suoScelto?.Errore is { } errore) MessaggioAnteprima.Text = errore;
@@ -924,6 +926,9 @@ public sealed partial class MainWindow
         TestoTelefoniNoti.Text = noti.Count == 0 ? "" : Testi.T("Telefoni_Conosciuti", string.Join(", ", noti));
         TestoTelefoniNoti.Visibility = Visibile(noti.Count > 0);
         ToolTipService.SetToolTip(TestoTelefoniNoti, noti.Count == 0 ? null : Testi.T("Telefoni_FidatoSpiegazione"));
+        // Anche nella schermata grande «Collega il telefono» (vista Essenziale, senza la colonna di sinistra): chi si aspetta.
+        AttesaFidatiGrande.Text = noti.Count == 0 ? "" : Testi.T("Telefoni_AspettoFidati", string.Join(", ", noti));
+        AttesaFidatiGrande.Visibility = Visibile(noti.Count > 0);
     }
 
     // MARK: HEVC che il PC non sa mostrare (passo 7, windows.md 2.5)

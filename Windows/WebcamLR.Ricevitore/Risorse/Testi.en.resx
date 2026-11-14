@@ -272,7 +272,7 @@
     <value>Auto framing</value>
   </data>
   <data name="Pro_Voce3" xml:space="preserve">
-    <value>Face + desk</value>
+    <value>Face + desk (with iPhone)</value>
   </data>
   <data name="Pro_Voce4" xml:space="preserve">
     <value>Filters and adjustments</value>
@@ -296,7 +296,7 @@
     <value>On the PC: photos and recording</value>
   </data>
   <data name="Pro_Voce11" xml:space="preserve">
-    <value>On the PC: teleprompter</value>
+    <value>On the PC: teleprompter (with iPhone)</value>
   </data>
   <data name="Pro_Voce12" xml:space="preserve">
     <value>On the PC: two phones at once</value>
@@ -1044,5 +1044,17 @@
   </data>
   <data name="Diagnosi_AndroidComeCavo" xml:space="preserve">
     <value>For the cable with Android, turn on “USB debugging” in the phone’s Developer options and plug in the cable: WebcamLR uses it on its own, no other app needed.</value>
+  </data>
+  <data name="Riprese_SalvataRidotta" xml:space="preserve">
+    <value>{0}, at {1}: with effects on the PC the phone’s {2} is saved scaled down.</value>
+  </data>
+  <data name="Riprese_RegistroRidotta" xml:space="preserve">
+    <value>Recording at {0}: with effects on the PC the phone’s {1} is saved scaled down.</value>
+  </data>
+  <data name="Pro_Gratis8" xml:space="preserve">
+    <value>Phone microphone on the PC</value>
+  </data>
+  <data name="Pro_Voce13" xml:space="preserve">
+    <value>On the PC: custom waiting screen</value>
   </data>
 </root>

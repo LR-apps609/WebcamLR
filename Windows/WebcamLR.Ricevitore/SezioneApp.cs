@@ -13,7 +13,11 @@ public static class InfoApp
     /// <summary>Il file con l'ultima versione pubblicata (Documenti/Pubblicazione.md), letto da «Aggiornamento disponibile».</summary>
     public const string VersioneRecente = "https://lr-apps609.github.io/WebcamLR/versione.json";
     /// <summary>La guida al microfono del telefono su Windows (W2): cavo audio virtuale, app di chiamata, OBS.</summary>
-    public const string GuidaMicrofonoWindows = "https://github.com/LR-apps609/WebcamLR/blob/main/Documenti/Microfono%20Windows.md#usarlo-nelle-app-di-chiamata-e-in-obs";
+    /// <summary>
+    /// Il microfono del telefono nelle chiamate e in OBS: la sezione «microfono» dell'aiuto del sito (con «Su Windows» e
+    /// «In OBS»). Collaudo 20 (t03 B2): prima un documento della repository che su main non c'è («File not found»).
+    /// </summary>
+    public const string GuidaMicrofonoWindows = Aiuto + "#microfono";
     /// <summary>L'app gratuita «Dispositivi Apple» su Microsoft Store: installa il servizio per il cavo USB (1.7).</summary>
     public const string DispositiviApple = "ms-windows-store://pdp/?productid=9NP83LWLPZ9K";
     /// <summary>«Estensioni video HEVC» di Microsoft su Microsoft Store: senza, Windows non mostra l'HEVC del 4K (passo 7).</summary>

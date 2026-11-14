@@ -31,6 +31,8 @@ public static class FinestraApp
         string? domanda = null, PaginaApp? pagina = null)
     {
         var schede = new Pivot();
+        // Il fuoco all'apertura va qui: con un nome l'Assistente vocale dice dove si è e come cambiare scheda (collaudo 20, t11 B6).
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(schede, Testi.T("App_SchedeAiuto"));
         var guida = Scheda(Testi.T("App_Guida"), ContenutoGuida());
         schede.Items.Add(guida);
         var domande = Scheda(Testi.T("App_DomandeFrequenti"), ContenutoDomande(domanda));
@@ -50,21 +52,36 @@ public static class FinestraApp
     /// del menu «WebcamLR» e dai comandi di WebcamLR Pro bloccati.
     /// </summary>
     /// <param name="pro">Il telefono nella webcam e le sue capacità.</param>
+    // Il titolo «WebcamLR Pro» è già nel contenuto, con il segno PRO: niente titolo del dialogo (collaudo 20, t12 B3: due volte).
     public static Task MostraProAsync(XamlRoot radice, (string? Nome, Capacita? Capacita) pro) =>
-        MostraFinestraAsync(radice, "WebcamLR Pro", ContenutoPro(pro.Nome, pro.Capacita));
+        MostraFinestraAsync(radice, null, ContenutoPro(pro.Nome, pro.Capacita), altezzaFissa: false);
 
-    private static async Task MostraFinestraAsync(XamlRoot radice, string titolo, UIElement contenuto)
+    /// <summary>
+    /// Larghezza del contenuto dei dialoghi «Aiuto» e «WebcamLR Pro». Collaudo 20 (t12 B3, t10 B6): con 520 dentro il tetto
+    /// di serie di ContentDialog (548, meno i margini) i riquadri di «WebcamLR Pro» perdevano il bordo destro e le schede
+    /// dell'aiuto in italiano non ci stavano: il tetto si alza (<see cref="LarghezzaMassimaDialogo"/>).
+    /// </summary>
+    private const double LarghezzaContenuto = 560;
+    private const double LarghezzaMassimaDialogo = 640;
+    private const double AltezzaContenuto = 560;
+
+    /// <param name="altezzaFissa">L'aiuto ha un'altezza fissa: cambiando scheda il dialogo non salta (collaudo 20, t10 B6).</param>
+    private static async Task MostraFinestraAsync(XamlRoot radice, string? titolo, UIElement contenuto, bool altezzaFissa = true)
     {
+        var scorrimento = new ScrollViewer { Content = contenuto, Width = LarghezzaContenuto };
+        if (altezzaFissa) scorrimento.Height = AltezzaContenuto;
+        else scorrimento.MaxHeight = AltezzaContenuto;
         var finestra = new ContentDialog
         {
             XamlRoot = radice,
             Title = titolo,
-            Content = new ScrollViewer { Content = contenuto, MaxHeight = 560, Width = 520 },
+            Content = scorrimento,
             CloseButtonText = Testi.T("Chiudi"),
             // Un solo pieno (beta 4): «Chiudi» resta bordato, il pieno è del primario della scheda («Invia» in «Segnala
             // un bug»). Esc chiude lo stesso.
             DefaultButton = ContentDialogButton.None,
         };
+        finestra.Resources["ContentDialogMaxWidth"] = LarghezzaMassimaDialogo;
         await finestra.ShowAsync();
     }
 

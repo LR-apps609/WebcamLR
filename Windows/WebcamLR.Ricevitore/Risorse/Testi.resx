@@ -278,7 +278,7 @@
     <value>Inquadratura automatica</value>
   </data>
   <data name="Pro_Voce3" xml:space="preserve">
-    <value>Volto + scrivania</value>
+    <value>Volto + scrivania (con l'iPhone)</value>
   </data>
   <data name="Pro_Voce4" xml:space="preserve">
     <value>Filtri e regolazioni</value>
@@ -302,7 +302,7 @@
     <value>Sul PC: foto e registrazione</value>
   </data>
   <data name="Pro_Voce11" xml:space="preserve">
-    <value>Sul PC: gobbo</value>
+    <value>Sul PC: gobbo (con l'iPhone)</value>
   </data>
   <data name="Pro_Voce12" xml:space="preserve">
     <value>Sul PC: due telefoni insieme</value>
@@ -1066,5 +1066,17 @@
   </data>
   <data name="Diagnosi_AndroidComeCavo" xml:space="preserve">
     <value>Per il cavo con Android attiva «Debug USB» nelle Opzioni sviluppatore del telefono e collega il cavo: WebcamLR lo usa da sola, senza altre app.</value>
+  </data>
+  <data name="Riprese_SalvataRidotta" xml:space="preserve">
+    <value>{0}, a {1}: con gli effetti sul PC il {2} del telefono si salva ridotto.</value>
+  </data>
+  <data name="Riprese_RegistroRidotta" xml:space="preserve">
+    <value>Registro a {0}: con gli effetti sul PC il {1} del telefono si salva ridotto.</value>
+  </data>
+  <data name="Pro_Gratis8" xml:space="preserve">
+    <value>Microfono del telefono sul PC</value>
+  </data>
+  <data name="Pro_Voce13" xml:space="preserve">
+    <value>Sul PC: schermata d'attesa personalizzata</value>
   </data>
 </root>

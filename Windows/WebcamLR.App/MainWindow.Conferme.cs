@@ -1,6 +1,8 @@
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using WebcamLR.Protocollo;
 using WebcamLR.Ricevitore;
 
@@ -56,6 +58,14 @@ public sealed partial class MainWindow
     /// «Scollegare «iPhone di Ledion»? Zoom sta usando il video: si fermerà.»; altrimenti scollega subito. Dal menu
     /// dell'icona (<paramref name="dallIcona"/>) la finestra può essere nascosta: la domanda si fa davanti.
     /// </summary>
+    /// <summary>Vero se <paramref name="elemento"/> sta dentro uno dei <paramref name="contenitori"/> (albero visuale).</summary>
+    private static bool Dentro(DependencyObject elemento, params DependencyObject[] contenitori)
+    {
+        for (var attuale = elemento; attuale is not null; attuale = VisualTreeHelper.GetParent(attuale))
+            if (contenitori.Contains(attuale)) return true;
+        return false;
+    }
+
     private async void ChiediScollega(TelefonoCollegato collegato, bool dallIcona = false)
     {
         // Fuori dal try: il finally rimette a falso la bandierina solo se l'ha alzata questa chiamata.
@@ -80,8 +90,13 @@ public sealed partial class MainWindow
                 if (dallIcona) MostraFinestra();
                 if (!await ChiediAsync(domanda) || uscita) return;
             }
+            // Il fuoco era sulla scheda del telefono (Scollega con la tastiera)? Collaudo 20 (t11 B7): sparita la scheda, WinUI
+            // lo dava a «Apri Microsoft Store» più in basso. Ora va su «Il telefono non trova il PC?», al posto della scheda.
+            var fuocoNellaScheda = Content?.XamlRoot is { } radice
+                && FocusManager.GetFocusedElement(radice) is DependencyObject fuoco && Dentro(fuoco, ElencoSchedeTelefoni, SchedaTelefono);
             // Mentre si rispondeva il telefono può essere già andato via: ScollegaAsync lo controlla.
             await ScollegaAsync(collegato);
+            if (fuocoNellaScheda && telefono is null) LinkTelefonoNonTrova.Focus(FocusState.Keyboard);
         }
         catch (Exception errore)
         {

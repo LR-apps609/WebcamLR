@@ -44,3 +44,44 @@ public static class Qualita
         _ => 1,
     };
 }
+
+/// <summary>
+/// Collaudo 20 (t03 B5): il verdetto del chip («PC sotto sforzo» o qualità della rete) con un po' di memoria. Con numeri
+/// quasi uguali (221 ms con la rete a 101, 217 con la rete a 114) il chip saltava da «PC sotto sforzo» a «Debole» e ritorno:
+/// chi guarda non sa se cambiare Wi-Fi o chiudere programmi. Ora il verdetto cambia solo dopo
+/// <see cref="SecondiPerCambiare"/> misure di fila che dicono l'altro.
+/// </summary>
+public sealed class VerdettoChip
+{
+    /// <summary>Le misure di fila (una al secondo) che servono per cambiare verdetto.</summary>
+    public const int SecondiPerCambiare = 3;
+
+    private int diFila;
+
+    /// <summary>Il verdetto attuale: vero se il ritardo è del PC.</summary>
+    public bool ColpaDelPc { get; private set; }
+
+    /// <summary>Una misura nuova (una al secondo); il verdetto da mostrare.</summary>
+    public bool Aggiungi(int latenzaMs, int? reteMs)
+    {
+        var adesso = Qualita.ColpaDelPc(latenzaMs, reteMs);
+        if (adesso == ColpaDelPc)
+        {
+            diFila = 0;
+            return ColpaDelPc;
+        }
+        if (++diFila >= SecondiPerCambiare)
+        {
+            ColpaDelPc = adesso;
+            diFila = 0;
+        }
+        return ColpaDelPc;
+    }
+
+    /// <summary>Telefono nuovo o video fermo: si riparte senza verdetto.</summary>
+    public void Azzera()
+    {
+        ColpaDelPc = false;
+        diFila = 0;
+    }
+}

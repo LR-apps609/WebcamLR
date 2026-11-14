@@ -92,6 +92,9 @@ public sealed partial class MainWindow
 
     private bool InSchermoIntero => AppWindow.Presenter.Kind == Microsoft.UI.Windowing.AppWindowPresenterKind.FullScreen;
 
+    /// <summary>L'ultimo tasto premuto era Tab; il fuoco è arrivato su «Esci» con Tab (allora il pulsante resta).</summary>
+    private bool ultimoTastoTab, fuocoDaTab;
+
     /// <summary>Solo il video, senza intestazione, colonne e barra: finestra mini, vista pulita e schermo intero.</summary>
     private bool SoloVideo => InMini || vistaPulita || InSchermoIntero;
 
@@ -111,8 +114,10 @@ public sealed partial class MainWindow
         tempoEsci.IsRepeating = false;
         tempoEsci.Tick += (_, _) =>
         {
-            // Con il puntatore sopra o il fuoco sul pulsante resta.
-            if (PulsanteTornaFinestra.IsPointerOver || PulsanteTornaFinestra.FocusState != FocusState.Unfocused)
+            // Con il puntatore sopra, o con il fuoco portato sul pulsante con Tab, resta. Collaudo 20 (t03 B3): entrando in
+            // vista pulita o a schermo intero dalla tastiera il fuoco finiva da solo sul pulsante (l'unico rimasto) e «Esci»
+            // non spariva più, finendo nella cattura di OBS.
+            if (PulsanteTornaFinestra.IsPointerOver || (fuocoDaTab && PulsanteTornaFinestra.FocusState != FocusState.Unfocused))
             {
                 tempoEsci.Start();
                 return;
@@ -121,7 +126,13 @@ public sealed partial class MainWindow
             MostraPulsanteTorna();
         };
         RiquadroVideo.PointerMoved += (_, _) => MostraEsciPerUnPo();
-        Radice.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler((_, _) => MostraEsciPerUnPo()), true);
+        Radice.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler((_, evento) =>
+        {
+            ultimoTastoTab = evento.Key == Windows.System.VirtualKey.Tab;
+            MostraEsciPerUnPo();
+        }), true);
+        PulsanteTornaFinestra.GotFocus += (_, _) => fuocoDaTab = ultimoTastoTab;
+        PulsanteTornaFinestra.LostFocus += (_, _) => fuocoDaTab = false;
         MostraVista();
     }
 
@@ -608,6 +619,8 @@ public sealed partial class MainWindow
                 Prendi(SezioneSchermo);
                 break;
             case PaginaImpostazioni.Gobbo:
+                // Collaudo 20 (t10 B5): senza telefono la pagina era quasi vuota. Prima che cos'è e che cosa serve, poi il gobbo.
+                Nota(Testi.T("Gobbo_CosaServe"));
                 Prendi(ZonaGobbo);
                 if (ZonaGobbo.Visibility == Visibility.Collapsed)
                 {

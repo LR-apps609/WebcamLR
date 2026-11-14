@@ -29,6 +29,18 @@ public sealed partial class MainWindow
         RiquadroPiccolo.ContextFlyout = menuRiquadro;
         // Con un telefono solo la scheda è sempre la stessa: vale per quello nella webcam.
         SchedaTelefono.ContextFlyout = MenuTelefono(() => Scelto);
+        // Collaudo 20 (t10 B10): il riquadro del video non prende il fuoco, quindi Maiusc+F10 o il tasto Menu non aprivano il
+        // suo menu. Una richiesta da tastiera (senza posizione del puntatore) che nessun controllo col fuoco ha preso apre il
+        // menu del video, al centro del video.
+        Radice.ContextRequested += (_, evento) =>
+        {
+            if (evento.Handled || evento.TryGetPosition(Radice, out _) || RiquadroVideo.Visibility != Microsoft.UI.Xaml.Visibility.Visible) return;
+            evento.Handled = true;
+            menuVideo.ShowAt(RiquadroVideo, new Microsoft.UI.Xaml.Controls.Primitives.FlyoutShowOptions
+            {
+                Position = new Windows.Foundation.Point(RiquadroVideo.ActualWidth / 2, RiquadroVideo.ActualHeight / 2),
+            });
+        };
     }
 
     /// <summary>Il video; nella finestra mini solo «Apri WebcamLR» e «Chiudi».</summary>

@@ -29,6 +29,11 @@ public sealed partial class MainWindow
     private FormatoVideo? formatoVideo => Scelto?.Formato;
     /// <summary>La registrazione in corso; la legge anche il thread di rete.</summary>
     private IRegistrazione? registrazione;
+    /// <summary>Il lato corto del file della registrazione in corso (o dell'ultima) e del video del telefono quando è partita.</summary>
+    private int latoCortoRegistrazione, latoCortoVideoRegistrato;
+
+    /// <summary>Il lato corto del video che arriva adesso; 0 se non arriva.</summary>
+    private int LatoCortoVideo => formatoVideo is { } f ? Math.Min(f.Larghezza, f.Altezza) : 0;
     /// <summary>Una registrazione sta partendo (con gli effetti sul computer si apre il codificatore): niente doppi avvii.</summary>
     private bool registrazioneInAvvio;
     private DateTime inizioRegistrazione;
@@ -89,6 +94,7 @@ public sealed partial class MainWindow
             }
             // Lampo subito; il PNG si prepara e si scrive fuori dal thread dell'interfaccia.
             Lampo();
+            var latoCortoFoto = Math.Min(immagine.PixelWidth, immagine.PixelHeight);
             string file;
             try
             {
@@ -113,7 +119,7 @@ public sealed partial class MainWindow
                 immagine.Dispose();
             }
             registro.Aggiungi(Testi.T("Riprese_FotoSalvataFile", Path.GetFileName(file)));
-            MostraFileSalvato(Riprese.FotoSalvata, file);
+            MostraFileSalvato(Riprese.ConMisura(Riprese.FotoSalvata, LatoCortoVideo, latoCortoFoto), file);
         }
         catch (Exception)
         {
@@ -410,9 +416,11 @@ public sealed partial class MainWindow
             var cartella = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), Riprese.Cartella);
             Directory.CreateDirectory(cartella);
             var file = Riprese.FileLibero(cartella, "mp4", DateTime.Now);
+            var misura = MotoreVideo.MisuraLavoro(formato.Larghezza, formato.Altezza);
+            latoCortoVideoRegistrato = Math.Min(formato.Larghezza, formato.Altezza);
+            latoCortoRegistrazione = SulComputer ? Math.Min(misura.Larghezza, misura.Altezza) : Math.Min(formato.Larghezza, formato.Altezza);
             nuova = SulComputer
-                ? await RegistrazioneElaborata.AvviaAsync(file, MotoreVideo.MisuraLavoro(formato.Larghezza, formato.Altezza).Larghezza,
-                    MotoreVideo.MisuraLavoro(formato.Larghezza, formato.Altezza).Altezza, formato.Fps)
+                ? await RegistrazioneElaborata.AvviaAsync(file, misura.Larghezza, misura.Altezza, formato.Fps)
                 : Registrazione.Avvia(file, formato.Codec, formato.Larghezza, formato.Altezza, DateTime.Now);
         }
         catch (Exception)
@@ -444,6 +452,9 @@ public sealed partial class MainWindow
         secondiRegistrazione = 0;
         spazioScarso = null;
         registro.Aggiungi(Testi.T("Riprese_Iniziata", Path.GetFileName(nuova.File)));
+        // Collaudo 20 (t03 B1): un 4K che si registra a 1080p si dice subito, non solo a file salvato.
+        if (Riprese.AvvisoRegistrazioneRidotta(Math.Min(formato.Larghezza, formato.Altezza), latoCortoRegistrazione) is { } ridotta)
+            MostraAvvisoRiprese(ridotta);
         if (nuova is RegistrazioneElaborata elaborata) _ = RegistraContenitoreAsync(elaborata);
         if (orologioRegistrazione is null)
         {
@@ -497,6 +508,7 @@ public sealed partial class MainWindow
     {
         registro.Aggiungi(Testi.T("Riprese_Fine", Riprese.Testo(fine), Riprese.Durata(fine.Durata), Riprese.Byte(fine.Byte)));
         var frase = fine.Esito == EsitoRegistrazione.Salvata && fraseSalvata is not null ? fraseSalvata : Riprese.Testo(fine);
+        if (fine.Esito == EsitoRegistrazione.Salvata) frase = Riprese.ConMisura(frase, latoCortoVideoRegistrato, latoCortoRegistrazione);
         // I 60 fps automatici aspettavano la fine della registrazione (windows.md 1.6).
         Valuta60Fps();
         if (!fine.FileSalvato)

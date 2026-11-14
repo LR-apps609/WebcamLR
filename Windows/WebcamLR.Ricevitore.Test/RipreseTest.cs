@@ -164,4 +164,18 @@ public class RipreseTest
             Assert.Contains("riprova", frase);
         }
     }
+
+    [Fact]
+    public void RipresaRidottaSiDice()
+    {
+        // Collaudo 20 (t03 B1): il 4K del telefono salvato a 1080p dagli effetti sul PC.
+        var frase = Riprese.ConMisura(Riprese.RegistrazioneSalvata, 2160, 1080);
+        Assert.StartsWith(Riprese.RegistrazioneSalvata, frase);
+        Assert.Contains("1080p", frase);
+        Assert.Contains("4K", frase);
+        Assert.Equal(Riprese.FotoSalvata, Riprese.ConMisura(Riprese.FotoSalvata, 1080, 1080));
+        Assert.Equal(Riprese.FotoSalvata, Riprese.ConMisura(Riprese.FotoSalvata, 720, 0));
+        Assert.NotNull(Riprese.AvvisoRegistrazioneRidotta(2160, 1080));
+        Assert.Null(Riprese.AvvisoRegistrazioneRidotta(720, 720));
+    }
 }

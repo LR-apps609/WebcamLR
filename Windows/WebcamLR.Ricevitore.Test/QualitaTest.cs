@@ -37,6 +37,23 @@ public class QualitaTest
     }
 
     [Fact]
+    public void IlVerdettoDelChipNonOscilla()
+    {
+        // Collaudo 20 (t03 B5): 221/101 (PC), 217/114 (rete), 225/108 (PC): il chip resta su «PC sotto sforzo».
+        var verdetto = new VerdettoChip();
+        for (var i = 0; i < VerdettoChip.SecondiPerCambiare; i++) verdetto.Aggiungi(221, 101);
+        Assert.True(verdetto.ColpaDelPc);
+        Assert.True(verdetto.Aggiungi(217, 114));
+        Assert.True(verdetto.Aggiungi(225, 108));
+        // Rete lenta per davvero, di fila: cambia.
+        for (var i = 0; i < VerdettoChip.SecondiPerCambiare - 1; i++) Assert.True(verdetto.Aggiungi(300, 250));
+        Assert.False(verdetto.Aggiungi(300, 250));
+        verdetto.Aggiungi(161, 17);
+        verdetto.Azzera();
+        Assert.False(verdetto.ColpaDelPc);
+    }
+
+    [Fact]
     public void TestoETacche()
     {
         Assert.Equal("Ottimo", QualitaCollegamento.Ottima.Testo());

@@ -75,6 +75,9 @@ public static class RegolePro
         TestiRicevitore.T("Pro_Gratis5"),
         TestiRicevitore.T("Pro_Gratis6"),
         TestiRicevitore.T("Pro_Gratis7"),
+        // Collaudo 20 (t12 B6): le liste come in Documenti/Store.md («Verifiche nel codice»): il microfono è gratis,
+        // la schermata d'attesa è Pro, Volto + scrivania e gobbo solo con l'iPhone.
+        TestiRicevitore.T("Pro_Gratis8"),
     ];
 
     /// <summary>Ciò che aggiunge Pro, sul telefono e sul PC.</summary>
@@ -92,6 +95,7 @@ public static class RegolePro
         TestiRicevitore.T("Pro_Voce10"),
         TestiRicevitore.T("Pro_Voce11"),
         TestiRicevitore.T("Pro_Voce12"),
+        TestiRicevitore.T("Pro_Voce13"),
     ];
 
     /// <summary>La riga di stato della pagina «WebcamLR Pro»: il telefono nella webcam, con o senza Pro.</summary>

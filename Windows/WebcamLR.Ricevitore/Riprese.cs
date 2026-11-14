@@ -29,6 +29,22 @@ public static class Riprese
     /// <summary>I secondi del timer della foto: 3, 2, 1, poi lo scatto.</summary>
     public const int SecondiTimer = 3;
 
+    /// <summary>
+    /// Collaudo 20 (t03 B1): con gli effetti sul computer foto e registrazione sono l'immagine del motore, che oltre il 1080p
+    /// riduce (ScalaUnaVolta.SenzaWebcam, per il processore). Se il telefono manda di più, la frase lo dice: «Registrazione
+    /// salvata in Video › WebcamLR, a 1080p: con gli effetti sul PC il 4K del telefono si salva ridotto». Altrimenti com'è.
+    /// </summary>
+    public static string ConMisura(string frase, int latoCortoVideo, int latoCortoFile) =>
+        latoCortoFile > 0 && latoCortoVideo > latoCortoFile
+            ? TestiRicevitore.T("Riprese_SalvataRidotta", frase, OpzioneQualita.NomeRisoluzione(latoCortoFile), OpzioneQualita.NomeRisoluzione(latoCortoVideo))
+            : frase;
+
+    /// <summary>All'inizio di una registrazione ridotta: «Registro a 1080p: con gli effetti sul PC il 4K si salva ridotto»; null se non lo è.</summary>
+    public static string? AvvisoRegistrazioneRidotta(int latoCortoVideo, int latoCortoFile) =>
+        latoCortoFile > 0 && latoCortoVideo > latoCortoFile
+            ? TestiRicevitore.T("Riprese_RegistroRidotta", OpzioneQualita.NomeRisoluzione(latoCortoFile), OpzioneQualita.NomeRisoluzione(latoCortoVideo))
+            : null;
+
     public static string FotoSalvata => TestiRicevitore.T("Riprese_FotoSalvata");
     public static string RegistrazioneSalvata => TestiRicevitore.T("Riprese_RegistrazioneSalvata");
     public static string FotogrammaCopiato => TestiRicevitore.T("Riprese_FotogrammaCopiato");

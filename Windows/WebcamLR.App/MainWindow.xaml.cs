@@ -712,7 +712,14 @@ public sealed partial class MainWindow : Window
         {
             // Collaudo 20 (t06 B4): ritardo alto ma rete buona, è il PC (decodifica, effetti) a non reggere. Le tacche
             // dicono la rete; il testo, in ambra, il PC, così non si cambia Wi-Fi per niente.
-            var colpaDelPc = Qualita.ColpaDelPc(ms, s.ArrivoMs);
+            // Con un po' di memoria (VerdettoChip, collaudo 20 t03 B5): numeri quasi uguali non fanno saltare il verdetto.
+            // Una misura per ogni statistica nuova (una al secondo), non a ogni ridisegno del chip.
+            if (!ReferenceEquals(s, statisticheNelVerdetto))
+            {
+                statisticheNelVerdetto = s;
+                verdettoChip.Aggiungi(ms, s.ArrivoMs);
+            }
+            var colpaDelPc = verdettoChip.ColpaDelPc;
             var qualita = colpaDelPc ? Qualita.Da(s.ArrivoMs ?? ms) : Qualita.Da(ms);
             var colore = Pennello(ColoreQualita(qualita));
             var spenta = Pennello("Linea");
@@ -778,6 +785,10 @@ public sealed partial class MainWindow : Window
         if (inPagina) ContenutoCollegamento.Visibility = Visibile(StradaSceglibile);
     }
 
+    /// <summary>Il verdetto del chip della qualità (PC o rete), che cambia solo dopo qualche secondo di fila.</summary>
+    private readonly VerdettoChip verdettoChip = new();
+    private Statistiche? statisticheNelVerdetto;
+
     private static string ColoreQualita(QualitaCollegamento qualita) => qualita switch
     {
         QualitaCollegamento.Ottima => "Verde",
@@ -808,7 +819,7 @@ public sealed partial class MainWindow : Window
         // Il motore effetti del PC (già compreso nell'anteprima e nella webcam qui sopra).
         if (RigaNumeriEffetti() is { } effettiRiga) righe.Add(effettiRiga);
         // Il ritardo è sul PC, non sulla rete (collaudo 20, t06 B4): che cosa fare.
-        if (s.LatenzaMs is int totale && Qualita.ColpaDelPc(totale, s.ArrivoMs)) righe.Add(Testi.T("Numeri_ColpaDelPc"));
+        if (s.LatenzaMs is not null && verdettoChip.ColpaDelPc) righe.Add(Testi.T("Numeri_ColpaDelPc"));
         if (storiaLatenza.Media is int media) righe.Add(Testi.T("Numeri_Media", media, storiaLatenza.Massima));
         if (testoAvvio is { } avvio) righe.Add(Testi.T("Numeri_Avvio", avvio.Split(':', 2).Last().Trim()));
         TestoNumeri.Text = string.Join("\n", righe);
@@ -1328,7 +1339,9 @@ public sealed partial class MainWindow : Window
             // Prima il pannello delle impostazioni, poi lo schermo intero (che torna alla vista di prima), poi il resto.
             if (impostazioniAperte)
             {
-                ChiudiImpostazioni();
+                // Dentro una pagina Esc torna all'elenco, come «Indietro»; dall'elenco chiude (collaudo 20, t11 B4).
+                if (PaginaAttuale != PaginaImpostazioni.Elenco) Indietro();
+                else ChiudiImpostazioni();
                 evento.Handled = true;
                 return;
             }
@@ -1717,7 +1730,9 @@ public sealed partial class MainWindow : Window
 
     private void RicordaPosizione()
     {
-        if (!AppWindow.IsVisible || AppWindow.Presenter is not OverlappedPresenter { State: OverlappedPresenterState.Restored }) return;
+        // Durante il passaggio alla finestra mini (minimaSospesa) il presentatore può dire ancora «normale» con già la misura
+        // del mini: ricordarla faceva tornare la finestra a 960×600 uscendo dal mini (collaudo 20, t10 B1).
+        if (minimaSospesa || !AppWindow.IsVisible || AppWindow.Presenter is not OverlappedPresenter { State: OverlappedPresenterState.Restored }) return;
         ultimaPosizione = new Rettangolo(AppWindow.Position.X, AppWindow.Position.Y, AppWindow.Size.Width, AppWindow.Size.Height);
         ultimaScala = ScalaFinestra.Di(WinRT.Interop.WindowNative.GetWindowHandle(this));
     }

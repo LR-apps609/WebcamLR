@@ -31,11 +31,7 @@
     <string name="permesso_fotocamera_negato">WebcamLR non può usare la fotocamera. Consentila in Impostazioni › App › WebcamLR › Autorizzazioni.</string>
     <string name="senza_fotocamera_titolo">Serve la fotocamera</string>
     <string name="senza_fotocamera_testo">Senza la fotocamera WebcamLR non può mandare il video al computer né leggere il QR code. Il computer non c\'entra: consentila in Impostazioni › App › WebcamLR › Autorizzazioni.</string>
-    <string name="notifiche_spiegazione_titolo">Le notifiche di «In onda»</string>
-    <string name="notifiche_spiegazione_testo">Con le notifiche, a schermo spento o in un\'altra app vedi l\'avviso «Video al computer» con «Scollega». Senza, il video continua lo stesso, ma nessun avviso lo ricorda.</string>
     <string name="avviso_notifiche_negate">Notifiche spente: a schermo spento il video continua senza l\'avviso «Video al computer».</string>
-    <string name="consenti">Consenti</string>
-    <string name="non_ora">Non ora</string>
 
     <!-- 10_presentazione -->
     <string name="avanti">Avanti</string>

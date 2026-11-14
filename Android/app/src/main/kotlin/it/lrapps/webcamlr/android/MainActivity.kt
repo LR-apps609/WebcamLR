@@ -153,9 +153,6 @@ class MainActivity : ComponentActivity() {
     /** Collaudo 20 (t07 B8): un collegamento chiesto e la fotocamera negata. */
     private var senzaFotocamera by mutableStateOf(false)
 
-    /** Collaudo 20 (t07 B5): prima di chiedere di nuovo le notifiche si spiega a cosa servono. */
-    private var spiegaNotifiche by mutableStateOf(false)
-
     private val permessoNotifiche = registerForActivityResult(ActivityResultContracts.RequestPermission()) { Permessi.aggiorna(this) }
 
     /** La sessione che ha chiesto il microfono: la risposta va a lei, anche se intanto ne è nata un'altra. */
@@ -341,7 +338,7 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    /** Collaudo 20 (t07 B5 e B8): la fotocamera negata a un collegamento e la spiegazione delle notifiche. */
+    /** Collaudo 20 (t07 B8): la fotocamera negata a un collegamento. */
     @Composable
     private fun DialoghiPermessi() {
         if (senzaFotocamera) {
@@ -356,20 +353,6 @@ class MainActivity : ComponentActivity() {
                     }
                 },
                 dismissButton = { PulsanteSecondario(stringResource(R.string.chiudi), compatto = true) { senzaFotocamera = false } },
-            )
-        }
-        if (spiegaNotifiche) {
-            AlertDialog(
-                onDismissRequest = { spiegaNotifiche = false },
-                title = { Text(stringResource(R.string.notifiche_spiegazione_titolo)) },
-                text = { Text(stringResource(R.string.notifiche_spiegazione_testo), style = Stili.corpo, color = Colori.testoChiaro) },
-                confirmButton = {
-                    PulsanteSecondario(stringResource(R.string.consenti), compatto = true) {
-                        spiegaNotifiche = false
-                        permessoNotifiche.launch(Manifest.permission.POST_NOTIFICATIONS)
-                    }
-                },
-                dismissButton = { PulsanteSecondario(stringResource(R.string.non_ora), compatto = true) { spiegaNotifiche = false } },
             )
         }
     }
@@ -583,10 +566,10 @@ class MainActivity : ComponentActivity() {
                 ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
             ) {
                 // L'avviso «Video al computer» con «Scollega» (che apre la domanda): utile, non indispensabile.
-                // Collaudo 20 (t07 B5): già negate una volta, prima una spiegazione (con «Consenti» si chiede).
-                if (shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
-                    spiegaNotifiche = true
-                } else {
+                // Collaudo 20 (t07 B5): la spiegazione è nella pagina dei permessi della presentazione. Già negate lì,
+                // non si richiedono più a ogni collegamento sopra «In onda» senza spiegazione: lo dice l'avviso di
+                // «In onda» («Notifiche spente…», con «Apri Impostazioni»).
+                if (!shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
                     permessoNotifiche.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }
             }

@@ -29,11 +29,7 @@
     <string name="permesso_fotocamera_negato">WebcamLR can’t use the camera. Allow it in Settings › Apps › WebcamLR › Permissions.</string>
     <string name="senza_fotocamera_titolo">The camera is needed</string>
     <string name="senza_fotocamera_testo">Without the camera WebcamLR can\'t send video to the computer or read the QR code. It\'s not the computer: allow it in Settings › Apps › WebcamLR › Permissions.</string>
-    <string name="notifiche_spiegazione_titolo">Notifications for “Live”</string>
-    <string name="notifiche_spiegazione_testo">With notifications, when the screen is off or you\'re in another app you see the “Video to computer” notice with “Disconnect”. Without them the video keeps going, but no notice reminds you.</string>
     <string name="avviso_notifiche_negate">Notifications off: with the screen off the video keeps going without the “Video to computer” notice.</string>
-    <string name="consenti">Allow</string>
-    <string name="non_ora">Not now</string>
 
     <!-- 10_presentazione -->
     <string name="avanti">Next</string>

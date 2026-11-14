@@ -55,11 +55,20 @@ public sealed class SorveglianzaAvvisi
         return prima == AvvisoTelefono.BatteriaBassa ? TestiRicevitore.T("Avviso_BatteriaFinito") : TestiRicevitore.T("Avviso_CaldoFinito");
     }
 
+    /// <summary>
+    /// Il caldo ha la precedenza, ma una batteria bassa insieme non resta nascosta (collaudo 20, t18 B3: al 7% con il
+    /// telefono molto caldo il PC diceva solo del caldo): si aggiunge al messaggio.
+    /// </summary>
     public static (string Titolo, string Messaggio) Testi(AvvisoTelefono avviso, StatoTelefono? stato) => avviso switch
     {
-        AvvisoTelefono.Critico => (TestiRicevitore.T("Avviso_CriticoTitolo"), TestiRicevitore.T("Avviso_Critico")),
-        AvvisoTelefono.MoltoCaldo => (TestiRicevitore.T("Avviso_MoltoCaldoTitolo"), TestiRicevitore.T("Avviso_MoltoCaldo")),
+        AvvisoTelefono.Critico => (TestiRicevitore.T("Avviso_CriticoTitolo"), ConBatteria(TestiRicevitore.T("Avviso_Critico"), stato)),
+        AvvisoTelefono.MoltoCaldo => (TestiRicevitore.T("Avviso_MoltoCaldoTitolo"), ConBatteria(TestiRicevitore.T("Avviso_MoltoCaldo"), stato)),
         AvvisoTelefono.BatteriaBassa => (TestiRicevitore.T("Avviso_BatteriaTitolo", stato?.Batteria ?? SogliaBatteria), TestiRicevitore.T("Avviso_Batteria")),
         _ => ("", ""),
     };
+
+    private static string ConBatteria(string messaggio, StatoTelefono? stato) =>
+        stato is { InCarica: false, Batteria: >= 0 and < SogliaBatteria } s
+            ? $"{messaggio} {TestiRicevitore.T("Avviso_BatteriaTitolo", s.Batteria)} {TestiRicevitore.T("Avviso_Batteria")}"
+            : messaggio;
 }

@@ -82,4 +82,15 @@ public class AvvisiTelefonoTest
         Assert.Equal("La batteria del telefono non è più bassa.",
             SorveglianzaAvvisi.RigaRegistro(AvvisoTelefono.BatteriaBassa, AvvisoTelefono.Nessuno, Stato(15, inCarica: true)));
     }
+
+    [Fact]
+    public void CaldoEBatteriaBassaInsieme()
+    {
+        // Collaudo 20 (t18 B3): al 7% e molto caldo, l'avviso del caldo dice anche la batteria.
+        var stato = new StatoTelefono(7, false, Temperatura.MoltoCalda, "principale");
+        var (_, messaggio) = SorveglianzaAvvisi.Testi(SorveglianzaAvvisi.Da(stato), stato);
+        Assert.Contains("7%", messaggio);
+        var carica = stato with { InCarica = true };
+        Assert.DoesNotContain("7%", SorveglianzaAvvisi.Testi(SorveglianzaAvvisi.Da(carica), carica).Messaggio);
+    }
 }

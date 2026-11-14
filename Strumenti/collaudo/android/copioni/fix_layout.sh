@@ -108,6 +108,22 @@ if collega_indirizzo; then
         schermata "v-in-onda"
         testi_visibili
         if tocca_testo "Impostazioni"; then attendi 1; giro "v-in-onda-impostazioni" 4; indietro; attendi 1; fi
+        # t11 B8: oscurato dopo 30 s senza niente; un tasto lo riaccende e il fuoco della tastiera torna ai comandi.
+        attendi 36
+        schermata "v-in-onda-oscurato"
+        if c_e_testo "Tocca due volte per riaccendere lo schermo"; then
+            adb_sh input keyevent KEYCODE_TAB; attendi 2
+            schermata "v-in-onda-riacceso-con-tab"
+            f="$USCITA/.fuoco.xml"; _dump "$f"
+            if grep -q 'focused="true"' "$f"; then passo "B8: fuoco dopo il risveglio: $(grep -o '[^>]*focused="true"[^>]*' "$f" | grep -o 'content-desc="[^"]*"\|text="[^"]*"' | head -2 | tr '\n' ' ')"; else nota "B8: nessun fuoco dopo il risveglio"; fi
+            c_e_testo "Tocca due volte per riaccendere lo schermo" && nota "B8: Tab non ha riacceso lo schermo"
+        else
+            nota "B8: lo schermo non si è oscurato dopo 36 s"
+        fi
+        # Tab ogni 4 s per 40 s: non deve oscurarsi.
+        for i in $(seq 1 10); do adb_sh input keyevent KEYCODE_TAB; sleep 4; done
+        schermata "v-in-onda-tab-40s"
+        if c_e_testo "Tocca due volte per riaccendere lo schermo"; then nota "B8: oscurato mentre si usa la tastiera"; else passo "B8: con la tastiera resta acceso"; fi
     else
         schermata "v-senza-video"; nota "niente video al computer"
     fi

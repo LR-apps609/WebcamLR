@@ -10,6 +10,7 @@
 //   video.h264/.hevc  il flusso ricevuto (Annex B), fino a --massimo-video MB
 //   fotogrammi/       un fotogramma chiave ogni --ogni secondi, decodificato in PNG con ffmpeg se c'è
 //   riepilogo.txt     alla fine: sessioni, fotogrammi, byte
+//   audio.aac         l'audio ricevuto (AAC-LC con intestazioni ADTS), se il telefono ne manda
 using System.Diagnostics;
 using System.Globalization;
 using System.Net;
@@ -34,7 +35,8 @@ return 0;
 
 sealed record Opzioni(
     int Porta, string Nome, string Uscita, string Indirizzo, int? PortaCavo, double? InterrompiDopo, double Pausa,
-    bool Rifiuta, bool InOnda, double Ogni, double AttesaConferma, int MassimoVideoMb, double Durata)
+    bool Rifiuta, bool InOnda, double Ogni, double AttesaConferma, int MassimoVideoMb, double Durata,
+    double? ChiediAudio = null, double? SpegniAudio = null)
 {
     public const string Uso = """
         Uso: ComputerFinto [opzioni]
@@ -51,6 +53,8 @@ sealed record Opzioni(
           --attesa-conferma <s>    dopo quanto consente da solo un telefono nuovo con il codice (2)
           --massimo-video <MB>     quanti MB di video salvare al massimo (40)
           --durata <s>             si ferma da solo dopo <s> secondi (0 = mai)
+          --chiedi-audio <s>       <s> secondi dopo il collegamento manda «comando audio vero» (come l'interruttore del PC)
+          --spegni-audio <s>       <s> secondi dopo il collegamento manda «comando audio falso»
         """;
 
     public static Opzioni? Leggi(string[] args)
@@ -78,6 +82,8 @@ sealed record Opzioni(
                     "--attesa-conferma" => o with { AttesaConferma = Numero(Valore()) },
                     "--massimo-video" => o with { MassimoVideoMb = int.Parse(Valore(), CultureInfo.InvariantCulture) },
                     "--durata" => o with { Durata = Numero(Valore()) },
+                    "--chiedi-audio" => o with { ChiediAudio = Numero(Valore()) },
+                    "--spegni-audio" => o with { SpegniAudio = Numero(Valore()) },
                     _ => throw new ArgumentException(args[i]),
                 };
             }
@@ -163,6 +169,35 @@ sealed class Computer
         Scrivi("RIEPILOGO " + riepilogo.Replace('\n', ' ').Trim());
     }
 
+    private FileStream? audio;
+
+    /// <summary>Un frame AAC-LC grezzo con l'intestazione ADTS (48 kHz, mono), così ffmpeg lo legge.</summary>
+    private void SalvaAudio(byte[] dati)
+    {
+        lock (blocco)
+        {
+            audio ??= new FileStream(Path.Combine(uscita, "audio.aac"), FileMode.Create);
+            if (audio.Length > 2_000_000) return;
+            var l = dati.Length + 7;
+            // profilo LC (1), frequenza 48 kHz (indice 3), 1 canale
+            byte[] testa = [0xFF, 0xF1, (byte)((1 << 6) | (3 << 2)), (byte)((1 << 6) | (l >> 11)), (byte)((l >> 3) & 0xFF), (byte)(((l & 7) << 5) | 0x1F), 0xFC];
+            audio.Write(testa);
+            audio.Write(dati);
+            audio.Flush();
+        }
+    }
+
+    private void ComandoAudioDopo(SessioneComputer sessione, int numero, double secondi, bool acceso)
+    {
+        sessione.Salutato += ciao => Task.Run(async () =>
+        {
+            await Task.Delay(TimeSpan.FromSeconds(secondi));
+            if (sessione.Terminata) return;
+            try { await sessione.ComandaAsync(new Comando(Audio: acceso)); Scrivi($"#{numero} COMANDO audio {(acceso ? "vero" : "falso")} mandato"); }
+            catch (Exception errore) { Scrivi($"#{numero} COMANDO audio non mandato: {errore.Message}"); }
+        });
+    }
+
     private void ApriAscolto()
     {
         var nuovo = new Ascoltatore(IPAddress.Any, opzioni.Porta);
@@ -226,6 +261,8 @@ sealed class Computer
             Ammetti = opzioni.Rifiuta ? _ => false : null,
         };
         var salutato = false;
+        bool? audioStato = null;
+        long pacchettiAudio = 0;
         if (!silenzioso) Scrivi($"#{numero} CONNESSIONE da {remoto} via {via}");
         sessione.ConfermaInCorso += (nome, codice) => { Stato("conferma"); Scrivi($"#{numero} CODICE {codice} per «{nome}»"); };
         sessione.NonAmmesso += ciao => Scrivi($"#{numero} RIFIUTATO «{ciao.Nome}» (--rifiuta)");
@@ -261,8 +298,23 @@ sealed class Computer
         sessione.StatoRicevuto += stato =>
         {
             if (stato.Pausa is not null) Scrivi($"#{numero} PAUSA {stato.Pausa}");
+            if (stato.Audio != audioStato)
+            {
+                audioStato = stato.Audio;
+                Scrivi($"#{numero} STATO audio {(stato.Audio is { } a ? (a ? "vero (il telefono manda l'audio)" : "falso") : "assente")}");
+            }
         };
-        sessione.CapacitaRicevute += _ => Scrivi($"#{numero} CAPACITÀ ricevute");
+        sessione.CapacitaRicevute += c => Scrivi($"#{numero} CAPACITÀ ricevute (audio {(c.Audio is { } a ? a.ToString().ToLowerInvariant() : "assente")}, pro {c.Pro})");
+        sessione.FormatoAudioRicevuto += f => Scrivi($"#{numero} FORMATO-AUDIO {f.Codec} {f.Frequenza} Hz {f.Canali} canali, configurazione {f.Configurazione}");
+        sessione.AudioRicevuto += pacchetto =>
+        {
+            var n = Interlocked.Increment(ref pacchettiAudio);
+            if (n == 1) Scrivi($"#{numero} AUDIO: primo pacchetto ({pacchetto.Dati.Length} byte)");
+            else if (n % 470 == 0) Scrivi($"#{numero} AUDIO: {n} pacchetti ricevuti");
+            SalvaAudio(pacchetto.Dati);
+        };
+        if (opzioni.ChiediAudio is { } chiedi) ComandoAudioDopo(sessione, numero, chiedi, true);
+        if (opzioni.SpegniAudio is { } spegni) ComandoAudioDopo(sessione, numero, spegni, false);
         sessione.StatisticheAggiornate += s =>
         {
             var riga = string.Create(CultureInfo.InvariantCulture,

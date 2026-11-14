@@ -160,6 +160,9 @@ struct RigaAppWebcam: View {
         } else {
             Text("Disponibile per \(elenco) e tanti altri")
                 .foregroundStyle(Tema.testoSecondario)
+                // Collaudo t11 B11: i segni delle app sono simboli, e VoiceOver ne leggeva i nomi
+                // («Videochiamata Facetime Zoom · number Slack…»). Qui solo i nomi.
+                .accessibilityLabel(Text("Disponibile per \(nomiInRiga) e tanti altri"))
         }
     }
 
@@ -171,6 +174,11 @@ struct RigaAppWebcam: View {
             risultato = risultato + app.segnoInRiga + Text(verbatim: " " + (app.nomeBreve ?? app.nome))
         }
         return risultato
+    }
+
+    /// I nomi della riga senza segni, per VoiceOver: «Zoom, Slack, OBS, Meet».
+    private var nomiInRiga: String {
+        AppCompatibile.inRiga.map { $0.nomeBreve ?? $0.nome }.joined(separator: ", ")
     }
 
     /// «In uso da Zoom», «In uso da Zoom · Slack e da altre app», «In uso da un'altra app»; nil se nessuna app la usa.

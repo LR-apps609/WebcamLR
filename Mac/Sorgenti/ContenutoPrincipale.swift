@@ -103,6 +103,9 @@ struct ContenutoPrincipale: View {
                         .transition(entrata(.trailing))
                     }
                 }
+                // Collaudo A1: mai più alto dello spazio della finestra, anche se il centro non ci sta. Senza, il
+                // pannello «Impostazioni» (alto come questa riga) finiva sotto il bordo con le ultime voci.
+                .frame(width: spazio.size.width, height: spazio.size.height)
                 .overlay(alignment: .trailing) { pannelloImpostazioni }
                 .clipped()
             }

@@ -22,8 +22,8 @@ extension Ricevitore {
 
 /// La strada per sbloccare, uguale ovunque sul Mac.
 enum TestiPro {
-    static let sblocca = String(localized: "Sblocca WebcamLR Pro sull'iPhone")
-    static let strada = String(localized: "Si sblocca dall'iPhone: apri WebcamLR › Impostazioni › WebcamLR Pro.")
+    static let sblocca = String(localized: "Sblocca WebcamLR Pro sul telefono")
+    static let strada = String(localized: "Si sblocca dal telefono, iPhone o Android: apri WebcamLR › Impostazioni › WebcamLR Pro.")
 }
 
 /// Una riga sotto una sezione Pro bloccata: «PRO Sblocca WebcamLR Pro sull'iPhone».
@@ -142,7 +142,7 @@ struct PaginaProMac: View {
 
     private var statoTelefono: String {
         guard let nome = ricevitore.telefono?.nome, ricevitore.capacita != nil else {
-            return String(localized: "Nessun telefono collegato: Pro si vede qui quando colleghi l'iPhone su cui l'hai sbloccato.")
+            return String(localized: "Nessun telefono collegato: Pro si vede qui quando colleghi il telefono su cui l'hai sbloccato.")
         }
         if ricevitore.proAttivo {
             return String(localized: "Pro attivo su «\(nome)»: tutto WebcamLR è sbloccato anche su questo Mac.")

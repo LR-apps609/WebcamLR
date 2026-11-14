@@ -189,10 +189,16 @@ private struct VociMenuVideo: View {
             Toggle("Specchia", isOn: Binding(get: { specchioUsabile && ricevitore.specchiato },
                                              set: { _ in ricevitore.alternaSpecchio() }))
                 .disabled(!specchioUsabile)
-            Menu("Sfondo") {
-                VociMenuSfondo(ricevitore: ricevitore) { apriFinestraApp(.pro, apri: apriFinestra) }
+            // Collaudo t10 B9: nella barra dei menu `.disabled` su un `Menu` non vale (si apriva su voci tutte grigie):
+            // senza telefono al suo posto c'è una voce grigia con lo stesso nome.
+            if sfondoUsabile {
+                Menu("Sfondo") {
+                    VociMenuSfondo(ricevitore: ricevitore) { apriFinestraApp(.pro, apri: apriFinestra) }
+                }
+            } else {
+                Button("Sfondo") {}
+                    .disabled(true)
             }
-            .disabled(!sfondoUsabile)
         }
         Divider()
         Group {
@@ -233,18 +239,23 @@ private struct VociMenuVideo: View {
     }
 
     /// Gli obiettivi del telefono nell'ordine in cui li elenca, con i tasti 1–4; spuntato quello in uso.
-    private var menuObiettivo: some View {
+    @ViewBuilder private var menuObiettivo: some View {
         let elenco = ricevitore.telefonoAttivo ? Array((ricevitore.capacita?.obiettivi ?? []).prefix(4)) : []
         let attuale = ricevitore.controlli.obiettivo ?? ricevitore.statoTelefono?.obiettivo
-        return Menu("Obiettivo") {
-            ForEach(Array(elenco.enumerated()), id: \.offset) { indice, obiettivo in
-                Toggle(Ricevitore.nome(obiettivo: obiettivo), isOn: Binding(
-                    get: { obiettivo == attuale },
-                    set: { _ in scegli(obiettivo, attuale: attuale) }))
-                    .keyboardShortcut(KeyEquivalent(Character("\(indice + 1)")), modifiers: [])
+        if elenco.isEmpty {
+            // Come «Sfondo» (t10 B9): un `Menu` grigio nella barra dei menu si apriva lo stesso, vuoto.
+            Button("Obiettivo") {}
+                .disabled(true)
+        } else {
+            Menu("Obiettivo") {
+                ForEach(Array(elenco.enumerated()), id: \.offset) { indice, obiettivo in
+                    Toggle(Ricevitore.nome(obiettivo: obiettivo), isOn: Binding(
+                        get: { obiettivo == attuale },
+                        set: { _ in scegli(obiettivo, attuale: attuale) }))
+                        .keyboardShortcut(KeyEquivalent(Character("\(indice + 1)")), modifiers: [])
+                }
             }
         }
-        .disabled(elenco.isEmpty)
     }
 
     /// Come il tasto: l'obiettivo di adesso non cambia niente; un altro, mentre registri, chiede prima (punto 7).

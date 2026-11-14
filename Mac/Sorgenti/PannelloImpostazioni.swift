@@ -364,6 +364,8 @@ private struct SezionePausaAutomatica: View {
                     .font(.stile(.corpo, .corpoEvidente))
             }
             .toggleStyle(.switch)
+            // Il nome anche sull'interruttore: il testo accanto è un elemento a parte (collaudo t05 B5).
+            .accessibilityLabel("Pausa quando nessuna app usa la webcam")
             .onChange(of: accesa) { _, _ in ricevitore.pausaAutomaticaCambiata() }
             if ricevitore.usoWebcamLeggibile {
                 Nota(testo: String(localized: "Dopo \(Servizio.secondiPausaAutomatica) secondi senza app che usano la webcam, senza registrazione e con WebcamLR dietro le altre app, il telefono spegne la fotocamera: meno batteria e meno calore. Il video riparte da solo, in meno di un secondo, appena un'app apre la webcam o torni su WebcamLR."))
@@ -390,6 +392,8 @@ private struct PaginaSchermo: View {
                     .font(.stile(.corpo, .corpoEvidente))
             }
             .toggleStyle(.switch)
+            // Il nome anche sull'interruttore: il testo accanto è un elemento a parte (collaudo t05 B5).
+            .accessibilityLabel("Riempi l'inquadratura")
             Nota(testo: String(localized: "Il video copre tutta la finestra, tagliando i bordi. Vale solo qui: le altre app ricevono il video intero"))
         }
         Divider().overlay(Tema.lineaTenue)
@@ -414,6 +418,8 @@ private struct PaginaSchermo: View {
                     .font(.stile(.corpo, .corpoEvidente))
             }
             .toggleStyle(.switch)
+            // Il nome anche sull'interruttore: il testo accanto è un elemento a parte (collaudo t05 B5).
+            .accessibilityLabel("Mostra l'icona nella barra dei menu")
             Nota(testo: String(localized: "Lo stato di WebcamLR anche a finestra chiusa: in onda, registrazione, telefono collegato"))
         }
     }

@@ -1170,7 +1170,7 @@ final class Ricevitore {
         let adesso = ContinuousClock.now
         if let ultimo = ultimiRifiuti[nome], adesso - ultimo < .seconds(60) { return }
         ultimiRifiuti[nome] = adesso
-        mostraAvviso(String(localized: "Due telefoni insieme sono di WebcamLR Pro: sbloccalo sull'iPhone nella webcam per collegare anche «\(nome)»."),
+        mostraAvviso(String(localized: "Due telefoni insieme sono di WebcamLR Pro: sbloccalo sul telefono nella webcam per collegare anche «\(nome)»."),
                      registro: String(localized: "«\(nome)» non collegato: due telefoni insieme sono di WebcamLR Pro"))
     }
 

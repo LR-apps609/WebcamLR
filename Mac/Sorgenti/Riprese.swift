@@ -155,7 +155,7 @@ final class Riprese {
     /// Senza WebcamLR Pro lo dice al posto della foto o della registrazione.
     private func proPresente() -> Bool {
         guard consentite() else {
-            mostra(String(localized: "Foto e registrazione sono di WebcamLR Pro: si sblocca dall'iPhone, in WebcamLR › Impostazioni › WebcamLR Pro."))
+            mostra(String(localized: "Foto e registrazione sono di WebcamLR Pro: si sblocca dal telefono, in WebcamLR › Impostazioni › WebcamLR Pro."))
             return false
         }
         return true

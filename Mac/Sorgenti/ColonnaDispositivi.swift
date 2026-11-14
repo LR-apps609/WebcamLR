@@ -87,7 +87,7 @@ struct SezioneTelefoni: View {
                 // WebcamLR Pro: il secondo telefono non si collega finché quello nella webcam è gratis.
                 HStack(alignment: .firstTextBaseline, spacing: Spazi.stretto) {
                     SegnoPro()
-                    Text("Due telefoni insieme: sblocca WebcamLR Pro sull'iPhone.")
+                    Text("Due telefoni insieme: sblocca WebcamLR Pro sul telefono.")
                         .font(.stile(.nota))
                         .foregroundStyle(Tema.testoSecondario)
                         .fixedSize(horizontal: false, vertical: true)
@@ -392,6 +392,13 @@ struct RiquadroCollega: View {
             contenutoGrande(lato: 180)
             contenutoGrande(lato: 136)
             contenutoGrande(lato: 100)
+            // Collaudo A1: su uno schermo basso (1024×768) neanche il QR piccolo ci stava con l'aiuto sotto, e il
+            // riquadro allungava il video spingendo la barra e «Disponibile per…» fuori dalla finestra. L'ultima
+            // scelta scorre: prende l'altezza che c'è.
+            ScrollView(.vertical) {
+                contenutoGrande(lato: 100)
+            }
+            .scrollBounceBehavior(.basedOnSize)
         }
     }
 
@@ -414,7 +421,9 @@ struct RiquadroCollega: View {
             pulsanteDownload
         }
         .padding(Spazi.largo)
-        .background(Tema.fondo.opacity(Veli.forte), in: RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous))
+        // Pieno, non velato (collaudo A5, t01 B5): sotto c'è la schermata d'attesa con la sua scritta grande
+        // («La webcam non è collegata»), che traspariva proprio sull'indirizzo da scrivere a mano.
+        .background(Tema.fondo, in: RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous).strokeBorder(Tema.lineaTenue))
         .accessibilityElement(children: .contain)
     }
@@ -468,9 +477,12 @@ private struct PassoCollega: View {
 /// firewall del Mac e la Rete locale dell'iPhone) e «Apri» verso Impostazioni di Sistema › Rete › Firewall.
 struct AiutoNonTrova: View {
     var body: some View {
-        Avviso(String(localized: "Controlla il firewall: Impostazioni di Sistema › Rete › Firewall › Opzioni › WebcamLR consentita. Sull'iPhone, WebcamLR deve avere «Rete locale» in Impostazioni › Privacy e sicurezza."),
-               titolo: String(localized: "Il telefono non trova il Mac?"), icona: "questionmark.circle",
-               larghezzaMassima: .infinity, azioni: {
+        // Collaudo t01 B4: il Mac non può sapere se un telefono ci ha provato (il firewall blocca prima che arrivi
+        // qualcosa), quindi dopo 30 secondi l'aiuto parte dal passo più probabile, aprire l'app sul telefono, ed è
+        // un'informazione nell'accento, non un avviso ambra: chi non ha ancora preso il telefono non ha sbagliato niente.
+        Avviso(String(localized: "Apri WebcamLR sul telefono e inquadra il QR code. Se il telefono non trova il Mac: Impostazioni di Sistema › Rete › Firewall › Opzioni › WebcamLR consentita; sull'iPhone, «Rete locale» accesa per WebcamLR."),
+               titolo: String(localized: "Non vedo ancora il telefono"), icona: "iphone.radiowaves.left.and.right",
+               tono: .informazione, larghezzaMassima: .infinity, azioni: {
             Button("Apri") { ImpostazioniDiSistema.apri(.firewall) }
                 .buttonStyle(StileSecondario())
                 .accessibilityHint("Impostazioni di Sistema › Rete › Firewall")

@@ -500,6 +500,16 @@
         }
       }
     },
+    "Apri WebcamLR sul telefono e inquadra il QR code. Se il telefono non trova il Mac: Impostazioni di Sistema › Rete › Firewall › Opzioni › WebcamLR consentita; sull'iPhone, «Rete locale» accesa per WebcamLR." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open WebcamLR on the phone and scan the QR code. If the phone can’t find the Mac: System Settings › Network › Firewall › Options › allow WebcamLR; on the iPhone, turn on “Local Network” for WebcamLR."
+          }
+        }
+      }
+    },
     "Apri WebcamLR sul telefono e tienila aperta: il collegamento parte da solo." : {
       "localizations" : {
         "en" : {
@@ -1666,22 +1676,22 @@
         }
       }
     },
-    "Due telefoni insieme sono di WebcamLR Pro: sbloccalo sull'iPhone nella webcam per collegare anche «%@»." : {
+    "Due telefoni insieme sono di WebcamLR Pro: sbloccalo sul telefono nella webcam per collegare anche «%@»." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Two phones at once are part of WebcamLR Pro: unlock it on the iPhone in the webcam to connect “%@” too."
+            "value" : "Two phones at once are part of WebcamLR Pro: unlock it on the phone in the webcam to connect “%@” too."
           }
         }
       }
     },
-    "Due telefoni insieme: sblocca WebcamLR Pro sull'iPhone." : {
+    "Due telefoni insieme: sblocca WebcamLR Pro sul telefono." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Two phones at once: unlock WebcamLR Pro on the iPhone."
+            "value" : "Two phones at once: unlock WebcamLR Pro on the phone."
           }
         }
       }
@@ -2120,12 +2130,12 @@
         }
       }
     },
-    "Foto e registrazione sono di WebcamLR Pro: si sblocca dall'iPhone, in WebcamLR › Impostazioni › WebcamLR Pro." : {
+    "Foto e registrazione sono di WebcamLR Pro: si sblocca dal telefono, in WebcamLR › Impostazioni › WebcamLR Pro." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Photos and recording are part of WebcamLR Pro: unlock it from the iPhone, in WebcamLR › Settings › WebcamLR Pro."
+            "value" : "Photos and recording are part of WebcamLR Pro: unlock it from the phone, in WebcamLR › Settings › WebcamLR Pro."
           }
         }
       }
@@ -4114,12 +4124,12 @@
         }
       }
     },
-    "Nessun telefono collegato: Pro si vede qui quando colleghi l'iPhone su cui l'hai sbloccato." : {
+    "Nessun telefono collegato: Pro si vede qui quando colleghi il telefono su cui l'hai sbloccato." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No phone connected: Pro shows up here when you connect the iPhone you unlocked it on."
+            "value" : "No phone connected: Pro shows up here when you connect the phone you unlocked it on."
           }
         }
       }
@@ -4444,6 +4454,16 @@
         }
       }
     },
+    "Non vedo ancora il telefono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No phone yet"
+          }
+        }
+      }
+    },
     "Normale" : {
       "localizations" : {
         "en" : {
@@ -4524,6 +4544,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Over %@ characters: the phone only gets the first ones."
+          }
+        }
+      }
+    },
+    "Oppure scrivi: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Or type: %@"
           }
         }
       }
@@ -4899,6 +4929,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "QR code to connect the phone"
+          }
+        }
+      }
+    },
+    "QR code per collegare il telefono. Oppure, sul telefono, scrivi l'indirizzo %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "QR code to connect the phone. Or type this address on the phone: %@"
           }
         }
       }
@@ -5586,6 +5626,17 @@
         }
       }
     },
+    "Sblocca WebcamLR Pro sul telefono" : {
+      "comment" : "Impostazioni › Schermata di attesa, senza Pro.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlock WebcamLR Pro on your phone"
+          }
+        }
+      }
+    },
     "Sblocca WebcamLR Pro sul telefono per 1080p e 60 fps." : {
       "localizations" : {
         "en" : {
@@ -5602,17 +5653,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Unlock WebcamLR Pro on the phone for 1080p, 60 fps and 4K."
-          }
-        }
-      }
-    },
-    "Sblocca WebcamLR Pro sull'iPhone" : {
-      "comment" : "Impostazioni › Schermata di attesa, senza Pro.",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Unlock WebcamLR Pro on your iPhone"
           }
         }
       }
@@ -6169,12 +6209,12 @@
         }
       }
     },
-    "Si sblocca dall'iPhone: apri WebcamLR › Impostazioni › WebcamLR Pro." : {
+    "Si sblocca dal telefono, iPhone o Android: apri WebcamLR › Impostazioni › WebcamLR Pro." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Unlock it from the iPhone: open WebcamLR › Settings › WebcamLR Pro."
+            "value" : "Unlock it from the phone, iPhone or Android: open WebcamLR › Settings › WebcamLR Pro."
           }
         }
       }
@@ -8307,12 +8347,12 @@
         }
       }
     },
-    "«Sostituito» è di WebcamLR Pro: si sblocca dall'iPhone." : {
+    "«Sostituito» è di WebcamLR Pro: si sblocca dal telefono." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "“Replaced” is part of WebcamLR Pro: unlock it from the iPhone."
+            "value" : "“Replaced” is part of WebcamLR Pro: unlock it from the phone."
           }
         }
       }

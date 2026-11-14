@@ -368,7 +368,7 @@ struct ControlliEffetti: View {
                 // «Sfocato» è gratis; «Sostituito» è di WebcamLR Pro.
                 HStack(alignment: .firstTextBaseline, spacing: Spazi.stretto) {
                     SegnoPro()
-                    Text("«Sostituito» è di WebcamLR Pro: si sblocca dall'iPhone.")
+                    Text("«Sostituito» è di WebcamLR Pro: si sblocca dal telefono.")
                         .font(.stile(.nota))
                         .foregroundStyle(Tema.testoSecondario)
                         .fixedSize(horizontal: false, vertical: true)

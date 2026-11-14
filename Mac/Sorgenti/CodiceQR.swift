@@ -135,6 +135,10 @@ struct CodiceQR: View {
         .frame(width: lato, height: lato)
         .padding(Spazi.stretto)
         .background(.white, in: RoundedRectangle(cornerRadius: Raggi.controllo))
+        // Collaudo t11 B10: un elemento immagine vero per VoiceOver. Prima l'etichetta stava su un Group con
+        // un'immagine decorativa, che non diventava un elemento: il QR a cui rimanda il passo 3 non esisteva.
+        .accessibilityElement(children: .ignore)
+        .accessibilityAddTraits(.isImage)
         .accessibilityLabel(descrizione.map { Text($0) } ?? Text("QR code per collegare il telefono"))
     }
 
@@ -181,7 +185,10 @@ struct PannelloAssociazione: View {
                                                 nome: NomeMac.attuale,
                                                 versione: Sicurezza.versioneSicura,
                                                 impronta: ricevitore.improntaMac, gettone: ricevitore.gettone)
-                CodiceQR(testo: associazione.testo, lato: lato)
+                let scritto = "\(indirizzi[0])\(porta == Servizio.portaPredefinita ? "" : ":\(porta)")"
+                // Per VoiceOver il QR dice anche l'indirizzo da scrivere sul telefono (t11 B10).
+                CodiceQR(testo: associazione.testo, lato: lato,
+                         descrizione: String(localized: "QR code per collegare il telefono. Oppure, sul telefono, scrivi l'indirizzo \(scritto)"))
                 // A capo e mai tagliati: nel riquadro stretto (popover di 240 punti, QR piccolo) non stanno su una riga.
                 if !compatto {
                     Text("Sul telefono: «Inquadra il QR code del computer».")
@@ -189,7 +196,7 @@ struct PannelloAssociazione: View {
                         .foregroundStyle(Tema.testoTenue)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                Text("Oppure scrivi: \(indirizzi[0])\(porta == Servizio.portaPredefinita ? "" : ":\(porta)")")
+                Text("Oppure scrivi: \(scritto)")
                     .font(.numeri(compatto ? 11 : 12))
                     .multilineTextAlignment(compatto ? .center : .leading)
                     .foregroundStyle(Tema.testoSecondario)

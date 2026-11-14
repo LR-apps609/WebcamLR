@@ -32,6 +32,8 @@ struct PaginaAvvio: View {
                     .font(.stile(.corpo, .corpoEvidente))
             }
             .toggleStyle(.switch)
+            // Il nome anche sull'interruttore: il testo accanto è un elemento a parte (collaudo t05 B5).
+            .accessibilityLabel("Apri WebcamLR all'avvio del Mac")
             testoAvvio
         }
         Divider().overlay(Tema.lineaTenue)
@@ -41,6 +43,8 @@ struct PaginaAvvio: View {
                     .font(.stile(.corpo, .corpoEvidente))
             }
             .toggleStyle(.switch)
+            // Il nome anche sull'interruttore: il testo accanto è un elemento a parte (collaudo t05 B5).
+            .accessibilityLabel("Mostra le notifiche")
             Nota(testo: String(localized: "Telefono collegato o perso e batteria bassa, solo quando WebcamLR non è in primo piano; «Registrazione salvata» sempre."))
             if notifiche && notificheNegate {
                 HStack(alignment: .firstTextBaseline, spacing: Spazi.stretto) {

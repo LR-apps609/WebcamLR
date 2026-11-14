@@ -2545,7 +2545,9 @@ class SessioneTelefono(
             // Con gli effetti sul computer il telefono non ne fa nessuno: lo `stato` non ne dichiara.
             verso.invia(if (sulComputerInterno.value) base else ModelloEffetti.completa(base, effettiEffettivi(), funzioniInterne.value))
         }
-        if (regolaQualita() && fotocameraPronta) avviaFotocamera()
+        // Collaudo 20 (t18 B1): come in [caloreCambiato], si riparte solo se il formato effettivo cambia davvero.
+        val prima = formatoEffettivo()
+        if (regolaQualita() && fotocameraPronta && formatoEffettivo() != prima) avviaFotocamera()
     }
 
     private fun aggiornaControlli() {

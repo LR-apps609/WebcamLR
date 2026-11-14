@@ -22,7 +22,16 @@ attendi_testo "Impostazioni" 20 || fallisci "beta 4: niente schermata principale
 schermata "beta4-principale"
 collega_indirizzo || fallisci "beta 4: «Collega a mano» non va"
 attendi_testo "Conferma sul computer" 15 && schermata "beta4-conferma-codice"
-t20_in_onda_e_scollega "beta4" || fallisci "beta 4: non va in onda con il computer finto (protocollo diverso?)"
+if ! t20_in_onda_e_scollega "beta4"; then
+    # Sull'emulatore la beta 4 si abbina ma il suo codificatore rifiuta il formato («Video non disponibile»): l'abbinamento
+    # (telefono fidato e computer conosciuto) c'è lo stesso, quindi si va avanti con i dati.
+    [ "$(collegamenti_computer)" -gt 0 ] || fallisci "beta 4: non si collega nemmeno al computer finto"
+    nota "beta 4: collegata e abbinata, ma senza video («Video non disponibile»): vado avanti con i dati"
+    tocca_testo "Torna ai computer" || tocca_testo "Scollega"
+    attendi 1; c_e_testo "Scollega" && tocca_testo "Scollega"
+    attendi_testo "Impostazioni" 15
+    schermata "beta4-dopo-torna"
+fi
 passo "Conferme chieste dal computer finto finora: $(t20_conferme)"
 
 # Impostazioni cambiate: griglia accesa, oscura spento, risparmio batteria spento, collegamento Wi-Fi.

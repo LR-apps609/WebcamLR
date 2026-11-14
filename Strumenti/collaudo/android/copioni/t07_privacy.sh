@@ -38,8 +38,10 @@ collega_indirizzo || fallisci "Collega a mano non riesce"
 attendi_computer video 45 || fallisci "niente video al computer"
 attendi 60
 schermata "in-onda-60s"
-c_e_testo "Tocca due volte per riaccendere lo schermo" && tocca_due_volte
-tocca_testo "Scollega" && { attendi 1; tocca_testo "Scollega"; }
+# Fine della sessione: l'app chiusa e riaperta (il doppio tocco sullo schermo oscurato non sempre riesce sull'emulatore).
+chiudi_app
+attendi 2
+avvia_app
 attendi_testo "Impostazioni" 15
 lavori_app
 # I lavori dell'app eseguiti subito (quelli di datatransport caricherebbero le statistiche).

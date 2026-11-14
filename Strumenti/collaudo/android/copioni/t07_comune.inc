@@ -48,7 +48,8 @@ avvisi_permessi() {
 # osserva_rete_inizia: ogni mezzo secondo le connessioni TCP/UDP del processo dell'app (per UID, da /proc/net), in
 # sottofondo. osserva_rete_ferma le decodifica: indirizzo remoto, porta, nome inverso (dal runner).
 osserva_rete_inizia() {
-    UID_APP=$(adb_sh dumpsys package "$PACCHETTO" | grep -m1 -oE 'userId=[0-9]+' | cut -d= -f2)
+    UID_APP=$(adb_sh cmd package list packages -U "$PACCHETTO" | grep -m1 -oE 'uid:[0-9]+' | cut -d: -f2)
+    [ -n "$UID_APP" ] || UID_APP=$(adb_sh dumpsys package "$PACCHETTO" | grep -m1 -oE '(userId|appId)=[0-9]+' | cut -d= -f2)
     local leggi="cat"
     adb_sh "cat /proc/net/tcp6" 2>/dev/null | grep -q 'local_address' || leggi="su 0 cat"
     nota "rete: UID dell'app $UID_APP, lettura di /proc/net con «$leggi»"
